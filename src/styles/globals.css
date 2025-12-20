@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-top: env(safe-area-inset-top);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-iron-950 text-iron-100 font-body antialiased;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent pull-to-refresh on mobile */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-iron-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-iron-700 rounded-full;
+}
+
+/* Input number spinner removal */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Stepper button active states */
+.stepper-btn {
+  @apply transition-all duration-75 active:scale-90 active:bg-iron-600;
+}
+
+/* Card hover/active states */
+.card-interactive {
+  @apply transition-all duration-150 active:scale-[0.98] active:bg-iron-800/80;
+}
+
+/* Floating action button */
+.fab {
+  @apply fixed bottom-6 right-6 w-14 h-14 rounded-full bg-lift-primary text-iron-950 
+         flex items-center justify-center shadow-lg shadow-lift-primary/30
+         active:scale-90 active:bg-lift-secondary transition-all duration-150;
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+/* Bottom nav safe area */
+.bottom-nav {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-40;
+}
+
+/* Slide up modal */
+.modal-content {
+  @apply fixed bottom-0 left-0 right-0 bg-iron-900 rounded-t-3xl z-50
+         max-h-[85vh] overflow-hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Rest timer toast */
+.rest-timer {
+  @apply fixed bottom-20 left-4 right-4 bg-iron-800 rounded-2xl p-4
+         flex items-center justify-between shadow-xl;
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+/* Exercise card */
+.exercise-card {
+  @apply bg-iron-900 rounded-2xl p-4 mb-3;
+}
+
+/* Set row */
+.set-row {
+  @apply flex items-center gap-3 py-2 border-b border-iron-800 last:border-0;
+}
+
+/* Haptic feedback simulation via animation */
+@keyframes haptic {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+}
+
+.haptic-feedback {
+  animation: haptic 100ms ease-in-out;
+}
+
+/* Page transition */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: slideUp 300ms ease-out;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  opacity: 0;
+  animation: slideUp 300ms ease-out forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+/* Pill animations */
+@keyframes bounce-once {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes scale-in {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 300ms ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 300ms ease-out;
+}
+
+/* Hide scrollbar for category pills */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* React Tooltip styles */
+.react-tooltip {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  z-index: 9999 !important;
+}
+
+/* Activity Calendar custom styles */
+.react-activity-calendar {
+  overflow: visible !important;
+}
+
+.react-activity-calendar__scroll-container {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.react-activity-calendar text {
+  fill: #6b7280 !important;
+  font-size: 11px !important;
+}
+

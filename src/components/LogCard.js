@@ -1,0 +1,115 @@
+import { useState, useRef } from 'react';
+
+export default function LogCard({ 
+  exerciseName, 
+  sets, 
+  totalReps, 
+  weightRange, 
+  unit,
+  onEdit,
+  onDelete 
+}) {
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const startX = useRef(0);
+  const currentX = useRef(0);
+  const isDragging = useRef(false);
+
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX;
+    isDragging.current = true;
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging.current) return;
+    currentX.current = e.touches[0].clientX;
+    const diff = currentX.current - startX.current;
+    
+    // Only allow left swipe (negative)
+    if (diff < 0) {
+      setSwipeOffset(Math.max(diff, -100));
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    
+    if (swipeOffset < -60) {
+      // Show delete button
+      setSwipeOffset(-80);
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleDelete = () => {
+    setIsDeleting(true);
+    // Haptic feedback
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(20);
+    }
+    setTimeout(() => {
+      onDelete?.();
+    }, 200);
+  };
+
+  const handleTap = () => {
+    if (swipeOffset === 0) {
+      onEdit?.();
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  return (
+    <div className={`relative overflow-hidden rounded-xl transition-all duration-200 ${isDeleting ? 'opacity-0 scale-95' : ''}`}>
+      {/* Delete background */}
+      <div className="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
+        <button 
+          onClick={handleDelete}
+          className="w-full h-full flex items-center justify-center"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Card content */}
+      <div
+        className="relative bg-iron-900 p-4 transition-transform"
+        style={{ transform: `translateX(${swipeOffset}px)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={handleTap}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h3 className="text-iron-100 font-semibold text-base">{exerciseName}</h3>
+            <p className="text-iron-400 text-sm mt-1">
+              {sets} set{sets !== 1 ? 's' : ''} · {totalReps} reps · {weightRange}{unit}
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-lift-primary/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-lift-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Swipe hint */}
+        {/* {swipeOffset === 0 && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-iron-700">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </div>
+        )} */}
+      </div>
+    </div>
+  );
+}
+

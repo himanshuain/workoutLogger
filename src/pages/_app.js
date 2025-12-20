@@ -1,0 +1,25 @@
+import '@/styles/globals.css';
+import Head from 'next/head';
+import { WorkoutProvider } from '@/context/WorkoutContext';
+
+export default function App({ Component, pageProps }) {
+  return (
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="theme-color" content="#18181b" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Logbook" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link rel="manifest" href="/manifest.json" />
+        <title>Logbook</title>
+      </Head>
+      <WorkoutProvider>
+        <Component {...pageProps} />
+      </WorkoutProvider>
+    </>
+  );
+}
+

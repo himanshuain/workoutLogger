@@ -1,0 +1,19 @@
+{
+  "name": "Logbook - Workout Logger",
+  "short_name": "Logbook",
+  "description": "Simple, fast workout logging. Log a set in under 3 seconds.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#18181b",
+  "theme_color": "#18181b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

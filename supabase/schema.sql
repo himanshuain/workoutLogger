@@ -80,6 +80,33 @@ CREATE TABLE IF NOT EXISTS exercise_history (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Food items (user-defined food/nutrition items)
+CREATE TABLE IF NOT EXISTS food_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  icon TEXT DEFAULT '🍽️',
+  color TEXT DEFAULT '#f59e0b',
+  unit TEXT DEFAULT 'servings',
+  default_quantity DECIMAL(6,2) DEFAULT 1,
+  category TEXT DEFAULT 'other',
+  order_index INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Food entries (daily food intake logs)
+CREATE TABLE IF NOT EXISTS food_entries (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  food_item_id UUID REFERENCES food_items(id) ON DELETE CASCADE NOT NULL,
+  date DATE NOT NULL,
+  quantity DECIMAL(6,2) DEFAULT 1,
+  is_completed BOOLEAN DEFAULT true,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, food_item_id, date)
+);
+
 -- ============================================
 -- INDEXES
 -- ============================================
@@ -92,12 +119,17 @@ CREATE INDEX IF NOT EXISTS idx_exercise_logs_user_date ON exercise_logs(user_id,
 CREATE INDEX IF NOT EXISTS idx_exercise_logs_exercise ON exercise_logs(exercise_id);
 CREATE INDEX IF NOT EXISTS idx_exercise_history_user_id ON exercise_history(user_id);
 CREATE INDEX IF NOT EXISTS idx_exercise_history_exercise ON exercise_history(exercise_id);
+CREATE INDEX IF NOT EXISTS idx_food_items_user_id ON food_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_food_entries_user_date ON food_entries(user_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_food_entries_food_item ON food_entries(food_item_id);
 
 -- ============================================
 -- ENABLE ROW LEVEL SECURITY
 -- ============================================
 
 ALTER TABLE exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE food_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE food_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trackables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tracking_entries ENABLE ROW LEVEL SECURITY;
@@ -284,3 +316,41 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================
+-- FOOD TRACKING RLS POLICIES
+-- ============================================
+
+-- Food items policies
+CREATE POLICY "Users can view own food items"
+  ON food_items FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own food items"
+  ON food_items FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own food items"
+  ON food_items FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own food items"
+  ON food_items FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Food entries policies
+CREATE POLICY "Users can view own food entries"
+  ON food_entries FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create own food entries"
+  ON food_entries FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own food entries"
+  ON food_entries FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own food entries"
+  ON food_entries FOR DELETE
+  USING (auth.uid() = user_id);

@@ -3,7 +3,8 @@ import { useRouter } from 'next/router';
 import { useWorkout } from '@/context/WorkoutContext';
 import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
-import { TrendingUp, Calendar, Flame, Target, ChevronDown } from 'lucide-react';
+import ProgressGraph from '@/components/ProgressGraph';
+import { TrendingUp, Calendar, Flame, Target, ChevronDown, Dumbbell } from 'lucide-react';
 
 export default function Progress() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function Progress() {
     todayEntries,
     isLoading,
     today,
+    settings,
     getExerciseLogs,
     getTrackingEntries,
     getTodayExerciseLogs,
@@ -23,6 +25,8 @@ export default function Progress() {
   const [habitDataByTrackable, setHabitDataByTrackable] = useState({});
   const [todayLogs, setTodayLogs] = useState([]);
   const [expandedHabit, setExpandedHabit] = useState(null);
+  const [exerciseLogsByName, setExerciseLogsByName] = useState({});
+  const [allExerciseLogs, setAllExerciseLogs] = useState([]);
 
   // Helper function for local date formatting
   const getLocalDateStr = (date = new Date()) => {
@@ -44,10 +48,22 @@ export default function Progress() {
 
       // Get exercise logs
       const exerciseLogs = await getExerciseLogs(startStr, endDate);
+      setAllExerciseLogs(exerciseLogs);
+      
       const workoutByDate = {};
+      const byExerciseName = {};
+      
       exerciseLogs.forEach(log => {
         workoutByDate[log.date] = (workoutByDate[log.date] || 0) + 1;
+        
+        // Group by exercise name for progress graphs
+        if (!byExerciseName[log.exercise_name]) {
+          byExerciseName[log.exercise_name] = [];
+        }
+        byExerciseName[log.exercise_name].push(log);
       });
+      
+      setExerciseLogsByName(byExerciseName);
       setWorkoutData(
         Object.entries(workoutByDate).map(([date, count]) => ({ date, count }))
       );
@@ -263,6 +279,32 @@ export default function Progress() {
             label="Daily Habits"
             subtitle={`${Object.values(todayEntries).filter(e => e.is_completed).length}/${trackables.length} completed today`}
           />
+
+          {/* Exercise Progress Graphs */}
+          {Object.keys(exerciseLogsByName).length > 0 && (
+            <section>
+              <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider flex items-center gap-2">
+                <Dumbbell className="w-3.5 h-3.5" />
+                Progressive Overload
+              </h2>
+              <div className="space-y-3">
+                {Object.entries(exerciseLogsByName)
+                  .sort((a, b) => b[1].length - a[1].length) // Sort by most logged
+                  .slice(0, 10) // Show top 10 exercises
+                  .map(([exerciseName, logs]) => (
+                    <ProgressGraph
+                      key={exerciseName}
+                      exerciseName={exerciseName}
+                      exerciseCategory={logs[0]?.category}
+                      data={logs}
+                      unit={settings?.unit || 'kg'}
+                      compact={true}
+                    />
+                  ))
+                }
+              </div>
+            </section>
+          )}
 
           {/* Individual Habit Heatmaps */}
           {trackables.length > 0 && (

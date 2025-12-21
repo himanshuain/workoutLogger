@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Dumbbell, TrendingUp, History, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Dumbbell, TrendingUp, History, Settings, ChevronLeft, ChevronRight, Utensils } from 'lucide-react';
 
 const tabs = [
   { id: 'today', href: '/', icon: Dumbbell, label: 'Today' },
+  { id: 'food', href: '/food', icon: Utensils, label: 'Food' },
   { id: 'progress', href: '/progress', icon: TrendingUp, label: 'Progress' },
   { id: 'history', href: '/history', icon: History, label: 'History' },
   { id: 'settings', href: '/settings', icon: Settings, label: 'Settings' },

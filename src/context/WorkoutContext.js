@@ -9,6 +9,8 @@ export function WorkoutProvider({ children }) {
   const [exerciseHistory, setExerciseHistory] = useState({});
   const [trackables, setTrackables] = useState([]);
   const [todayEntries, setTodayEntries] = useState({});
+  const [foodItems, setFoodItems] = useState([]);
+  const [todayFoodEntries, setTodayFoodEntries] = useState({});
   const [settings, setSettings] = useState({
     unit: 'kg',
     dark_mode: true,
@@ -133,6 +135,46 @@ export function WorkoutProvider({ children }) {
     }
   }, [user, today]);
 
+  // Load food items
+  const loadFoodItems = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('food_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('order_index');
+      
+      if (!error && data) {
+        setFoodItems(data);
+      }
+    } catch (err) {
+      console.error('Error loading food items:', err);
+    }
+  }, [user]);
+
+  // Load today's food entries
+  const loadTodayFoodEntries = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('food_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('date', today);
+      
+      if (!error && data) {
+        const entriesMap = {};
+        for (const e of data) {
+          entriesMap[e.food_item_id] = e;
+        }
+        setTodayFoodEntries(entriesMap);
+      }
+    } catch (err) {
+      console.error('Error loading today food entries:', err);
+    }
+  }, [user, today]);
+
   // Initialize when user changes
   useEffect(() => {
     async function init() {
@@ -144,12 +186,14 @@ export function WorkoutProvider({ children }) {
           loadExerciseHistory(),
           loadTrackables(),
           loadTodayEntries(),
+          loadFoodItems(),
+          loadTodayFoodEntries(),
         ]);
       }
       setIsLoading(false);
     }
     init();
-  }, [user, loadExercises, loadSettings, loadExerciseHistory, loadTrackables, loadTodayEntries]);
+  }, [user, loadExercises, loadSettings, loadExerciseHistory, loadTrackables, loadTodayEntries, loadFoodItems, loadTodayFoodEntries]);
 
   // Toggle tracking entry (habit/health)
   const toggleTrackingEntry = useCallback(async (trackableId, isCompleted, value = null) => {
@@ -367,6 +411,162 @@ export function WorkoutProvider({ children }) {
     }
   }, [user]);
 
+  // ============================================
+  // FOOD TRACKING FUNCTIONS
+  // ============================================
+
+  // Create food item
+  const createFoodItem = useCallback(async (foodItem) => {
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('food_items')
+      .insert({
+        user_id: user.id,
+        ...foodItem,
+        order_index: foodItems.length,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setFoodItems(prev => [...prev, data]);
+      return data;
+    }
+    return null;
+  }, [user, foodItems]);
+
+  // Update food item
+  const updateFoodItem = useCallback(async (id, updates) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('food_items')
+      .update(updates)
+      .eq('id', id);
+
+    if (!error) {
+      setFoodItems(prev => prev.map(f => f.id === id ? { ...f, ...updates } : f));
+    }
+  }, [user]);
+
+  // Delete food item
+  const deleteFoodItem = useCallback(async (id) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('food_items')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      setFoodItems(prev => prev.filter(f => f.id !== id));
+    }
+  }, [user]);
+
+  // Toggle food entry (mark as eaten or not)
+  const toggleFoodEntry = useCallback(async (foodItemId, quantity = 1) => {
+    if (!user) return;
+
+    const existing = todayFoodEntries[foodItemId];
+
+    if (existing) {
+      // Toggle off - delete entry
+      const { error } = await supabase
+        .from('food_entries')
+        .delete()
+        .eq('id', existing.id);
+
+      if (!error) {
+        setTodayFoodEntries(prev => {
+          const updated = { ...prev };
+          delete updated[foodItemId];
+          return updated;
+        });
+      }
+    } else {
+      // Create new entry
+      const { data, error } = await supabase
+        .from('food_entries')
+        .insert({
+          user_id: user.id,
+          food_item_id: foodItemId,
+          date: today,
+          quantity,
+          is_completed: true,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setTodayFoodEntries(prev => ({
+          ...prev,
+          [foodItemId]: data,
+        }));
+      }
+    }
+  }, [user, today, todayFoodEntries]);
+
+  // Update food entry quantity
+  const updateFoodEntryQuantity = useCallback(async (foodItemId, quantity) => {
+    if (!user) return;
+
+    const existing = todayFoodEntries[foodItemId];
+
+    if (existing) {
+      const { error } = await supabase
+        .from('food_entries')
+        .update({ quantity })
+        .eq('id', existing.id);
+
+      if (!error) {
+        setTodayFoodEntries(prev => ({
+          ...prev,
+          [foodItemId]: { ...existing, quantity },
+        }));
+      }
+    } else {
+      // Create new entry with quantity
+      const { data, error } = await supabase
+        .from('food_entries')
+        .insert({
+          user_id: user.id,
+          food_item_id: foodItemId,
+          date: today,
+          quantity,
+          is_completed: true,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setTodayFoodEntries(prev => ({
+          ...prev,
+          [foodItemId]: data,
+        }));
+      }
+    }
+  }, [user, today, todayFoodEntries]);
+
+  // Get food entries for a date range
+  const getFoodEntries = useCallback(async (startDate, endDate) => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('food_entries')
+      .select('*, food_items(name, icon, color)')
+      .eq('user_id', user.id)
+      .gte('date', startDate)
+      .lte('date', endDate);
+
+    if (error) {
+      console.error('Error getting food entries:', error);
+      return [];
+    }
+
+    return data || [];
+  }, [user]);
+
   // Update settings
   const updateSettings = useCallback(async (newSettings) => {
     if (!user) return;
@@ -400,6 +600,8 @@ export function WorkoutProvider({ children }) {
     setTrackables([]);
     setTodayEntries({});
     setExerciseHistory({});
+    setFoodItems([]);
+    setTodayFoodEntries({});
   }, []);
 
   return (
@@ -410,12 +612,16 @@ export function WorkoutProvider({ children }) {
         exerciseHistory,
         trackables,
         todayEntries,
+        foodItems,
+        todayFoodEntries,
         settings,
         isLoading,
         today,
         loadExercises,
         loadTrackables,
         loadTodayEntries,
+        loadFoodItems,
+        loadTodayFoodEntries,
         toggleTrackingEntry,
         logExercise,
         getExerciseLogs,
@@ -425,6 +631,12 @@ export function WorkoutProvider({ children }) {
         createTrackable,
         updateTrackable,
         deleteTrackable,
+        createFoodItem,
+        updateFoodItem,
+        deleteFoodItem,
+        toggleFoodEntry,
+        updateFoodEntryQuantity,
+        getFoodEntries,
         updateSettings,
         signIn,
         signUp,

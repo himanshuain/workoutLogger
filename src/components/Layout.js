@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Dumbbell, TrendingUp, History, Settings, ChevronLeft, ChevronRight, Utensils } from 'lucide-react';
+import { Dumbbell, TrendingUp, History, Settings, Utensils } from 'lucide-react';
 
 const tabs = [
   { id: 'today', href: '/', icon: Dumbbell, label: 'Today' },
@@ -16,9 +16,14 @@ export default function Layout({ children }) {
     const tab = tabs.find(t => t.href === router.pathname);
     return tab?.id || 'today';
   });
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-  const contentRef = useRef(null);
+  
+  // Swipe state
+  const touchRef = useRef({
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    isValidSwipe: false,
+  });
 
   // Update active tab when route changes
   useEffect(() => {
@@ -26,40 +31,97 @@ export default function Layout({ children }) {
     if (tab) setActiveTab(tab.id);
   }, [router.pathname]);
 
-  // Swipe detection
-  const minSwipeDistance = 50;
+  // Swipe configuration
+  const config = {
+    minSwipeDistance: 120,    // Minimum horizontal distance for swipe (increased)
+    maxVerticalDistance: 80,  // Maximum vertical movement allowed
+    minVelocity: 0.3,         // Minimum velocity (px/ms)
+    edgeZone: 50,             // Only detect swipes starting from screen edges
+  };
 
   const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+    const touch = e.touches[0];
+    const screenWidth = window.innerWidth;
+    
+    // Only track swipes that start from edge zones
+    const isLeftEdge = touch.clientX < config.edgeZone;
+    const isRightEdge = touch.clientX > screenWidth - config.edgeZone;
+    
+    touchRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: Date.now(),
+      isValidSwipe: isLeftEdge || isRightEdge,
+      startedFromLeft: isLeftEdge,
+      startedFromRight: isRightEdge,
+    };
   };
 
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+  const onTouchEnd = (e) => {
+    const touch = e.changedTouches[0];
+    const { startX, startY, startTime, isValidSwipe, startedFromLeft, startedFromRight } = touchRef.current;
     
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+    // Only process if swipe started from edge
+    if (!isValidSwipe) return;
     
-    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    const endX = touch.clientX;
+    const endY = touch.clientY;
+    const endTime = Date.now();
     
-    if (isLeftSwipe && currentIndex < tabs.length - 1) {
-      // Swipe left = go to next tab
-      const nextTab = tabs[currentIndex + 1];
-      router.push(nextTab.href);
-    } else if (isRightSwipe && currentIndex > 0) {
-      // Swipe right = go to previous tab
-      const prevTab = tabs[currentIndex - 1];
-      router.push(prevTab.href);
+    const distanceX = endX - startX;
+    const distanceY = Math.abs(endY - startY);
+    const duration = endTime - startTime;
+    const velocity = Math.abs(distanceX) / duration;
+    
+    // Validation checks
+    const isHorizontalEnough = distanceY < config.maxVerticalDistance;
+    const isLongEnough = Math.abs(distanceX) > config.minSwipeDistance;
+    const isFastEnough = velocity > config.minVelocity;
+    
+    // Direction checks
+    const isSwipeLeft = distanceX < 0;
+    const isSwipeRight = distanceX > 0;
+    
+    // Only allow swipes in the correct direction from each edge
+    const isValidLeftEdgeSwipe = startedFromLeft && isSwipeRight;
+    const isValidRightEdgeSwipe = startedFromRight && isSwipeLeft;
+    
+    if (isHorizontalEnough && isLongEnough && isFastEnough) {
+      const currentIndex = tabs.findIndex(t => t.id === activeTab);
+      
+      if (isValidRightEdgeSwipe && currentIndex < tabs.length - 1) {
+        // Swipe from right edge going left = next tab
+        const nextTab = tabs[currentIndex + 1];
+        router.push(nextTab.href);
+        
+        if (window.navigator?.vibrate) {
+          window.navigator.vibrate(10);
+        }
+      } else if (isValidLeftEdgeSwipe && currentIndex > 0) {
+        // Swipe from left edge going right = previous tab
+        const prevTab = tabs[currentIndex - 1];
+        router.push(prevTab.href);
+        
+        if (window.navigator?.vibrate) {
+          window.navigator.vibrate(10);
+        }
+      }
     }
+    
+    // Reset
+    touchRef.current = {
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      isValidSwipe: false,
+    };
   };
 
   const handleTabClick = (tab) => {
     router.push(tab.href);
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(5);
+    }
   };
 
   const currentIndex = tabs.findIndex(t => t.id === activeTab);
@@ -107,7 +169,7 @@ export default function Layout({ children }) {
           </div>
         </div>
         
-        {/* Swipe Indicator */}
+        {/* Tab Indicator Dots */}
         <div className="flex justify-center pb-2">
           <div className="flex gap-1.5">
             {tabs.map((tab, i) => (
@@ -124,31 +186,25 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      {/* Main Content with Swipe */}
+      {/* Main Content */}
       <main 
-        ref={contentRef}
         className="flex-1 overflow-auto"
         onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {children}
       </main>
 
-      {/* Swipe Hints (on edges) */}
+      {/* Edge Swipe Indicators */}
       {currentIndex > 0 && (
-        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-30 opacity-0 hover:opacity-100 transition-opacity">
-          <div className="bg-iron-800/80 rounded-r-lg p-1">
-            <ChevronLeft className="w-4 h-4 text-iron-400" />
-          </div>
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+          <div className="w-1 h-16 bg-gradient-to-r from-iron-600/30 to-transparent rounded-r-full" />
         </div>
       )}
       {currentIndex < tabs.length - 1 && (
-        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 opacity-0 hover:opacity-100 transition-opacity">
-          <div className="bg-iron-800/80 rounded-l-lg p-1">
-            <ChevronRight className="w-4 h-4 text-iron-400" />
-          </div>
+        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+          <div className="w-1 h-16 bg-gradient-to-l from-iron-600/30 to-transparent rounded-l-full" />
         </div>
       )}
     </div>

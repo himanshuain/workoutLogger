@@ -32,7 +32,7 @@ const GITHUB_COLORS = {
   habit: ['#161b22', '#0e3d69', '#0969da', '#54aeff', '#79c0ff'],
 };
 
-// Generate grid data
+// Generate grid data - current month first (reversed order)
 function generateGridData(activityData, weeksToShow) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -44,7 +44,7 @@ function generateGridData(activityData, weeksToShow) {
     dataMap.set(item.date, item.count);
   });
 
-  // Calculate the start date
+  // Calculate the start date (oldest date)
   const startDate = new Date(today);
   startDate.setDate(startDate.getDate() - ((weeksToShow - 1) * 7) - today.getDay());
   
@@ -53,6 +53,7 @@ function generateGridData(activityData, weeksToShow) {
   let currentDate = new Date(startDate);
   let lastMonth = -1;
 
+  // Build grid from oldest to newest first
   for (let week = 0; week < weeksToShow; week++) {
     const weekData = [];
     
@@ -72,19 +73,27 @@ function generateGridData(activityData, weeksToShow) {
         dayName: DAYS_FULL[day],
       });
       
-      // Track month changes for labels
-      if (day === 0 && currentDate.getMonth() !== lastMonth) {
-        monthLabels.push({ week, month: MONTHS[currentDate.getMonth()] });
-        lastMonth = currentDate.getMonth();
-      }
-      
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
     grid.push(weekData);
   }
 
-  return { grid, monthLabels };
+  // Reverse the grid so current week is first (on the left)
+  const reversedGrid = [...grid].reverse();
+  
+  // Calculate month labels for reversed grid
+  reversedGrid.forEach((week, weekIndex) => {
+    const firstDayOfWeek = week[0];
+    const monthIndex = firstDayOfWeek.date.getMonth();
+    
+    // Add month label at the start of each month
+    if (weekIndex === 0 || (weekIndex > 0 && reversedGrid[weekIndex - 1][0].date.getMonth() !== monthIndex)) {
+      monthLabels.push({ week: weekIndex, month: MONTHS[monthIndex] });
+    }
+  });
+
+  return { grid: reversedGrid, monthLabels };
 }
 
 export default function ActivityHeatmap({ 

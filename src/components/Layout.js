@@ -12,14 +12,20 @@ export default function Layout({ children }) {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen flex flex-col bg-iron-950">
-      <main className="flex-1 pb-20 overflow-auto">
+    <div className="min-h-screen bg-iron-950">
+      {/* Main content with padding for bottom nav + safe area */}
+      <main className="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
       
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-iron-900/95 backdrop-blur-lg border-t border-iron-800 bottom-nav z-30">
-        <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
+      {/* Bottom Navigation - truly fixed with safe area support */}
+      <nav 
+        className="fixed bottom-0 left-0 right-0 bg-iron-900/98 backdrop-blur-xl border-t border-iron-800 z-50"
+        style={{ 
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
           {navItems.map(({ href, icon: Icon, iconFilled: IconFilled, label }) => {
             const isActive = router.pathname === href;
             const DisplayIcon = isActive ? IconFilled : Icon;
@@ -27,7 +33,7 @@ export default function Layout({ children }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex flex-col items-center justify-center min-w-[64px] h-full transition-colors ${
+                className={`flex flex-col items-center justify-center min-w-[64px] py-2 transition-colors ${
                   isActive ? 'text-lift-primary' : 'text-iron-500'
                 }`}
               >

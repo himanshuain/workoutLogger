@@ -10,10 +10,7 @@ export default function FAB({ onClick, icon = 'plus' }) {
   return (
     <button
       onClick={handleClick}
-      className="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-lift-primary 
-                 flex items-center justify-center shadow-lg shadow-lift-primary/30
-                 active:scale-95 transition-transform z-20
-                 hover:bg-lift-primary/90"
+      className="fab"
       aria-label="Add exercise"
     >
       {icon === 'plus' && (

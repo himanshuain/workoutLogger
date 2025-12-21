@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import { useWorkout } from '@/context/WorkoutContext';
 import ExerciseIcon from '@/components/ExerciseIcon';
@@ -7,32 +8,23 @@ import { Clock, ChevronDown, Dumbbell } from 'lucide-react';
 
 export default function History() {
   const router = useRouter();
-  const { settings, user, getExerciseLogs } = useWorkout();
-  const [logs, setLogs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, getExerciseLogs } = useWorkout();
   const [selectedDate, setSelectedDate] = useState(null);
 
-  useEffect(() => {
-    async function loadLogs() {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+  // Get date range
+  const dateRange = useMemo(() => {
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 3);
+    return { start: startDate.toISOString().split('T')[0], end: endDate };
+  }, []);
 
-      try {
-        const endDate = new Date().toISOString().split('T')[0];
-        const startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 3); // Last 3 months
-        const data = await getExerciseLogs(startDate.toISOString().split('T')[0], endDate);
-        setLogs(data);
-      } catch (err) {
-        console.error('Error loading logs:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadLogs();
-  }, [user, getExerciseLogs]);
+  // TanStack Query for logs
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ['historyLogs', user?.id, dateRange.start, dateRange.end],
+    queryFn: () => getExerciseLogs(dateRange.start, dateRange.end),
+    enabled: !!user,
+  });
 
   // Group logs by date
   const logsByDate = useMemo(() => {
@@ -110,14 +102,14 @@ export default function History() {
 
   return (
     <Layout>
-      <div className="px-4 py-4">
-        {/* Header */}
-        <div className="mb-6">
+      <div className="px-4 py-4 pb-24">
+        {/* Header - Sticky */}
+        <div className="sticky top-0 z-30 bg-iron-950/95 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1">
           <h2 className="text-xl font-bold text-iron-100">History</h2>
           <p className="text-iron-500 text-sm">{sortedDates.length} days logged</p>
         </div>
 
-        <div>
+        <div className="mt-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin w-8 h-8 border-2 border-lift-primary border-t-transparent rounded-full" />
@@ -153,7 +145,7 @@ export default function History() {
                               {formatDate(date)}
                             </h3>
                             <p className="text-iron-500 text-sm">
-                              {stats.exercises} exercise{stats.exercises !== 1 ? 's' : ''} · {stats.totalVolume.toLocaleString()} {settings.unit}
+                              {stats.exercises} exercise{stats.exercises !== 1 ? 's' : ''} · {stats.totalVolume.toLocaleString()} kg
                             </p>
                           </div>
                         </div>
@@ -182,7 +174,7 @@ export default function History() {
                             <div className="flex-1 min-w-0">
                               <p className="text-iron-100 font-medium truncate">{log.exercise_name}</p>
                               <p className="text-iron-500 text-sm">
-                                {log.sets} set{log.sets !== 1 ? 's' : ''} · {log.reps} reps · {log.weight}{settings.unit}
+                                {log.sets} set{log.sets !== 1 ? 's' : ''} · {log.reps} reps · {log.weight}kg
                               </p>
                             </div>
                           </div>

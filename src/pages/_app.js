@@ -1,6 +1,18 @@
 import '@/styles/globals.css';
 import Head from 'next/head';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WorkoutProvider } from '@/context/WorkoutContext';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (was cacheTime in v4)
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 export default function App({ Component, pageProps }) {
   return (
@@ -16,10 +28,11 @@ export default function App({ Component, pageProps }) {
         <link rel="manifest" href="/manifest.json" />
         <title>Logbook</title>
       </Head>
-      <WorkoutProvider>
-        <Component {...pageProps} />
-      </WorkoutProvider>
+      <QueryClientProvider client={queryClient}>
+        <WorkoutProvider>
+          <Component {...pageProps} />
+        </WorkoutProvider>
+      </QueryClientProvider>
     </>
   );
 }
-

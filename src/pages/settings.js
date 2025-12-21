@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import { useWorkout } from '@/context/WorkoutContext';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { User, Weight, Plus, Pencil, Trash2, ChevronDown, Zap, Check } from 'lucide-react';
+import { User, Plus, Pencil, Trash2, ChevronDown, Zap, Check } from 'lucide-react';
 
 const PILL_COLORS = [
   '#22c55e', // green
@@ -21,9 +22,8 @@ const PILL_ICONS = ['💧', '💊', '🥩', '😴', '🧘', '🏃', '💪', '�
 
 export default function Settings() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { 
-    settings, 
-    updateSettings, 
     user, 
     signOut,
     trackables,
@@ -38,7 +38,6 @@ export default function Settings() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTrackable, setEditingTrackable] = useState(null);
   const [expandedHabit, setExpandedHabit] = useState(null);
-  const [habitHeatmapData, setHabitHeatmapData] = useState({});
   const [newPill, setNewPill] = useState({
     name: '',
     type: 'habit',
@@ -56,17 +55,20 @@ export default function Settings() {
     return `${year}-${month}-${day}`;
   };
 
-  // Load heatmap data for all trackables
-  useEffect(() => {
-    async function loadHeatmapData() {
-      if (!user || trackables.length === 0) return;
+  // Get date range
+  const dateRange = useMemo(() => {
+    const startDate = new Date();
+    startDate.setFullYear(startDate.getFullYear() - 1);
+    return { start: getLocalDateStr(startDate), end: today };
+  }, [today]);
 
-      const endDate = today;
-      const startDate = new Date();
-      startDate.setFullYear(startDate.getFullYear() - 1);
-      const startStr = getLocalDateStr(startDate);
-
-      const entries = await getTrackingEntries(startStr, endDate);
+  // TanStack Query for tracking entries
+  const { data: habitHeatmapData = {} } = useQuery({
+    queryKey: ['trackingEntriesForHeatmap', user?.id, dateRange.start, dateRange.end, trackables.length],
+    queryFn: async () => {
+      if (!user || trackables.length === 0) return {};
+      
+      const entries = await getTrackingEntries(dateRange.start, dateRange.end);
       
       // Group by trackable_id
       const dataByTrackable = {};
@@ -84,7 +86,7 @@ export default function Settings() {
       const heatmapData = {};
       
       trackables.forEach(trackable => {
-        const trackableData = dataByTrackable[trackable.id] || {};
+        const trackableData = { ...(dataByTrackable[trackable.id] || {}) };
         
         // Add today's entry from local state if completed
         const todayEntry = todayEntries[trackable.id];
@@ -97,15 +99,10 @@ export default function Settings() {
         );
       });
 
-      setHabitHeatmapData(heatmapData);
-    }
-
-    loadHeatmapData();
-  }, [user, trackables, today, todayEntries, getTrackingEntries]);
-
-  const handleUnitChange = (unit) => {
-    updateSettings({ unit });
-  };
+      return heatmapData;
+    },
+    enabled: !!user && trackables.length > 0,
+  });
 
   const handleSavePill = async () => {
     if (!newPill.name.trim()) return;
@@ -116,6 +113,8 @@ export default function Settings() {
       await createTrackable(newPill);
     }
 
+    queryClient.invalidateQueries(['trackingEntriesForHeatmap']);
+    
     setShowAddModal(false);
     setEditingTrackable(null);
     setNewPill({
@@ -144,6 +143,7 @@ export default function Settings() {
   const handleDeletePill = async (id) => {
     if (confirm('Delete this trackable?')) {
       await deleteTrackable(id);
+      queryClient.invalidateQueries(['trackingEntriesForHeatmap']);
     }
   };
 
@@ -170,13 +170,13 @@ export default function Settings() {
 
   return (
     <Layout>
-      <div className="px-4 py-4">
-        {/* Header */}
-        <div className="mb-6">
+      <div className="px-4 py-4 pb-24">
+        {/* Header - Sticky */}
+        <div className="sticky top-0 z-30 bg-iron-950/95 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1">
           <h2 className="text-xl font-bold text-iron-100">Settings</h2>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           {/* Account */}
           <section>
             <h3 className="text-xs font-medium text-iron-500 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -204,38 +204,6 @@ export default function Settings() {
                          active:bg-iron-700 transition-colors"
               >
                 Sign Out
-              </button>
-            </div>
-          </section>
-
-          {/* Units */}
-          <section>
-            <h3 className="text-xs font-medium text-iron-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Weight className="w-3.5 h-3.5" />
-              Units
-            </h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleUnitChange('kg')}
-                className={`flex-1 py-3.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                  settings.unit === 'kg'
-                    ? 'bg-lift-primary text-iron-950'
-                    : 'bg-iron-900 text-iron-400'
-                }`}
-              >
-                {settings.unit === 'kg' && <Check className="w-4 h-4" />}
-                Kilograms (kg)
-              </button>
-              <button
-                onClick={() => handleUnitChange('lb')}
-                className={`flex-1 py-3.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
-                  settings.unit === 'lb'
-                    ? 'bg-lift-primary text-iron-950'
-                    : 'bg-iron-900 text-iron-400'
-                }`}
-              >
-                {settings.unit === 'lb' && <Check className="w-4 h-4" />}
-                Pounds (lb)
               </button>
             </div>
           </section>
@@ -361,7 +329,7 @@ export default function Settings() {
               <Zap className="w-8 h-8 text-iron-950" />
             </div>
             <h3 className="text-iron-100 font-bold text-lg">Logbook</h3>
-            <p className="text-iron-500 text-sm">Version 2.0.0</p>
+            <p className="text-iron-500 text-sm">Version 2.1.0</p>
             <p className="text-iron-600 text-xs mt-2">Simple workout & habit tracking</p>
           </section>
         </div>
@@ -489,7 +457,7 @@ export default function Settings() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2 pb-safe">
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-3.5 rounded-xl bg-iron-800 text-iron-400 font-medium"

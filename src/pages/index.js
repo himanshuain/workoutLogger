@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useWorkout } from '@/context/WorkoutContext';
 import Layout from '@/components/Layout';
 import HabitPills from '@/components/HabitPills';
@@ -8,17 +9,17 @@ import ExerciseAutocomplete from '@/components/ExerciseAutocomplete';
 import QuickStats from '@/components/QuickStats';
 import LogCard from '@/components/LogCard';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { Plus, Dumbbell, Sparkles, RefreshCw, Calendar } from 'lucide-react';
+import { Plus, Dumbbell, Sparkles, RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const {
     user,
     exercises,
     exerciseHistory,
     trackables,
     todayEntries,
-    settings,
     isLoading,
     today,
     toggleTrackingEntry,
@@ -27,26 +28,22 @@ export default function Home() {
     deleteExerciseLog,
   } = useWorkout();
 
-  const [todayLogs, setTodayLogs] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Load today's exercise logs
-  const loadTodayLogs = useCallback(async () => {
-    if (!user) return;
-    const logs = await getTodayExerciseLogs();
-    setTodayLogs(logs || []);
-  }, [user, getTodayExerciseLogs]);
-
-  useEffect(() => {
-    loadTodayLogs();
-  }, [loadTodayLogs]);
+  // TanStack Query for today's logs
+  const { data: todayLogs = [], refetch: refetchTodayLogs } = useQuery({
+    queryKey: ['todayLogs', user?.id, today],
+    queryFn: () => getTodayExerciseLogs(),
+    enabled: !!user,
+  });
 
   // Refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await loadTodayLogs();
+    await refetchTodayLogs();
+    queryClient.invalidateQueries(['exerciseLogs']);
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }
@@ -116,10 +113,11 @@ export default function Home() {
   const handleLogExercise = async ({ weight, reps, sets }) => {
     if (!selectedExercise) return;
     
-    const log = await logExercise(selectedExercise, { weight, reps, sets });
-    if (log) {
-      setTodayLogs(prev => [log, ...prev]);
-    }
+    await logExercise(selectedExercise, { weight, reps, sets });
+    // Invalidate and refetch
+    queryClient.invalidateQueries(['todayLogs']);
+    queryClient.invalidateQueries(['exerciseLogs']);
+    queryClient.invalidateQueries(['todayExerciseLogs']);
     setSelectedExercise(null);
   };
 
@@ -132,7 +130,9 @@ export default function Home() {
     for (const log of logsToDelete) {
       await deleteExerciseLog?.(log.id);
     }
-    setTodayLogs(prev => prev.filter(l => l.exercise_name !== exerciseName));
+    // Invalidate and refetch
+    queryClient.invalidateQueries(['todayLogs']);
+    queryClient.invalidateQueries(['exerciseLogs']);
   };
 
   if (isLoading) {
@@ -170,7 +170,7 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 pb-24">
         {/* Date Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -232,7 +232,7 @@ export default function Home() {
                   sets={group.totalSets}
                   totalReps={group.totalReps}
                   weightRange={group.weightRange}
-                  unit={settings.unit}
+                  unit="kg"
                   onEdit={() => {
                     const exercise = exercises.find(e => e.name === group.exerciseName);
                     if (exercise) setSelectedExercise(exercise);
@@ -293,7 +293,7 @@ export default function Home() {
         isOpen={!!selectedExercise}
         exercise={selectedExercise}
         history={selectedExercise ? exerciseHistory[selectedExercise.name] : null}
-        unit={settings.unit}
+        unit="kg"
         onClose={() => setSelectedExercise(null)}
         onLog={handleLogExercise}
       />

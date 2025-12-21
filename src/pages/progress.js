@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { useQuery } from '@tanstack/react-query';
 import { useWorkout } from '@/context/WorkoutContext';
 import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import ProgressGraph from '@/components/ProgressGraph';
-import { TrendingUp, Calendar, Flame, Target, ChevronDown, Dumbbell } from 'lucide-react';
+import CollapsibleSection from '@/components/CollapsibleSection';
+import { TrendingUp, Calendar, Flame, Target, ChevronDown, Dumbbell, BarChart3 } from 'lucide-react';
 
 export default function Progress() {
   const router = useRouter();
@@ -14,19 +16,12 @@ export default function Progress() {
     todayEntries,
     isLoading,
     today,
-    settings,
     getExerciseLogs,
     getTrackingEntries,
     getTodayExerciseLogs,
   } = useWorkout();
 
-  const [workoutData, setWorkoutData] = useState([]);
-  const [habitData, setHabitData] = useState([]);
-  const [habitDataByTrackable, setHabitDataByTrackable] = useState({});
-  const [todayLogs, setTodayLogs] = useState([]);
   const [expandedHabit, setExpandedHabit] = useState(null);
-  const [exerciseLogsByName, setExerciseLogsByName] = useState({});
-  const [allExerciseLogs, setAllExerciseLogs] = useState([]);
 
   // Helper function for local date formatting
   const getLocalDateStr = (date = new Date()) => {
@@ -36,55 +31,49 @@ export default function Progress() {
     return `${year}-${month}-${day}`;
   };
 
-  // Load all heatmap data
-  useEffect(() => {
-    async function loadData() {
-      if (!user) return;
+  // Get date range for queries
+  const startDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return getLocalDateStr(d);
+  }, []);
 
-      const endDate = today;
-      const startDate = new Date();
-      startDate.setFullYear(startDate.getFullYear() - 1);
-      const startStr = getLocalDateStr(startDate);
-
-      // Get exercise logs
-      const exerciseLogs = await getExerciseLogs(startStr, endDate);
-      setAllExerciseLogs(exerciseLogs);
-      
+  // TanStack Query for exercise logs
+  const { data: exerciseData } = useQuery({
+    queryKey: ['exerciseLogs', user?.id, startDate, today],
+    queryFn: async () => {
+      const logs = await getExerciseLogs(startDate, today);
       const workoutByDate = {};
       const byExerciseName = {};
       
-      exerciseLogs.forEach(log => {
+      logs.forEach(log => {
         workoutByDate[log.date] = (workoutByDate[log.date] || 0) + 1;
-        
-        // Group by exercise name for progress graphs
         if (!byExerciseName[log.exercise_name]) {
           byExerciseName[log.exercise_name] = [];
         }
         byExerciseName[log.exercise_name].push(log);
       });
       
-      setExerciseLogsByName(byExerciseName);
-      setWorkoutData(
-        Object.entries(workoutByDate).map(([date, count]) => ({ date, count }))
-      );
+      return {
+        workoutData: Object.entries(workoutByDate).map(([date, count]) => ({ date, count })),
+        exerciseLogsByName: byExerciseName,
+      };
+    },
+    enabled: !!user,
+  });
 
-      // Get tracking entries
-      const trackingEntries = await getTrackingEntries(startStr, endDate);
-      
-      // Aggregate all habits
+  // TanStack Query for tracking entries
+  const { data: habitData } = useQuery({
+    queryKey: ['trackingEntries', user?.id, startDate, today],
+    queryFn: async () => {
+      const entries = await getTrackingEntries(startDate, today);
       const habitByDate = {};
-      trackingEntries.forEach(entry => {
+      const byTrackable = {};
+
+      entries.forEach(entry => {
         if (entry.is_completed) {
           habitByDate[entry.date] = (habitByDate[entry.date] || 0) + 1;
         }
-      });
-      setHabitData(
-        Object.entries(habitByDate).map(([date, count]) => ({ date, count }))
-      );
-
-      // Group by trackable for individual heatmaps
-      const byTrackable = {};
-      trackingEntries.forEach(entry => {
         if (!byTrackable[entry.trackable_id]) {
           byTrackable[entry.trackable_id] = {};
         }
@@ -93,41 +82,30 @@ export default function Progress() {
         }
       });
 
-      // Include today's local state
-      trackables.forEach(t => {
-        const todayEntry = todayEntries[t.id];
-        if (todayEntry?.is_completed) {
-          if (!byTrackable[t.id]) byTrackable[t.id] = {};
-          byTrackable[t.id][today] = 1;
-        }
-      });
+      return {
+        habitByDate: Object.entries(habitByDate).map(([date, count]) => ({ date, count })),
+        habitDataByTrackable: Object.fromEntries(
+          Object.entries(byTrackable).map(([id, dates]) => [
+            id,
+            Object.entries(dates).map(([date, count]) => ({ date, count }))
+          ])
+        ),
+      };
+    },
+    enabled: !!user,
+  });
 
-      const formatted = {};
-      Object.keys(byTrackable).forEach(id => {
-        formatted[id] = Object.entries(byTrackable[id]).map(
-          ([date, count]) => ({ date, count })
-        );
-      });
-      setHabitDataByTrackable(formatted);
-    }
+  // TanStack Query for today's logs
+  const { data: todayLogs = [] } = useQuery({
+    queryKey: ['todayExerciseLogs', user?.id, today],
+    queryFn: () => getTodayExerciseLogs(),
+    enabled: !!user,
+  });
 
-    loadData();
-  }, [user, today, trackables, todayEntries, getExerciseLogs, getTrackingEntries]);
-
-  // Load today's exercise logs
-  useEffect(() => {
-    async function loadTodayLogs() {
-      if (!user) return;
-      const logs = await getTodayExerciseLogs();
-      setTodayLogs(logs);
-    }
-    loadTodayLogs();
-  }, [user, getTodayExerciseLogs]);
-
-  // Include today's logs in workout data
+  // Computed values
   const workoutHeatmapData = useMemo(() => {
     const dataMap = new Map();
-    workoutData.forEach(item => {
+    (exerciseData?.workoutData || []).forEach(item => {
       if (item.date !== today) {
         dataMap.set(item.date, item.count);
       }
@@ -136,12 +114,11 @@ export default function Progress() {
       dataMap.set(today, todayLogs.length);
     }
     return Array.from(dataMap.entries()).map(([date, count]) => ({ date, count }));
-  }, [workoutData, todayLogs, today]);
+  }, [exerciseData?.workoutData, todayLogs, today]);
 
-  // Include today in habit data
   const habitHeatmapData = useMemo(() => {
     const dataMap = new Map();
-    habitData.forEach(item => {
+    (habitData?.habitByDate || []).forEach(item => {
       if (item.date !== today) {
         dataMap.set(item.date, item.count);
       }
@@ -151,7 +128,25 @@ export default function Progress() {
       dataMap.set(today, todayCount);
     }
     return Array.from(dataMap.entries()).map(([date, count]) => ({ date, count }));
-  }, [habitData, todayEntries, today]);
+  }, [habitData?.habitByDate, todayEntries, today]);
+
+  // Add today's entries to habit data by trackable
+  const habitDataByTrackable = useMemo(() => {
+    const data = { ...(habitData?.habitDataByTrackable || {}) };
+    trackables.forEach(t => {
+      const todayEntry = todayEntries[t.id];
+      if (todayEntry?.is_completed) {
+        if (!data[t.id]) data[t.id] = [];
+        const existing = data[t.id].find(d => d.date === today);
+        if (!existing) {
+          data[t.id] = [...data[t.id], { date: today, count: 1 }];
+        }
+      }
+    });
+    return data;
+  }, [habitData?.habitDataByTrackable, todayEntries, trackables, today]);
+
+  const exerciseLogsByName = exerciseData?.exerciseLogsByName || {};
 
   // Stats calculations
   const stats = useMemo(() => {
@@ -162,9 +157,6 @@ export default function Progress() {
 
     const workoutsThisMonth = workoutHeatmapData.filter(d => d.date.startsWith(thisMonth)).length;
     const workoutsLastMonth = workoutHeatmapData.filter(d => d.date.startsWith(lastMonthStr)).length;
-    
-    const habitsThisMonth = habitHeatmapData.filter(d => d.date.startsWith(thisMonth))
-      .reduce((sum, d) => sum + d.count, 0);
     
     // Current streak calculation
     let streak = 0;
@@ -186,11 +178,10 @@ export default function Progress() {
     return {
       workoutsThisMonth,
       workoutsLastMonth,
-      habitsThisMonth,
       currentStreak: streak,
       totalWorkouts: workoutHeatmapData.length,
     };
-  }, [workoutHeatmapData, habitHeatmapData]);
+  }, [workoutHeatmapData]);
 
   if (isLoading) {
     return (
@@ -220,14 +211,14 @@ export default function Progress() {
 
   return (
     <Layout>
-      <div className="px-4 py-4">
-        {/* Header */}
-        <div className="mb-6">
+      <div className="px-4 py-4 pb-24">
+        {/* Header - Sticky */}
+        <div className="sticky top-0 z-30 bg-iron-950/95 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1">
           <h2 className="text-xl font-bold text-iron-100">Progress</h2>
           <p className="text-iron-500 text-sm mt-1">Your activity over time</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           {/* Quick Stats */}
           <section className="grid grid-cols-2 gap-3">
             <div className="bg-iron-900/50 rounded-2xl p-4">
@@ -280,87 +271,85 @@ export default function Progress() {
             subtitle={`${Object.values(todayEntries).filter(e => e.is_completed).length}/${trackables.length} completed today`}
           />
 
-          {/* Exercise Progress Graphs */}
+          {/* Exercise Progress Graphs - Collapsible */}
           {Object.keys(exerciseLogsByName).length > 0 && (
-            <section>
-              <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider flex items-center gap-2">
-                <Dumbbell className="w-3.5 h-3.5" />
-                Progressive Overload
-              </h2>
-              <div className="space-y-3">
-                {Object.entries(exerciseLogsByName)
-                  .sort((a, b) => b[1].length - a[1].length) // Sort by most logged
-                  .slice(0, 10) // Show top 10 exercises
-                  .map(([exerciseName, logs]) => (
-                    <ProgressGraph
-                      key={exerciseName}
-                      exerciseName={exerciseName}
-                      exerciseCategory={logs[0]?.category}
-                      data={logs}
-                      unit={settings?.unit || 'kg'}
-                      compact={true}
-                    />
-                  ))
-                }
-              </div>
-            </section>
+            <CollapsibleSection
+              title="Progressive Overload"
+              icon={Dumbbell}
+              count={Object.keys(exerciseLogsByName).length}
+              defaultOpen={false}
+            >
+              {Object.entries(exerciseLogsByName)
+                .sort((a, b) => b[1].length - a[1].length)
+                .slice(0, 10)
+                .map(([exerciseName, logs]) => (
+                  <ProgressGraph
+                    key={exerciseName}
+                    exerciseName={exerciseName}
+                    exerciseCategory={logs[0]?.category}
+                    data={logs}
+                    unit="kg"
+                    compact={true}
+                  />
+                ))
+              }
+            </CollapsibleSection>
           )}
 
-          {/* Individual Habit Heatmaps */}
+          {/* Individual Habit Heatmaps - Collapsible */}
           {trackables.length > 0 && (
-            <section>
-              <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider">
-                Habit Breakdown
-              </h2>
-              <div className="space-y-3">
-                {trackables.map(trackable => {
-                  const isExpanded = expandedHabit === trackable.id;
-                  const data = habitDataByTrackable[trackable.id] || [];
-                  const daysTracked = data.length;
+            <CollapsibleSection
+              title="Habit Breakdown"
+              icon={BarChart3}
+              count={trackables.length}
+              defaultOpen={false}
+            >
+              {trackables.map(trackable => {
+                const isExpanded = expandedHabit === trackable.id;
+                const data = habitDataByTrackable[trackable.id] || [];
+                const daysTracked = data.length;
 
-                  return (
-                    <div key={trackable.id} className="bg-iron-900/50 rounded-2xl overflow-hidden">
-                      <button
-                        onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
-                        className="w-full p-4 flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                            style={{ backgroundColor: `${trackable.color}30` }}
-                          >
-                            {trackable.icon}
-                          </div>
-                          <div className="text-left">
-                            <p className="text-iron-100 font-medium">{trackable.name}</p>
-                            <p className="text-iron-500 text-xs">{daysTracked} days tracked</p>
-                          </div>
+                return (
+                  <div key={trackable.id} className="bg-iron-900/30 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
+                      className="w-full p-3 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-base"
+                          style={{ backgroundColor: `${trackable.color}30` }}
+                        >
+                          {trackable.icon}
                         </div>
-                        <ChevronDown 
-                          className={`w-5 h-5 text-iron-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        <div className="text-left">
+                          <p className="text-iron-100 font-medium text-sm">{trackable.name}</p>
+                          <p className="text-iron-500 text-xs">{daysTracked} days</p>
+                        </div>
+                      </div>
+                      <ChevronDown 
+                        className={`w-4 h-4 text-iron-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="px-3 pb-3">
+                        <ActivityHeatmap
+                          data={data}
+                          type="habit"
+                          label=""
+                          color={trackable.color}
+                          compact={true}
                         />
-                      </button>
-
-                      {isExpanded && (
-                        <div className="px-4 pb-4">
-                          <ActivityHeatmap
-                            data={data}
-                            type="habit"
-                            label=""
-                            color={trackable.color}
-                            compact={true}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </CollapsibleSection>
           )}
         </div>
       </div>
     </Layout>
   );
 }
-

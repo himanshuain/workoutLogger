@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useWorkout } from '@/context/WorkoutContext';
@@ -9,7 +9,14 @@ import ExerciseAutocomplete from '@/components/ExerciseAutocomplete';
 import QuickStats from '@/components/QuickStats';
 import LogCard from '@/components/LogCard';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { Plus, Dumbbell, Sparkles, RefreshCw } from 'lucide-react';
+import { Plus, Dumbbell, Sparkles, RefreshCw, Check } from 'lucide-react';
+
+const PILL_COLORS = [
+  '#22c55e', '#3b82f6', '#8b5cf6', '#ef4444', 
+  '#f59e0b', '#14b8a6', '#ec4899', '#6366f1',
+];
+
+const PILL_ICONS = ['💧', '💊', '🥩', '😴', '🧘', '🏃', '💪', '🍎', '☀️', '🧠', '❤️', '⚡'];
 
 export default function Home() {
   const router = useRouter();
@@ -26,11 +33,21 @@ export default function Home() {
     logExercise,
     getTodayExerciseLogs,
     deleteExerciseLog,
+    createTrackable,
   } = useWorkout();
 
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAddHabitDrawer, setShowAddHabitDrawer] = useState(false);
+  const [newHabit, setNewHabit] = useState({
+    name: '',
+    type: 'habit',
+    icon: '💧',
+    color: '#22c55e',
+    has_value: false,
+    value_unit: '',
+  });
 
   // TanStack Query for today's logs
   const { data: todayLogs = [], refetch: refetchTodayLogs } = useQuery({
@@ -114,7 +131,6 @@ export default function Home() {
     if (!selectedExercise) return;
     
     await logExercise(selectedExercise, { weight, reps, sets });
-    // Invalidate and refetch
     queryClient.invalidateQueries(['todayLogs']);
     queryClient.invalidateQueries(['exerciseLogs']);
     queryClient.invalidateQueries(['todayExerciseLogs']);
@@ -130,9 +146,27 @@ export default function Home() {
     for (const log of logsToDelete) {
       await deleteExerciseLog?.(log.id);
     }
-    // Invalidate and refetch
     queryClient.invalidateQueries(['todayLogs']);
     queryClient.invalidateQueries(['exerciseLogs']);
+  };
+
+  const handleSaveHabit = async () => {
+    if (!newHabit.name.trim()) return;
+    
+    await createTrackable(newHabit);
+    setShowAddHabitDrawer(false);
+    setNewHabit({
+      name: '',
+      type: 'habit',
+      icon: '💧',
+      color: '#22c55e',
+      has_value: false,
+      value_unit: '',
+    });
+    
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(10);
+    }
   };
 
   if (isLoading) {
@@ -203,7 +237,7 @@ export default function Home() {
             trackables={trackables}
             entries={todayEntries}
             onToggle={handleToggleHabit}
-            onAddNew={() => router.push('/settings#habits')}
+            onAddNew={() => setShowAddHabitDrawer(true)}
           />
         </section>
 
@@ -297,6 +331,149 @@ export default function Home() {
         onClose={() => setSelectedExercise(null)}
         onLog={handleLogExercise}
       />
+
+      {/* Add Habit Drawer */}
+      <Drawer open={showAddHabitDrawer} onOpenChange={setShowAddHabitDrawer}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Add New Habit</DrawerTitle>
+          </DrawerHeader>
+
+          <div className="px-4 pb-4 space-y-4 overflow-y-auto max-h-[60vh]">
+            {/* Name */}
+            <div>
+              <label className="block text-iron-400 text-sm mb-2">Name</label>
+              <input
+                type="text"
+                value={newHabit.name}
+                onChange={(e) => setNewHabit({ ...newHabit, name: e.target.value })}
+                placeholder="e.g., Water, Sleep, Creatine"
+                className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
+                         placeholder-iron-600 outline-none focus:ring-2 focus:ring-lift-primary/50"
+                autoFocus
+              />
+            </div>
+
+            {/* Type */}
+            <div>
+              <label className="block text-iron-400 text-sm mb-2">Type</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setNewHabit({ ...newHabit, type: 'habit', has_value: false })}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                    newHabit.type === 'habit'
+                      ? 'bg-lift-primary text-iron-950'
+                      : 'bg-iron-800 text-iron-400'
+                  }`}
+                >
+                  {newHabit.type === 'habit' && <Check className="w-4 h-4" />}
+                  Habit (Yes/No)
+                </button>
+                <button
+                  onClick={() => setNewHabit({ ...newHabit, type: 'health', has_value: true })}
+                  className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                    newHabit.type === 'health'
+                      ? 'bg-lift-primary text-iron-950'
+                      : 'bg-iron-800 text-iron-400'
+                  }`}
+                >
+                  {newHabit.type === 'health' && <Check className="w-4 h-4" />}
+                  Health (Value)
+                </button>
+              </div>
+            </div>
+
+            {/* Value Unit (for health type) */}
+            {newHabit.type === 'health' && (
+              <div>
+                <label className="block text-iron-400 text-sm mb-2">Unit</label>
+                <input
+                  type="text"
+                  value={newHabit.value_unit}
+                  onChange={(e) => setNewHabit({ ...newHabit, value_unit: e.target.value })}
+                  placeholder="e.g., hours, liters, 1-10"
+                  className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
+                           placeholder-iron-600 outline-none focus:ring-2 focus:ring-lift-primary/50"
+                />
+              </div>
+            )}
+
+            {/* Icon */}
+            <div>
+              <label className="block text-iron-400 text-sm mb-2">Icon</label>
+              <div className="flex flex-wrap gap-2">
+                {PILL_ICONS.map(icon => (
+                  <button
+                    key={icon}
+                    onClick={() => setNewHabit({ ...newHabit, icon })}
+                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center
+                      ${newHabit.icon === icon 
+                        ? 'bg-iron-700 ring-2 ring-lift-primary' 
+                        : 'bg-iron-800'
+                      }`}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Color */}
+            <div>
+              <label className="block text-iron-400 text-sm mb-2">Color</label>
+              <div className="flex flex-wrap gap-2">
+                {PILL_COLORS.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => setNewHabit({ ...newHabit, color })}
+                    className={`w-10 h-10 rounded-xl transition-transform ${
+                      newHabit.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-iron-900 scale-110' : ''
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="p-4 bg-iron-800/50 rounded-xl">
+              <p className="text-iron-500 text-xs mb-2">Preview</p>
+              <div 
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-iron-950 font-medium"
+                style={{ backgroundColor: newHabit.color }}
+              >
+                <span>{newHabit.icon}</span>
+                <Check className="w-4 h-4" />
+                <span>{newHabit.name || 'Name'}</span>
+                {newHabit.has_value && (
+                  <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded-full">
+                    8 {newHabit.value_unit}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2 pb-safe">
+              <button
+                onClick={() => setShowAddHabitDrawer(false)}
+                className="flex-1 py-3.5 rounded-xl bg-iron-800 text-iron-400 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveHabit}
+                disabled={!newHabit.name.trim()}
+                className="flex-1 py-3.5 rounded-xl bg-lift-primary text-iron-950 font-bold
+                         disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                Add Habit
+              </button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </Layout>
   );
 }

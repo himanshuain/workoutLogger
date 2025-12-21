@@ -6,6 +6,7 @@ import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import ProgressGraph from '@/components/ProgressGraph';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import TrackingOverview from '@/components/TrackingOverview';
 import { TrendingUp, Calendar, Flame, Target, ChevronDown, Dumbbell, BarChart3 } from 'lucide-react';
 
 export default function Progress() {
@@ -14,11 +15,14 @@ export default function Progress() {
     user,
     trackables,
     todayEntries,
+    foodItems,
+    todayFoodEntries,
     isLoading,
     today,
     getExerciseLogs,
     getTrackingEntries,
     getTodayExerciseLogs,
+    getFoodEntries,
   } = useWorkout();
 
   const [expandedHabit, setExpandedHabit] = useState(null);
@@ -57,6 +61,7 @@ export default function Progress() {
       return {
         workoutData: Object.entries(workoutByDate).map(([date, count]) => ({ date, count })),
         exerciseLogsByName: byExerciseName,
+        allLogs: logs,
       };
     },
     enabled: !!user,
@@ -86,6 +91,32 @@ export default function Progress() {
         habitByDate: Object.entries(habitByDate).map(([date, count]) => ({ date, count })),
         habitDataByTrackable: Object.fromEntries(
           Object.entries(byTrackable).map(([id, dates]) => [
+            id,
+            Object.entries(dates).map(([date, count]) => ({ date, count }))
+          ])
+        ),
+      };
+    },
+    enabled: !!user,
+  });
+
+  // TanStack Query for food entries
+  const { data: foodData } = useQuery({
+    queryKey: ['foodEntries', user?.id, startDate, today],
+    queryFn: async () => {
+      const entries = await getFoodEntries(startDate, today);
+      const byItem = {};
+
+      entries.forEach(entry => {
+        if (!byItem[entry.food_item_id]) {
+          byItem[entry.food_item_id] = {};
+        }
+        byItem[entry.food_item_id][entry.date] = entry.quantity || 1;
+      });
+
+      return {
+        foodDataByItem: Object.fromEntries(
+          Object.entries(byItem).map(([id, dates]) => [
             id,
             Object.entries(dates).map(([date, count]) => ({ date, count }))
           ])
@@ -145,6 +176,19 @@ export default function Progress() {
     });
     return data;
   }, [habitData?.habitDataByTrackable, todayEntries, trackables, today]);
+
+  // Add today's food entries
+  const foodDataByItem = useMemo(() => {
+    const data = { ...(foodData?.foodDataByItem || {}) };
+    Object.entries(todayFoodEntries).forEach(([itemId, entry]) => {
+      if (!data[itemId]) data[itemId] = [];
+      const existing = data[itemId].find(d => d.date === today);
+      if (!existing) {
+        data[itemId] = [...data[itemId], { date: today, count: entry.quantity || 1 }];
+      }
+    });
+    return data;
+  }, [foodData?.foodDataByItem, todayFoodEntries, today]);
 
   const exerciseLogsByName = exerciseData?.exerciseLogsByName || {};
 
@@ -254,6 +298,20 @@ export default function Progress() {
               <p className="text-iron-500 text-sm">workout days</p>
             </div>
           </section>
+
+          {/* Weekly Overview Table */}
+          <TrackingOverview
+            trackables={trackables}
+            habitDataByTrackable={habitDataByTrackable}
+            todayEntries={todayEntries}
+            exerciseLogsByName={exerciseLogsByName}
+            workoutData={workoutHeatmapData}
+            foodItems={foodItems}
+            foodDataByItem={foodDataByItem}
+            todayFoodEntries={todayFoodEntries}
+            today={today}
+            days={7}
+          />
 
           {/* Workout Heatmap */}
           <ActivityHeatmap

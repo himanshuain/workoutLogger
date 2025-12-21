@@ -5,7 +5,9 @@ import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import { useWorkout } from '@/context/WorkoutContext';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { User, Plus, Pencil, Trash2, ChevronDown, Zap, Check } from 'lucide-react';
+import { User, Plus, Pencil, Trash2, ChevronDown, Zap, Check, Bell, BellRing } from 'lucide-react';
+import NotificationSettings from '@/components/NotificationSettings';
+import NotificationService from '@/lib/notifications';
 
 const PILL_COLORS = [
   '#22c55e', // green
@@ -38,6 +40,7 @@ export default function Settings() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTrackable, setEditingTrackable] = useState(null);
   const [expandedHabit, setExpandedHabit] = useState(null);
+  const [notificationTrackable, setNotificationTrackable] = useState(null);
   const [newPill, setNewPill] = useState({
     name: '',
     type: 'habit',
@@ -265,6 +268,19 @@ export default function Settings() {
                       </button>
                       <div className="flex items-center gap-1 ml-2">
                         <button
+                          onClick={() => setNotificationTrackable(trackable)}
+                          className={`p-2 rounded-lg active:bg-iron-800 ${
+                            NotificationService.getSchedule(trackable.id)?.enabled
+                              ? 'text-lift-primary'
+                              : 'text-iron-500 hover:text-iron-300'
+                          }`}
+                        >
+                          {NotificationService.getSchedule(trackable.id)?.enabled 
+                            ? <BellRing className="w-4 h-4" />
+                            : <Bell className="w-4 h-4" />
+                          }
+                        </button>
+                        <button
                           onClick={() => handleEditPill(trackable)}
                           className="p-2 text-iron-500 hover:text-iron-300 active:bg-iron-800 rounded-lg"
                         >
@@ -477,6 +493,14 @@ export default function Settings() {
             </div>
           </DrawerContent>
         </Drawer>
+
+        {/* Notification Settings */}
+        {notificationTrackable && (
+          <NotificationSettings
+            trackable={notificationTrackable}
+            onClose={() => setNotificationTrackable(null)}
+          />
+        )}
       </div>
     </Layout>
   );

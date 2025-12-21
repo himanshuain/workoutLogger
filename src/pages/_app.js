@@ -1,13 +1,15 @@
 import '@/styles/globals.css';
+import { useEffect } from 'react';
 import Head from 'next/head';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WorkoutProvider } from '@/context/WorkoutContext';
+import NotificationService from '@/lib/notifications';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (was cacheTime in v4)
+      gcTime: 1000 * 60 * 30, // 30 minutes
       refetchOnWindowFocus: false,
       retry: 1,
     },
@@ -15,6 +17,26 @@ const queryClient = new QueryClient({
 });
 
 export default function App({ Component, pageProps }) {
+  // Register service worker and start notification checker
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker registered:', registration.scope);
+        })
+        .catch((error) => {
+          console.log('Service Worker registration failed:', error);
+        });
+
+      // Start notification schedule checker
+      NotificationService.startScheduleChecker();
+
+      return () => {
+        NotificationService.stopScheduleChecker();
+      };
+    }
+  }, []);
+
   return (
     <>
       <Head>

@@ -4,9 +4,11 @@ import { useWorkout } from '@/context/WorkoutContext';
 import Layout from '@/components/Layout';
 import HabitPills from '@/components/HabitPills';
 import ExerciseLogModal from '@/components/ExerciseLogModal';
+import ExerciseAutocomplete from '@/components/ExerciseAutocomplete';
 import QuickStats from '@/components/QuickStats';
-import FAB from '@/components/FAB';
 import LogCard from '@/components/LogCard';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Plus, Dumbbell, Sparkles, RefreshCw, Calendar } from 'lucide-react';
 
 export default function Home() {
   const router = useRouter();
@@ -27,15 +29,8 @@ export default function Home() {
 
   const [todayLogs, setTodayLogs] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState(null);
-  const [showAllExercises, setShowAllExercises] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const [editingLog, setEditingLog] = useState(null);
-
-  // Pull to refresh handling
-  const pullStartY = useState(0);
-  const isPulling = useState(false);
 
   // Load today's exercise logs
   const loadTodayLogs = useCallback(async () => {
@@ -52,35 +47,10 @@ export default function Home() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await loadTodayLogs();
-    // Haptic feedback
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }
     setTimeout(() => setIsRefreshing(false), 500);
-  };
-
-  // Pull to refresh handlers
-  const handleTouchStart = (e) => {
-    if (window.scrollY === 0) {
-      pullStartY[1](e.touches[0].clientY);
-      isPulling[1](true);
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isPulling[0] || window.scrollY > 0) return;
-    const diff = e.touches[0].clientY - pullStartY[0];
-    if (diff > 0) {
-      setPullDistance(Math.min(diff * 0.5, 80));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (pullDistance > 60) {
-      handleRefresh();
-    }
-    setPullDistance(0);
-    isPulling[1](false);
   };
 
   // Group logs by exercise name
@@ -111,31 +81,16 @@ export default function Home() {
     }));
   }, [todayLogs]);
 
-  // Filter exercises by category
-  const filteredExercises = useMemo(() => {
-    if (selectedCategory === 'all') return exercises;
-    return exercises.filter(e => e.category === selectedCategory);
-  }, [exercises, selectedCategory]);
-
-  // Get unique categories with counts
-  const categories = useMemo(() => {
-    const catCounts = {};
-    exercises.forEach(e => {
-      const cat = e.category || 'other';
-      catCounts[cat] = (catCounts[cat] || 0) + 1;
-    });
-    return [
-      { name: 'all', count: exercises.length },
-      ...Object.entries(catCounts)
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([name, count]) => ({ name, count }))
-    ];
-  }, [exercises]);
-
   // Get today's logged exercise names
   const todayLoggedExercises = useMemo(() => {
     return new Set(todayLogs.map(l => l.exercise_name));
   }, [todayLogs]);
+
+  // Get recent exercises from history
+  const recentExercises = useMemo(() => {
+    const recentNames = Object.keys(exerciseHistory || {}).slice(0, 10);
+    return exercises.filter(e => recentNames.includes(e.name));
+  }, [exercises, exerciseHistory]);
 
   // Stats
   const habitsCompletedToday = useMemo(() => {
@@ -150,9 +105,9 @@ export default function Home() {
     });
   };
 
-  const handleExerciseClick = (exercise) => {
+  const handleExerciseSelect = (exercise) => {
+    setShowExercisePicker(false);
     setSelectedExercise(exercise);
-    // Haptic feedback
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }
@@ -173,7 +128,6 @@ export default function Home() {
   };
 
   const handleDeleteLog = async (exerciseName) => {
-    // Delete all logs for this exercise today
     const logsToDelete = todayLogs.filter(l => l.exercise_name === exerciseName);
     for (const log of logsToDelete) {
       await deleteExerciseLog?.(log.id);
@@ -181,18 +135,14 @@ export default function Home() {
     setTodayLogs(prev => prev.filter(l => l.exercise_name !== exerciseName));
   };
 
-  const handleFABClick = () => {
-    // Scroll to exercise section or show picker
-    setShowAllExercises(true);
-    // Scroll to log exercise section
-    document.getElementById('log-exercise')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin w-8 h-8 border-2 border-lift-primary border-t-transparent rounded-full" />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin w-8 h-8 border-2 border-lift-primary border-t-transparent rounded-full" />
+            <p className="text-iron-500 text-sm">Loading...</p>
+          </div>
         </div>
       </Layout>
     );
@@ -201,11 +151,9 @@ export default function Home() {
   if (!user) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
           <div className="w-20 h-20 mb-6 rounded-2xl bg-gradient-to-br from-lift-primary to-lift-secondary flex items-center justify-center">
-            <svg className="w-10 h-10 text-iron-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-            </svg>
+            <Dumbbell className="w-10 h-10 text-iron-950" />
           </div>
           <h1 className="text-2xl font-bold text-iron-100 mb-2">Welcome to Logbook</h1>
           <p className="text-iron-500 text-center mb-8">Sign in to start tracking</p>
@@ -222,171 +170,133 @@ export default function Home() {
 
   return (
     <Layout>
-      <div 
-        className="page-enter"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Pull to refresh indicator */}
-        <div 
-          className="flex justify-center overflow-hidden transition-all duration-200"
-          style={{ height: pullDistance > 0 ? pullDistance : 0 }}
-        >
-          <div className={`flex items-center gap-2 text-iron-500 ${isRefreshing ? 'animate-pulse' : ''}`}>
-            <svg 
-              className={`w-5 h-5 ${pullDistance > 60 ? 'text-lift-primary' : ''} ${isRefreshing ? 'animate-spin' : ''}`}
-              style={{ transform: `rotate(${pullDistance * 2}deg)` }}
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor" 
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span className="text-sm">{isRefreshing ? 'Refreshing...' : pullDistance > 60 ? 'Release to refresh' : 'Pull to refresh'}</span>
+      <div className="px-4 py-4">
+        {/* Date Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-iron-500 text-sm">Today</p>
+            <h2 className="text-xl font-bold text-iron-100">{formatDate(new Date())}</h2>
           </div>
+          <button
+            onClick={handleRefresh}
+            className={`w-10 h-10 rounded-xl bg-iron-800 flex items-center justify-center
+                       active:bg-iron-700 transition-colors ${isRefreshing ? 'animate-spin' : ''}`}
+          >
+            <RefreshCw className="w-5 h-5 text-iron-400" />
+          </button>
         </div>
 
-        {/* Header */}
-        <header className="px-4 py-4">
-          <p className="text-iron-500 text-sm">Today</p>
-          <h1 className="text-2xl font-bold text-iron-100">{formatDate(new Date())}</h1>
-        </header>
-
-        <main className="px-4 pb-32 space-y-6">
-          {/* Quick Stats */}
-          <QuickStats
-            exerciseCount={groupedLogs.length}
-            habitsCompleted={habitsCompletedToday}
-            habitsTotal={trackables.length}
-          />
-
-          {/* Today's Habits Section */}
-          <section>
-            <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider">
-              Today's Habits
-            </h2>
-            <HabitPills
-              trackables={trackables}
-              entries={todayEntries}
-              onToggle={handleToggleHabit}
-              onAddNew={() => router.push('/settings#habits')}
-            />
-          </section>
-
-          {/* Log Exercise Section */}
-          <section id="log-exercise">
-            <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider">
-              Log Exercise
-            </h2>
-
-            {/* Category filters - sticky */}
-            <div className="sticky top-0 z-10 bg-iron-950 -mx-4 px-4 py-2">
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {categories.map(({ name, count }) => (
-                  <button
-                    key={name}
-                    onClick={() => setSelectedCategory(name)}
-                    className={`min-h-[44px] px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                      selectedCategory === name
-                        ? 'bg-lift-primary text-iron-950'
-                        : 'bg-iron-800/70 text-iron-400 active:bg-iron-700'
-                    }`}
-                  >
-                    {name === 'all' ? 'All' : name.charAt(0).toUpperCase() + name.slice(1)}
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                      selectedCategory === name ? 'bg-iron-950/20' : 'bg-iron-700'
-                    }`}>
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Exercise pills */}
-            <div className="flex flex-wrap gap-2 mt-2">
-              {filteredExercises.slice(0, showAllExercises ? undefined : 12).map(exercise => {
-                const isLogged = todayLoggedExercises.has(exercise.name);
-                
-                return (
-                  <button
-                    key={exercise.id}
-                    onClick={() => handleExerciseClick(exercise)}
-                    className={`
-                      min-h-[48px] px-4 py-3 rounded-2xl font-medium text-sm
-                      transition-all duration-200 active:scale-95
-                      flex items-center gap-2
-                      ${isLogged 
-                        ? 'bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/30' 
-                        : 'bg-iron-800/70 text-iron-300 active:bg-iron-700/70'
-                      }
-                    `}
-                  >
-                    {isLogged && (
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                    {exercise.name}
-                  </button>
-                );
-              })}
-              
-              {!showAllExercises && filteredExercises.length > 12 && (
-                <button
-                  onClick={() => setShowAllExercises(true)}
-                  className="min-h-[48px] px-4 py-3 rounded-2xl font-medium text-sm
-                           bg-iron-800/50 text-iron-400
-                           active:bg-iron-700/50 transition-colors"
-                >
-                  + {filteredExercises.length - 12} more
-                </button>
-              )}
-            </div>
-          </section>
-
-          {/* Today's Log */}
-          {groupedLogs.length > 0 && (
-            <section>
-              <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider">
-                Today's Log
-              </h2>
-              <div className="space-y-2">
-                {groupedLogs.map(group => (
-                  <LogCard
-                    key={group.exerciseName}
-                    exerciseName={group.exerciseName}
-                    sets={group.totalSets}
-                    totalReps={group.totalReps}
-                    weightRange={group.weightRange}
-                    unit={settings.unit}
-                    onEdit={() => {
-                      const exercise = exercises.find(e => e.name === group.exerciseName);
-                      if (exercise) setSelectedExercise(exercise);
-                    }}
-                    onDelete={() => handleDeleteLog(group.exerciseName)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </main>
-
-        {/* Floating Action Button */}
-        <FAB onClick={handleFABClick} />
-
-        {/* Exercise Log Modal */}
-        <ExerciseLogModal
-          isOpen={!!selectedExercise}
-          exercise={selectedExercise}
-          history={selectedExercise ? exerciseHistory[selectedExercise.name] : null}
-          unit={settings.unit}
-          onClose={() => setSelectedExercise(null)}
-          onLog={handleLogExercise}
+        {/* Quick Stats */}
+        <QuickStats
+          exerciseCount={groupedLogs.length}
+          habitsCompleted={habitsCompletedToday}
+          habitsTotal={trackables.length}
         />
+
+        {/* Today's Habits */}
+        <section className="mt-6">
+          <h3 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            Habits
+          </h3>
+          <HabitPills
+            trackables={trackables}
+            entries={todayEntries}
+            onToggle={handleToggleHabit}
+            onAddNew={() => router.push('/settings#habits')}
+          />
+        </section>
+
+        {/* Today's Log */}
+        <section className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-iron-400 text-xs font-medium uppercase tracking-wider flex items-center gap-2">
+              <Dumbbell className="w-3.5 h-3.5" />
+              Today's Exercises
+            </h3>
+            <button
+              onClick={() => setShowExercisePicker(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-lift-primary/20 text-lift-primary text-sm font-medium active:bg-lift-primary/30 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
+          </div>
+
+          {groupedLogs.length > 0 ? (
+            <div className="space-y-2">
+              {groupedLogs.map(group => (
+                <LogCard
+                  key={group.exerciseName}
+                  exerciseName={group.exerciseName}
+                  sets={group.totalSets}
+                  totalReps={group.totalReps}
+                  weightRange={group.weightRange}
+                  unit={settings.unit}
+                  onEdit={() => {
+                    const exercise = exercises.find(e => e.name === group.exerciseName);
+                    if (exercise) setSelectedExercise(exercise);
+                  }}
+                  onDelete={() => handleDeleteLog(group.exerciseName)}
+                />
+              ))}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowExercisePicker(true)}
+              className="w-full p-6 rounded-2xl border-2 border-dashed border-iron-800 
+                       flex flex-col items-center justify-center gap-2
+                       hover:border-iron-700 active:bg-iron-900/50 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-xl bg-iron-800 flex items-center justify-center">
+                <Plus className="w-6 h-6 text-iron-400" />
+              </div>
+              <p className="text-iron-400 font-medium">Log your first exercise</p>
+              <p className="text-iron-600 text-sm">Tap to get started</p>
+            </button>
+          )}
+        </section>
       </div>
+
+      {/* FAB */}
+      <button
+        onClick={() => setShowExercisePicker(true)}
+        className="fixed z-40 w-14 h-14 rounded-full bg-lift-primary text-iron-950 
+                   flex items-center justify-center shadow-lg shadow-lift-primary/30
+                   active:scale-95 transition-transform"
+        style={{
+          right: '1rem',
+          bottom: 'calc(1.5rem + env(safe-area-inset-bottom))',
+        }}
+      >
+        <Plus className="w-7 h-7" strokeWidth={2.5} />
+      </button>
+
+      {/* Exercise Picker Drawer */}
+      <Drawer open={showExercisePicker} onOpenChange={setShowExercisePicker}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Select Exercise</DrawerTitle>
+          </DrawerHeader>
+          <ExerciseAutocomplete
+            exercises={exercises}
+            recentExercises={recentExercises}
+            loggedToday={todayLoggedExercises}
+            onSelect={handleExerciseSelect}
+            onClose={() => setShowExercisePicker(false)}
+          />
+        </DrawerContent>
+      </Drawer>
+
+      {/* Exercise Log Modal */}
+      <ExerciseLogModal
+        isOpen={!!selectedExercise}
+        exercise={selectedExercise}
+        history={selectedExercise ? exerciseHistory[selectedExercise.name] : null}
+        unit={settings.unit}
+        onClose={() => setSelectedExercise(null)}
+        onLog={handleLogExercise}
+      />
     </Layout>
   );
 }

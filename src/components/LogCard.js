@@ -1,4 +1,6 @@
 import { useState, useRef } from 'react';
+import ExerciseIcon from '@/components/ExerciseIcon';
+import { Check, Trash2 } from 'lucide-react';
 
 export default function LogCard({ 
   exerciseName, 
@@ -71,32 +73,38 @@ export default function LogCard({
           onClick={handleDelete}
           className="w-full h-full flex items-center justify-center"
         >
-          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+          <Trash2 className="w-6 h-6 text-white" />
         </button>
       </div>
 
       {/* Card content */}
       <div
-        className="relative bg-iron-900 p-4 transition-transform"
+        className="relative bg-iron-900 p-4 rounded-2xl transition-transform"
         style={{ transform: `translateX(${swipeOffset}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onClick={handleTap}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h3 className="text-iron-100 font-semibold text-base">{exerciseName}</h3>
-            <p className="text-iron-400 text-sm mt-1">
+        <div className="flex items-center gap-3">
+          {/* Exercise Icon */}
+          <div className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
+            <ExerciseIcon 
+              name={exerciseName} 
+              className="w-10 h-10" 
+              color="#22c55e"
+            />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="text-iron-100 font-semibold text-base truncate">{exerciseName}</h3>
+            <p className="text-iron-400 text-sm mt-0.5">
               {sets} set{sets !== 1 ? 's' : ''} · {totalReps} reps · {weightRange}{unit}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-lift-primary/20 flex items-center justify-center">
-            <svg className="w-5 h-5 text-lift-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+          
+          <div className="w-8 h-8 rounded-full bg-lift-primary/20 flex items-center justify-center flex-shrink-0">
+            <Check className="w-4 h-4 text-lift-primary" />
           </div>
         </div>
 

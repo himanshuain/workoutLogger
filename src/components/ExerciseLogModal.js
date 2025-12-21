@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import Stepper from './Stepper';
+import { X, Minus, Plus, Check, Zap, RotateCcw } from 'lucide-react';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import ExerciseIcon from '@/components/ExerciseIcon';
 
 export default function ExerciseLogModal({
   isOpen,
@@ -17,7 +19,6 @@ export default function ExerciseLogModal({
   // Generate presets from history
   const presets = [];
   if (history) {
-    // Last used
     if (history.last_weight && history.last_reps && history.last_sets) {
       presets.push({
         label: `${history.last_sets}×${history.last_reps} @ ${history.last_weight}${unit}`,
@@ -27,10 +28,9 @@ export default function ExerciseLogModal({
         type: 'last',
       });
     }
-    // PR weight (if different)
     if (history.personal_record_weight && history.personal_record_weight !== history.last_weight) {
       presets.push({
-        label: `PR: ${history.last_sets || 3}×${history.last_reps || 8} @ ${history.personal_record_weight}${unit}`,
+        label: `PR: ${history.personal_record_weight}${unit}`,
         weight: history.personal_record_weight,
         reps: history.last_reps || 8,
         sets: history.last_sets || 3,
@@ -39,7 +39,6 @@ export default function ExerciseLogModal({
     }
   }
 
-  // Initialize values from history when modal opens
   useEffect(() => {
     if (isOpen && history) {
       setWeight(history.last_weight || 0);
@@ -56,16 +55,18 @@ export default function ExerciseLogModal({
     setWeight(preset.weight);
     setReps(preset.reps);
     setSets(preset.sets);
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(10);
+    }
   };
 
   const handleLog = async () => {
     setIsLogging(true);
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate([10, 50, 10]);
+    }
     try {
-      await onLog({
-        weight,
-        reps,
-        sets,
-      });
+      await onLog({ weight, reps, sets });
       onClose();
     } catch (err) {
       console.error('Error logging exercise:', err);
@@ -74,122 +75,119 @@ export default function ExerciseLogModal({
     }
   };
 
-  if (!isOpen || !exercise) return null;
-
   const weightStep = unit === 'kg' ? 2.5 : 5;
 
+  const StepperRow = ({ label, value, onChange, step, min, max, suffix = '' }) => (
+    <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-2xl">
+      <span className="text-iron-300 font-medium">{label}</span>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onChange(Math.max(min, value - step))}
+          className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+        >
+          <Minus className="w-5 h-5 text-iron-300" />
+        </button>
+        <div className="w-20 text-center">
+          <span className="text-2xl font-bold text-iron-100">{value}</span>
+          {suffix && <span className="text-sm text-iron-500 ml-1">{suffix}</span>}
+        </div>
+        <button
+          onClick={() => onChange(Math.min(max, value + step))}
+          className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+        >
+          <Plus className="w-5 h-5 text-iron-300" />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="modal-backdrop animate-in fade-in duration-200"
-        onClick={onClose}
-      />
+    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DrawerContent className="max-h-[90vh]">
+        <DrawerHeader className="border-b border-iron-800 pb-4">
+          <div className="flex items-center gap-3">
+            {/* Exercise Icon */}
+            <div className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
+              <ExerciseIcon 
+                name={exercise?.name} 
+                className="w-10 h-10" 
+                color="#22c55e"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <DrawerTitle className="text-xl truncate">{exercise?.name}</DrawerTitle>
+              <p className="text-iron-500 text-sm capitalize">{exercise?.category}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg bg-iron-800 flex items-center justify-center flex-shrink-0"
+            >
+              <X className="w-4 h-4 text-iron-400" />
+            </button>
+          </div>
+        </DrawerHeader>
 
-      {/* Modal */}
-      <div className="modal-content animate-in slide-in-from-bottom duration-300">
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 bg-iron-700 rounded-full" />
-        </div>
-
-        {/* Header */}
-        <div className="px-4 pb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-iron-100">{exercise.name}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 text-iron-500 hover:text-iron-300"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="px-4 pb-6">
+        <div className="px-4 py-4 space-y-4 overflow-y-auto">
           {/* Quick Presets */}
           {presets.length > 0 && (
-            <div className="mb-6">
-              <p className="text-iron-500 text-sm mb-2">Quick presets:</p>
-              <div className="flex flex-wrap gap-2">
-                {presets.map((preset, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handlePresetClick(preset)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all
-                      ${preset.type === 'pr' 
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
-                        : 'bg-lift-primary/20 text-lift-primary border border-lift-primary/30'
-                      }
-                      active:scale-95
-                    `}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+            <div className="flex flex-wrap gap-2">
+              {presets.map((preset, i) => (
                 <button
-                  onClick={() => {
-                    setWeight(0);
-                    setReps(10);
-                    setSets(3);
-                  }}
-                  className="px-4 py-2.5 rounded-xl text-sm font-medium
-                           bg-iron-800 text-iron-400 active:scale-95"
+                  key={i}
+                  onClick={() => handlePresetClick(preset)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95
+                    ${preset.type === 'pr' 
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                      : 'bg-lift-primary/20 text-lift-primary border border-lift-primary/30'
+                    }
+                  `}
                 >
-                  Custom
+                  {preset.type === 'last' ? (
+                    <RotateCcw className="w-4 h-4" />
+                  ) : (
+                    <Zap className="w-4 h-4" />
+                  )}
+                  {preset.label}
                 </button>
-              </div>
+              ))}
             </div>
           )}
 
-          {/* Manual Input */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-xl">
-              <span className="text-iron-400">Weight</span>
-              <Stepper
-                value={weight}
-                onChange={setWeight}
-                step={weightStep}
-                min={0}
-                max={500}
-                unit={unit}
-                size="md"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-xl">
-              <span className="text-iron-400">Reps</span>
-              <Stepper
-                value={reps}
-                onChange={setReps}
-                step={1}
-                min={1}
-                max={100}
-                size="md"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-xl">
-              <span className="text-iron-400">Sets</span>
-              <Stepper
-                value={sets}
-                onChange={setSets}
-                step={1}
-                min={1}
-                max={20}
-                size="md"
-              />
-            </div>
+          {/* Steppers */}
+          <div className="space-y-3">
+            <StepperRow
+              label="Weight"
+              value={weight}
+              onChange={setWeight}
+              step={weightStep}
+              min={0}
+              max={500}
+              suffix={unit}
+            />
+            <StepperRow
+              label="Reps"
+              value={reps}
+              onChange={setReps}
+              step={1}
+              min={1}
+              max={100}
+            />
+            <StepperRow
+              label="Sets"
+              value={sets}
+              onChange={setSets}
+              step={1}
+              min={1}
+              max={20}
+            />
           </div>
 
           {/* Summary */}
-          <div className="mt-4 p-4 bg-iron-800/30 rounded-xl text-center">
-            <p className="text-iron-500 text-sm">You're logging</p>
-            <p className="text-iron-100 text-lg font-bold font-mono">
-              {sets} × {reps} @ {weight}{unit}
-            </p>
-            <p className="text-iron-600 text-xs mt-1">
-              Total volume: {(sets * reps * weight).toLocaleString()}{unit}
+          <div className="p-4 bg-gradient-to-r from-lift-primary/10 to-transparent rounded-2xl border border-lift-primary/20">
+            <p className="text-iron-400 text-sm">Total Volume</p>
+            <p className="text-2xl font-bold text-iron-100 font-mono">
+              {(sets * reps * weight).toLocaleString()}<span className="text-sm text-iron-400 ml-1">{unit}</span>
             </p>
           </div>
 
@@ -197,9 +195,9 @@ export default function ExerciseLogModal({
           <button
             onClick={handleLog}
             disabled={isLogging}
-            className="w-full mt-6 py-4 rounded-xl bg-lift-primary text-iron-950 font-bold text-lg
-                     active:bg-lift-secondary transition-colors disabled:opacity-50
-                     flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl bg-lift-primary text-iron-950 font-bold text-lg
+                     active:bg-lift-secondary transition-all disabled:opacity-50
+                     flex items-center justify-center gap-2 shadow-lg shadow-lift-primary/30"
           >
             {isLogging ? (
               <>
@@ -208,16 +206,13 @@ export default function ExerciseLogModal({
               </>
             ) : (
               <>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Log Exercise
+                <Check className="w-5 h-5" />
+                Log {sets} set{sets !== 1 ? 's' : ''} of {reps} rep{reps !== 1 ? 's' : ''} at {weight}{unit}
               </>
             )}
           </button>
         </div>
-      </div>
-    </>
+      </DrawerContent>
+    </Drawer>
   );
 }
-

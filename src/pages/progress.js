@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useWorkout } from '@/context/WorkoutContext';
 import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
+import { TrendingUp, Calendar, Flame, Target, ChevronDown } from 'lucide-react';
 
 export default function Progress() {
   const router = useRouter();
@@ -203,33 +204,45 @@ export default function Progress() {
 
   return (
     <Layout>
-      <div className="page-enter">
+      <div className="px-4 py-4">
         {/* Header */}
-        <header className="px-4 py-4 border-b border-iron-900">
-          <h1 className="text-2xl font-bold text-iron-100">Progress</h1>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-iron-100">Progress</h2>
           <p className="text-iron-500 text-sm mt-1">Your activity over time</p>
-        </header>
+        </div>
 
-        <main className="px-4 py-4 pb-24 space-y-6">
+        <div className="space-y-6">
           {/* Quick Stats */}
           <section className="grid grid-cols-2 gap-3">
-            <div className="bg-iron-900/50 rounded-xl p-4">
-              <p className="text-iron-500 text-xs uppercase tracking-wider mb-1">This Month</p>
+            <div className="bg-iron-900/50 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-iron-500" />
+                <p className="text-iron-500 text-xs uppercase tracking-wider">This Month</p>
+              </div>
               <p className="text-2xl font-bold text-iron-100">{stats.workoutsThisMonth}</p>
               <p className="text-iron-500 text-sm">workouts</p>
             </div>
-            <div className="bg-iron-900/50 rounded-xl p-4">
-              <p className="text-iron-500 text-xs uppercase tracking-wider mb-1">Current Streak</p>
+            <div className="bg-gradient-to-br from-lift-primary/20 to-transparent rounded-2xl p-4 border border-lift-primary/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Flame className="w-4 h-4 text-lift-primary" />
+                <p className="text-lift-primary/80 text-xs uppercase tracking-wider">Streak</p>
+              </div>
               <p className="text-2xl font-bold text-lift-primary">{stats.currentStreak}</p>
               <p className="text-iron-500 text-sm">days</p>
             </div>
-            <div className="bg-iron-900/50 rounded-xl p-4">
-              <p className="text-iron-500 text-xs uppercase tracking-wider mb-1">Last Month</p>
+            <div className="bg-iron-900/50 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-iron-500" />
+                <p className="text-iron-500 text-xs uppercase tracking-wider">Last Month</p>
+              </div>
               <p className="text-2xl font-bold text-iron-100">{stats.workoutsLastMonth}</p>
               <p className="text-iron-500 text-sm">workouts</p>
             </div>
-            <div className="bg-iron-900/50 rounded-xl p-4">
-              <p className="text-iron-500 text-xs uppercase tracking-wider mb-1">Total</p>
+            <div className="bg-iron-900/50 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="w-4 h-4 text-iron-500" />
+                <p className="text-iron-500 text-xs uppercase tracking-wider">Total</p>
+              </div>
               <p className="text-2xl font-bold text-iron-100">{stats.totalWorkouts}</p>
               <p className="text-iron-500 text-sm">workout days</p>
             </div>
@@ -254,7 +267,7 @@ export default function Progress() {
           {/* Individual Habit Heatmaps */}
           {trackables.length > 0 && (
             <section>
-              <h2 className="text-iron-400 text-sm font-medium mb-3 uppercase tracking-wider">
+              <h2 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider">
                 Habit Breakdown
               </h2>
               <div className="space-y-3">
@@ -264,7 +277,7 @@ export default function Progress() {
                   const daysTracked = data.length;
 
                   return (
-                    <div key={trackable.id} className="bg-iron-900/50 rounded-xl overflow-hidden">
+                    <div key={trackable.id} className="bg-iron-900/50 rounded-2xl overflow-hidden">
                       <button
                         onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
                         className="w-full p-4 flex items-center justify-between"
@@ -281,15 +294,9 @@ export default function Progress() {
                             <p className="text-iron-500 text-xs">{daysTracked} days tracked</p>
                           </div>
                         </div>
-                        <svg 
+                        <ChevronDown 
                           className={`w-5 h-5 text-iron-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor" 
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
+                        />
                       </button>
 
                       {isExpanded && (
@@ -309,7 +316,7 @@ export default function Progress() {
               </div>
             </section>
           )}
-        </main>
+        </div>
       </div>
     </Layout>
   );

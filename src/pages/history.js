@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { useWorkout } from '@/context/WorkoutContext';
+import ExerciseIcon from '@/components/ExerciseIcon';
+import { Clock, ChevronDown, Dumbbell } from 'lucide-react';
 
 export default function History() {
   const router = useRouter();
@@ -108,24 +110,22 @@ export default function History() {
 
   return (
     <Layout>
-      <div className="page-enter">
+      <div className="px-4 py-4">
         {/* Header */}
-        <header className="sticky top-0 z-20 bg-iron-950/95 backdrop-blur-lg px-4 py-4 border-b border-iron-900">
-          <h1 className="text-2xl font-bold text-iron-100">History</h1>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-iron-100">History</h2>
           <p className="text-iron-500 text-sm">{sortedDates.length} days logged</p>
-        </header>
+        </div>
 
-        <main className="px-4 py-4 pb-24">
+        <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin w-8 h-8 border-2 border-lift-primary border-t-transparent rounded-full" />
             </div>
           ) : sortedDates.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-iron-900 flex items-center justify-center">
-                <svg className="w-10 h-10 text-iron-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-iron-900 flex items-center justify-center">
+                <Clock className="w-10 h-10 text-iron-700" />
               </div>
               <p className="text-iron-500">No exercises logged yet</p>
               <p className="text-iron-600 text-sm mt-1">Start logging to see your history</p>
@@ -141,42 +141,50 @@ export default function History() {
                   <div key={date}>
                     <button
                       onClick={() => setSelectedDate(isSelected ? null : date)}
-                      className="w-full p-4 rounded-xl bg-iron-900 text-left active:bg-iron-800 transition-colors"
+                      className="w-full p-4 rounded-2xl bg-iron-900 text-left active:bg-iron-800 transition-colors"
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-iron-100 font-semibold">
-                            {formatDate(date)}
-                          </h3>
-                          <p className="text-iron-500 text-sm">
-                            {stats.exercises} exercise{stats.exercises !== 1 ? 's' : ''} · {stats.totalVolume.toLocaleString()} {settings.unit}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-iron-800 flex items-center justify-center">
+                            <Dumbbell className="w-5 h-5 text-iron-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-iron-100 font-semibold">
+                              {formatDate(date)}
+                            </h3>
+                            <p className="text-iron-500 text-sm">
+                              {stats.exercises} exercise{stats.exercises !== 1 ? 's' : ''} · {stats.totalVolume.toLocaleString()} {settings.unit}
+                            </p>
+                          </div>
                         </div>
-                        <svg 
+                        <ChevronDown 
                           className={`w-5 h-5 text-iron-500 transition-transform ${isSelected ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor" 
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
+                        />
                       </div>
                     </button>
 
                     {/* Expanded view */}
                     {isSelected && (
-                      <div className="mt-2 p-4 rounded-xl bg-iron-900/50 space-y-3 animate-in slide-in-from-top duration-200">
+                      <div className="mt-2 p-4 rounded-2xl bg-iron-900/50 space-y-3 animate-in slide-in-from-top duration-200">
                         <p className="text-iron-500 text-xs">{formatFullDate(date)}</p>
                         {dateLogs.map(log => (
                           <div 
                             key={log.id}
-                            className="flex items-center justify-between py-2 border-b border-iron-800 last:border-0"
+                            className="flex items-center gap-3 py-3 border-b border-iron-800 last:border-0"
                           >
-                            <span className="text-iron-100">{log.exercise_name}</span>
-                            <span className="text-iron-400 font-mono text-sm">
-                              {log.sets}×{log.reps} @ {log.weight}{settings.unit}
-                            </span>
+                            <div className="w-10 h-10 rounded-lg bg-iron-800 flex items-center justify-center flex-shrink-0">
+                              <ExerciseIcon 
+                                name={log.exercise_name} 
+                                className="w-7 h-7" 
+                                color="#6b7280"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-iron-100 font-medium truncate">{log.exercise_name}</p>
+                              <p className="text-iron-500 text-sm">
+                                {log.sets} set{log.sets !== 1 ? 's' : ''} · {log.reps} reps · {log.weight}{settings.unit}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -186,7 +194,7 @@ export default function History() {
               })}
             </div>
           )}
-        </main>
+        </div>
       </div>
     </Layout>
   );

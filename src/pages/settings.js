@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import { useWorkout } from '@/context/WorkoutContext';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { User, Weight, Plus, Pencil, Trash2, ChevronDown, Zap, Check } from 'lucide-react';
 
 const PILL_COLORS = [
   '#22c55e', // green
@@ -168,26 +170,27 @@ export default function Settings() {
 
   return (
     <Layout>
-      <div className="page-enter">
+      <div className="px-4 py-4">
         {/* Header */}
-        <header className="sticky top-0 z-20 bg-iron-950/95 backdrop-blur-lg px-4 py-4 border-b border-iron-900">
-          <h1 className="text-2xl font-bold text-iron-100">Settings</h1>
-        </header>
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-iron-100">Settings</h2>
+        </div>
 
-        <main className="px-4 py-4 pb-24">
+        <div className="space-y-6">
           {/* Account */}
-          <section className="mb-6">
-            <h2 className="text-xs font-medium text-iron-500 uppercase tracking-wider mb-3">
+          <section>
+            <h3 className="text-xs font-medium text-iron-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <User className="w-3.5 h-3.5" />
               Account
-            </h2>
-            <div className="p-4 rounded-xl bg-iron-900">
-              <div className="flex items-center justify-between mb-3">
+            </h3>
+            <div className="p-4 rounded-2xl bg-iron-900">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-iron-100 font-medium">{user.email}</p>
                   <p className="text-iron-500 text-sm">Logged in</p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-lift-primary/20 flex items-center justify-center">
-                  <span className="text-lift-primary font-bold">
+                <div className="w-12 h-12 rounded-xl bg-lift-primary/20 flex items-center justify-center">
+                  <span className="text-lift-primary font-bold text-lg">
                     {user.email?.[0]?.toUpperCase()}
                   </span>
                 </div>
@@ -197,7 +200,7 @@ export default function Settings() {
                   await signOut();
                   router.push('/auth');
                 }}
-                className="w-full py-2.5 rounded-xl bg-iron-800 text-iron-400 text-sm font-medium
+                className="w-full py-3 rounded-xl bg-iron-800 text-iron-400 text-sm font-medium
                          active:bg-iron-700 transition-colors"
               >
                 Sign Out
@@ -206,40 +209,43 @@ export default function Settings() {
           </section>
 
           {/* Units */}
-          <section className="mb-6">
-            <h2 className="text-xs font-medium text-iron-500 uppercase tracking-wider mb-3">
+          <section>
+            <h3 className="text-xs font-medium text-iron-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Weight className="w-3.5 h-3.5" />
               Units
-            </h2>
+            </h3>
             <div className="flex gap-2">
               <button
                 onClick={() => handleUnitChange('kg')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                className={`flex-1 py-3.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                   settings.unit === 'kg'
                     ? 'bg-lift-primary text-iron-950'
-                    : 'bg-iron-800 text-iron-400'
+                    : 'bg-iron-900 text-iron-400'
                 }`}
               >
+                {settings.unit === 'kg' && <Check className="w-4 h-4" />}
                 Kilograms (kg)
               </button>
               <button
                 onClick={() => handleUnitChange('lb')}
-                className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                className={`flex-1 py-3.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
                   settings.unit === 'lb'
                     ? 'bg-lift-primary text-iron-950'
-                    : 'bg-iron-800 text-iron-400'
+                    : 'bg-iron-900 text-iron-400'
                 }`}
               >
+                {settings.unit === 'lb' && <Check className="w-4 h-4" />}
                 Pounds (lb)
               </button>
             </div>
           </section>
 
           {/* Manage Habits/Health Pills */}
-          <section className="mb-6" id="habits">
+          <section id="habits">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-medium text-iron-500 uppercase tracking-wider">
+              <h3 className="text-xs font-medium text-iron-500 uppercase tracking-wider">
                 Habits & Health Tracking
-              </h2>
+              </h3>
               <button
                 onClick={() => {
                   setEditingTrackable(null);
@@ -253,9 +259,10 @@ export default function Settings() {
                   });
                   setShowAddModal(true);
                 }}
-                className="text-lift-primary text-sm font-medium"
+                className="flex items-center gap-1 text-lift-primary text-sm font-medium"
               >
-                + Add New
+                <Plus className="w-4 h-4" />
+                Add New
               </button>
             </div>
 
@@ -265,7 +272,7 @@ export default function Settings() {
                 const streakDays = getStreakCount(trackable.id);
                 
                 return (
-                  <div key={trackable.id} className="rounded-xl bg-iron-900 overflow-hidden">
+                  <div key={trackable.id} className="rounded-2xl bg-iron-900 overflow-hidden">
                     {/* Habit Header */}
                     <div className="p-3 flex items-center justify-between">
                       <button
@@ -284,32 +291,22 @@ export default function Settings() {
                             {streakDays} day{streakDays !== 1 ? 's' : ''} tracked
                           </p>
                         </div>
-                        <svg 
+                        <ChevronDown 
                           className={`w-5 h-5 text-iron-500 transition-transform ml-auto ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor" 
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                        </svg>
+                        />
                       </button>
                       <div className="flex items-center gap-1 ml-2">
                         <button
                           onClick={() => handleEditPill(trackable)}
-                          className="p-2 text-iron-500 hover:text-iron-300"
+                          className="p-2 text-iron-500 hover:text-iron-300 active:bg-iron-800 rounded-lg"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
+                          <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeletePill(trackable.id)}
-                          className="p-2 text-iron-500 hover:text-red-500"
+                          className="p-2 text-iron-500 hover:text-red-500 active:bg-iron-800 rounded-lg"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -331,10 +328,29 @@ export default function Settings() {
               })}
 
               {trackables.length === 0 && (
-                <div className="p-6 rounded-xl bg-iron-900/50 text-center">
-                  <p className="text-iron-500">No trackables yet</p>
-                  <p className="text-iron-600 text-sm mt-1">Add habits and health metrics to track</p>
-                </div>
+                <button
+                  onClick={() => {
+                    setEditingTrackable(null);
+                    setNewPill({
+                      name: '',
+                      type: 'habit',
+                      icon: '💧',
+                      color: '#22c55e',
+                      has_value: false,
+                      value_unit: '',
+                    });
+                    setShowAddModal(true);
+                  }}
+                  className="w-full p-6 rounded-2xl border-2 border-dashed border-iron-800 
+                           flex flex-col items-center justify-center gap-2
+                           hover:border-iron-700 active:bg-iron-900/50 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-iron-800 flex items-center justify-center">
+                    <Plus className="w-6 h-6 text-iron-400" />
+                  </div>
+                  <p className="text-iron-400 font-medium">Add a habit to track</p>
+                  <p className="text-iron-600 text-sm">Water, sleep, supplements...</p>
+                </button>
               )}
             </div>
           </section>
@@ -342,166 +358,157 @@ export default function Settings() {
           {/* About */}
           <section className="text-center py-8">
             <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-lift-primary to-lift-secondary flex items-center justify-center">
-              <svg className="w-8 h-8 text-iron-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-              </svg>
+              <Zap className="w-8 h-8 text-iron-950" />
             </div>
             <h3 className="text-iron-100 font-bold text-lg">Logbook</h3>
             <p className="text-iron-500 text-sm">Version 2.0.0</p>
             <p className="text-iron-600 text-xs mt-2">Simple workout & habit tracking</p>
           </section>
-        </main>
+        </div>
 
-        {/* Add/Edit Pill Modal */}
-        {showAddModal && (
-          <>
-            <div 
-              className="modal-backdrop"
-              onClick={() => setShowAddModal(false)}
-            />
-            <div className="modal-content">
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 bg-iron-700 rounded-full" />
+        {/* Add/Edit Pill Drawer */}
+        <Drawer open={showAddModal} onOpenChange={setShowAddModal}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>
+                {editingTrackable ? 'Edit Trackable' : 'Add Trackable'}
+              </DrawerTitle>
+            </DrawerHeader>
+
+            <div className="px-4 pb-4 space-y-4 overflow-y-auto max-h-[60vh]">
+              {/* Name */}
+              <div>
+                <label className="block text-iron-400 text-sm mb-2">Name</label>
+                <input
+                  type="text"
+                  value={newPill.name}
+                  onChange={(e) => setNewPill({ ...newPill, name: e.target.value })}
+                  placeholder="e.g., Water, Sleep, Creatine"
+                  className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
+                           placeholder-iron-600 outline-none focus:ring-2 focus:ring-lift-primary/50"
+                />
               </div>
 
-              <div className="px-4 pb-6">
-                <h2 className="text-xl font-bold text-iron-100 mb-4">
-                  {editingTrackable ? 'Edit Trackable' : 'Add Trackable'}
-                </h2>
+              {/* Type */}
+              <div>
+                <label className="block text-iron-400 text-sm mb-2">Type</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setNewPill({ ...newPill, type: 'habit', has_value: false })}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                      newPill.type === 'habit'
+                        ? 'bg-lift-primary text-iron-950'
+                        : 'bg-iron-800 text-iron-400'
+                    }`}
+                  >
+                    {newPill.type === 'habit' && <Check className="w-4 h-4" />}
+                    Habit (Yes/No)
+                  </button>
+                  <button
+                    onClick={() => setNewPill({ ...newPill, type: 'health', has_value: true })}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                      newPill.type === 'health'
+                        ? 'bg-lift-primary text-iron-950'
+                        : 'bg-iron-800 text-iron-400'
+                    }`}
+                  >
+                    {newPill.type === 'health' && <Check className="w-4 h-4" />}
+                    Health (Value)
+                  </button>
+                </div>
+              </div>
 
-                {/* Name */}
-                <div className="mb-4">
-                  <label className="block text-iron-400 text-sm mb-2">Name</label>
+              {/* Value Unit (for health type) */}
+              {newPill.type === 'health' && (
+                <div>
+                  <label className="block text-iron-400 text-sm mb-2">Unit</label>
                   <input
                     type="text"
-                    value={newPill.name}
-                    onChange={(e) => setNewPill({ ...newPill, name: e.target.value })}
-                    placeholder="e.g., Water, Sleep, Creatine"
+                    value={newPill.value_unit}
+                    onChange={(e) => setNewPill({ ...newPill, value_unit: e.target.value })}
+                    placeholder="e.g., hours, liters, 1-10"
                     className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
                              placeholder-iron-600 outline-none focus:ring-2 focus:ring-lift-primary/50"
                   />
                 </div>
+              )}
 
-                {/* Type */}
-                <div className="mb-4">
-                  <label className="block text-iron-400 text-sm mb-2">Type</label>
-                  <div className="flex gap-2">
+              {/* Icon */}
+              <div>
+                <label className="block text-iron-400 text-sm mb-2">Icon</label>
+                <div className="flex flex-wrap gap-2">
+                  {PILL_ICONS.map(icon => (
                     <button
-                      onClick={() => setNewPill({ ...newPill, type: 'habit', has_value: false })}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${
-                        newPill.type === 'habit'
-                          ? 'bg-lift-primary text-iron-950'
-                          : 'bg-iron-800 text-iron-400'
-                      }`}
-                    >
-                      Habit (Yes/No)
-                    </button>
-                    <button
-                      onClick={() => setNewPill({ ...newPill, type: 'health', has_value: true })}
-                      className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${
-                        newPill.type === 'health'
-                          ? 'bg-lift-primary text-iron-950'
-                          : 'bg-iron-800 text-iron-400'
-                      }`}
-                    >
-                      Health (Value)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Value Unit (for health type) */}
-                {newPill.type === 'health' && (
-                  <div className="mb-4">
-                    <label className="block text-iron-400 text-sm mb-2">Unit</label>
-                    <input
-                      type="text"
-                      value={newPill.value_unit}
-                      onChange={(e) => setNewPill({ ...newPill, value_unit: e.target.value })}
-                      placeholder="e.g., hours, liters, 1-10"
-                      className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
-                               placeholder-iron-600 outline-none focus:ring-2 focus:ring-lift-primary/50"
-                    />
-                  </div>
-                )}
-
-                {/* Icon */}
-                <div className="mb-4">
-                  <label className="block text-iron-400 text-sm mb-2">Icon</label>
-                  <div className="flex flex-wrap gap-2">
-                    {PILL_ICONS.map(icon => (
-                      <button
-                        key={icon}
-                        onClick={() => setNewPill({ ...newPill, icon })}
-                        className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center
-                          ${newPill.icon === icon 
-                            ? 'bg-iron-700 ring-2 ring-lift-primary' 
-                            : 'bg-iron-800'
-                          }`}
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Color */}
-                <div className="mb-6">
-                  <label className="block text-iron-400 text-sm mb-2">Color</label>
-                  <div className="flex flex-wrap gap-2">
-                    {PILL_COLORS.map(color => (
-                      <button
-                        key={color}
-                        onClick={() => setNewPill({ ...newPill, color })}
-                        className={`w-10 h-10 rounded-xl ${
-                          newPill.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-iron-900' : ''
+                      key={icon}
+                      onClick={() => setNewPill({ ...newPill, icon })}
+                      className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center
+                        ${newPill.icon === icon 
+                          ? 'bg-iron-700 ring-2 ring-lift-primary' 
+                          : 'bg-iron-800'
                         }`}
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Preview */}
-                <div className="mb-6 p-4 bg-iron-800/50 rounded-xl">
-                  <p className="text-iron-500 text-xs mb-2">Preview</p>
-                  <div 
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-iron-950 font-medium"
-                    style={{ backgroundColor: newPill.color }}
-                  >
-                    <span>{newPill.icon}</span>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{newPill.name || 'Name'}</span>
-                    {newPill.has_value && (
-                      <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded-full">
-                        8 {newPill.value_unit}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowAddModal(false)}
-                    className="flex-1 py-3 rounded-xl bg-iron-800 text-iron-400 font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSavePill}
-                    disabled={!newPill.name.trim()}
-                    className="flex-1 py-3 rounded-xl bg-lift-primary text-iron-950 font-bold
-                             disabled:opacity-50"
-                  >
-                    {editingTrackable ? 'Save' : 'Add'}
-                  </button>
+                    >
+                      {icon}
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              {/* Color */}
+              <div>
+                <label className="block text-iron-400 text-sm mb-2">Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {PILL_COLORS.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setNewPill({ ...newPill, color })}
+                      className={`w-10 h-10 rounded-xl transition-transform ${
+                        newPill.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-iron-900 scale-110' : ''
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="p-4 bg-iron-800/50 rounded-xl">
+                <p className="text-iron-500 text-xs mb-2">Preview</p>
+                <div 
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-iron-950 font-medium"
+                  style={{ backgroundColor: newPill.color }}
+                >
+                  <span>{newPill.icon}</span>
+                  <Check className="w-4 h-4" />
+                  <span>{newPill.name || 'Name'}</span>
+                  {newPill.has_value && (
+                    <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded-full">
+                      8 {newPill.value_unit}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 py-3.5 rounded-xl bg-iron-800 text-iron-400 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSavePill}
+                  disabled={!newPill.name.trim()}
+                  className="flex-1 py-3.5 rounded-xl bg-lift-primary text-iron-950 font-bold
+                           disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  {editingTrackable ? 'Save' : 'Add'}
+                </button>
+              </div>
             </div>
-          </>
-        )}
+          </DrawerContent>
+        </Drawer>
       </div>
     </Layout>
   );

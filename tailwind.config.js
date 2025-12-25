@@ -9,7 +9,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Dark gym aesthetic
+        // Dark gym aesthetic (dark mode)
         iron: {
           50: '#f7f7f8',
           100: '#eeeef0',
@@ -23,10 +23,33 @@ module.exports = {
           900: '#393941',
           950: '#18181b',
         },
+        // Light mode colors
+        slate: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
         lift: {
           primary: '#22c55e',
           secondary: '#16a34a',
           accent: '#4ade80',
+        },
+        // Blue theme for light mode (matching mockup)
+        workout: {
+          primary: '#3b82f6',
+          secondary: '#2563eb',
+          light: '#60a5fa',
+          gradient: {
+            from: '#4F8CFF',
+            to: '#6366f1',
+          }
         },
       },
       fontFamily: {
@@ -53,13 +76,31 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "slide-up": {
+          from: { transform: "translateY(100%)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "slide-down": {
+          from: { transform: "translateY(-100%)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "slide-up": "slide-up 0.3s ease-out",
+        "slide-down": "slide-down 0.3s ease-out",
+        "fade-in": "fade-in 0.2s ease-out",
+      },
+      backgroundImage: {
+        'workout-gradient': 'linear-gradient(135deg, #4F8CFF 0%, #6366f1 100%)',
+        'workout-gradient-dark': 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
 };
-

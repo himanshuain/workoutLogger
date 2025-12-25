@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import ExerciseIcon from '@/components/ExerciseIcon';
-import { Check, Trash2, MoreVertical, Pencil } from 'lucide-react';
+import { useState } from "react";
+import ExerciseIcon from "@/components/ExerciseIcon";
+import { Check, Trash2, MoreVertical, Pencil } from "lucide-react";
 
-export default function LogCard({ 
-  exerciseName, 
-  sets, 
-  totalReps, 
-  weightRange, 
+export default function LogCard({
+  exerciseName,
+  sets,
+  totalReps,
+  weightRange,
   unit,
   onEdit,
-  onDelete 
+  onDelete,
 }) {
   const [showActions, setShowActions] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -48,7 +48,9 @@ export default function LogCard({
   };
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl transition-all duration-200 ${isDeleting ? 'opacity-0 scale-95' : ''}`}>
+    <div
+      className={`relative overflow-hidden rounded-2xl transition-all duration-200 ${isDeleting ? "opacity-0 scale-95" : ""}`}
+    >
       {/* Card content */}
       <div
         className="relative bg-iron-900 p-4 rounded-2xl"
@@ -57,20 +59,24 @@ export default function LogCard({
         <div className="flex items-center gap-3">
           {/* Exercise Icon */}
           <div className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
-            <ExerciseIcon 
-              name={exerciseName} 
-              className="w-10 h-10" 
+            <ExerciseIcon
+              name={exerciseName}
+              className="w-10 h-10"
               color="#22c55e"
             />
           </div>
-          
+
           <div className="flex-1 min-w-0">
-            <h3 className="text-iron-100 font-semibold text-base truncate">{exerciseName}</h3>
+            <h3 className="text-iron-100 font-semibold text-base truncate">
+              {exerciseName}
+            </h3>
             <p className="text-iron-400 text-sm mt-0.5">
-              {sets} set{sets !== 1 ? 's' : ''} · {totalReps} reps · {weightRange}{unit}
+              {sets} set{sets !== 1 ? "s" : ""} · {totalReps} reps ·{" "}
+              {weightRange}
+              {unit}
             </p>
           </div>
-          
+
           {/* Actions */}
           <div className="flex items-center gap-1">
             {showActions ? (

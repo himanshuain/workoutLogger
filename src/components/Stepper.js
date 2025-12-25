@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from "react";
 
 export default function Stepper({
   value,
@@ -6,9 +6,9 @@ export default function Stepper({
   step = 1,
   min = 0,
   max = 999,
-  unit = '',
-  label = '',
-  size = 'md',
+  unit = "",
+  label = "",
+  size = "md",
 }) {
   const [isHolding, setIsHolding] = useState(false);
   const intervalRef = useRef(null);
@@ -17,7 +17,7 @@ export default function Stepper({
 
   // Haptic feedback
   const triggerHaptic = useCallback(() => {
-    if ('vibrate' in navigator) {
+    if ("vibrate" in navigator) {
       navigator.vibrate(10);
     }
   }, []);
@@ -37,7 +37,7 @@ export default function Stepper({
   const startHold = useCallback((action) => {
     setIsHolding(true);
     holdStartRef.current = Date.now();
-    
+
     // Start slow, speed up after holding
     timeoutRef.current = setTimeout(() => {
       intervalRef.current = setInterval(() => {
@@ -67,19 +67,19 @@ export default function Stepper({
 
   const sizeClasses = {
     sm: {
-      button: 'w-9 h-9 text-lg',
-      value: 'text-base min-w-[40px]',
-      label: 'text-xs',
+      button: "w-9 h-9 text-lg",
+      value: "text-base min-w-[40px]",
+      label: "text-xs",
     },
     md: {
-      button: 'w-11 h-11 text-xl',
-      value: 'text-lg min-w-[50px]',
-      label: 'text-xs',
+      button: "w-11 h-11 text-xl",
+      value: "text-lg min-w-[50px]",
+      label: "text-xs",
     },
     lg: {
-      button: 'w-14 h-14 text-2xl',
-      value: 'text-xl min-w-[60px]',
-      label: 'text-sm',
+      button: "w-14 h-14 text-2xl",
+      value: "text-xl min-w-[60px]",
+      label: "text-sm",
     },
   };
 
@@ -104,11 +104,14 @@ export default function Stepper({
         >
           −
         </button>
-        
-        <div className={`text-center font-mono font-semibold text-iron-100 ${classes.value}`}>
-          {value}{unit && <span className="text-iron-500 text-sm ml-0.5">{unit}</span>}
+
+        <div
+          className={`text-center font-mono font-semibold text-iron-100 ${classes.value}`}
+        >
+          {value}
+          {unit && <span className="text-iron-500 text-sm ml-0.5">{unit}</span>}
         </div>
-        
+
         <button
           type="button"
           className={`stepper-btn rounded-xl bg-iron-800 text-iron-300 flex items-center justify-center font-bold select-none ${classes.button}`}
@@ -126,4 +129,3 @@ export default function Stepper({
     </div>
   );
 }
-

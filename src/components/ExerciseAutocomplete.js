@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
-import { Search, Check } from 'lucide-react';
-import ExerciseIcon from '@/components/ExerciseIcon';
+import { useState, useMemo } from "react";
+import { Search, Check } from "lucide-react";
+import ExerciseIcon from "@/components/ExerciseIcon";
 
 export default function ExerciseAutocomplete({
   exercises = [],
@@ -9,23 +9,24 @@ export default function ExerciseAutocomplete({
   onSelect,
   onClose,
 }) {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   // Filter exercises based on search
   const filteredExercises = useMemo(() => {
     if (!search) return exercises;
     const searchLower = search.toLowerCase();
-    return exercises.filter(e => 
-      e.name.toLowerCase().includes(searchLower) ||
-      e.category?.toLowerCase().includes(searchLower)
+    return exercises.filter(
+      (e) =>
+        e.name.toLowerCase().includes(searchLower) ||
+        e.category?.toLowerCase().includes(searchLower),
     );
   }, [exercises, search]);
 
   // Group by category
   const groupedExercises = useMemo(() => {
     const groups = {};
-    filteredExercises.forEach(exercise => {
-      const category = exercise.category || 'Other';
+    filteredExercises.forEach((exercise) => {
+      const category = exercise.category || "Other";
       if (!groups[category]) groups[category] = [];
       groups[category].push(exercise);
     });
@@ -36,9 +37,9 @@ export default function ExerciseAutocomplete({
   const filteredRecent = useMemo(() => {
     if (!search) return recentExercises.slice(0, 5);
     const searchLower = search.toLowerCase();
-    return recentExercises.filter(e => 
-      e.name.toLowerCase().includes(searchLower)
-    ).slice(0, 5);
+    return recentExercises
+      .filter((e) => e.name.toLowerCase().includes(searchLower))
+      .slice(0, 5);
   }, [recentExercises, search]);
 
   const handleSelect = (exercise) => {
@@ -62,8 +63,8 @@ export default function ExerciseAutocomplete({
           autoFocus
         />
         {search && (
-          <button 
-            onClick={() => setSearch('')}
+          <button
+            onClick={() => setSearch("")}
             className="text-iron-500 hover:text-iron-300"
           >
             Clear
@@ -87,25 +88,31 @@ export default function ExerciseAutocomplete({
                   onClick={() => handleSelect(exercise)}
                   className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-iron-800 active:bg-iron-700 transition-colors"
                 >
-                  <div className={`
+                  <div
+                    className={`
                     w-12 h-12 rounded-xl flex items-center justify-center
-                    ${isLogged ? 'bg-lift-primary/20' : 'bg-iron-800'}
-                  `}>
+                    ${isLogged ? "bg-lift-primary/20" : "bg-iron-800"}
+                  `}
+                  >
                     {isLogged ? (
                       <Check className="w-5 h-5 text-lift-primary" />
                     ) : (
-                      <ExerciseIcon 
-                        name={exercise.name} 
-                        className="w-8 h-8" 
+                      <ExerciseIcon
+                        name={exercise.name}
+                        className="w-8 h-8"
                         color="#9ca3af"
                       />
                     )}
                   </div>
                   <div className="flex-1 text-left">
-                    <p className={`font-medium ${isLogged ? 'text-lift-primary' : 'text-iron-100'}`}>
+                    <p
+                      className={`font-medium ${isLogged ? "text-lift-primary" : "text-iron-100"}`}
+                    >
                       {exercise.name}
                     </p>
-                    <p className="text-xs text-iron-500 capitalize">{exercise.category}</p>
+                    <p className="text-xs text-iron-500 capitalize">
+                      {exercise.category}
+                    </p>
                   </div>
                   {isLogged && (
                     <span className="text-xs text-lift-primary bg-lift-primary/10 px-2 py-1 rounded-full">
@@ -119,48 +126,54 @@ export default function ExerciseAutocomplete({
         )}
 
         {/* All Exercises by Category */}
-        {Object.entries(groupedExercises).map(([category, categoryExercises]) => (
-          <div key={category} className="p-2">
-            <p className="px-3 py-2 text-xs font-medium text-iron-500 uppercase tracking-wider">
-              {category}
-            </p>
-            {categoryExercises.map((exercise) => {
-              const isLogged = loggedToday.has(exercise.name);
-              return (
-                <button
-                  key={exercise.id}
-                  onClick={() => handleSelect(exercise)}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-iron-800 active:bg-iron-700 transition-colors"
-                >
-                  <div className={`
+        {Object.entries(groupedExercises).map(
+          ([category, categoryExercises]) => (
+            <div key={category} className="p-2">
+              <p className="px-3 py-2 text-xs font-medium text-iron-500 uppercase tracking-wider">
+                {category}
+              </p>
+              {categoryExercises.map((exercise) => {
+                const isLogged = loggedToday.has(exercise.name);
+                return (
+                  <button
+                    key={exercise.id}
+                    onClick={() => handleSelect(exercise)}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-iron-800 active:bg-iron-700 transition-colors"
+                  >
+                    <div
+                      className={`
                     w-12 h-12 rounded-xl flex items-center justify-center
-                    ${isLogged ? 'bg-lift-primary/20' : 'bg-iron-800'}
-                  `}>
-                    {isLogged ? (
-                      <Check className="w-5 h-5 text-lift-primary" />
-                    ) : (
-                      <ExerciseIcon 
-                        name={exercise.name} 
-                        className="w-8 h-8" 
-                        color="#9ca3af"
-                      />
+                    ${isLogged ? "bg-lift-primary/20" : "bg-iron-800"}
+                  `}
+                    >
+                      {isLogged ? (
+                        <Check className="w-5 h-5 text-lift-primary" />
+                      ) : (
+                        <ExerciseIcon
+                          name={exercise.name}
+                          className="w-8 h-8"
+                          color="#9ca3af"
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p
+                        className={`font-medium ${isLogged ? "text-lift-primary" : "text-iron-100"}`}
+                      >
+                        {exercise.name}
+                      </p>
+                    </div>
+                    {isLogged && (
+                      <span className="text-xs text-lift-primary bg-lift-primary/10 px-2 py-1 rounded-full">
+                        Logged
+                      </span>
                     )}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={`font-medium ${isLogged ? 'text-lift-primary' : 'text-iron-100'}`}>
-                      {exercise.name}
-                    </p>
-                  </div>
-                  {isLogged && (
-                    <span className="text-xs text-lift-primary bg-lift-primary/10 px-2 py-1 rounded-full">
-                      Logged
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ))}
+                  </button>
+                );
+              })}
+            </div>
+          ),
+        )}
 
         {/* Empty State */}
         {filteredExercises.length === 0 && (
@@ -178,4 +191,3 @@ export default function ExerciseAutocomplete({
     </div>
   );
 }
-

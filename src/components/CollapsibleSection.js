@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
-export default function CollapsibleSection({ 
-  title, 
-  icon: Icon, 
+export default function CollapsibleSection({
+  title,
+  icon: Icon,
   count,
   defaultOpen = false,
   children,
@@ -30,25 +30,25 @@ export default function CollapsibleSection({
             )}
           </div>
         </div>
-        <div className={`
+        <div
+          className={`
           w-10 h-10 rounded-xl flex items-center justify-center transition-colors
-          ${isOpen ? 'bg-lift-primary/20' : 'bg-iron-800'}
-        `}>
-          <ChevronDown 
+          ${isOpen ? "bg-lift-primary/20" : "bg-iron-800"}
+        `}
+        >
+          <ChevronDown
             className={`
               w-5 h-5 transition-transform duration-200
-              ${isOpen ? 'rotate-180 text-lift-primary' : 'text-iron-500'}
+              ${isOpen ? "rotate-180 text-lift-primary" : "text-iron-500"}
             `}
           />
         </div>
       </button>
-      
+
       {/* Content */}
       {isOpen && (
         <div className="border-t border-iron-800/50">
-          <div className="p-4 space-y-3">
-            {children}
-          </div>
+          <div className="p-4 space-y-3">{children}</div>
         </div>
       )}
     </div>

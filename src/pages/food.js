@@ -1,15 +1,55 @@
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useWorkout } from '@/context/WorkoutContext';
-import Layout from '@/components/Layout';
-import CollapsibleSection from '@/components/CollapsibleSection';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { Plus, Check, Minus, Pencil, Trash2, Utensils, ChevronDown, History, Calendar, TrendingUp } from 'lucide-react';
-import ActivityHeatmap from '@/components/ActivityHeatmap';
+import { useState, useMemo } from "react";
+import { useRouter } from "next/router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useWorkout } from "@/context/WorkoutContext";
+import Layout from "@/components/Layout";
+import CollapsibleSection from "@/components/CollapsibleSection";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  Plus,
+  Check,
+  Minus,
+  Pencil,
+  Trash2,
+  Utensils,
+  ChevronDown,
+  History,
+  Calendar,
+  TrendingUp,
+} from "lucide-react";
+import ActivityHeatmap from "@/components/ActivityHeatmap";
 
-const FOOD_ICONS = ['🥚', '🥤', '🍗', '🥩', '🐟', '🥛', '🍌', '🥜', '🍚', '🥦', '🍳', '🧀', '🍞', '💊'];
-const FOOD_COLORS = ['#f59e0b', '#22c55e', '#ef4444', '#3b82f6', '#8b5cf6', '#14b8a6', '#ec4899', '#6366f1'];
+const FOOD_ICONS = [
+  "🥚",
+  "🥤",
+  "🍗",
+  "🥩",
+  "🐟",
+  "🥛",
+  "🍌",
+  "🥜",
+  "🍚",
+  "🥦",
+  "🍳",
+  "🧀",
+  "🍞",
+  "💊",
+];
+const FOOD_COLORS = [
+  "#f59e0b",
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#8b5cf6",
+  "#14b8a6",
+  "#ec4899",
+  "#6366f1",
+];
 
 export default function Food() {
   const router = useRouter();
@@ -33,20 +73,20 @@ export default function Food() {
   const [showQuantityModal, setShowQuantityModal] = useState(null);
   const [tempQuantity, setTempQuantity] = useState(1);
   const [expandedItem, setExpandedItem] = useState(null);
-  
+
   const [newFood, setNewFood] = useState({
-    name: '',
-    icon: '🥚',
-    color: '#f59e0b',
-    unit: 'servings',
+    name: "",
+    icon: "🥚",
+    color: "#f59e0b",
+    unit: "servings",
     default_quantity: 1,
-    category: 'protein',
+    category: "protein",
   });
 
   const formatDate = (date) => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
 
@@ -60,7 +100,7 @@ export default function Food() {
 
   // TanStack Query for all food history
   const { data: foodHistory = [] } = useQuery({
-    queryKey: ['foodHistory', user?.id, dateRange.start, dateRange.end],
+    queryKey: ["foodHistory", user?.id, dateRange.start, dateRange.end],
     queryFn: () => getFoodEntries(dateRange.start, dateRange.end),
     enabled: !!user,
   });
@@ -69,14 +109,14 @@ export default function Food() {
   const { heatmapsByItem, recentHistory, stats } = useMemo(() => {
     const byItem = {};
     const allByDate = {};
-    
-    foodHistory.forEach(entry => {
+
+    foodHistory.forEach((entry) => {
       // Group by food item for individual heatmaps
       if (!byItem[entry.food_item_id]) {
         byItem[entry.food_item_id] = {};
       }
       byItem[entry.food_item_id][entry.date] = entry.quantity || 1;
-      
+
       // Group all entries by date
       if (!allByDate[entry.date]) {
         allByDate[entry.date] = [];
@@ -88,18 +128,25 @@ export default function Food() {
     Object.entries(todayFoodEntries).forEach(([itemId, entry]) => {
       if (!byItem[itemId]) byItem[itemId] = {};
       byItem[itemId][today] = entry.quantity || 1;
-      
+
       if (!allByDate[today]) allByDate[today] = [];
-      const item = foodItems.find(f => f.id === itemId);
-      if (item && !allByDate[today].find(e => e.food_item_id === itemId)) {
-        allByDate[today].push({ ...entry, food_item_id: itemId, food_item: item });
+      const item = foodItems.find((f) => f.id === itemId);
+      if (item && !allByDate[today].find((e) => e.food_item_id === itemId)) {
+        allByDate[today].push({
+          ...entry,
+          food_item_id: itemId,
+          food_item: item,
+        });
       }
     });
 
     // Convert to heatmap format
     const heatmaps = {};
     Object.entries(byItem).forEach(([itemId, dates]) => {
-      heatmaps[itemId] = Object.entries(dates).map(([date, count]) => ({ date, count }));
+      heatmaps[itemId] = Object.entries(dates).map(([date, count]) => ({
+        date,
+        count,
+      }));
     });
 
     // Get recent history (last 7 days with activity)
@@ -110,8 +157,10 @@ export default function Food() {
 
     // Calculate stats
     const now = new Date();
-    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const daysThisMonth = Object.keys(allByDate).filter(d => d.startsWith(thisMonth)).length;
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const daysThisMonth = Object.keys(allByDate).filter((d) =>
+      d.startsWith(thisMonth),
+    ).length;
     const totalDays = Object.keys(allByDate).length;
 
     // Streak calculation
@@ -139,7 +188,7 @@ export default function Food() {
   // Overall food heatmap data
   const overallHeatmap = useMemo(() => {
     const byDate = {};
-    foodHistory.forEach(entry => {
+    foodHistory.forEach((entry) => {
       byDate[entry.date] = (byDate[entry.date] || 0) + 1;
     });
     // Include today
@@ -156,13 +205,16 @@ export default function Food() {
     return {
       consumed,
       total: foodItems.length,
-      percentage: foodItems.length > 0 ? Math.round((consumed / foodItems.length) * 100) : 0,
+      percentage:
+        foodItems.length > 0
+          ? Math.round((consumed / foodItems.length) * 100)
+          : 0,
     };
   }, [todayFoodEntries, foodItems]);
 
   const handleToggle = async (foodItem) => {
     const isConsumed = !!todayFoodEntries[foodItem.id];
-    
+
     if (isConsumed) {
       await toggleFoodEntry(foodItem.id);
     } else {
@@ -173,10 +225,10 @@ export default function Food() {
         await toggleFoodEntry(foodItem.id, foodItem.default_quantity || 1);
       }
     }
-    
+
     // Invalidate queries to refresh data
-    queryClient.invalidateQueries(['foodHistory']);
-    
+    queryClient.invalidateQueries(["foodHistory"]);
+
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }
@@ -185,7 +237,7 @@ export default function Food() {
   const handleQuantityConfirm = async () => {
     if (showQuantityModal) {
       await updateFoodEntryQuantity(showQuantityModal.id, tempQuantity);
-      queryClient.invalidateQueries(['foodHistory']);
+      queryClient.invalidateQueries(["foodHistory"]);
       setShowQuantityModal(null);
     }
   };
@@ -202,12 +254,12 @@ export default function Food() {
     setShowAddModal(false);
     setEditingItem(null);
     setNewFood({
-      name: '',
-      icon: '🥚',
-      color: '#f59e0b',
-      unit: 'servings',
+      name: "",
+      icon: "🥚",
+      color: "#f59e0b",
+      unit: "servings",
       default_quantity: 1,
-      category: 'protein',
+      category: "protein",
     });
   };
 
@@ -215,17 +267,17 @@ export default function Food() {
     setEditingItem(item);
     setNewFood({
       name: item.name,
-      icon: item.icon || '🥚',
-      color: item.color || '#f59e0b',
-      unit: item.unit || 'servings',
+      icon: item.icon || "🥚",
+      color: item.color || "#f59e0b",
+      unit: item.unit || "servings",
       default_quantity: item.default_quantity || 1,
-      category: item.category || 'protein',
+      category: item.category || "protein",
     });
     setShowAddModal(true);
   };
 
   const handleDeleteFood = async (id) => {
-    if (confirm('Delete this food item?')) {
+    if (confirm("Delete this food item?")) {
       await deleteFoodItem(id);
     }
   };
@@ -235,16 +287,20 @@ export default function Food() {
   };
 
   const formatDisplayDate = (dateStr) => {
-    const date = new Date(dateStr + 'T12:00:00');
+    const date = new Date(dateStr + "T12:00:00");
     const now = new Date();
     const isToday = dateStr === today;
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     const isYesterday = dateStr === formatDate(yesterday);
-    
-    if (isToday) return 'Today';
-    if (isYesterday) return 'Yesterday';
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    if (isToday) return "Today";
+    if (isYesterday) return "Yesterday";
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   if (isLoading) {
@@ -263,7 +319,7 @@ export default function Food() {
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
           <p className="text-iron-500 mb-4">Sign in to track food</p>
           <button
-            onClick={() => router.push('/auth')}
+            onClick={() => router.push("/auth")}
             className="px-6 py-2.5 rounded-xl bg-lift-primary text-iron-950 font-bold"
           >
             Sign In
@@ -288,12 +344,12 @@ export default function Food() {
             onClick={() => {
               setEditingItem(null);
               setNewFood({
-                name: '',
-                icon: '🥚',
-                color: '#f59e0b',
-                unit: 'servings',
+                name: "",
+                icon: "🥚",
+                color: "#f59e0b",
+                unit: "servings",
                 default_quantity: 1,
-                category: 'protein',
+                category: "protein",
               });
               setShowAddModal(true);
             }}
@@ -312,7 +368,9 @@ export default function Food() {
                 <Calendar className="w-3.5 h-3.5 text-iron-500" />
                 <p className="text-iron-500 text-xs">This Month</p>
               </div>
-              <p className="text-xl font-bold text-iron-100">{stats.daysThisMonth}</p>
+              <p className="text-xl font-bold text-iron-100">
+                {stats.daysThisMonth}
+              </p>
               <p className="text-iron-500 text-xs">days</p>
             </div>
             <div className="bg-gradient-to-br from-amber-500/20 to-transparent rounded-xl p-3 border border-amber-500/30">
@@ -328,7 +386,9 @@ export default function Food() {
                 <Utensils className="w-3.5 h-3.5 text-iron-500" />
                 <p className="text-iron-500 text-xs">Total</p>
               </div>
-              <p className="text-xl font-bold text-iron-100">{stats.totalDays}</p>
+              <p className="text-xl font-bold text-iron-100">
+                {stats.totalDays}
+              </p>
               <p className="text-iron-500 text-xs">days</p>
             </div>
           </section>
@@ -338,10 +398,12 @@ export default function Food() {
             <div className="p-4 bg-iron-900/50 rounded-2xl">
               <div className="flex justify-between mb-2">
                 <span className="text-iron-400 text-sm">Today's Progress</span>
-                <span className="text-amber-400 font-medium">{todayStats.percentage}%</span>
+                <span className="text-amber-400 font-medium">
+                  {todayStats.percentage}%
+                </span>
               </div>
               <div className="h-2.5 bg-iron-800 rounded-full overflow-hidden">
-                <div 
+                <div
                   className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-300"
                   style={{ width: `${todayStats.percentage}%` }}
                 />
@@ -351,16 +413,19 @@ export default function Food() {
 
           {/* Food Items */}
           <div className="space-y-3">
-            {foodItems.map(item => {
+            {foodItems.map((item) => {
               const isConsumed = !!todayFoodEntries[item.id];
-              const quantity = todayFoodEntries[item.id]?.quantity || item.default_quantity || 1;
+              const quantity =
+                todayFoodEntries[item.id]?.quantity ||
+                item.default_quantity ||
+                1;
               const isExpanded = expandedItem === item.id;
               const itemHeatmap = heatmapsByItem[item.id] || [];
               const daysTracked = itemHeatmap.length;
 
               return (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="bg-iron-900/50 rounded-2xl overflow-hidden"
                 >
                   <div className="p-4 flex items-center gap-3">
@@ -370,10 +435,7 @@ export default function Food() {
                       className={`
                         w-14 h-14 rounded-xl flex items-center justify-center text-2xl
                         transition-all duration-200 active:scale-95
-                        ${isConsumed 
-                          ? 'shadow-lg' 
-                          : 'bg-iron-800'
-                        }
+                        ${isConsumed ? "shadow-lg" : "bg-iron-800"}
                       `}
                       style={{
                         backgroundColor: isConsumed ? item.color : undefined,
@@ -387,18 +449,24 @@ export default function Food() {
                     </button>
 
                     {/* Item Info */}
-                    <button 
+                    <button
                       className="flex-1 text-left"
                       onClick={() => handleExpandItem(item.id)}
                     >
-                      <p className={`font-medium ${isConsumed ? 'text-iron-100' : 'text-iron-300'}`}>
+                      <p
+                        className={`font-medium ${isConsumed ? "text-iron-100" : "text-iron-300"}`}
+                      >
                         {item.name}
                       </p>
                       <p className="text-iron-500 text-sm">
                         {isConsumed && (
-                          <span className="text-amber-400">{quantity} {item.unit} · </span>
+                          <span className="text-amber-400">
+                            {quantity} {item.unit} ·{" "}
+                          </span>
                         )}
-                        {daysTracked > 0 ? `${daysTracked} days tracked` : 'Tap to log'}
+                        {daysTracked > 0
+                          ? `${daysTracked} days tracked`
+                          : "Tap to log"}
                       </p>
                     </button>
 
@@ -407,18 +475,23 @@ export default function Food() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
-                            updateFoodEntryQuantity(item.id, Math.max(0.5, quantity - 0.5));
-                            queryClient.invalidateQueries(['foodHistory']);
+                            updateFoodEntryQuantity(
+                              item.id,
+                              Math.max(0.5, quantity - 0.5),
+                            );
+                            queryClient.invalidateQueries(["foodHistory"]);
                           }}
                           className="w-8 h-8 rounded-lg bg-iron-800 flex items-center justify-center"
                         >
                           <Minus className="w-4 h-4 text-iron-400" />
                         </button>
-                        <span className="w-8 text-center text-iron-100 font-medium">{quantity}</span>
+                        <span className="w-8 text-center text-iron-100 font-medium">
+                          {quantity}
+                        </span>
                         <button
                           onClick={() => {
                             updateFoodEntryQuantity(item.id, quantity + 0.5);
-                            queryClient.invalidateQueries(['foodHistory']);
+                            queryClient.invalidateQueries(["foodHistory"]);
                           }}
                           className="w-8 h-8 rounded-lg bg-iron-800 flex items-center justify-center"
                         >
@@ -435,8 +508,8 @@ export default function Food() {
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <ChevronDown 
-                        className={`w-5 h-5 text-iron-500 transition-transform cursor-pointer ${isExpanded ? 'rotate-180' : ''}`}
+                      <ChevronDown
+                        className={`w-5 h-5 text-iron-500 transition-transform cursor-pointer ${isExpanded ? "rotate-180" : ""}`}
                         onClick={() => handleExpandItem(item.id)}
                       />
                     </div>
@@ -470,8 +543,12 @@ export default function Food() {
                   <Utensils className="w-8 h-8 text-amber-400" />
                 </div>
                 <div className="text-center">
-                  <p className="text-iron-300 font-medium">Add your first food item</p>
-                  <p className="text-iron-600 text-sm mt-1">Track eggs, shakes, supplements...</p>
+                  <p className="text-iron-300 font-medium">
+                    Add your first food item
+                  </p>
+                  <p className="text-iron-600 text-sm mt-1">
+                    Track eggs, shakes, supplements...
+                  </p>
                 </div>
               </button>
             )}
@@ -499,12 +576,18 @@ export default function Food() {
               {recentHistory.map(({ date, entries }) => (
                 <div key={date} className="bg-iron-900/30 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-iron-300 font-medium text-sm">{formatDisplayDate(date)}</p>
-                    <span className="text-iron-500 text-xs">{entries.length} items</span>
+                    <p className="text-iron-300 font-medium text-sm">
+                      {formatDisplayDate(date)}
+                    </p>
+                    <span className="text-iron-500 text-xs">
+                      {entries.length} items
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {entries.map((entry, idx) => {
-                      const item = foodItems.find(f => f.id === entry.food_item_id) || entry.food_item;
+                      const item =
+                        foodItems.find((f) => f.id === entry.food_item_id) ||
+                        entry.food_item;
                       if (!item) return null;
                       return (
                         <div
@@ -515,7 +598,9 @@ export default function Food() {
                           <span>{item.icon}</span>
                           <span className="text-iron-300">{item.name}</span>
                           {entry.quantity && entry.quantity !== 1 && (
-                            <span className="text-iron-500">×{entry.quantity}</span>
+                            <span className="text-iron-500">
+                              ×{entry.quantity}
+                            </span>
                           )}
                         </div>
                       );
@@ -533,7 +618,7 @@ export default function Food() {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>
-              {editingItem ? 'Edit Food Item' : 'Add Food Item'}
+              {editingItem ? "Edit Food Item" : "Add Food Item"}
             </DrawerTitle>
           </DrawerHeader>
 
@@ -544,7 +629,9 @@ export default function Food() {
               <input
                 type="text"
                 value={newFood.name}
-                onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
+                onChange={(e) =>
+                  setNewFood({ ...newFood, name: e.target.value })
+                }
                 placeholder="e.g., Eggs, Protein Shake"
                 className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
                          placeholder-iron-600 outline-none focus:ring-2 focus:ring-amber-500/50"
@@ -558,20 +645,29 @@ export default function Food() {
                 <input
                   type="text"
                   value={newFood.unit}
-                  onChange={(e) => setNewFood({ ...newFood, unit: e.target.value })}
+                  onChange={(e) =>
+                    setNewFood({ ...newFood, unit: e.target.value })
+                  }
                   placeholder="servings, eggs, ml"
                   className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
                            placeholder-iron-600 outline-none focus:ring-2 focus:ring-amber-500/50"
                 />
               </div>
               <div>
-                <label className="block text-iron-400 text-sm mb-2">Default Qty</label>
+                <label className="block text-iron-400 text-sm mb-2">
+                  Default Qty
+                </label>
                 <input
                   type="number"
                   step="0.5"
                   min="0.5"
                   value={newFood.default_quantity}
-                  onChange={(e) => setNewFood({ ...newFood, default_quantity: parseFloat(e.target.value) || 1 })}
+                  onChange={(e) =>
+                    setNewFood({
+                      ...newFood,
+                      default_quantity: parseFloat(e.target.value) || 1,
+                    })
+                  }
                   className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
                            placeholder-iron-600 outline-none focus:ring-2 focus:ring-amber-500/50"
                 />
@@ -582,14 +678,15 @@ export default function Food() {
             <div>
               <label className="block text-iron-400 text-sm mb-2">Icon</label>
               <div className="flex flex-wrap gap-2">
-                {FOOD_ICONS.map(icon => (
+                {FOOD_ICONS.map((icon) => (
                   <button
                     key={icon}
                     onClick={() => setNewFood({ ...newFood, icon })}
                     className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center
-                      ${newFood.icon === icon 
-                        ? 'bg-iron-700 ring-2 ring-amber-500' 
-                        : 'bg-iron-800'
+                      ${
+                        newFood.icon === icon
+                          ? "bg-iron-700 ring-2 ring-amber-500"
+                          : "bg-iron-800"
                       }`}
                   >
                     {icon}
@@ -602,12 +699,14 @@ export default function Food() {
             <div>
               <label className="block text-iron-400 text-sm mb-2">Color</label>
               <div className="flex flex-wrap gap-2">
-                {FOOD_COLORS.map(color => (
+                {FOOD_COLORS.map((color) => (
                   <button
                     key={color}
                     onClick={() => setNewFood({ ...newFood, color })}
                     className={`w-10 h-10 rounded-xl transition-transform ${
-                      newFood.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-iron-900 scale-110' : ''
+                      newFood.color === color
+                        ? "ring-2 ring-white ring-offset-2 ring-offset-iron-900 scale-110"
+                        : ""
                     }`}
                     style={{ backgroundColor: color }}
                   />
@@ -619,15 +718,19 @@ export default function Food() {
             <div className="p-4 bg-iron-800/50 rounded-xl">
               <p className="text-iron-500 text-xs mb-2">Preview</p>
               <div className="flex items-center gap-3">
-                <div 
+                <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
                   style={{ backgroundColor: newFood.color }}
                 >
                   {newFood.icon}
                 </div>
                 <div>
-                  <p className="text-iron-100 font-medium">{newFood.name || 'Food Name'}</p>
-                  <p className="text-iron-500 text-sm">{newFood.default_quantity} {newFood.unit}</p>
+                  <p className="text-iron-100 font-medium">
+                    {newFood.name || "Food Name"}
+                  </p>
+                  <p className="text-iron-500 text-sm">
+                    {newFood.default_quantity} {newFood.unit}
+                  </p>
                 </div>
               </div>
             </div>
@@ -658,7 +761,7 @@ export default function Food() {
                          disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                {editingItem ? 'Save' : 'Add'}
+                {editingItem ? "Save" : "Add"}
               </button>
             </div>
           </div>
@@ -666,7 +769,10 @@ export default function Food() {
       </Drawer>
 
       {/* Quantity Modal */}
-      <Drawer open={!!showQuantityModal} onOpenChange={() => setShowQuantityModal(null)}>
+      <Drawer
+        open={!!showQuantityModal}
+        onOpenChange={() => setShowQuantityModal(null)}
+      >
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>How much?</DrawerTitle>
@@ -674,14 +780,20 @@ export default function Food() {
           <div className="px-4 pb-4 space-y-4">
             <div className="flex items-center justify-center gap-4 py-6">
               <button
-                onClick={() => setTempQuantity(Math.max(0.5, tempQuantity - 0.5))}
+                onClick={() =>
+                  setTempQuantity(Math.max(0.5, tempQuantity - 0.5))
+                }
                 className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center"
               >
                 <Minus className="w-6 h-6 text-iron-300" />
               </button>
               <div className="text-center w-24">
-                <span className="text-4xl font-bold text-iron-100">{tempQuantity}</span>
-                <p className="text-iron-500 text-sm">{showQuantityModal?.unit}</p>
+                <span className="text-4xl font-bold text-iron-100">
+                  {tempQuantity}
+                </span>
+                <p className="text-iron-500 text-sm">
+                  {showQuantityModal?.unit}
+                </p>
               </div>
               <button
                 onClick={() => setTempQuantity(tempQuantity + 0.5)}

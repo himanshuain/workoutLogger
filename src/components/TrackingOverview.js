@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 // Mini sparkline component
-function Sparkline({ data, color = "#22c55e", height = 24, width = 60 }) {
+function Sparkline({ data, color = "#fbbf24", height = 24, width = 60 }) {
   if (!data || data.length < 2) return null;
 
   const values = data.map((d) => d.value || d.count || 0);
@@ -40,7 +40,7 @@ function Sparkline({ data, color = "#22c55e", height = 24, width = 60 }) {
 }
 
 // Trend indicator
-function TrendIndicator({ current, previous }) {
+function TrendIndicator({ current, previous, isDarkMode }) {
   if (current === undefined || previous === undefined) return null;
 
   const diff = current - previous;
@@ -62,7 +62,11 @@ function TrendIndicator({ current, previous }) {
     );
   }
   return (
-    <span className="flex items-center gap-0.5 text-iron-500 text-xs">
+    <span
+      className={`flex items-center gap-0.5 text-xs ${
+        isDarkMode ? "text-iron-500" : "text-slate-500"
+      }`}
+    >
       <Minus className="w-3 h-3" />
     </span>
   );
@@ -79,6 +83,7 @@ export default function TrackingOverview({
   todayFoodEntries = {},
   today,
   days = 7,
+  isDarkMode = true,
 }) {
   // Generate last N days
   const dateRange = useMemo(() => {
@@ -240,12 +245,34 @@ export default function TrackingOverview({
     return { previous: firstSum, current: secondSum };
   }, [dateRange, workoutsByDate]);
 
+  const accentColor = isDarkMode ? "#fbbf24" : "#dc2626";
+
   return (
-    <div className="rounded-2xl bg-iron-900/50 overflow-hidden">
+    <div
+      className={`rounded-2xl overflow-hidden ${
+        isDarkMode
+          ? "bg-iron-900/50"
+          : "bg-white border border-slate-200 shadow-sm"
+      }`}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-iron-800/50">
-        <h3 className="text-iron-100 font-semibold">Weekly Overview</h3>
-        <p className="text-iron-500 text-sm">Last {days} days at a glance</p>
+      <div
+        className={`p-4 border-b ${
+          isDarkMode ? "border-iron-800/50" : "border-slate-100"
+        }`}
+      >
+        <h3
+          className={`font-semibold ${
+            isDarkMode ? "text-iron-100" : "text-slate-800"
+          }`}
+        >
+          Weekly Overview
+        </h3>
+        <p
+          className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+        >
+          Last {days} days at a glance
+        </p>
       </div>
 
       {/* Table Container */}
@@ -253,28 +280,60 @@ export default function TrackingOverview({
         <table className="w-full text-sm">
           {/* Date Header Row */}
           <thead>
-            <tr className="bg-iron-900/30">
-              <th className="sticky left-0 bg-iron-900 z-10 p-3 text-left text-iron-400 font-medium w-32">
+            <tr className={isDarkMode ? "bg-iron-900/30" : "bg-slate-50"}>
+              <th
+                className={`sticky left-0 z-10 p-3 text-left font-medium w-32 ${
+                  isDarkMode
+                    ? "bg-iron-900 text-iron-400"
+                    : "bg-white text-slate-500"
+                }`}
+              >
                 Metric
               </th>
               {dateRange.map(({ date, dayName, dayNum, isToday }) => (
                 <th
                   key={date}
-                  className={`p-2 text-center min-w-[44px] ${isToday ? "bg-lift-primary/10" : ""}`}
+                  className={`p-2 text-center min-w-[44px] ${
+                    isToday
+                      ? isDarkMode
+                        ? "bg-lift-primary/10"
+                        : "bg-workout-primary/10"
+                      : ""
+                  }`}
                 >
                   <div
-                    className={`text-xs ${isToday ? "text-lift-primary" : "text-iron-500"}`}
+                    className={`text-xs ${
+                      isToday
+                        ? isDarkMode
+                          ? "text-lift-primary"
+                          : "text-workout-primary"
+                        : isDarkMode
+                          ? "text-iron-500"
+                          : "text-slate-500"
+                    }`}
                   >
                     {dayName}
                   </div>
                   <div
-                    className={`font-bold ${isToday ? "text-lift-primary" : "text-iron-300"}`}
+                    className={`font-bold ${
+                      isToday
+                        ? isDarkMode
+                          ? "text-lift-primary"
+                          : "text-workout-primary"
+                        : isDarkMode
+                          ? "text-iron-300"
+                          : "text-slate-700"
+                    }`}
                   >
                     {dayNum}
                   </div>
                 </th>
               ))}
-              <th className="p-3 text-center text-iron-400 font-medium min-w-[70px]">
+              <th
+                className={`p-3 text-center font-medium min-w-[70px] ${
+                  isDarkMode ? "text-iron-400" : "text-slate-500"
+                }`}
+              >
                 Trend
               </th>
             </tr>
@@ -282,13 +341,37 @@ export default function TrackingOverview({
 
           <tbody>
             {/* Workouts Row */}
-            <tr className="border-b border-iron-800/30">
-              <td className="sticky left-0 bg-iron-900 z-10 p-3">
+            <tr
+              className={`border-b ${
+                isDarkMode ? "border-iron-800/30" : "border-slate-100"
+              }`}
+            >
+              <td
+                className={`sticky left-0 z-10 p-3 ${
+                  isDarkMode ? "bg-iron-900" : "bg-white"
+                }`}
+              >
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-lift-primary/20 flex items-center justify-center">
-                    <Dumbbell className="w-4 h-4 text-lift-primary" />
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                      isDarkMode
+                        ? "bg-lift-primary/20"
+                        : "bg-workout-primary/20"
+                    }`}
+                  >
+                    <Dumbbell
+                      className={`w-4 h-4 ${
+                        isDarkMode
+                          ? "text-lift-primary"
+                          : "text-workout-primary"
+                      }`}
+                    />
                   </div>
-                  <span className="text-iron-200 font-medium text-xs">
+                  <span
+                    className={`font-medium text-xs ${
+                      isDarkMode ? "text-iron-200" : "text-slate-700"
+                    }`}
+                  >
                     Workouts
                   </span>
                 </div>
@@ -296,14 +379,32 @@ export default function TrackingOverview({
               {dateRange.map(({ date, isToday }) => (
                 <td
                   key={date}
-                  className={`p-2 text-center ${isToday ? "bg-lift-primary/10" : ""}`}
+                  className={`p-2 text-center ${
+                    isToday
+                      ? isDarkMode
+                        ? "bg-lift-primary/10"
+                        : "bg-workout-primary/10"
+                      : ""
+                  }`}
                 >
                   {workoutsByDate[date] > 0 ? (
-                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-lift-primary/20 text-lift-primary font-bold text-xs">
+                    <span
+                      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold text-xs ${
+                        isDarkMode
+                          ? "bg-lift-primary/20 text-lift-primary"
+                          : "bg-workout-primary/20 text-workout-primary"
+                      }`}
+                    >
                       {workoutsByDate[date]}
                     </span>
                   ) : (
-                    <span className="text-iron-700">—</span>
+                    <span
+                      className={
+                        isDarkMode ? "text-iron-700" : "text-slate-300"
+                      }
+                    >
+                      —
+                    </span>
                   )}
                 </td>
               ))}
@@ -311,14 +412,24 @@ export default function TrackingOverview({
                 <TrendIndicator
                   current={workoutTrend.current}
                   previous={workoutTrend.previous}
+                  isDarkMode={isDarkMode}
                 />
               </td>
             </tr>
 
             {/* Habits Rows */}
             {habitStats.map((habit) => (
-              <tr key={habit.id} className="border-b border-iron-800/30">
-                <td className="sticky left-0 bg-iron-900 z-10 p-3">
+              <tr
+                key={habit.id}
+                className={`border-b ${
+                  isDarkMode ? "border-iron-800/30" : "border-slate-100"
+                }`}
+              >
+                <td
+                  className={`sticky left-0 z-10 p-3 ${
+                    isDarkMode ? "bg-iron-900" : "bg-white"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
@@ -326,7 +437,11 @@ export default function TrackingOverview({
                     >
                       {habit.icon}
                     </div>
-                    <span className="text-iron-200 font-medium text-xs truncate max-w-[80px]">
+                    <span
+                      className={`font-medium text-xs truncate max-w-[80px] ${
+                        isDarkMode ? "text-iron-200" : "text-slate-700"
+                      }`}
+                    >
                       {habit.name}
                     </span>
                   </div>
@@ -334,7 +449,13 @@ export default function TrackingOverview({
                 {dateRange.map(({ date, isToday }) => (
                   <td
                     key={date}
-                    className={`p-2 text-center ${isToday ? "bg-lift-primary/10" : ""}`}
+                    className={`p-2 text-center ${
+                      isToday
+                        ? isDarkMode
+                          ? "bg-lift-primary/10"
+                          : "bg-workout-primary/10"
+                        : ""
+                    }`}
                   >
                     {habitsByDate[date]?.[habit.id] ? (
                       <span
@@ -347,13 +468,27 @@ export default function TrackingOverview({
                         />
                       </span>
                     ) : (
-                      <span className="text-iron-700">—</span>
+                      <span
+                        className={
+                          isDarkMode ? "text-iron-700" : "text-slate-300"
+                        }
+                      >
+                        —
+                      </span>
                     )}
                   </td>
                 ))}
                 <td className="p-3 text-center">
                   <span
-                    className={`text-xs font-medium ${habit.rate >= 70 ? "text-green-400" : habit.rate >= 40 ? "text-amber-400" : "text-iron-500"}`}
+                    className={`text-xs font-medium ${
+                      habit.rate >= 70
+                        ? "text-green-400"
+                        : habit.rate >= 40
+                          ? "text-amber-400"
+                          : isDarkMode
+                            ? "text-iron-500"
+                            : "text-slate-500"
+                    }`}
                   >
                     {habit.rate}%
                   </span>
@@ -363,8 +498,17 @@ export default function TrackingOverview({
 
             {/* Food Rows */}
             {foodStats.map((food) => (
-              <tr key={food.id} className="border-b border-iron-800/30">
-                <td className="sticky left-0 bg-iron-900 z-10 p-3">
+              <tr
+                key={food.id}
+                className={`border-b ${
+                  isDarkMode ? "border-iron-800/30" : "border-slate-100"
+                }`}
+              >
+                <td
+                  className={`sticky left-0 z-10 p-3 ${
+                    isDarkMode ? "bg-iron-900" : "bg-white"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
@@ -372,7 +516,11 @@ export default function TrackingOverview({
                     >
                       {food.icon}
                     </div>
-                    <span className="text-iron-200 font-medium text-xs truncate max-w-[80px]">
+                    <span
+                      className={`font-medium text-xs truncate max-w-[80px] ${
+                        isDarkMode ? "text-iron-200" : "text-slate-700"
+                      }`}
+                    >
                       {food.name}
                     </span>
                   </div>
@@ -380,7 +528,13 @@ export default function TrackingOverview({
                 {dateRange.map(({ date, isToday }) => (
                   <td
                     key={date}
-                    className={`p-2 text-center ${isToday ? "bg-lift-primary/10" : ""}`}
+                    className={`p-2 text-center ${
+                      isToday
+                        ? isDarkMode
+                          ? "bg-lift-primary/10"
+                          : "bg-workout-primary/10"
+                        : ""
+                    }`}
                   >
                     {foodByDate[date]?.[food.id] ? (
                       <span
@@ -393,13 +547,27 @@ export default function TrackingOverview({
                         />
                       </span>
                     ) : (
-                      <span className="text-iron-700">—</span>
+                      <span
+                        className={
+                          isDarkMode ? "text-iron-700" : "text-slate-300"
+                        }
+                      >
+                        —
+                      </span>
                     )}
                   </td>
                 ))}
                 <td className="p-3 text-center">
                   <span
-                    className={`text-xs font-medium ${food.rate >= 70 ? "text-green-400" : food.rate >= 40 ? "text-amber-400" : "text-iron-500"}`}
+                    className={`text-xs font-medium ${
+                      food.rate >= 70
+                        ? "text-green-400"
+                        : food.rate >= 40
+                          ? "text-amber-400"
+                          : isDarkMode
+                            ? "text-iron-500"
+                            : "text-slate-500"
+                    }`}
                   >
                     {food.rate}%
                   </span>
@@ -412,29 +580,49 @@ export default function TrackingOverview({
 
       {/* Exercise Progress Section */}
       {exerciseStats.length > 0 && (
-        <div className="border-t border-iron-800/50 p-4">
-          <h4 className="text-iron-400 text-xs font-medium mb-3 uppercase tracking-wider">
+        <div
+          className={`border-t p-4 ${
+            isDarkMode ? "border-iron-800/50" : "border-slate-100"
+          }`}
+        >
+          <h4
+            className={`text-xs font-medium mb-3 uppercase tracking-wider ${
+              isDarkMode ? "text-iron-400" : "text-slate-500"
+            }`}
+          >
             Top Exercises (Weight Progress)
           </h4>
           <div className="space-y-3">
             {exerciseStats.map((ex) => (
               <div key={ex.name} className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-iron-200 text-sm font-medium truncate">
+                  <p
+                    className={`text-sm font-medium truncate ${
+                      isDarkMode ? "text-iron-200" : "text-slate-700"
+                    }`}
+                  >
                     {ex.name}
                   </p>
-                  <p className="text-iron-500 text-xs">
+                  <p
+                    className={`text-xs ${
+                      isDarkMode ? "text-iron-500" : "text-slate-500"
+                    }`}
+                  >
                     Max: {ex.maxWeight}kg · Avg: {ex.avgWeight}kg
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Sparkline
                     data={ex.sparkData}
-                    color="#22c55e"
+                    color={accentColor}
                     height={20}
                     width={50}
                   />
-                  <TrendIndicator current={ex.newAvg} previous={ex.oldAvg} />
+                  <TrendIndicator
+                    current={ex.newAvg}
+                    previous={ex.oldAvg}
+                    isDarkMode={isDarkMode}
+                  />
                 </div>
               </div>
             ))}

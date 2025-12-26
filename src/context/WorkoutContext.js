@@ -793,6 +793,51 @@ export function WorkoutProvider({ children }) {
     return data || [];
   }, [user, today]);
 
+  // Get workout sessions with set logs for a date range (for progress tracking)
+  const getWorkoutSessions = useCallback(
+    async (startDate, endDate) => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from("workout_sessions")
+        .select("*, set_logs (*)")
+        .eq("user_id", user.id)
+        .gte("date", startDate)
+        .lte("date", endDate)
+        .order("date", { ascending: false });
+
+      if (error) {
+        console.error("Error getting workout sessions:", error);
+        return [];
+      }
+
+      return data || [];
+    },
+    [user],
+  );
+
+  // Get today's workout session set logs (for quick stats)
+  const getTodaySetLogs = useCallback(async () => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from("workout_sessions")
+      .select("*, set_logs (*)")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      console.error("Error getting today session:", error);
+      return [];
+    }
+
+    if (!data) return [];
+
+    // Return completed set logs
+    return (data.set_logs || []).filter((log) => log.is_completed);
+  }, [user, today]);
+
   // Delete exercise log
   const deleteExerciseLog = useCallback(
     async (logId) => {
@@ -1107,6 +1152,8 @@ export function WorkoutProvider({ children }) {
         getExerciseLogs,
         getTrackingEntries,
         getTodayExerciseLogs,
+        getWorkoutSessions,
+        getTodaySetLogs,
         deleteExerciseLog,
         createTrackable,
         updateTrackable,

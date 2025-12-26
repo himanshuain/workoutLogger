@@ -6,12 +6,12 @@
   --safe-area-inset-bottom: env(safe-area-inset-bottom);
   --safe-area-inset-top: env(safe-area-inset-top);
 
-  /* Light theme colors (default) */
+  /* Spiderman Light Theme - Red & Blue */
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;
   --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
+  --bg-card-hover: #fef2f2;
 
   --text-primary: #1e293b;
   --text-secondary: #475569;
@@ -21,13 +21,14 @@
   --border-color: #e2e8f0;
   --border-light: #f1f5f9;
 
-  --accent-primary: #3b82f6;
+  /* Spiderman colors - Red primary, Blue secondary */
+  --accent-primary: #dc2626;
   --accent-secondary: #2563eb;
   --accent-success: #22c55e;
   --accent-success-light: rgba(34, 197, 94, 0.1);
 
-  --gradient-start: #4f8cff;
-  --gradient-end: #6366f1;
+  --gradient-start: #dc2626;
+  --gradient-end: #2563eb;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -35,31 +36,33 @@
 }
 
 .dark {
-  --bg-primary: #18181b;
-  --bg-secondary: #27272a;
-  --bg-tertiary: #3f3f46;
-  --bg-card: #27272a;
-  --bg-card-hover: #3f3f46;
+  /* Batman Dark Theme - Dark grays with Yellow accent */
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #1c1c1e;
+  --bg-tertiary: #27272a;
+  --bg-card: #1c1c1e;
+  --bg-card-hover: #27272a;
 
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
   --text-faint: #52525b;
 
-  --border-color: #3f3f46;
-  --border-light: #27272a;
+  --border-color: #27272a;
+  --border-light: #1c1c1e;
 
-  --accent-primary: #22c55e;
-  --accent-secondary: #16a34a;
-  --accent-success: #22c55e;
-  --accent-success-light: rgba(34, 197, 94, 0.2);
+  /* Batman colors - Yellow/Gold accent */
+  --accent-primary: #fbbf24;
+  --accent-secondary: #f59e0b;
+  --accent-success: #fbbf24;
+  --accent-success-light: rgba(251, 191, 36, 0.2);
 
-  --gradient-start: #22c55e;
-  --gradient-end: #16a34a;
+  --gradient-start: #fbbf24;
+  --gradient-end: #f59e0b;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
 }
 
 * {

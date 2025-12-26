@@ -39,10 +39,18 @@ const MONTHS = [
   "Dec",
 ];
 
-// GitHub-style color scale
-const GITHUB_COLORS = {
-  workout: ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"],
-  habit: ["#161b22", "#0e3d69", "#0969da", "#54aeff", "#79c0ff"],
+// Theme-aware color scales
+const HEATMAP_COLORS = {
+  // Batman (dark) - yellow/gold tones
+  dark: {
+    workout: ["#1c1c1e", "#422006", "#713f12", "#a16207", "#fbbf24"],
+    habit: ["#1c1c1e", "#1e3a5f", "#1e40af", "#3b82f6", "#60a5fa"],
+  },
+  // Spiderman (light) - red/blue tones
+  light: {
+    workout: ["#f1f5f9", "#fecaca", "#f87171", "#ef4444", "#dc2626"],
+    habit: ["#f1f5f9", "#dbeafe", "#60a5fa", "#3b82f6", "#2563eb"],
+  },
 };
 
 // Generate grid data - current month first (reversed order)
@@ -122,6 +130,7 @@ export default function ActivityHeatmap({
   subtitle = "",
   color = null,
   compact = false,
+  isDarkMode = true,
 }) {
   const [hoveredCell, setHoveredCell] = useState(null);
   const todayDate = new Date().getDate();
@@ -147,13 +156,15 @@ export default function ActivityHeatmap({
   // Check if today has activity
   const todayHasActivity = data.some((d) => d.date === todayStr);
 
-  // Color palette based on type or custom color
+  // Color palette based on type, theme, or custom color
   const colorPalette = useMemo(() => {
     if (color) {
-      return ["#161b22", `${color}30`, `${color}60`, `${color}90`, color];
+      const baseColor = isDarkMode ? "#1c1c1e" : "#f1f5f9";
+      return [baseColor, `${color}30`, `${color}60`, `${color}90`, color];
     }
-    return GITHUB_COLORS[type] || GITHUB_COLORS.workout;
-  }, [type, color]);
+    const themeColors = isDarkMode ? HEATMAP_COLORS.dark : HEATMAP_COLORS.light;
+    return themeColors[type] || themeColors.workout;
+  }, [type, color, isDarkMode]);
 
   // Get color level
   const getColorLevel = (count) => {
@@ -166,35 +177,62 @@ export default function ActivityHeatmap({
 
   return (
     <div
-      className={`bg-iron-900/50 rounded-2xl ${compact ? "p-3" : "p-4"} relative`}
+      className={`rounded-2xl ${compact ? "p-3" : "p-4"} relative ${
+        isDarkMode
+          ? "bg-iron-900/50"
+          : "bg-white border border-slate-200 shadow-sm"
+      }`}
     >
       {/* Header with Today badge and hover info */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex-1 min-w-0">
           {label && (
             <h3
-              className={`text-iron-100 font-semibold ${compact ? "text-xs" : "text-sm"}`}
+              className={`font-semibold ${compact ? "text-xs" : "text-sm"} ${
+                isDarkMode ? "text-iron-100" : "text-slate-800"
+              }`}
             >
               {label}
             </h3>
           )}
           {subtitle && !hoveredCell && (
-            <p className="text-iron-500 text-xs mt-0.5">{subtitle}</p>
+            <p
+              className={`text-xs mt-0.5 ${
+                isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
+            >
+              {subtitle}
+            </p>
           )}
           {/* Hovered cell info - replaces subtitle when hovering */}
           {hoveredCell && (
             <p className="text-xs mt-0.5">
-              <span className="text-iron-100 font-medium">
+              <span
+                className={`font-medium ${
+                  isDarkMode ? "text-iron-100" : "text-slate-800"
+                }`}
+              >
                 {formatDateDisplay(hoveredCell.date)}
               </span>
-              <span className="text-iron-500 mx-1">·</span>
+              <span
+                className={`mx-1 ${
+                  isDarkMode ? "text-iron-500" : "text-slate-400"
+                }`}
+              >
+                ·
+              </span>
               <span
                 className={
-                  hoveredCell.count > 0 ? "text-green-400" : "text-iron-500"
+                  hoveredCell.count > 0
+                    ? isDarkMode
+                      ? "text-lift-primary"
+                      : "text-workout-primary"
+                    : isDarkMode
+                      ? "text-iron-500"
+                      : "text-slate-500"
                 }
               >
-                {hoveredCell.count}{" "}
-                {type === "workout" ? "exercises" : "completed"}
+                {hoveredCell.count} {type === "workout" ? "sets" : "completed"}
               </span>
             </p>
           )}
@@ -206,6 +244,7 @@ export default function ActivityHeatmap({
           hasActivity={todayHasActivity}
           color={colorPalette[4]}
           compact={compact}
+          isDarkMode={isDarkMode}
         />
       </div>
 
@@ -224,7 +263,9 @@ export default function ActivityHeatmap({
                 {monthLabels.map(({ week, month }, i) => (
                   <span
                     key={i}
-                    className="absolute text-[10px] text-iron-500"
+                    className={`absolute text-[10px] ${
+                      isDarkMode ? "text-iron-500" : "text-slate-500"
+                    }`}
                     style={{ left: `${week * (cellSize + cellGap)}px` }}
                   >
                     {month}
@@ -245,8 +286,9 @@ export default function ActivityHeatmap({
                 <div
                   key={i}
                   className={`
-                    flex items-center justify-end text-iron-500
+                    flex items-center justify-end
                     ${compact ? "text-[9px]" : "text-[10px]"}
+                    ${isDarkMode ? "text-iron-500" : "text-slate-500"}
                   `}
                   style={{
                     height: `${cellSize}px`,
@@ -278,13 +320,15 @@ export default function ActivityHeatmap({
                           width: `${cellSize}px`,
                           height: `${cellSize}px`,
                           backgroundColor: cell.isFuture
-                            ? "#0d1117"
+                            ? isDarkMode
+                              ? "#0d1117"
+                              : "#f8fafc"
                             : colorPalette[level],
                           opacity: cell.isFuture ? 0.3 : 1,
                           outline: cell.isToday
-                            ? "2px solid rgba(255,255,255,0.5)"
+                            ? `2px solid ${isDarkMode ? "rgba(251,191,36,0.5)" : "rgba(220,38,38,0.5)"}`
                             : isHovered
-                              ? "2px solid rgba(255,255,255,0.3)"
+                              ? `2px solid ${isDarkMode ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}`
                               : "none",
                           outlineOffset: "-1px",
                         }}
@@ -300,7 +344,16 @@ export default function ActivityHeatmap({
                         {cell.isToday && (
                           <div
                             className="w-full h-full flex items-center justify-center text-[8px] font-bold"
-                            style={{ color: level > 0 ? "#fff" : "#666" }}
+                            style={{
+                              color:
+                                level > 0
+                                  ? isDarkMode
+                                    ? "#000"
+                                    : "#fff"
+                                  : isDarkMode
+                                    ? "#666"
+                                    : "#94a3b8",
+                            }}
                           >
                             {cell.date.getDate()}
                           </div>
@@ -318,7 +371,13 @@ export default function ActivityHeatmap({
       {/* Legend */}
       {!compact && (
         <div className="flex items-center justify-end gap-1 mt-3">
-          <span className="text-iron-600 text-[10px] mr-1">Less</span>
+          <span
+            className={`text-[10px] mr-1 ${
+              isDarkMode ? "text-iron-600" : "text-slate-400"
+            }`}
+          >
+            Less
+          </span>
           {colorPalette.map((c, i) => (
             <div
               key={i}
@@ -326,7 +385,13 @@ export default function ActivityHeatmap({
               style={{ backgroundColor: c }}
             />
           ))}
-          <span className="text-iron-600 text-[10px] ml-1">More</span>
+          <span
+            className={`text-[10px] ml-1 ${
+              isDarkMode ? "text-iron-600" : "text-slate-400"
+            }`}
+          >
+            More
+          </span>
         </div>
       )}
     </div>
@@ -334,19 +399,27 @@ export default function ActivityHeatmap({
 }
 
 // Today badge showing the date number
-function TodayBadge({ date, hasActivity, color, compact }) {
+function TodayBadge({ date, hasActivity, color, compact, isDarkMode }) {
   return (
     <div className="flex items-center gap-2 flex-shrink-0">
-      <span className="text-iron-500 text-xs">Today</span>
+      <span
+        className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+      >
+        Today
+      </span>
       <div
         className={`
           flex items-center justify-center font-bold rounded-md
-          ${hasActivity ? "text-white" : "text-iron-400"}
+          ${hasActivity ? (isDarkMode ? "text-iron-950" : "text-white") : isDarkMode ? "text-iron-400" : "text-slate-500"}
           ${compact ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs"}
         `}
         style={{
-          backgroundColor: hasActivity ? color : "#161b22",
-          border: `2px solid ${hasActivity ? color : "#30363d"}`,
+          backgroundColor: hasActivity
+            ? color
+            : isDarkMode
+              ? "#1c1c1e"
+              : "#f1f5f9",
+          border: `2px solid ${hasActivity ? color : isDarkMode ? "#27272a" : "#e2e8f0"}`,
           boxShadow: hasActivity ? `0 0 10px ${color}60` : "none",
         }}
       >

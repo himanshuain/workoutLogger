@@ -9,11 +9,18 @@ import {
 import ExerciseIcon from "@/components/ExerciseIcon";
 
 // Simple line graph component
-function LineGraph({ data, color = "#22c55e", height = 120 }) {
+function LineGraph({
+  data,
+  color = "#fbbf24",
+  height = 120,
+  isDarkMode = true,
+}) {
   if (!data || data.length === 0) {
     return (
       <div
-        className="flex items-center justify-center text-iron-600 text-sm"
+        className={`flex items-center justify-center text-sm ${
+          isDarkMode ? "text-iron-600" : "text-slate-400"
+        }`}
         style={{ height }}
       >
         No data yet
@@ -48,6 +55,11 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
   // Create gradient fill path
   const fillPath = `${pathD} L ${points[points.length - 1].x} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
 
+  const gridColor = isDarkMode ? "#374151" : "#e2e8f0";
+  const bgColor = isDarkMode ? "#18181b" : "#ffffff";
+  const textColor = isDarkMode ? "#9ca3af" : "#64748b";
+  const labelColor = isDarkMode ? "#6b7280" : "#94a3b8";
+
   return (
     <svg
       viewBox={`0 0 ${graphWidth} ${height}`}
@@ -74,7 +86,7 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
         y1={padding.top}
         x2={graphWidth - padding.right}
         y2={padding.top}
-        stroke="#374151"
+        stroke={gridColor}
         strokeWidth="1"
         strokeDasharray="4"
       />
@@ -83,7 +95,7 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
         y1={height - padding.bottom}
         x2={graphWidth - padding.right}
         y2={height - padding.bottom}
-        stroke="#374151"
+        stroke={gridColor}
         strokeWidth="1"
       />
 
@@ -107,7 +119,7 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
             cx={p.x}
             cy={p.y}
             r="4"
-            fill="#18181b"
+            fill={bgColor}
             stroke={color}
             strokeWidth="2"
           />
@@ -117,7 +129,7 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
               x={p.x}
               y={p.y - 10}
               textAnchor="middle"
-              fill="#9ca3af"
+              fill={textColor}
               fontSize="10"
               fontWeight="500"
             >
@@ -134,7 +146,7 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
             x={padding.left}
             y={height - 8}
             textAnchor="start"
-            fill="#6b7280"
+            fill={labelColor}
             fontSize="9"
           >
             {formatDate(points[0].date)}
@@ -144,7 +156,7 @@ function LineGraph({ data, color = "#22c55e", height = 120 }) {
               x={graphWidth - padding.right}
               y={height - 8}
               textAnchor="end"
-              fill="#6b7280"
+              fill={labelColor}
               fontSize="9"
             >
               {formatDate(points[points.length - 1].date)}
@@ -167,6 +179,7 @@ export default function ProgressGraph({
   data = [],
   unit = "kg",
   compact = false,
+  isDarkMode = true,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -225,29 +238,52 @@ export default function ProgressGraph({
       : stats.trend === "down"
         ? TrendingDown
         : Minus;
+
   const trendColor =
     stats.trend === "up"
-      ? "text-lift-primary"
+      ? isDarkMode
+        ? "text-lift-primary"
+        : "text-green-500"
       : stats.trend === "down"
         ? "text-red-400"
-        : "text-iron-400";
+        : isDarkMode
+          ? "text-iron-400"
+          : "text-slate-400";
+
+  const accentColor = isDarkMode ? "#fbbf24" : "#dc2626";
 
   if (compact) {
     return (
-      <div className="bg-iron-900/50 rounded-2xl overflow-hidden">
+      <div
+        className={`rounded-2xl overflow-hidden ${
+          isDarkMode
+            ? "bg-iron-900/50"
+            : "bg-white border border-slate-200 shadow-sm"
+        }`}
+      >
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="w-full p-4 flex items-center gap-3"
         >
-          <div className="w-12 h-12 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              isDarkMode ? "bg-iron-800" : "bg-slate-100"
+            }`}
+          >
             <ExerciseIcon
               name={exerciseName}
               className="w-8 h-8"
-              color="#6b7280"
+              color={isDarkMode ? "#6b7280" : "#64748b"}
             />
           </div>
           <div className="flex-1 text-left min-w-0">
-            <p className="text-iron-100 font-medium truncate">{exerciseName}</p>
+            <p
+              className={`font-medium truncate ${
+                isDarkMode ? "text-iron-100" : "text-slate-800"
+              }`}
+            >
+              {exerciseName}
+            </p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`flex items-center gap-1 text-sm ${trendColor}`}>
                 <TrendIcon className="w-4 h-4" />
@@ -255,25 +291,52 @@ export default function ProgressGraph({
                   ? `+${stats.change}${unit}`
                   : `${stats.change}${unit}`}
               </span>
-              <span className="text-iron-600 text-sm">·</span>
-              <span className="text-iron-500 text-sm">
+              <span
+                className={`text-sm ${
+                  isDarkMode ? "text-iron-600" : "text-slate-300"
+                }`}
+              >
+                ·
+              </span>
+              <span
+                className={`text-sm ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
                 Max: {stats.maxWeight}
                 {unit}
               </span>
             </div>
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-iron-500" />
+            <ChevronUp
+              className={`w-5 h-5 ${
+                isDarkMode ? "text-iron-500" : "text-slate-400"
+              }`}
+            />
           ) : (
-            <ChevronDown className="w-5 h-5 text-iron-500" />
+            <ChevronDown
+              className={`w-5 h-5 ${
+                isDarkMode ? "text-iron-500" : "text-slate-400"
+              }`}
+            />
           )}
         </button>
 
         {isExpanded && (
           <div className="px-4 pb-4">
-            <LineGraph data={graphData} height={120} />
+            <LineGraph
+              data={graphData}
+              height={120}
+              color={accentColor}
+              isDarkMode={isDarkMode}
+            />
             {graphData.length > 0 && (
-              <div className="flex justify-between text-xs text-iron-500 mt-2">
+              <div
+                className={`flex justify-between text-xs mt-2 ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
                 <span>{graphData.length} sessions tracked</span>
                 <span>
                   Current: {stats.currentWeight}
@@ -288,19 +351,39 @@ export default function ProgressGraph({
   }
 
   return (
-    <div className="bg-iron-900/50 rounded-2xl p-4">
+    <div
+      className={`rounded-2xl p-4 ${
+        isDarkMode
+          ? "bg-iron-900/50"
+          : "bg-white border border-slate-200 shadow-sm"
+      }`}
+    >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-iron-800 flex items-center justify-center">
+          <div
+            className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              isDarkMode ? "bg-iron-800" : "bg-slate-100"
+            }`}
+          >
             <ExerciseIcon
               name={exerciseName}
               className="w-8 h-8"
-              color="#22c55e"
+              color={accentColor}
             />
           </div>
           <div>
-            <h3 className="text-iron-100 font-semibold">{exerciseName}</h3>
-            <p className="text-iron-500 text-sm capitalize">
+            <h3
+              className={`font-semibold ${
+                isDarkMode ? "text-iron-100" : "text-slate-800"
+              }`}
+            >
+              {exerciseName}
+            </h3>
+            <p
+              className={`text-sm capitalize ${
+                isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
+            >
               {exerciseCategory}
             </p>
           </div>
@@ -308,10 +391,14 @@ export default function ProgressGraph({
         <div
           className={`flex items-center gap-1 px-3 py-1.5 rounded-lg ${
             stats.trend === "up"
-              ? "bg-lift-primary/20"
+              ? isDarkMode
+                ? "bg-lift-primary/20"
+                : "bg-green-100"
               : stats.trend === "down"
                 ? "bg-red-500/20"
-                : "bg-iron-800"
+                : isDarkMode
+                  ? "bg-iron-800"
+                  : "bg-slate-100"
           }`}
         >
           <TrendIcon className={`w-4 h-4 ${trendColor}`} />
@@ -323,26 +410,75 @@ export default function ProgressGraph({
         </div>
       </div>
 
-      <LineGraph data={graphData} height={140} />
+      <LineGraph
+        data={graphData}
+        height={140}
+        color={accentColor}
+        isDarkMode={isDarkMode}
+      />
 
       <div className="grid grid-cols-3 gap-3 mt-4">
-        <div className="text-center p-2 bg-iron-800/50 rounded-xl">
-          <p className="text-iron-500 text-xs">Current</p>
-          <p className="text-iron-100 font-bold">
+        <div
+          className={`text-center p-2 rounded-xl ${
+            isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
+          }`}
+        >
+          <p
+            className={`text-xs ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
+            }`}
+          >
+            Current
+          </p>
+          <p
+            className={`font-bold ${
+              isDarkMode ? "text-iron-100" : "text-slate-800"
+            }`}
+          >
             {stats.currentWeight || 0}
             {unit}
           </p>
         </div>
-        <div className="text-center p-2 bg-iron-800/50 rounded-xl">
-          <p className="text-iron-500 text-xs">Max</p>
-          <p className="text-lift-primary font-bold">
+        <div
+          className={`text-center p-2 rounded-xl ${
+            isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
+          }`}
+        >
+          <p
+            className={`text-xs ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
+            }`}
+          >
+            Max
+          </p>
+          <p
+            className={`font-bold ${
+              isDarkMode ? "text-lift-primary" : "text-workout-primary"
+            }`}
+          >
             {stats.maxWeight || 0}
             {unit}
           </p>
         </div>
-        <div className="text-center p-2 bg-iron-800/50 rounded-xl">
-          <p className="text-iron-500 text-xs">Sessions</p>
-          <p className="text-iron-100 font-bold">{stats.totalSessions}</p>
+        <div
+          className={`text-center p-2 rounded-xl ${
+            isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
+          }`}
+        >
+          <p
+            className={`text-xs ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
+            }`}
+          >
+            Sessions
+          </p>
+          <p
+            className={`font-bold ${
+              isDarkMode ? "text-iron-100" : "text-slate-800"
+            }`}
+          >
+            {stats.totalSessions}
+          </p>
         </div>
       </div>
     </div>

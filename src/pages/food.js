@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
+import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import {
@@ -54,6 +55,7 @@ const FOOD_COLORS = [
 export default function Food() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { isDarkMode } = useTheme();
   const {
     user,
     foodItems,
@@ -111,20 +113,17 @@ export default function Food() {
     const allByDate = {};
 
     foodHistory.forEach((entry) => {
-      // Group by food item for individual heatmaps
       if (!byItem[entry.food_item_id]) {
         byItem[entry.food_item_id] = {};
       }
       byItem[entry.food_item_id][entry.date] = entry.quantity || 1;
 
-      // Group all entries by date
       if (!allByDate[entry.date]) {
         allByDate[entry.date] = [];
       }
       allByDate[entry.date].push(entry);
     });
 
-    // Include today's entries
     Object.entries(todayFoodEntries).forEach(([itemId, entry]) => {
       if (!byItem[itemId]) byItem[itemId] = {};
       byItem[itemId][today] = entry.quantity || 1;
@@ -140,7 +139,6 @@ export default function Food() {
       }
     });
 
-    // Convert to heatmap format
     const heatmaps = {};
     Object.entries(byItem).forEach(([itemId, dates]) => {
       heatmaps[itemId] = Object.entries(dates).map(([date, count]) => ({
@@ -149,13 +147,11 @@ export default function Food() {
       }));
     });
 
-    // Get recent history (last 7 days with activity)
     const recent = Object.entries(allByDate)
       .sort((a, b) => b[0].localeCompare(a[0]))
       .slice(0, 14)
       .map(([date, entries]) => ({ date, entries }));
 
-    // Calculate stats
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const daysThisMonth = Object.keys(allByDate).filter((d) =>
@@ -163,7 +159,6 @@ export default function Food() {
     ).length;
     const totalDays = Object.keys(allByDate).length;
 
-    // Streak calculation
     let streak = 0;
     let checkDate = new Date();
     for (let i = 0; i < 365; i++) {
@@ -185,13 +180,11 @@ export default function Food() {
     };
   }, [foodHistory, todayFoodEntries, foodItems, today]);
 
-  // Overall food heatmap data
   const overallHeatmap = useMemo(() => {
     const byDate = {};
     foodHistory.forEach((entry) => {
       byDate[entry.date] = (byDate[entry.date] || 0) + 1;
     });
-    // Include today
     const todayCount = Object.keys(todayFoodEntries).length;
     if (todayCount > 0) {
       byDate[today] = todayCount;
@@ -199,7 +192,6 @@ export default function Food() {
     return Object.entries(byDate).map(([date, count]) => ({ date, count }));
   }, [foodHistory, todayFoodEntries, today]);
 
-  // Stats
   const todayStats = useMemo(() => {
     const consumed = Object.keys(todayFoodEntries).length;
     return {
@@ -226,7 +218,6 @@ export default function Food() {
       }
     }
 
-    // Invalidate queries to refresh data
     queryClient.invalidateQueries(["foodHistory"]);
 
     if (window.navigator?.vibrate) {
@@ -303,11 +294,19 @@ export default function Food() {
     });
   };
 
+  const accentColor = isDarkMode ? "#fbbf24" : "#f59e0b";
+
   if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="animate-spin w-8 h-8 border-2 border-lift-primary border-t-transparent rounded-full" />
+          <div
+            className={`animate-spin w-8 h-8 border-2 rounded-full ${
+              isDarkMode
+                ? "border-lift-primary border-t-transparent"
+                : "border-workout-primary border-t-transparent"
+            }`}
+          />
         </div>
       </Layout>
     );
@@ -317,10 +316,16 @@ export default function Food() {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
-          <p className="text-iron-500 mb-4">Sign in to track food</p>
+          <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>
+            Sign in to track food
+          </p>
           <button
             onClick={() => router.push("/auth")}
-            className="px-6 py-2.5 rounded-xl bg-lift-primary text-iron-950 font-bold"
+            className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
+              isDarkMode
+                ? "bg-lift-primary text-iron-950"
+                : "bg-workout-primary text-white"
+            }`}
           >
             Sign In
           </button>
@@ -332,11 +337,25 @@ export default function Food() {
   return (
     <Layout>
       <div className="px-4 py-4 pb-24">
-        {/* Header - Sticky */}
-        <div className="sticky top-0 z-30 bg-iron-950/95 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1 flex items-center justify-between">
+        {/* Header */}
+        <div
+          className={`sticky top-0 z-30 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1 flex items-center justify-between ${
+            isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
+          }`}
+        >
           <div>
-            <h2 className="text-xl font-bold text-iron-100">Food Tracking</h2>
-            <p className="text-iron-500 text-sm mt-1">
+            <h2
+              className={`text-xl font-bold ${
+                isDarkMode ? "text-iron-100" : "text-slate-800"
+              }`}
+            >
+              Food Tracking
+            </h2>
+            <p
+              className={`text-sm mt-1 ${
+                isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
+            >
               {todayStats.consumed}/{todayStats.total} consumed today
             </p>
           </div>
@@ -353,7 +372,11 @@ export default function Food() {
               });
               setShowAddModal(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/20 text-amber-400 font-medium"
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium ${
+              isDarkMode
+                ? "bg-lift-primary/20 text-lift-primary"
+                : "bg-amber-100 text-amber-600"
+            }`}
           >
             <Plus className="w-4 h-4" />
             Add
@@ -363,48 +386,152 @@ export default function Food() {
         <div className="space-y-6 mt-4">
           {/* Quick Stats */}
           <section className="grid grid-cols-3 gap-3">
-            <div className="bg-iron-900/50 rounded-xl p-3">
+            <div
+              className={`rounded-xl p-3 ${
+                isDarkMode
+                  ? "bg-iron-900/50"
+                  : "bg-white border border-slate-200 shadow-sm"
+              }`}
+            >
               <div className="flex items-center gap-1.5 mb-1">
-                <Calendar className="w-3.5 h-3.5 text-iron-500" />
-                <p className="text-iron-500 text-xs">This Month</p>
+                <Calendar
+                  className={`w-3.5 h-3.5 ${
+                    isDarkMode ? "text-iron-500" : "text-slate-500"
+                  }`}
+                />
+                <p
+                  className={`text-xs ${
+                    isDarkMode ? "text-iron-500" : "text-slate-500"
+                  }`}
+                >
+                  This Month
+                </p>
               </div>
-              <p className="text-xl font-bold text-iron-100">
+              <p
+                className={`text-xl font-bold ${
+                  isDarkMode ? "text-iron-100" : "text-slate-800"
+                }`}
+              >
                 {stats.daysThisMonth}
               </p>
-              <p className="text-iron-500 text-xs">days</p>
+              <p
+                className={`text-xs ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
+                days
+              </p>
             </div>
-            <div className="bg-gradient-to-br from-amber-500/20 to-transparent rounded-xl p-3 border border-amber-500/30">
+            <div
+              className={`rounded-xl p-3 border ${
+                isDarkMode
+                  ? "bg-gradient-to-br from-lift-primary/20 to-transparent border-lift-primary/30"
+                  : "bg-gradient-to-br from-amber-100 to-transparent border-amber-300"
+              }`}
+            >
               <div className="flex items-center gap-1.5 mb-1">
-                <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-                <p className="text-amber-400/80 text-xs">Streak</p>
+                <TrendingUp
+                  className={`w-3.5 h-3.5 ${
+                    isDarkMode ? "text-lift-primary" : "text-amber-500"
+                  }`}
+                />
+                <p
+                  className={`text-xs ${
+                    isDarkMode ? "text-lift-primary/80" : "text-amber-600"
+                  }`}
+                >
+                  Streak
+                </p>
               </div>
-              <p className="text-xl font-bold text-amber-400">{stats.streak}</p>
-              <p className="text-iron-500 text-xs">days</p>
+              <p
+                className={`text-xl font-bold ${
+                  isDarkMode ? "text-lift-primary" : "text-amber-500"
+                }`}
+              >
+                {stats.streak}
+              </p>
+              <p
+                className={`text-xs ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
+                days
+              </p>
             </div>
-            <div className="bg-iron-900/50 rounded-xl p-3">
+            <div
+              className={`rounded-xl p-3 ${
+                isDarkMode
+                  ? "bg-iron-900/50"
+                  : "bg-white border border-slate-200 shadow-sm"
+              }`}
+            >
               <div className="flex items-center gap-1.5 mb-1">
-                <Utensils className="w-3.5 h-3.5 text-iron-500" />
-                <p className="text-iron-500 text-xs">Total</p>
+                <Utensils
+                  className={`w-3.5 h-3.5 ${
+                    isDarkMode ? "text-iron-500" : "text-slate-500"
+                  }`}
+                />
+                <p
+                  className={`text-xs ${
+                    isDarkMode ? "text-iron-500" : "text-slate-500"
+                  }`}
+                >
+                  Total
+                </p>
               </div>
-              <p className="text-xl font-bold text-iron-100">
+              <p
+                className={`text-xl font-bold ${
+                  isDarkMode ? "text-iron-100" : "text-slate-800"
+                }`}
+              >
                 {stats.totalDays}
               </p>
-              <p className="text-iron-500 text-xs">days</p>
+              <p
+                className={`text-xs ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
+                days
+              </p>
             </div>
           </section>
 
           {/* Progress Bar */}
           {foodItems.length > 0 && (
-            <div className="p-4 bg-iron-900/50 rounded-2xl">
+            <div
+              className={`p-4 rounded-2xl ${
+                isDarkMode
+                  ? "bg-iron-900/50"
+                  : "bg-white border border-slate-200 shadow-sm"
+              }`}
+            >
               <div className="flex justify-between mb-2">
-                <span className="text-iron-400 text-sm">Today's Progress</span>
-                <span className="text-amber-400 font-medium">
+                <span
+                  className={`text-sm ${
+                    isDarkMode ? "text-iron-400" : "text-slate-600"
+                  }`}
+                >
+                  Today's Progress
+                </span>
+                <span
+                  className={`font-medium ${
+                    isDarkMode ? "text-lift-primary" : "text-amber-500"
+                  }`}
+                >
                   {todayStats.percentage}%
                 </span>
               </div>
-              <div className="h-2.5 bg-iron-800 rounded-full overflow-hidden">
+              <div
+                className={`h-2.5 rounded-full overflow-hidden ${
+                  isDarkMode ? "bg-iron-800" : "bg-slate-200"
+                }`}
+              >
                 <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full transition-all duration-300"
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    isDarkMode
+                      ? "bg-gradient-to-r from-lift-primary to-lift-secondary"
+                      : "bg-gradient-to-r from-amber-500 to-amber-400"
+                  }`}
                   style={{ width: `${todayStats.percentage}%` }}
                 />
               </div>
@@ -426,16 +553,25 @@ export default function Food() {
               return (
                 <div
                   key={item.id}
-                  className="bg-iron-900/50 rounded-2xl overflow-hidden"
+                  className={`rounded-2xl overflow-hidden ${
+                    isDarkMode
+                      ? "bg-iron-900/50"
+                      : "bg-white border border-slate-200 shadow-sm"
+                  }`}
                 >
                   <div className="p-4 flex items-center gap-3">
-                    {/* Toggle Button */}
                     <button
                       onClick={() => handleToggle(item)}
                       className={`
                         w-14 h-14 rounded-xl flex items-center justify-center text-2xl
                         transition-all duration-200 active:scale-95
-                        ${isConsumed ? "shadow-lg" : "bg-iron-800"}
+                        ${
+                          isConsumed
+                            ? "shadow-lg"
+                            : isDarkMode
+                              ? "bg-iron-800"
+                              : "bg-slate-100"
+                        }
                       `}
                       style={{
                         backgroundColor: isConsumed ? item.color : undefined,
@@ -448,19 +584,36 @@ export default function Food() {
                       )}
                     </button>
 
-                    {/* Item Info */}
                     <button
                       className="flex-1 text-left"
                       onClick={() => handleExpandItem(item.id)}
                     >
                       <p
-                        className={`font-medium ${isConsumed ? "text-iron-100" : "text-iron-300"}`}
+                        className={`font-medium ${
+                          isConsumed
+                            ? isDarkMode
+                              ? "text-iron-100"
+                              : "text-slate-800"
+                            : isDarkMode
+                              ? "text-iron-300"
+                              : "text-slate-600"
+                        }`}
                       >
                         {item.name}
                       </p>
-                      <p className="text-iron-500 text-sm">
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-iron-500" : "text-slate-500"
+                        }`}
+                      >
                         {isConsumed && (
-                          <span className="text-amber-400">
+                          <span
+                            className={
+                              isDarkMode
+                                ? "text-lift-primary"
+                                : "text-amber-500"
+                            }
+                          >
                             {quantity} {item.unit} ·{" "}
                           </span>
                         )}
@@ -470,7 +623,6 @@ export default function Food() {
                       </p>
                     </button>
 
-                    {/* Quantity Adjuster (when consumed) */}
                     {isConsumed && (
                       <div className="flex items-center gap-1">
                         <button
@@ -481,11 +633,21 @@ export default function Food() {
                             );
                             queryClient.invalidateQueries(["foodHistory"]);
                           }}
-                          className="w-8 h-8 rounded-lg bg-iron-800 flex items-center justify-center"
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                          }`}
                         >
-                          <Minus className="w-4 h-4 text-iron-400" />
+                          <Minus
+                            className={`w-4 h-4 ${
+                              isDarkMode ? "text-iron-400" : "text-slate-500"
+                            }`}
+                          />
                         </button>
-                        <span className="w-8 text-center text-iron-100 font-medium">
+                        <span
+                          className={`w-8 text-center font-medium ${
+                            isDarkMode ? "text-iron-100" : "text-slate-800"
+                          }`}
+                        >
                           {quantity}
                         </span>
                         <button
@@ -493,29 +655,39 @@ export default function Food() {
                             updateFoodEntryQuantity(item.id, quantity + 0.5);
                             queryClient.invalidateQueries(["foodHistory"]);
                           }}
-                          className="w-8 h-8 rounded-lg bg-iron-800 flex items-center justify-center"
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                          }`}
                         >
-                          <Plus className="w-4 h-4 text-iron-400" />
+                          <Plus
+                            className={`w-4 h-4 ${
+                              isDarkMode ? "text-iron-400" : "text-slate-500"
+                            }`}
+                          />
                         </button>
                       </div>
                     )}
 
-                    {/* Expand/Actions */}
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleEditFood(item)}
-                        className="p-2 text-iron-500 hover:text-iron-300"
+                        className={`p-2 ${
+                          isDarkMode
+                            ? "text-iron-500 hover:text-iron-300"
+                            : "text-slate-400 hover:text-slate-600"
+                        }`}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <ChevronDown
-                        className={`w-5 h-5 text-iron-500 transition-transform cursor-pointer ${isExpanded ? "rotate-180" : ""}`}
+                        className={`w-5 h-5 transition-transform cursor-pointer ${
+                          isExpanded ? "rotate-180" : ""
+                        } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
                         onClick={() => handleExpandItem(item.id)}
                       />
                     </div>
                   </div>
 
-                  {/* Expanded Heatmap */}
                   {isExpanded && (
                     <div className="px-4 pb-4">
                       <ActivityHeatmap
@@ -524,6 +696,7 @@ export default function Food() {
                         label=""
                         color={item.color}
                         compact={true}
+                        isDarkMode={isDarkMode}
                       />
                     </div>
                   )}
@@ -531,22 +704,39 @@ export default function Food() {
               );
             })}
 
-            {/* Empty State */}
             {foodItems.length === 0 && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className="w-full p-8 rounded-2xl border-2 border-dashed border-iron-800 
-                         flex flex-col items-center justify-center gap-3
-                         hover:border-iron-700 active:bg-iron-900/50 transition-colors"
+                className={`w-full p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-colors ${
+                  isDarkMode
+                    ? "border-iron-800 hover:border-iron-700 active:bg-iron-900/50"
+                    : "border-slate-300 hover:border-slate-400 active:bg-slate-50"
+                }`}
               >
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center">
-                  <Utensils className="w-8 h-8 text-amber-400" />
+                <div
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                    isDarkMode ? "bg-lift-primary/20" : "bg-amber-100"
+                  }`}
+                >
+                  <Utensils
+                    className={`w-8 h-8 ${
+                      isDarkMode ? "text-lift-primary" : "text-amber-500"
+                    }`}
+                  />
                 </div>
                 <div className="text-center">
-                  <p className="text-iron-300 font-medium">
+                  <p
+                    className={`font-medium ${
+                      isDarkMode ? "text-iron-300" : "text-slate-700"
+                    }`}
+                  >
                     Add your first food item
                   </p>
-                  <p className="text-iron-600 text-sm mt-1">
+                  <p
+                    className={`text-sm mt-1 ${
+                      isDarkMode ? "text-iron-600" : "text-slate-500"
+                    }`}
+                  >
                     Track eggs, shakes, supplements...
                   </p>
                 </div>
@@ -562,24 +752,39 @@ export default function Food() {
               label="Food Tracking Activity"
               color="#f59e0b"
               subtitle={`${stats.daysThisMonth} days this month`}
+              isDarkMode={isDarkMode}
             />
           )}
 
-          {/* Recent History - Collapsible */}
+          {/* Recent History */}
           {recentHistory.length > 0 && (
             <CollapsibleSection
               title="Recent History"
               icon={History}
               count={recentHistory.length}
               defaultOpen={false}
+              isDarkMode={isDarkMode}
             >
               {recentHistory.map(({ date, entries }) => (
-                <div key={date} className="bg-iron-900/30 rounded-xl p-3">
+                <div
+                  key={date}
+                  className={`rounded-xl p-3 ${
+                    isDarkMode ? "bg-iron-900/30" : "bg-slate-50"
+                  }`}
+                >
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-iron-300 font-medium text-sm">
+                    <p
+                      className={`font-medium text-sm ${
+                        isDarkMode ? "text-iron-300" : "text-slate-700"
+                      }`}
+                    >
                       {formatDisplayDate(date)}
                     </p>
-                    <span className="text-iron-500 text-xs">
+                    <span
+                      className={`text-xs ${
+                        isDarkMode ? "text-iron-500" : "text-slate-500"
+                      }`}
+                    >
                       {entries.length} items
                     </span>
                   </div>
@@ -596,9 +801,19 @@ export default function Food() {
                           style={{ backgroundColor: `${item.color}20` }}
                         >
                           <span>{item.icon}</span>
-                          <span className="text-iron-300">{item.name}</span>
+                          <span
+                            className={
+                              isDarkMode ? "text-iron-300" : "text-slate-700"
+                            }
+                          >
+                            {item.name}
+                          </span>
                           {entry.quantity && entry.quantity !== 1 && (
-                            <span className="text-iron-500">
+                            <span
+                              className={
+                                isDarkMode ? "text-iron-500" : "text-slate-500"
+                              }
+                            >
                               ×{entry.quantity}
                             </span>
                           )}
@@ -623,9 +838,14 @@ export default function Food() {
           </DrawerHeader>
 
           <div className="px-4 pb-4 space-y-4 overflow-y-auto max-h-[60vh]">
-            {/* Name */}
             <div>
-              <label className="block text-iron-400 text-sm mb-2">Name</label>
+              <label
+                className={`block text-sm mb-2 ${
+                  isDarkMode ? "text-iron-400" : "text-slate-600"
+                }`}
+              >
+                Name
+              </label>
               <input
                 type="text"
                 value={newFood.name}
@@ -633,15 +853,23 @@ export default function Food() {
                   setNewFood({ ...newFood, name: e.target.value })
                 }
                 placeholder="e.g., Eggs, Protein Shake"
-                className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
-                         placeholder-iron-600 outline-none focus:ring-2 focus:ring-amber-500/50"
+                className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                  isDarkMode
+                    ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
+                    : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
+                }`}
               />
             </div>
 
-            {/* Unit & Default Quantity */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-iron-400 text-sm mb-2">Unit</label>
+                <label
+                  className={`block text-sm mb-2 ${
+                    isDarkMode ? "text-iron-400" : "text-slate-600"
+                  }`}
+                >
+                  Unit
+                </label>
                 <input
                   type="text"
                   value={newFood.unit}
@@ -649,12 +877,19 @@ export default function Food() {
                     setNewFood({ ...newFood, unit: e.target.value })
                   }
                   placeholder="servings, eggs, ml"
-                  className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
-                           placeholder-iron-600 outline-none focus:ring-2 focus:ring-amber-500/50"
+                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
+                      : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
+                  }`}
                 />
               </div>
               <div>
-                <label className="block text-iron-400 text-sm mb-2">
+                <label
+                  className={`block text-sm mb-2 ${
+                    isDarkMode ? "text-iron-400" : "text-slate-600"
+                  }`}
+                >
                   Default Qty
                 </label>
                 <input
@@ -668,26 +903,37 @@ export default function Food() {
                       default_quantity: parseFloat(e.target.value) || 1,
                     })
                   }
-                  className="w-full h-12 px-4 rounded-xl bg-iron-800 text-iron-100 
-                           placeholder-iron-600 outline-none focus:ring-2 focus:ring-amber-500/50"
+                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
+                      : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
+                  }`}
                 />
               </div>
             </div>
 
-            {/* Icon */}
             <div>
-              <label className="block text-iron-400 text-sm mb-2">Icon</label>
+              <label
+                className={`block text-sm mb-2 ${
+                  isDarkMode ? "text-iron-400" : "text-slate-600"
+                }`}
+              >
+                Icon
+              </label>
               <div className="flex flex-wrap gap-2">
                 {FOOD_ICONS.map((icon) => (
                   <button
                     key={icon}
                     onClick={() => setNewFood({ ...newFood, icon })}
-                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center
-                      ${
-                        newFood.icon === icon
-                          ? "bg-iron-700 ring-2 ring-amber-500"
-                          : "bg-iron-800"
-                      }`}
+                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center ${
+                      newFood.icon === icon
+                        ? isDarkMode
+                          ? "bg-iron-700 ring-2 ring-lift-primary"
+                          : "bg-slate-200 ring-2 ring-amber-500"
+                        : isDarkMode
+                          ? "bg-iron-800"
+                          : "bg-slate-100"
+                    }`}
                   >
                     {icon}
                   </button>
@@ -695,9 +941,14 @@ export default function Food() {
               </div>
             </div>
 
-            {/* Color */}
             <div>
-              <label className="block text-iron-400 text-sm mb-2">Color</label>
+              <label
+                className={`block text-sm mb-2 ${
+                  isDarkMode ? "text-iron-400" : "text-slate-600"
+                }`}
+              >
+                Color
+              </label>
               <div className="flex flex-wrap gap-2">
                 {FOOD_COLORS.map((color) => (
                   <button
@@ -705,18 +956,30 @@ export default function Food() {
                     onClick={() => setNewFood({ ...newFood, color })}
                     className={`w-10 h-10 rounded-xl transition-transform ${
                       newFood.color === color
-                        ? "ring-2 ring-white ring-offset-2 ring-offset-iron-900 scale-110"
+                        ? "ring-2 ring-white ring-offset-2 scale-110"
                         : ""
                     }`}
-                    style={{ backgroundColor: color }}
+                    style={{
+                      backgroundColor: color,
+                      ringOffsetColor: isDarkMode ? "#18181b" : "#f8fafc",
+                    }}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Preview */}
-            <div className="p-4 bg-iron-800/50 rounded-xl">
-              <p className="text-iron-500 text-xs mb-2">Preview</p>
+            <div
+              className={`p-4 rounded-xl ${
+                isDarkMode ? "bg-iron-800/50" : "bg-slate-100"
+              }`}
+            >
+              <p
+                className={`text-xs mb-2 ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
+                Preview
+              </p>
               <div className="flex items-center gap-3">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
@@ -725,17 +988,24 @@ export default function Food() {
                   {newFood.icon}
                 </div>
                 <div>
-                  <p className="text-iron-100 font-medium">
+                  <p
+                    className={`font-medium ${
+                      isDarkMode ? "text-iron-100" : "text-slate-800"
+                    }`}
+                  >
                     {newFood.name || "Food Name"}
                   </p>
-                  <p className="text-iron-500 text-sm">
+                  <p
+                    className={`text-sm ${
+                      isDarkMode ? "text-iron-500" : "text-slate-500"
+                    }`}
+                  >
                     {newFood.default_quantity} {newFood.unit}
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-3 pt-2 pb-safe">
               {editingItem && (
                 <button
@@ -750,15 +1020,22 @@ export default function Food() {
               )}
               <button
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 py-3 rounded-xl bg-iron-800 text-iron-400 font-medium"
+                className={`flex-1 py-3 rounded-xl font-medium ${
+                  isDarkMode
+                    ? "bg-iron-800 text-iron-400"
+                    : "bg-slate-100 text-slate-600"
+                }`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveFood}
                 disabled={!newFood.name.trim()}
-                className="flex-1 py-3 rounded-xl bg-amber-500 text-iron-950 font-bold
-                         disabled:opacity-50 flex items-center justify-center gap-2"
+                className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
+                  isDarkMode
+                    ? "bg-lift-primary text-iron-950"
+                    : "bg-amber-500 text-white"
+                }`}
               >
                 <Check className="w-4 h-4" />
                 {editingItem ? "Save" : "Add"}
@@ -783,29 +1060,52 @@ export default function Food() {
                 onClick={() =>
                   setTempQuantity(Math.max(0.5, tempQuantity - 0.5))
                 }
-                className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center"
+                className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                }`}
               >
-                <Minus className="w-6 h-6 text-iron-300" />
+                <Minus
+                  className={`w-6 h-6 ${
+                    isDarkMode ? "text-iron-300" : "text-slate-600"
+                  }`}
+                />
               </button>
               <div className="text-center w-24">
-                <span className="text-4xl font-bold text-iron-100">
+                <span
+                  className={`text-4xl font-bold ${
+                    isDarkMode ? "text-iron-100" : "text-slate-800"
+                  }`}
+                >
                   {tempQuantity}
                 </span>
-                <p className="text-iron-500 text-sm">
+                <p
+                  className={`text-sm ${
+                    isDarkMode ? "text-iron-500" : "text-slate-500"
+                  }`}
+                >
                   {showQuantityModal?.unit}
                 </p>
               </div>
               <button
                 onClick={() => setTempQuantity(tempQuantity + 0.5)}
-                className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center"
+                className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                }`}
               >
-                <Plus className="w-6 h-6 text-iron-300" />
+                <Plus
+                  className={`w-6 h-6 ${
+                    isDarkMode ? "text-iron-300" : "text-slate-600"
+                  }`}
+                />
               </button>
             </div>
             <button
               onClick={handleQuantityConfirm}
-              className="w-full py-4 rounded-xl bg-amber-500 text-iron-950 font-bold
-                       flex items-center justify-center gap-2 mb-safe"
+              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 mb-safe ${
+                isDarkMode
+                  ? "bg-lift-primary text-iron-950"
+                  : "bg-amber-500 text-white"
+              }`}
             >
               <Check className="w-5 h-5" />
               Log {tempQuantity} {showQuantityModal?.unit}

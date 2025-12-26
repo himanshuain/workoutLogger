@@ -9,21 +9,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Dark gym aesthetic (dark mode)
+        // Batman Dark Theme (dark mode) - Dark grays with yellow accent
         iron: {
-          50: '#f7f7f8',
-          100: '#eeeef0',
-          200: '#d9d9de',
-          300: '#b8b8c1',
-          400: '#91919f',
-          500: '#747484',
-          600: '#5d5d6c',
-          700: '#4c4c58',
-          800: '#41414b',
-          900: '#393941',
-          950: '#18181b',
+          50: '#fafafa',
+          100: '#f4f4f5',
+          200: '#e4e4e7',
+          300: '#d4d4d8',
+          400: '#a1a1aa',
+          500: '#71717a',
+          600: '#52525b',
+          700: '#3f3f46',
+          800: '#27272a',
+          900: '#1c1c1e',
+          950: '#0a0a0b',
         },
-        // Light mode colors
+        // Spiderman Light Mode - Slate colors
         slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -36,20 +36,36 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
         },
+        // Batman theme - Yellow/Gold accent for dark mode
         lift: {
-          primary: '#22c55e',
-          secondary: '#16a34a',
-          accent: '#4ade80',
+          primary: '#fbbf24',
+          secondary: '#f59e0b',
+          accent: '#fcd34d',
         },
-        // Blue theme for light mode (matching mockup)
+        // Spiderman theme - Red/Blue for light mode
         workout: {
-          primary: '#3b82f6',
-          secondary: '#2563eb',
-          light: '#60a5fa',
-          gradient: {
-            from: '#4F8CFF',
-            to: '#6366f1',
-          }
+          primary: '#dc2626',
+          secondary: '#b91c1c',
+          light: '#f87171',
+          blue: '#2563eb',
+          'blue-light': '#3b82f6',
+        },
+        // Spiderman Red
+        spider: {
+          red: '#dc2626',
+          'red-light': '#ef4444',
+          'red-dark': '#b91c1c',
+          blue: '#2563eb',
+          'blue-light': '#3b82f6',
+          'blue-dark': '#1d4ed8',
+        },
+        // Batman Yellow/Gold
+        bat: {
+          yellow: '#fbbf24',
+          'yellow-light': '#fcd34d',
+          'yellow-dark': '#f59e0b',
+          black: '#0a0a0b',
+          gray: '#1c1c1e',
         },
       },
       fontFamily: {

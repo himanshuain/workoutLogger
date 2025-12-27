@@ -307,7 +307,7 @@ export default function Routines() {
             </DrawerTitle>
           </DrawerHeader>
 
-          <div className="px-4 pb-4 space-y-4 overflow-y-auto max-h-[60vh]">
+          <div className="px-4 pb-24 space-y-4 overflow-y-auto max-h-[70vh]">
             {/* Name */}
             <div>
               <label

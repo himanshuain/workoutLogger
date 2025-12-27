@@ -8,12 +8,14 @@ import {
   Settings,
   Utensils,
   ListChecks,
+  CalendarClock,
 } from "lucide-react";
 
 const tabs = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
   { id: "routines", href: "/routines", icon: ListChecks, label: "Routines" },
   { id: "food", href: "/food", icon: Utensils, label: "Food" },
+  { id: "lifelog", href: "/lifelog", icon: CalendarClock, label: "Log" },
   { id: "progress", href: "/progress", icon: TrendingUp, label: "Progress" },
   { id: "settings", href: "/settings", icon: Settings, label: "Settings" },
 ];

@@ -72,6 +72,14 @@
 - **Quantity tracking** - Log servings/quantities
 - **Calendar view** - See what you ate each day
 
+### 📅 Life Log (NEW!)
+
+- **Track occasional events** - Haircuts, doctor visits, car service, etc.
+- **See "X days ago"** - Instantly know when you last did something
+- **Reminder highlights** - Events are highlighted when overdue
+- **Full history** - View all past occurrences of any event
+- **Optional notes & cost** - Add details to each log entry
+
 ### 🎨 Themes
 
 - **🦇 Batman (Dark)** - Dark grays with yellow/gold accents
@@ -256,6 +264,19 @@
 │ sets             │          │ personal_record  │
 └──────────────────┘          │ times_performed  │
 (Legacy logging)              └──────────────────┘
+
+
+┌──────────────────┐          ┌──────────────────┐
+│   event_types    │          │   event_logs     │
+├──────────────────┤          ├──────────────────┤
+│ user_id (FK)     │◄─────────│ event_type_id(FK)│
+│ name             │          │ user_id (FK)     │
+│ icon             │          │ date             │
+│ color            │          │ notes            │
+│ reminder_days    │          │ cost             │
+│ description      │          └──────────────────┘
+└──────────────────┘
+(Life Log feature)
 ```
 
 ### Tables Summary
@@ -272,6 +293,8 @@
 | `tracking_entries`  | Daily habit completions          | is_completed, value        |
 | `food_items`        | Custom food items to track       | name, icon                 |
 | `food_entries`      | Daily food log                   | quantity, date             |
+| `event_types`       | Life Log event types             | name, icon, reminder_days  |
+| `event_logs`        | Life Log occurrences             | date, notes, cost          |
 | `user_settings`     | User preferences                 | unit (kg/lb), dark_mode    |
 
 ---

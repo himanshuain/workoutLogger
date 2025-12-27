@@ -19,6 +19,7 @@ export function WorkoutProvider({ children }) {
   const [todayFoodEntries, setTodayFoodEntries] = useState({});
   const [routines, setRoutines] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
+  const [eventTypes, setEventTypes] = useState([]);
   const [settings, setSettings] = useState({
     unit: "kg",
     dark_mode: true,
@@ -599,6 +600,65 @@ export function WorkoutProvider({ children }) {
     [user, activeSession],
   );
 
+  // ============================================
+  // LIFE LOG FUNCTIONS
+  // ============================================
+
+  // Load event types with their latest log
+  const loadEventTypes = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("event_types")
+        .select(`
+          *,
+          event_logs (
+            id,
+            date,
+            notes,
+            cost,
+            created_at
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("order_index");
+
+      if (!error && data) {
+        // Process to add last_log and days_since for each event type
+        const processed = data.map((eventType) => {
+          const logs = eventType.event_logs || [];
+          // Sort logs by date descending to get the most recent
+          const sortedLogs = logs.sort(
+            (a, b) => new Date(b.date) - new Date(a.date),
+          );
+          const lastLog = sortedLogs[0] || null;
+
+          let daysSince = null;
+          if (lastLog) {
+            const lastDate = new Date(lastLog.date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            lastDate.setHours(0, 0, 0, 0);
+            daysSince = Math.floor(
+              (today - lastDate) / (1000 * 60 * 60 * 24),
+            );
+          }
+
+          return {
+            ...eventType,
+            last_log: lastLog,
+            days_since: daysSince,
+            total_logs: logs.length,
+          };
+        });
+
+        setEventTypes(processed);
+      }
+    } catch (err) {
+      console.error("Error loading event types:", err);
+    }
+  }, [user]);
+
   // Initialize when user changes
   useEffect(() => {
     async function init() {
@@ -614,6 +674,7 @@ export function WorkoutProvider({ children }) {
           loadTodayFoodEntries(),
           loadRoutines(),
           loadActiveSession(),
+          loadEventTypes(),
         ]);
       }
       setIsLoading(false);
@@ -630,6 +691,7 @@ export function WorkoutProvider({ children }) {
     loadTodayFoodEntries,
     loadRoutines,
     loadActiveSession,
+    loadEventTypes,
   ]);
 
   // Toggle tracking entry (habit/health)
@@ -1096,6 +1158,168 @@ export function WorkoutProvider({ children }) {
     [settings, user],
   );
 
+  // Create event type
+  const createEventType = useCallback(
+    async (eventType) => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("event_types")
+        .insert({
+          user_id: user.id,
+          ...eventType,
+          order_index: eventTypes.length,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        const newEventType = {
+          ...data,
+          event_logs: [],
+          last_log: null,
+          days_since: null,
+          total_logs: 0,
+        };
+        setEventTypes((prev) => [...prev, newEventType]);
+        return newEventType;
+      }
+      return null;
+    },
+    [user, eventTypes],
+  );
+
+  // Update event type
+  const updateEventType = useCallback(
+    async (id, updates) => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("event_types")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (!error) {
+        setEventTypes((prev) =>
+          prev.map((et) => (et.id === id ? { ...et, ...updates } : et)),
+        );
+      }
+    },
+    [user],
+  );
+
+  // Delete event type
+  const deleteEventType = useCallback(
+    async (id) => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from("event_types")
+        .delete()
+        .eq("id", id);
+
+      if (!error) {
+        setEventTypes((prev) => prev.filter((et) => et.id !== id));
+      }
+    },
+    [user],
+  );
+
+  // Log an event (add a new occurrence)
+  const logEvent = useCallback(
+    async (eventTypeId, { date = null, notes = null, cost = null } = {}) => {
+      if (!user) return null;
+
+      const logDate = date || getLocalDateStr();
+
+      const { data, error } = await supabase
+        .from("event_logs")
+        .insert({
+          user_id: user.id,
+          event_type_id: eventTypeId,
+          date: logDate,
+          notes,
+          cost,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        // Update the event type in state with new log
+        setEventTypes((prev) =>
+          prev.map((et) => {
+            if (et.id === eventTypeId) {
+              const newLogs = [data, ...(et.event_logs || [])];
+              const daysSince = 0; // Just logged today or on the date
+
+              // Calculate actual days since
+              const logDateObj = new Date(logDate);
+              const todayObj = new Date();
+              todayObj.setHours(0, 0, 0, 0);
+              logDateObj.setHours(0, 0, 0, 0);
+              const actualDaysSince = Math.floor(
+                (todayObj - logDateObj) / (1000 * 60 * 60 * 24),
+              );
+
+              return {
+                ...et,
+                event_logs: newLogs,
+                last_log: data,
+                days_since: actualDaysSince,
+                total_logs: (et.total_logs || 0) + 1,
+              };
+            }
+            return et;
+          }),
+        );
+        return data;
+      }
+      return null;
+    },
+    [user],
+  );
+
+  // Delete an event log
+  const deleteEventLog = useCallback(
+    async (logId, eventTypeId) => {
+      if (!user) return false;
+
+      const { error } = await supabase
+        .from("event_logs")
+        .delete()
+        .eq("id", logId);
+
+      if (!error) {
+        // Reload event types to get updated last_log
+        await loadEventTypes();
+        return true;
+      }
+      return false;
+    },
+    [user, loadEventTypes],
+  );
+
+  // Get all logs for an event type
+  const getEventLogs = useCallback(
+    async (eventTypeId) => {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from("event_logs")
+        .select("*")
+        .eq("event_type_id", eventTypeId)
+        .order("date", { ascending: false });
+
+      if (error) {
+        console.error("Error getting event logs:", error);
+        return [];
+      }
+
+      return data || [];
+    },
+    [user],
+  );
+
   // Auth functions
   const signIn = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -1123,6 +1347,7 @@ export function WorkoutProvider({ children }) {
     setTodayFoodEntries({});
     setRoutines([]);
     setActiveSession(null);
+    setEventTypes([]);
   }, []);
 
   return (
@@ -1137,6 +1362,7 @@ export function WorkoutProvider({ children }) {
         todayFoodEntries,
         routines,
         activeSession,
+        eventTypes,
         settings,
         isLoading,
         today,
@@ -1147,6 +1373,7 @@ export function WorkoutProvider({ children }) {
         loadTodayFoodEntries,
         loadRoutines,
         loadActiveSession,
+        loadEventTypes,
         toggleTrackingEntry,
         logExercise,
         getExerciseLogs,
@@ -1180,6 +1407,13 @@ export function WorkoutProvider({ children }) {
         getWorkoutSession,
         getTodaySession,
         updateSessionExerciseIndex,
+        // Life Log functions
+        createEventType,
+        updateEventType,
+        deleteEventType,
+        logEvent,
+        deleteEventLog,
+        getEventLogs,
       }}
     >
       {children}

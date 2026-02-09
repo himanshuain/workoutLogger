@@ -1,15 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useTheme } from "@/context/ThemeContext";
-import {
-  Dumbbell,
-  TrendingUp,
-  History,
-  Settings,
-  Utensils,
-  ListChecks,
-  CalendarClock,
-} from "lucide-react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, CalendarClock } from "lucide-react";
 
 const tabs = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
@@ -20,240 +13,331 @@ const tabs = [
   { id: "settings", href: "/settings", icon: Settings, label: "Settings" },
 ];
 
+// Animation variants
+const cardVariants = {
+  initial: { opacity: 0, y: 20, scale: 0.98 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+  exit: {
+    opacity: 0,
+    y: -20,
+    scale: 0.98,
+    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+};
+
+const headerVariants = {
+  initial: { opacity: 0, y: -10 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, delay: 0.1 },
+  },
+};
+
+const contentVariants = {
+  initial: { opacity: 0, y: 15 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, delay: 0.15, ease: "easeOut" },
+  },
+};
+
+const previewCardVariants = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+  },
+};
+
+const navItemVariants = {
+  tap: { scale: 0.9 },
+  hover: { scale: 1.05 },
+};
+
 export default function Layout({ children }) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState(() => {
-    const tab = tabs.find((t) => t.href === router.pathname);
+    const tab = tabs.find(t => t.href === router.pathname);
     return tab?.id || "today";
   });
+  const [direction, setDirection] = useState(0);
 
-  // Swipe state
-  const touchRef = useRef({
-    startX: 0,
-    startY: 0,
-    startTime: 0,
-    isValidSwipe: false,
-  });
+  const containerRef = useRef(null);
+  const cardRefs = useRef([]);
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef(null);
+
+  const currentIndex = tabs.findIndex(t => t.id === activeTab);
+
+  // Scroll-based animations
+  const { scrollYProgress } = useScroll({ container: containerRef });
+  const headerOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0.95]);
 
   // Update active tab when route changes
   useEffect(() => {
-    const tab = tabs.find((t) => t.href === router.pathname);
-    if (tab) setActiveTab(tab.id);
+    const tab = tabs.find(t => t.href === router.pathname);
+    if (tab) {
+      const newIndex = tabs.findIndex(t => t.id === tab.id);
+      setDirection(newIndex > currentIndex ? 1 : -1);
+      setActiveTab(tab.id);
+    }
   }, [router.pathname]);
 
-  // Swipe configuration
-  const config = {
-    minSwipeDistance: 120,
-    maxVerticalDistance: 80,
-    minVelocity: 0.3,
-    edgeZone: 50,
-  };
+  // Scroll to active card on mount and route change
+  useEffect(() => {
+    const container = containerRef.current;
+    const card = cardRefs.current[currentIndex];
+    if (container && card) {
+      isScrollingRef.current = true;
+      card.scrollIntoView({ behavior: "instant", block: "start" });
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 100);
+    }
+  }, [currentIndex]);
 
-  const onTouchStart = (e) => {
-    const touch = e.touches[0];
-    const screenWidth = window.innerWidth;
+  // Handle scroll snap — detect which card is snapped and navigate
+  const handleScroll = useCallback(() => {
+    if (isScrollingRef.current) return;
 
-    const isLeftEdge = touch.clientX < config.edgeZone;
-    const isRightEdge = touch.clientX > screenWidth - config.edgeZone;
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
 
-    touchRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
-      startTime: Date.now(),
-      isValidSwipe: isLeftEdge || isRightEdge,
-      startedFromLeft: isLeftEdge,
-      startedFromRight: isRightEdge,
-    };
-  };
+    scrollTimeoutRef.current = setTimeout(() => {
+      const container = containerRef.current;
+      if (!container) return;
 
-  const onTouchEnd = (e) => {
-    const touch = e.changedTouches[0];
-    const {
-      startX,
-      startY,
-      startTime,
-      isValidSwipe,
-      startedFromLeft,
-      startedFromRight,
-    } = touchRef.current;
+      const containerTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
 
-    if (!isValidSwipe) return;
+      // Find which card is most visible
+      let bestMatch = currentIndex;
+      let bestVisibility = 0;
 
-    const endX = touch.clientX;
-    const endY = touch.clientY;
-    const endTime = Date.now();
+      cardRefs.current.forEach((card, idx) => {
+        if (!card) return;
+        const cardTop = card.offsetTop;
+        const cardHeight = card.offsetHeight;
+        const cardBottom = cardTop + cardHeight;
 
-    const distanceX = endX - startX;
-    const distanceY = Math.abs(endY - startY);
-    const duration = endTime - startTime;
-    const velocity = Math.abs(distanceX) / duration;
+        const visibleTop = Math.max(cardTop, containerTop);
+        const visibleBottom = Math.min(cardBottom, containerTop + containerHeight);
+        const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+        const visibility = visibleHeight / containerHeight;
 
-    const isHorizontalEnough = distanceY < config.maxVerticalDistance;
-    const isLongEnough = Math.abs(distanceX) > config.minSwipeDistance;
-    const isFastEnough = velocity > config.minVelocity;
-
-    const isSwipeLeft = distanceX < 0;
-    const isSwipeRight = distanceX > 0;
-
-    const isValidLeftEdgeSwipe = startedFromLeft && isSwipeRight;
-    const isValidRightEdgeSwipe = startedFromRight && isSwipeLeft;
-
-    if (isHorizontalEnough && isLongEnough && isFastEnough) {
-      const currentIndex = tabs.findIndex((t) => t.id === activeTab);
-
-      if (isValidRightEdgeSwipe && currentIndex < tabs.length - 1) {
-        const nextTab = tabs[currentIndex + 1];
-        router.push(nextTab.href);
-
-        if (window.navigator?.vibrate) {
-          window.navigator.vibrate(10);
+        if (visibility > bestVisibility) {
+          bestVisibility = visibility;
+          bestMatch = idx;
         }
-      } else if (isValidLeftEdgeSwipe && currentIndex > 0) {
-        const prevTab = tabs[currentIndex - 1];
-        router.push(prevTab.href);
+      });
 
-        if (window.navigator?.vibrate) {
-          window.navigator.vibrate(10);
+      // Navigate if snapped to a different tab
+      if (bestMatch !== currentIndex && bestVisibility > 0.5) {
+        const targetTab = tabs[bestMatch];
+        if (targetTab) {
+          if (window.navigator?.vibrate) {
+            window.navigator.vibrate(10);
+          }
+          setDirection(bestMatch > currentIndex ? 1 : -1);
+          router.push(targetTab.href);
         }
       }
-    }
+    }, 150);
+  }, [currentIndex, router]);
 
-    touchRef.current = {
-      startX: 0,
-      startY: 0,
-      startTime: 0,
-      isValidSwipe: false,
-    };
-  };
-
-  const handleTabClick = (tab) => {
-    router.push(tab.href);
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(5);
-    }
-  };
-
-  const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+  const handleTabClick = useCallback(
+    tab => {
+      const idx = tabs.findIndex(t => t.id === tab.id);
+      const card = cardRefs.current[idx];
+      setDirection(idx > currentIndex ? 1 : -1);
+      if (card) {
+        isScrollingRef.current = true;
+        card.scrollIntoView({ behavior: "smooth", block: "start" });
+        setTimeout(() => {
+          isScrollingRef.current = false;
+          router.push(tab.href);
+        }, 300);
+      }
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(5);
+      }
+    },
+    [router, currentIndex]
+  );
 
   return (
     <div
-      className={`min-h-screen flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
+      className={`h-screen flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      {/* Top Header with Tabs */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-xl border-b ${
-          isDarkMode
-            ? "bg-iron-950/95 border-iron-800/50"
-            : "bg-slate-50/95 border-slate-200"
-        }`}
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      {/* Scrollable Tab Cards Container */}
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto"
+        style={{
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
-        <div className="px-4 py-3">
-          {/* App Title */}
-          <div className="flex items-center justify-between mb-3">
-            <h1
-              className={`text-xl font-bold flex items-center gap-2 ${
-                isDarkMode ? "text-iron-100" : "text-slate-800"
-              }`}
+        {tabs.map((tab, idx) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          const isPrev = idx === currentIndex - 1;
+          const isNext = idx === currentIndex + 1;
+
+          return (
+            <div
+              key={tab.id}
+              ref={el => (cardRefs.current[idx] = el)}
+              className="h-full flex flex-col"
+              style={{
+                scrollSnapAlign: "start",
+                scrollSnapStop: "always",
+                minHeight: "100%",
+              }}
             >
-              <Dumbbell
-                className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
-              />
-              Logbook
-            </h1>
-          </div>
+              {/* Card Header */}
 
-          {/* Tab Bar */}
-          <div
-            className={`flex rounded-xl p-1 ${
-              isDarkMode ? "bg-iron-900/80" : "bg-slate-200/80"
-            }`}
-          >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
+              {/* Card Content */}
+              <main className="flex-1 overflow-auto">
+                {isActive ? (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`content-${tab.id}`}
+                      variants={contentVariants}
+                      initial="initial"
+                      animate="animate"
+                      className="h-full"
+                    >
+                      {children}
+                    </motion.div>
+                  </AnimatePresence>
+                ) : (
+                  // Preview card for non-active tabs
+                  <motion.div
+                    variants={previewCardVariants}
+                    initial="initial"
+                    animate="animate"
+                    className="flex flex-col items-center justify-center h-full px-6"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.1, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${
+                        isDarkMode ? "bg-iron-900" : "bg-slate-100"
+                      }`}
+                    >
+                      <Icon
+                        className={`w-10 h-10 ${
+                          isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                        }`}
+                      />
+                    </motion.div>
+                    <motion.h2
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15, duration: 0.3 }}
+                      className={`text-2xl font-bold mb-2 ${
+                        isDarkMode ? "text-iron-100" : "text-slate-800"
+                      }`}
+                    >
+                      {tab.label}
+                    </motion.h2>
+                  </motion.div>
+                )}
+              </main>
+            </div>
+          );
+        })}
+      </div>
 
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab)}
-                  className={`
-                    flex-1 flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg
-                    text-sm font-medium transition-all duration-200
-                    ${
-                      isActive
-                        ? isDarkMode
-                          ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/20"
-                          : "bg-workout-primary text-white shadow-lg shadow-workout-primary/20"
-                        : isDarkMode
-                          ? "text-iron-400 hover:text-iron-200 active:bg-iron-800"
-                          : "text-slate-500 hover:text-slate-700 active:bg-slate-300"
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Tab Indicator Dots */}
-        <div className="flex justify-center pb-2">
-          <div className="flex gap-1.5">
-            {tabs.map((tab, i) => (
-              <div
-                key={tab.id}
-                className={`h-1 rounded-full transition-all duration-200 ${
-                  i === currentIndex
-                    ? isDarkMode
-                      ? "w-6 bg-lift-primary"
-                      : "w-6 bg-workout-primary"
-                    : isDarkMode
-                      ? "w-1.5 bg-iron-700"
-                      : "w-1.5 bg-slate-300"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main
-        className="flex-1 overflow-auto"
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
+      {/* Fixed Bottom Navigation Bar */}
+      <motion.nav
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className={`flex-shrink-0 border-t ${
+          isDarkMode ? "bg-iron-950 border-iron-800/50" : "bg-slate-50 border-slate-200"
+        }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {children}
-      </main>
+        <div className="flex items-center justify-around py-2 px-1">
+          {tabs.map(navTab => {
+            const NavIcon = navTab.icon;
+            const isNavActive = navTab.id === activeTab;
 
-      {/* Edge Swipe Indicators */}
-      {currentIndex > 0 && (
-        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
-          <div
-            className={`w-1 h-16 rounded-r-full ${
-              isDarkMode
-                ? "bg-gradient-to-r from-iron-600/30 to-transparent"
-                : "bg-gradient-to-r from-slate-400/30 to-transparent"
-            }`}
-          />
+            return (
+              <motion.button
+                key={navTab.id}
+                variants={navItemVariants}
+                whileTap="tap"
+                whileHover="hover"
+                onClick={() => handleTabClick(navTab)}
+                className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-xl min-w-[3.5rem]`}
+              >
+                {/* Active indicator background */}
+                {isNavActive && (
+                  <motion.div
+                    layoutId="navActiveIndicator"
+                    className={`absolute inset-0 rounded-xl ${
+                      isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/10"
+                    }`}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <motion.div
+                  animate={{
+                    scale: isNavActive ? 1.1 : 1,
+                    y: isNavActive ? -2 : 0,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="relative z-10"
+                >
+                  <NavIcon
+                    className={`w-6 h-6 mb-1 ${
+                      isNavActive
+                        ? isDarkMode
+                          ? "text-lift-primary"
+                          : "text-workout-primary"
+                        : isDarkMode
+                          ? "text-iron-500"
+                          : "text-slate-400"
+                    }`}
+                  />
+                </motion.div>
+                <motion.span
+                  animate={{
+                    fontWeight: isNavActive ? 600 : 500,
+                  }}
+                  className={`relative z-10 text-[10px] ${
+                    isNavActive
+                      ? isDarkMode
+                        ? "text-lift-primary"
+                        : "text-workout-primary"
+                      : isDarkMode
+                        ? "text-iron-500"
+                        : "text-slate-400"
+                  }`}
+                >
+                  {navTab.label}
+                </motion.span>
+              </motion.button>
+            );
+          })}
         </div>
-      )}
-      {currentIndex < tabs.length - 1 && (
-        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
-          <div
-            className={`w-1 h-16 rounded-l-full ${
-              isDarkMode
-                ? "bg-gradient-to-l from-iron-600/30 to-transparent"
-                : "bg-gradient-to-l from-slate-400/30 to-transparent"
-            }`}
-          />
-        </div>
-      )}
+      </motion.nav>
     </div>
   );
 }

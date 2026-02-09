@@ -5,12 +5,7 @@ import Layout from "@/components/Layout";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import {
   User,
   Plus,
@@ -38,20 +33,7 @@ const PILL_COLORS = [
   "#6366f1",
 ];
 
-const PILL_ICONS = [
-  "💧",
-  "💊",
-  "🥩",
-  "😴",
-  "🧘",
-  "🏃",
-  "💪",
-  "🍎",
-  "☀️",
-  "🧠",
-  "❤️",
-  "⚡",
-];
+const PILL_ICONS = ["💧", "💊", "🥩", "😴", "🧘", "🏃", "💪", "🍎", "☀️", "🧠", "❤️", "⚡"];
 
 export default function Settings() {
   const router = useRouter();
@@ -114,7 +96,7 @@ export default function Settings() {
       const entries = await getTrackingEntries(dateRange.start, dateRange.end);
 
       const dataByTrackable = {};
-      entries.forEach((entry) => {
+      entries.forEach(entry => {
         if (!dataByTrackable[entry.trackable_id]) {
           dataByTrackable[entry.trackable_id] = {};
         }
@@ -126,7 +108,7 @@ export default function Settings() {
 
       const heatmapData = {};
 
-      trackables.forEach((trackable) => {
+      trackables.forEach(trackable => {
         const trackableData = { ...(dataByTrackable[trackable.id] || {}) };
 
         const todayEntry = todayEntries[trackable.id];
@@ -134,9 +116,10 @@ export default function Settings() {
           trackableData[today] = 1;
         }
 
-        heatmapData[trackable.id] = Object.entries(trackableData).map(
-          ([date, count]) => ({ date, count }),
-        );
+        heatmapData[trackable.id] = Object.entries(trackableData).map(([date, count]) => ({
+          date,
+          count,
+        }));
       });
 
       return heatmapData;
@@ -167,7 +150,7 @@ export default function Settings() {
     });
   };
 
-  const handleEditPill = (trackable) => {
+  const handleEditPill = trackable => {
     setEditingTrackable(trackable);
     setNewPill({
       name: trackable.name,
@@ -180,14 +163,14 @@ export default function Settings() {
     setShowAddModal(true);
   };
 
-  const handleDeletePill = async (id) => {
+  const handleDeletePill = async id => {
     if (confirm("Delete this trackable?")) {
       await deleteTrackable(id);
       queryClient.invalidateQueries(["trackingEntriesForHeatmap"]);
     }
   };
 
-  const getStreakCount = (trackableId) => {
+  const getStreakCount = trackableId => {
     const data = habitHeatmapData[trackableId] || [];
     return data.length;
   };
@@ -208,9 +191,7 @@ export default function Settings() {
           <button
             onClick={() => router.push("/auth")}
             className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
-              isDarkMode
-                ? "bg-lift-primary text-iron-950"
-                : "bg-workout-primary text-white"
+              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
             }`}
           >
             Sign In
@@ -229,9 +210,7 @@ export default function Settings() {
             isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
           }`}
         >
-          <h2
-            className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-          >
+          <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
             Settings
           </h2>
         </div>
@@ -244,11 +223,7 @@ export default function Settings() {
                 isDarkMode ? "text-iron-500" : "text-slate-500"
               }`}
             >
-              {isDarkMode ? (
-                <Moon className="w-3.5 h-3.5" />
-              ) : (
-                <Sun className="w-3.5 h-3.5" />
-              )}
+              {isDarkMode ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
               Appearance
             </h3>
             <div
@@ -272,14 +247,10 @@ export default function Settings() {
                     )}
                   </div>
                   <div>
-                    <p
-                      className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                    >
+                    <p className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                       {isDarkMode ? "Dark Mode" : "Light Mode"}
                     </p>
-                    <p
-                      className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                    >
+                    <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                       {isDarkMode ? "Easy on the eyes" : "Bright and clean"}
                     </p>
                   </div>
@@ -317,14 +288,10 @@ export default function Settings() {
             >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p
-                    className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                  >
+                  <p className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                     {user.email}
                   </p>
-                  <p
-                    className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                  >
+                  <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                     Logged in
                   </p>
                 </div>
@@ -391,7 +358,7 @@ export default function Settings() {
             </div>
 
             <div className="space-y-3">
-              {trackables.map((trackable) => {
+              {trackables.map(trackable => {
                 const isExpanded = expandedHabit === trackable.id;
                 const streakDays = getStreakCount(trackable.id);
 
@@ -399,17 +366,13 @@ export default function Settings() {
                   <div
                     key={trackable.id}
                     className={`rounded-2xl overflow-hidden ${
-                      isDarkMode
-                        ? "bg-iron-900"
-                        : "bg-white border border-slate-200 shadow-sm"
+                      isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
                     }`}
                   >
                     {/* Habit Header */}
                     <div className="p-3 flex items-center justify-between">
                       <button
-                        onClick={() =>
-                          setExpandedHabit(isExpanded ? null : trackable.id)
-                        }
+                        onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
                         className="flex items-center gap-3 flex-1"
                       >
                         <div
@@ -427,8 +390,7 @@ export default function Settings() {
                           <p
                             className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
                           >
-                            {streakDays} day{streakDays !== 1 ? "s" : ""}{" "}
-                            tracked
+                            {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
                           </p>
                         </div>
                         <ChevronDown
@@ -441,12 +403,9 @@ export default function Settings() {
                         <button
                           onClick={() => setNotificationTrackable(trackable)}
                           className={`p-2 rounded-lg ${
-                            isDarkMode
-                              ? "active:bg-iron-800"
-                              : "active:bg-slate-100"
+                            isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"
                           } ${
-                            NotificationService.getSchedule(trackable.id)
-                              ?.enabled
+                            NotificationService.getSchedule(trackable.id)?.enabled
                               ? isDarkMode
                                 ? "text-lift-primary"
                                 : "text-workout-primary"
@@ -455,8 +414,7 @@ export default function Settings() {
                                 : "text-slate-400 hover:text-slate-600"
                           }`}
                         >
-                          {NotificationService.getSchedule(trackable.id)
-                            ?.enabled ? (
+                          {NotificationService.getSchedule(trackable.id)?.enabled ? (
                             <BellRing className="w-4 h-4" />
                           ) : (
                             <Bell className="w-4 h-4" />
@@ -533,14 +491,10 @@ export default function Settings() {
                       className={`w-6 h-6 ${isDarkMode ? "text-iron-400" : "text-slate-400"}`}
                     />
                   </div>
-                  <p
-                    className={`font-medium ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-                  >
+                  <p className={`font-medium ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                     Add a habit to track
                   </p>
-                  <p
-                    className={`text-sm ${isDarkMode ? "text-iron-600" : "text-slate-500"}`}
-                  >
+                  <p className={`text-sm ${isDarkMode ? "text-iron-600" : "text-slate-500"}`}>
                     Water, sleep, supplements...
                   </p>
                 </button>
@@ -560,19 +514,13 @@ export default function Settings() {
             >
               <Zap className="w-8 h-8 text-white" />
             </div>
-            <h3
-              className={`font-bold text-lg ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-            >
+            <h3 className={`font-bold text-lg ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
               Logbook
             </h3>
-            <p
-              className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-            >
+            <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               Version 3.0.0
             </p>
-            <p
-              className={`text-xs mt-2 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
-            >
+            <p className={`text-xs mt-2 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
               Simple workout & habit tracking
             </p>
           </section>
@@ -582,9 +530,7 @@ export default function Settings() {
         <Drawer open={showAddModal} onOpenChange={setShowAddModal}>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>
-                {editingTrackable ? "Edit Trackable" : "Add Trackable"}
-              </DrawerTitle>
+              <DrawerTitle>{editingTrackable ? "Edit Trackable" : "Add Trackable"}</DrawerTitle>
             </DrawerHeader>
 
             <div className="px-4 pb-24 space-y-4 overflow-y-auto max-h-[70vh]">
@@ -598,9 +544,7 @@ export default function Settings() {
                 <input
                   type="text"
                   value={newPill.name}
-                  onChange={(e) =>
-                    setNewPill({ ...newPill, name: e.target.value })
-                  }
+                  onChange={e => setNewPill({ ...newPill, name: e.target.value })}
                   placeholder="e.g., Water, Sleep, Creatine"
                   className={`input-field ${
                     isDarkMode
@@ -674,9 +618,7 @@ export default function Settings() {
                   <input
                     type="text"
                     value={newPill.value_unit}
-                    onChange={(e) =>
-                      setNewPill({ ...newPill, value_unit: e.target.value })
-                    }
+                    onChange={e => setNewPill({ ...newPill, value_unit: e.target.value })}
                     placeholder="e.g., hours, liters, 1-10"
                     className={`input-field ${
                       isDarkMode
@@ -695,7 +637,7 @@ export default function Settings() {
                   Icon
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {PILL_ICONS.map((icon) => (
+                  {PILL_ICONS.map(icon => (
                     <button
                       key={icon}
                       onClick={() => setNewPill({ ...newPill, icon })}
@@ -723,14 +665,12 @@ export default function Settings() {
                   Color
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {PILL_COLORS.map((color) => (
+                  {PILL_COLORS.map(color => (
                     <button
                       key={color}
                       onClick={() => setNewPill({ ...newPill, color })}
                       className={`w-10 h-10 rounded-xl transition-transform ${
-                        newPill.color === color
-                          ? "ring-2 ring-white ring-offset-2 scale-110"
-                          : ""
+                        newPill.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
                       }`}
                       style={{
                         backgroundColor: color,
@@ -742,12 +682,8 @@ export default function Settings() {
               </div>
 
               {/* Preview */}
-              <div
-                className={`p-4 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-100"}`}
-              >
-                <p
-                  className={`text-xs mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                >
+              <div className={`p-4 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-100"}`}>
+                <p className={`text-xs mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                   Preview
                 </p>
                 <div
@@ -770,9 +706,7 @@ export default function Settings() {
                 <button
                   onClick={() => setShowAddModal(false)}
                   className={`flex-1 py-3.5 rounded-xl font-medium ${
-                    isDarkMode
-                      ? "bg-iron-800 text-iron-400"
-                      : "bg-slate-100 text-slate-600"
+                    isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   Cancel
@@ -781,9 +715,7 @@ export default function Settings() {
                   onClick={handleSavePill}
                   disabled={!newPill.name.trim()}
                   className={`flex-1 py-3.5 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
-                    isDarkMode
-                      ? "bg-lift-primary text-iron-950"
-                      : "bg-workout-primary text-white"
+                    isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
                   }`}
                 >
                   <Check className="w-4 h-4" />

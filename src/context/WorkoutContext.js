@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 const WorkoutContext = createContext();
@@ -54,10 +48,7 @@ export function WorkoutProvider({ children }) {
   // Load exercises
   const loadExercises = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("exercises")
-        .select("*")
-        .order("name");
+      const { data, error } = await supabase.from("exercises").select("*").order("name");
 
       if (!error && data) {
         setExercises(data);
@@ -207,17 +198,17 @@ export function WorkoutProvider({ children }) {
             target_sets,
             order_index
           )
-        `,
+        `
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (!error && data) {
         // Sort exercises within each routine
-        const sortedData = data.map((routine) => ({
+        const sortedData = data.map(routine => ({
           ...routine,
           routine_exercises: (routine.routine_exercises || []).sort(
-            (a, b) => a.order_index - b.order_index,
+            (a, b) => a.order_index - b.order_index
           ),
         }));
         setRoutines(sortedData);
@@ -229,7 +220,7 @@ export function WorkoutProvider({ children }) {
 
   // Create workout routine
   const createRoutine = useCallback(
-    async (routineData) => {
+    async routineData => {
       if (!user) return null;
 
       const { exercises: routineExercises, ...routine } = routineData;
@@ -268,7 +259,7 @@ export function WorkoutProvider({ children }) {
       await loadRoutines();
       return newRoutine;
     },
-    [user, loadRoutines],
+    [user, loadRoutines]
   );
 
   // Update workout routine
@@ -291,10 +282,7 @@ export function WorkoutProvider({ children }) {
 
       // Delete existing exercises and re-add
       if (routineExercises) {
-        await supabase
-          .from("routine_exercises")
-          .delete()
-          .eq("routine_id", routineId);
+        await supabase.from("routine_exercises").delete().eq("routine_id", routineId);
 
         if (routineExercises.length > 0) {
           const exercisesToInsert = routineExercises.map((ex, index) => ({
@@ -312,25 +300,25 @@ export function WorkoutProvider({ children }) {
 
       await loadRoutines();
     },
-    [user, loadRoutines],
+    [user, loadRoutines]
   );
 
   // Delete workout routine
   const deleteRoutine = useCallback(
-    async (routineId) => {
+    async routineId => {
       if (!user) return;
 
       await supabase.from("workout_routines").delete().eq("id", routineId);
 
-      setRoutines((prev) => prev.filter((r) => r.id !== routineId));
+      setRoutines(prev => prev.filter(r => r.id !== routineId));
     },
-    [user],
+    [user]
   );
 
   // Get today's routine
   const getTodayRoutine = useCallback(() => {
     const dayOfWeek = new Date().getDay(); // 0 = Sunday
-    return routines.find((r) => r.day_of_week === dayOfWeek) || null;
+    return routines.find(r => r.day_of_week === dayOfWeek) || null;
   }, [routines]);
 
   // ============================================
@@ -348,7 +336,7 @@ export function WorkoutProvider({ children }) {
           `
           *,
           set_logs (*)
-        `,
+        `
         )
         .eq("user_id", user.id)
         .eq("date", today)
@@ -367,7 +355,7 @@ export function WorkoutProvider({ children }) {
 
   // Start a new workout session
   const startWorkoutSession = useCallback(
-    async (routine) => {
+    async routine => {
       if (!user) return null;
 
       // Check if there's already an active session for today
@@ -449,7 +437,7 @@ export function WorkoutProvider({ children }) {
       setActiveSession(completeSession);
       return completeSession;
     },
-    [user, today, exerciseHistory],
+    [user, today, exerciseHistory]
   );
 
   // Update a set log
@@ -466,20 +454,18 @@ export function WorkoutProvider({ children }) {
         .eq("id", setLogId);
 
       if (!error && activeSession) {
-        setActiveSession((prev) => ({
+        setActiveSession(prev => ({
           ...prev,
-          set_logs: prev.set_logs.map((log) =>
-            log.id === setLogId ? { ...log, ...updates } : log,
-          ),
+          set_logs: prev.set_logs.map(log => (log.id === setLogId ? { ...log, ...updates } : log)),
         }));
       }
     },
-    [user, activeSession],
+    [user, activeSession]
   );
 
   // Complete a workout session
   const completeWorkoutSession = useCallback(
-    async (sessionId) => {
+    async sessionId => {
       if (!user) return;
 
       const { error } = await supabase
@@ -498,8 +484,8 @@ export function WorkoutProvider({ children }) {
 
           // Group completed sets by exercise
           session.set_logs
-            .filter((log) => log.is_completed)
-            .forEach((log) => {
+            .filter(log => log.is_completed)
+            .forEach(log => {
               if (!exerciseMap[log.exercise_name]) {
                 exerciseMap[log.exercise_name] = {
                   sets: 0,
@@ -511,7 +497,7 @@ export function WorkoutProvider({ children }) {
               exerciseMap[log.exercise_name].totalReps += log.reps;
               exerciseMap[log.exercise_name].maxWeight = Math.max(
                 exerciseMap[log.exercise_name].maxWeight,
-                log.weight,
+                log.weight
               );
             });
 
@@ -529,7 +515,7 @@ export function WorkoutProvider({ children }) {
               last_sets: data.sets,
               personal_record_weight: Math.max(
                 data.maxWeight,
-                existing?.personal_record_weight || 0,
+                existing?.personal_record_weight || 0
               ),
               times_performed: (existing?.times_performed || 0) + 1,
               last_performed_at: new Date().toISOString(),
@@ -542,12 +528,12 @@ export function WorkoutProvider({ children }) {
         setActiveSession(null);
       }
     },
-    [user, activeSession, exerciseHistory, loadExerciseHistory],
+    [user, activeSession, exerciseHistory, loadExerciseHistory]
   );
 
   // Get workout session by ID
   const getWorkoutSession = useCallback(
-    async (sessionId) => {
+    async sessionId => {
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -563,7 +549,7 @@ export function WorkoutProvider({ children }) {
 
       return data;
     },
-    [user],
+    [user]
   );
 
   // Get today's completed session
@@ -591,13 +577,13 @@ export function WorkoutProvider({ children }) {
         .eq("id", sessionId);
 
       if (activeSession && activeSession.id === sessionId) {
-        setActiveSession((prev) => ({
+        setActiveSession(prev => ({
           ...prev,
           current_exercise_index: index,
         }));
       }
     },
-    [user, activeSession],
+    [user, activeSession]
   );
 
   // ============================================
@@ -610,7 +596,8 @@ export function WorkoutProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from("event_types")
-        .select(`
+        .select(
+          `
           *,
           event_logs (
             id,
@@ -619,18 +606,17 @@ export function WorkoutProvider({ children }) {
             cost,
             created_at
           )
-        `)
+        `
+        )
         .eq("user_id", user.id)
         .order("order_index");
 
       if (!error && data) {
         // Process to add last_log and days_since for each event type
-        const processed = data.map((eventType) => {
+        const processed = data.map(eventType => {
           const logs = eventType.event_logs || [];
           // Sort logs by date descending to get the most recent
-          const sortedLogs = logs.sort(
-            (a, b) => new Date(b.date) - new Date(a.date),
-          );
+          const sortedLogs = logs.sort((a, b) => new Date(b.date) - new Date(a.date));
           const lastLog = sortedLogs[0] || null;
 
           let daysSince = null;
@@ -639,9 +625,7 @@ export function WorkoutProvider({ children }) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             lastDate.setHours(0, 0, 0, 0);
-            daysSince = Math.floor(
-              (today - lastDate) / (1000 * 60 * 60 * 24),
-            );
+            daysSince = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
           }
 
           return {
@@ -708,7 +692,7 @@ export function WorkoutProvider({ children }) {
           .eq("id", existing.id);
 
         if (!error) {
-          setTodayEntries((prev) => ({
+          setTodayEntries(prev => ({
             ...prev,
             [trackableId]: { ...existing, is_completed: isCompleted, value },
           }));
@@ -727,14 +711,14 @@ export function WorkoutProvider({ children }) {
           .single();
 
         if (!error && data) {
-          setTodayEntries((prev) => ({
+          setTodayEntries(prev => ({
             ...prev,
             [trackableId]: data,
           }));
         }
       }
     },
-    [user, today, todayEntries],
+    [user, today, todayEntries]
   );
 
   // Log exercise (legacy - for backwards compatibility)
@@ -771,24 +755,21 @@ export function WorkoutProvider({ children }) {
         last_weight: weight,
         last_reps: reps,
         last_sets: sets,
-        personal_record_weight: Math.max(
-          weight,
-          existing?.personal_record_weight || 0,
-        ),
+        personal_record_weight: Math.max(weight, existing?.personal_record_weight || 0),
         times_performed: (existing?.times_performed || 0) + 1,
         last_performed_at: new Date().toISOString(),
       };
 
       await supabase.from("exercise_history").upsert(historyEntry);
 
-      setExerciseHistory((prev) => ({
+      setExerciseHistory(prev => ({
         ...prev,
         [exercise.name]: historyEntry,
       }));
 
       return data;
     },
-    [user, today, exerciseHistory],
+    [user, today, exerciseHistory]
   );
 
   // Get exercise logs for a date range
@@ -811,7 +792,7 @@ export function WorkoutProvider({ children }) {
 
       return data || [];
     },
-    [user],
+    [user]
   );
 
   // Get tracking entries for a date range (for heatmap)
@@ -833,7 +814,7 @@ export function WorkoutProvider({ children }) {
 
       return data || [];
     },
-    [user],
+    [user]
   );
 
   // Get today's exercise logs
@@ -875,7 +856,7 @@ export function WorkoutProvider({ children }) {
 
       return data || [];
     },
-    [user],
+    [user]
   );
 
   // Get today's workout session set logs (for quick stats)
@@ -897,12 +878,12 @@ export function WorkoutProvider({ children }) {
     if (!data) return [];
 
     // Return completed set logs
-    return (data.set_logs || []).filter((log) => log.is_completed);
+    return (data.set_logs || []).filter(log => log.is_completed);
   }, [user, today]);
 
   // Delete exercise log
   const deleteExerciseLog = useCallback(
-    async (logId) => {
+    async logId => {
       if (!user) return false;
 
       const { error } = await supabase
@@ -918,12 +899,12 @@ export function WorkoutProvider({ children }) {
 
       return true;
     },
-    [user],
+    [user]
   );
 
   // Create trackable
   const createTrackable = useCallback(
-    async (trackable) => {
+    async trackable => {
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -937,12 +918,12 @@ export function WorkoutProvider({ children }) {
         .single();
 
       if (!error && data) {
-        setTrackables((prev) => [...prev, data]);
+        setTrackables(prev => [...prev, data]);
         return data;
       }
       return null;
     },
-    [user, trackables],
+    [user, trackables]
   );
 
   // Update trackable
@@ -950,32 +931,27 @@ export function WorkoutProvider({ children }) {
     async (id, updates) => {
       if (!user) return;
 
-      const { error } = await supabase
-        .from("trackables")
-        .update(updates)
-        .eq("id", id);
+      const { error } = await supabase.from("trackables").update(updates).eq("id", id);
 
       if (!error) {
-        setTrackables((prev) =>
-          prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-        );
+        setTrackables(prev => prev.map(t => (t.id === id ? { ...t, ...updates } : t)));
       }
     },
-    [user],
+    [user]
   );
 
   // Delete trackable
   const deleteTrackable = useCallback(
-    async (id) => {
+    async id => {
       if (!user) return;
 
       const { error } = await supabase.from("trackables").delete().eq("id", id);
 
       if (!error) {
-        setTrackables((prev) => prev.filter((t) => t.id !== id));
+        setTrackables(prev => prev.filter(t => t.id !== id));
       }
     },
-    [user],
+    [user]
   );
 
   // ============================================
@@ -983,7 +959,7 @@ export function WorkoutProvider({ children }) {
   // ============================================
 
   const createFoodItem = useCallback(
-    async (foodItem) => {
+    async foodItem => {
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -997,43 +973,38 @@ export function WorkoutProvider({ children }) {
         .single();
 
       if (!error && data) {
-        setFoodItems((prev) => [...prev, data]);
+        setFoodItems(prev => [...prev, data]);
         return data;
       }
       return null;
     },
-    [user, foodItems],
+    [user, foodItems]
   );
 
   const updateFoodItem = useCallback(
     async (id, updates) => {
       if (!user) return;
 
-      const { error } = await supabase
-        .from("food_items")
-        .update(updates)
-        .eq("id", id);
+      const { error } = await supabase.from("food_items").update(updates).eq("id", id);
 
       if (!error) {
-        setFoodItems((prev) =>
-          prev.map((f) => (f.id === id ? { ...f, ...updates } : f)),
-        );
+        setFoodItems(prev => prev.map(f => (f.id === id ? { ...f, ...updates } : f)));
       }
     },
-    [user],
+    [user]
   );
 
   const deleteFoodItem = useCallback(
-    async (id) => {
+    async id => {
       if (!user) return;
 
       const { error } = await supabase.from("food_items").delete().eq("id", id);
 
       if (!error) {
-        setFoodItems((prev) => prev.filter((f) => f.id !== id));
+        setFoodItems(prev => prev.filter(f => f.id !== id));
       }
     },
-    [user],
+    [user]
   );
 
   const toggleFoodEntry = useCallback(
@@ -1043,13 +1014,10 @@ export function WorkoutProvider({ children }) {
       const existing = todayFoodEntries[foodItemId];
 
       if (existing) {
-        const { error } = await supabase
-          .from("food_entries")
-          .delete()
-          .eq("id", existing.id);
+        const { error } = await supabase.from("food_entries").delete().eq("id", existing.id);
 
         if (!error) {
-          setTodayFoodEntries((prev) => {
+          setTodayFoodEntries(prev => {
             const updated = { ...prev };
             delete updated[foodItemId];
             return updated;
@@ -1069,14 +1037,14 @@ export function WorkoutProvider({ children }) {
           .single();
 
         if (!error && data) {
-          setTodayFoodEntries((prev) => ({
+          setTodayFoodEntries(prev => ({
             ...prev,
             [foodItemId]: data,
           }));
         }
       }
     },
-    [user, today, todayFoodEntries],
+    [user, today, todayFoodEntries]
   );
 
   const updateFoodEntryQuantity = useCallback(
@@ -1092,7 +1060,7 @@ export function WorkoutProvider({ children }) {
           .eq("id", existing.id);
 
         if (!error) {
-          setTodayFoodEntries((prev) => ({
+          setTodayFoodEntries(prev => ({
             ...prev,
             [foodItemId]: { ...existing, quantity },
           }));
@@ -1111,14 +1079,14 @@ export function WorkoutProvider({ children }) {
           .single();
 
         if (!error && data) {
-          setTodayFoodEntries((prev) => ({
+          setTodayFoodEntries(prev => ({
             ...prev,
             [foodItemId]: data,
           }));
         }
       }
     },
-    [user, today, todayFoodEntries],
+    [user, today, todayFoodEntries]
   );
 
   const getFoodEntries = useCallback(
@@ -1139,28 +1107,25 @@ export function WorkoutProvider({ children }) {
 
       return data || [];
     },
-    [user],
+    [user]
   );
 
   // Update settings
   const updateSettings = useCallback(
-    async (newSettings) => {
+    async newSettings => {
       if (!user) return;
 
       const updated = { ...settings, ...newSettings };
       setSettings(updated);
 
-      await supabase
-        .from("user_settings")
-        .update(newSettings)
-        .eq("user_id", user.id);
+      await supabase.from("user_settings").update(newSettings).eq("user_id", user.id);
     },
-    [settings, user],
+    [settings, user]
   );
 
   // Create event type
   const createEventType = useCallback(
-    async (eventType) => {
+    async eventType => {
       if (!user) return null;
 
       const { data, error } = await supabase
@@ -1181,12 +1146,12 @@ export function WorkoutProvider({ children }) {
           days_since: null,
           total_logs: 0,
         };
-        setEventTypes((prev) => [...prev, newEventType]);
+        setEventTypes(prev => [...prev, newEventType]);
         return newEventType;
       }
       return null;
     },
-    [user, eventTypes],
+    [user, eventTypes]
   );
 
   // Update event type
@@ -1200,29 +1165,24 @@ export function WorkoutProvider({ children }) {
         .eq("id", id);
 
       if (!error) {
-        setEventTypes((prev) =>
-          prev.map((et) => (et.id === id ? { ...et, ...updates } : et)),
-        );
+        setEventTypes(prev => prev.map(et => (et.id === id ? { ...et, ...updates } : et)));
       }
     },
-    [user],
+    [user]
   );
 
   // Delete event type
   const deleteEventType = useCallback(
-    async (id) => {
+    async id => {
       if (!user) return;
 
-      const { error } = await supabase
-        .from("event_types")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("event_types").delete().eq("id", id);
 
       if (!error) {
-        setEventTypes((prev) => prev.filter((et) => et.id !== id));
+        setEventTypes(prev => prev.filter(et => et.id !== id));
       }
     },
-    [user],
+    [user]
   );
 
   // Log an event (add a new occurrence)
@@ -1246,8 +1206,8 @@ export function WorkoutProvider({ children }) {
 
       if (!error && data) {
         // Update the event type in state with new log
-        setEventTypes((prev) =>
-          prev.map((et) => {
+        setEventTypes(prev =>
+          prev.map(et => {
             if (et.id === eventTypeId) {
               const newLogs = [data, ...(et.event_logs || [])];
               const daysSince = 0; // Just logged today or on the date
@@ -1257,9 +1217,7 @@ export function WorkoutProvider({ children }) {
               const todayObj = new Date();
               todayObj.setHours(0, 0, 0, 0);
               logDateObj.setHours(0, 0, 0, 0);
-              const actualDaysSince = Math.floor(
-                (todayObj - logDateObj) / (1000 * 60 * 60 * 24),
-              );
+              const actualDaysSince = Math.floor((todayObj - logDateObj) / (1000 * 60 * 60 * 24));
 
               return {
                 ...et,
@@ -1270,13 +1228,13 @@ export function WorkoutProvider({ children }) {
               };
             }
             return et;
-          }),
+          })
         );
         return data;
       }
       return null;
     },
-    [user],
+    [user]
   );
 
   // Delete an event log
@@ -1284,10 +1242,7 @@ export function WorkoutProvider({ children }) {
     async (logId, eventTypeId) => {
       if (!user) return false;
 
-      const { error } = await supabase
-        .from("event_logs")
-        .delete()
-        .eq("id", logId);
+      const { error } = await supabase.from("event_logs").delete().eq("id", logId);
 
       if (!error) {
         // Reload event types to get updated last_log
@@ -1296,12 +1251,12 @@ export function WorkoutProvider({ children }) {
       }
       return false;
     },
-    [user, loadEventTypes],
+    [user, loadEventTypes]
   );
 
   // Get all logs for an event type
   const getEventLogs = useCallback(
-    async (eventTypeId) => {
+    async eventTypeId => {
       if (!user) return [];
 
       const { data, error } = await supabase
@@ -1317,7 +1272,7 @@ export function WorkoutProvider({ children }) {
 
       return data || [];
     },
-    [user],
+    [user]
   );
 
   // Auth functions
@@ -1333,6 +1288,13 @@ export function WorkoutProvider({ children }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+    });
+    return { data, error };
+  }, []);
+
+  const resetPassword = useCallback(async (email) => {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined,
     });
     return { data, error };
   }, []);
@@ -1394,6 +1356,7 @@ export function WorkoutProvider({ children }) {
         updateSettings,
         signIn,
         signUp,
+        resetPassword,
         signOut,
         // New routine functions
         createRoutine,

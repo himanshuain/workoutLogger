@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -10,6 +10,16 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Calendar,
   Clock,
@@ -20,6 +30,7 @@ import {
   X,
   History,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 
 const EVENT_ICONS = [
@@ -121,6 +132,16 @@ export default function LifeLog() {
     cost: "",
   });
 
+  // Confirmation dialog state for duplicate date
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
+  const [pendingLogAction, setPendingLogAction] = useState(null);
+
+  // Check if an entry exists for a specific date for an event type
+  const checkExistingEntry = useCallback(async (eventTypeId, date) => {
+    const logs = await getEventLogs(eventTypeId);
+    return logs.find(log => log.date === date);
+  }, [getEventLogs]);
+
   // Sort events: those needing attention first, then by days since
   const sortedEvents = useMemo(() => {
     return [...eventTypes].sort((a, b) => {
@@ -168,8 +189,25 @@ export default function LifeLog() {
   };
 
   // Handle logging an event
-  const handleLogEvent = async () => {
+  const handleLogEvent = async (forceLog = false) => {
     if (!selectedEvent) return;
+
+    // Check for existing entry on the same date (unless force logging)
+    if (!forceLog) {
+      const existingEntry = await checkExistingEntry(selectedEvent.id, logDetails.date);
+      if (existingEntry) {
+        setPendingLogAction({
+          type: 'detailed',
+          eventType: selectedEvent,
+          date: logDetails.date,
+          notes: logDetails.notes.trim() || null,
+          cost: logDetails.cost ? parseFloat(logDetails.cost) : null,
+          existingEntry,
+        });
+        setShowDuplicateConfirm(true);
+        return;
+      }
+    }
 
     await logEvent(selectedEvent.id, {
       date: logDetails.date,
@@ -191,7 +229,24 @@ export default function LifeLog() {
   };
 
   // Quick log (log today without details)
-  const handleQuickLog = async (eventType) => {
+  const handleQuickLog = async (eventType, forceLog = false) => {
+    const today = new Date().toISOString().split("T")[0];
+    
+    // Check for existing entry on today (unless force logging)
+    if (!forceLog) {
+      const existingEntry = await checkExistingEntry(eventType.id, today);
+      if (existingEntry) {
+        setPendingLogAction({
+          type: 'quick',
+          eventType,
+          date: today,
+          existingEntry,
+        });
+        setShowDuplicateConfirm(true);
+        return;
+      }
+    }
+
     await logEvent(eventType.id);
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
@@ -229,6 +284,41 @@ export default function LifeLog() {
     ) {
       await deleteEventType(eventType.id);
     }
+  };
+
+  // Handle confirming duplicate log
+  const handleConfirmDuplicateLog = async () => {
+    if (!pendingLogAction) return;
+
+    if (pendingLogAction.type === 'quick') {
+      await logEvent(pendingLogAction.eventType.id);
+    } else {
+      await logEvent(pendingLogAction.eventType.id, {
+        date: pendingLogAction.date,
+        notes: pendingLogAction.notes,
+        cost: pendingLogAction.cost,
+      });
+      setShowLogDrawer(false);
+      setSelectedEvent(null);
+      setLogDetails({
+        date: new Date().toISOString().split("T")[0],
+        notes: "",
+        cost: "",
+      });
+    }
+
+    setShowDuplicateConfirm(false);
+    setPendingLogAction(null);
+
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(10);
+    }
+  };
+
+  // Cancel duplicate log
+  const handleCancelDuplicateLog = () => {
+    setShowDuplicateConfirm(false);
+    setPendingLogAction(null);
   };
 
   // Delete a log entry
@@ -951,6 +1041,56 @@ export default function LifeLog() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Duplicate Entry Confirmation Dialog */}
+      <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={`flex items-center gap-2 ${isDarkMode ? "text-iron-100" : ""}`}>
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Entry Already Exists
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : ""}>
+              {pendingLogAction && (
+                <>
+                  You already have an entry for{" "}
+                  <span className={`font-semibold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                    {pendingLogAction.eventType?.name}
+                  </span>{" "}
+                  on{" "}
+                  <span className={`font-semibold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                    {formatDate(pendingLogAction.date)}
+                  </span>
+                  {pendingLogAction.existingEntry?.notes && (
+                    <span className={isDarkMode ? "text-iron-500" : "text-slate-500"}>
+                      {" "}("{pendingLogAction.existingEntry.notes}")
+                    </span>
+                  )}
+                  . Do you want to add another entry for the same date?
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={handleCancelDuplicateLog}
+              className={isDarkMode ? "bg-iron-800 text-iron-300 border-iron-700 hover:bg-iron-700" : ""}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDuplicateLog}
+              className={`${
+                isDarkMode
+                  ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90"
+                  : "bg-workout-primary text-white hover:bg-workout-primary/90"
+              }`}
+            >
+              Add Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

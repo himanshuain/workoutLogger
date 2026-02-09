@@ -6,8 +6,9 @@ import { useTheme } from "@/context/ThemeContext";
 export default function Auth() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { signIn, signUp, user } = useWorkout();
+  const { signIn, signUp, resetPassword, user } = useWorkout();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,14 +21,18 @@ export default function Auth() {
     return null;
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError("");
     setMessage("");
     setLoading(true);
 
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        const { error } = await resetPassword(email);
+        if (error) throw error;
+        setMessage("Password reset link sent! Check your email.");
+      } else if (isSignUp) {
         const { error } = await signUp(email, password);
         if (error) throw error;
         setMessage("Check your email for the confirmation link!");
@@ -73,14 +78,10 @@ export default function Auth() {
             />
           </svg>
         </div>
-        <h1
-          className={`text-3xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-        >
+        <h1 className={`text-3xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
           Logbook
         </h1>
-        <p
-          className={`mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-        >
+        <p className={`mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
           Simple workout logging
         </p>
       </div>
@@ -97,7 +98,7 @@ export default function Auth() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
               className={`
                 w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
                 ${
@@ -111,29 +112,46 @@ export default function Auth() {
             />
           </div>
 
-          <div>
-            <label
-              className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={`
-                w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
-                ${
-                  isDarkMode
-                    ? "bg-iron-900 text-iron-100 placeholder-iron-600 border-iron-800 focus:ring-lift-primary/50"
-                    : "bg-white text-slate-800 placeholder-slate-400 border-slate-200 focus:ring-workout-primary/50"
-                }
-              `}
-              placeholder="••••••••"
-              required
-              minLength={6}
-            />
-          </div>
+          {!isForgotPassword && (
+            <div>
+              <label
+                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+              >
+                Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className={`
+                  w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
+                  ${
+                    isDarkMode
+                      ? "bg-iron-900 text-iron-100 placeholder-iron-600 border-iron-800 focus:ring-lift-primary/50"
+                      : "bg-white text-slate-800 placeholder-slate-400 border-slate-200 focus:ring-workout-primary/50"
+                  }
+                `}
+                placeholder="••••••••"
+                required
+                minLength={6}
+              />
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true);
+                    setError("");
+                    setMessage("");
+                  }}
+                  className={`mt-2 text-xs ${
+                    isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                  }`}
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
+          )}
 
           {error && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -172,8 +190,14 @@ export default function Auth() {
                     isDarkMode ? "border-iron-950" : "border-white"
                   }`}
                 />
-                {isSignUp ? "Creating account..." : "Signing in..."}
+                {isForgotPassword
+                  ? "Sending link..."
+                  : isSignUp
+                    ? "Creating account..."
+                    : "Signing in..."}
               </span>
+            ) : isForgotPassword ? (
+              "Send Reset Link"
             ) : isSignUp ? (
               "Create Account"
             ) : (
@@ -182,41 +206,50 @@ export default function Auth() {
           </button>
         </form>
 
-        {/* Toggle */}
+        {/* Toggle / Back */}
         <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError("");
-              setMessage("");
-            }}
-            className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
-          >
-            {isSignUp ? (
-              <>
-                Already have an account?{" "}
-                <span
-                  className={
-                    isDarkMode ? "text-lift-primary" : "text-workout-primary"
-                  }
-                >
-                  Sign in
-                </span>
-              </>
-            ) : (
-              <>
-                Don't have an account?{" "}
-                <span
-                  className={
-                    isDarkMode ? "text-lift-primary" : "text-workout-primary"
-                  }
-                >
-                  Sign up
-                </span>
-              </>
-            )}
-          </button>
+          {isForgotPassword ? (
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(false);
+                setError("");
+                setMessage("");
+              }}
+              className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+            >
+              Back to{" "}
+              <span className={isDarkMode ? "text-lift-primary" : "text-workout-primary"}>
+                Sign in
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError("");
+                setMessage("");
+              }}
+              className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+            >
+              {isSignUp ? (
+                <>
+                  Already have an account?{" "}
+                  <span className={isDarkMode ? "text-lift-primary" : "text-workout-primary"}>
+                    Sign in
+                  </span>
+                </>
+              ) : (
+                <>
+                  Don't have an account?{" "}
+                  <span className={isDarkMode ? "text-lift-primary" : "text-workout-primary"}>
+                    Sign up
+                  </span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

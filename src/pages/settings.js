@@ -12,12 +12,16 @@ import {
   Pencil,
   Trash2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Zap,
   Check,
   Bell,
   BellRing,
   Sun,
   Moon,
+  CalendarPlus,
+  X,
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import NotificationService from "@/lib/notifications";
@@ -48,6 +52,7 @@ export default function Settings() {
     updateTrackable,
     deleteTrackable,
     getTrackingEntries,
+    toggleTrackingEntryForDate,
     updateSettings,
     settings,
     today,
@@ -57,6 +62,13 @@ export default function Settings() {
   const [editingTrackable, setEditingTrackable] = useState(null);
   const [expandedHabit, setExpandedHabit] = useState(null);
   const [notificationTrackable, setNotificationTrackable] = useState(null);
+  const [pastEntryTrackable, setPastEntryTrackable] = useState(null);
+  const [pastEntryMonth, setPastEntryMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [pastEntryDates, setPastEntryDates] = useState({});
+  const [pastEntrySaving, setPastEntrySaving] = useState(false);
   const [newPill, setNewPill] = useState({
     name: "",
     type: "habit",
@@ -180,6 +192,116 @@ export default function Settings() {
     // Also update in database
     updateSettings({ dark_mode: !isDarkMode });
   };
+
+  // Open past entry drawer for a trackable
+  const openPastEntryDrawer = async (trackable) => {
+    setPastEntryTrackable(trackable);
+    const now = new Date();
+    setPastEntryMonth({ year: now.getFullYear(), month: now.getMonth() });
+    await loadMonthEntries(trackable.id, now.getFullYear(), now.getMonth());
+  };
+
+  // Load entries for a specific month
+  const loadMonthEntries = async (trackableId, year, month) => {
+    const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const endDate = `${year}-${String(month + 1).padStart(2, "0")}-${lastDay}`;
+    
+    const entries = await getTrackingEntries(startDate, endDate);
+    const dateMap = {};
+    entries.forEach(entry => {
+      if (entry.trackable_id === trackableId && entry.is_completed) {
+        dateMap[entry.date] = true;
+      }
+    });
+    setPastEntryDates(dateMap);
+  };
+
+  // Handle month change in past entry calendar
+  const handlePastEntryMonthChange = async (direction) => {
+    let newMonth = pastEntryMonth.month + direction;
+    let newYear = pastEntryMonth.year;
+    
+    if (newMonth < 0) {
+      newMonth = 11;
+      newYear--;
+    } else if (newMonth > 11) {
+      newMonth = 0;
+      newYear++;
+    }
+    
+    setPastEntryMonth({ year: newYear, month: newMonth });
+    if (pastEntryTrackable) {
+      await loadMonthEntries(pastEntryTrackable.id, newYear, newMonth);
+    }
+  };
+
+  // Toggle a past date entry
+  const handleTogglePastDate = async (dateStr) => {
+    if (!pastEntryTrackable || pastEntrySaving) return;
+    
+    // Don't allow future dates
+    if (dateStr > today) return;
+    
+    setPastEntrySaving(true);
+    const isCurrentlyCompleted = pastEntryDates[dateStr];
+    
+    const result = await toggleTrackingEntryForDate(
+      pastEntryTrackable.id,
+      dateStr,
+      !isCurrentlyCompleted
+    );
+    
+    if (result.success) {
+      setPastEntryDates(prev => {
+        const newDates = { ...prev };
+        if (isCurrentlyCompleted) {
+          delete newDates[dateStr];
+        } else {
+          newDates[dateStr] = true;
+        }
+        return newDates;
+      });
+      // Invalidate the heatmap query to refresh data
+      queryClient.invalidateQueries(["trackingEntriesForHeatmap"]);
+    }
+    
+    setPastEntrySaving(false);
+  };
+
+  // Get calendar days for current month view
+  const getCalendarDays = () => {
+    const { year, month } = pastEntryMonth;
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay();
+    
+    const days = [];
+    
+    // Add empty slots for days before the first day of month
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push(null);
+    }
+    
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      days.push({
+        day,
+        dateStr,
+        isCompleted: pastEntryDates[dateStr] || false,
+        isFuture: dateStr > today,
+        isToday: dateStr === today,
+      });
+    }
+    
+    return days;
+  };
+
+  const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", 
+                       "July", "August", "September", "October", "November", "December"];
+  const DAY_NAMES = ["S", "M", "T", "W", "T", "F", "S"];
 
   if (!user) {
     return (
@@ -443,7 +565,7 @@ export default function Settings() {
                       </div>
                     </div>
 
-                    {/* Expanded Heatmap */}
+                    {/* Expanded Heatmap and Add Past Entries */}
                     {isExpanded && (
                       <div className="px-3 pb-3 animate-in slide-in-from-top duration-200">
                         <ActivityHeatmap
@@ -452,7 +574,19 @@ export default function Settings() {
                           label=""
                           color={trackable.color}
                           compact={true}
+                          isDarkMode={isDarkMode}
                         />
+                        <button
+                          onClick={() => openPastEntryDrawer(trackable)}
+                          className={`mt-3 w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                            isDarkMode
+                              ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                              : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                          }`}
+                        >
+                          <CalendarPlus className="w-4 h-4" />
+                          Add Past Entries
+                        </button>
                       </div>
                     )}
                   </div>
@@ -733,6 +867,163 @@ export default function Settings() {
             onClose={() => setNotificationTrackable(null)}
           />
         )}
+
+        {/* Past Entry Drawer */}
+        <Drawer open={!!pastEntryTrackable} onOpenChange={(open) => !open && setPastEntryTrackable(null)}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center gap-2">
+                <span
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
+                  style={{ backgroundColor: `${pastEntryTrackable?.color}30` }}
+                >
+                  {pastEntryTrackable?.icon}
+                </span>
+                {pastEntryTrackable?.name} - Past Entries
+              </DrawerTitle>
+            </DrawerHeader>
+
+            <div className="px-4 pb-8">
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between mb-4">
+                <button
+                  onClick={() => handlePastEntryMonthChange(-1)}
+                  className={`p-2 rounded-lg ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                      : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                  }`}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <h3 className={`font-bold text-lg ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                  {MONTH_NAMES[pastEntryMonth.month]} {pastEntryMonth.year}
+                </h3>
+                <button
+                  onClick={() => handlePastEntryMonthChange(1)}
+                  disabled={pastEntryMonth.year === new Date().getFullYear() && pastEntryMonth.month === new Date().getMonth()}
+                  className={`p-2 rounded-lg disabled:opacity-30 ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                      : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                  }`}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Day Headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {DAY_NAMES.map((day, i) => (
+                  <div
+                    key={i}
+                    className={`text-center text-xs font-medium py-1 ${
+                      isDarkMode ? "text-iron-500" : "text-slate-500"
+                    }`}
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Grid - GitHub Style */}
+              <div className="grid grid-cols-7 gap-1">
+                {getCalendarDays().map((dayData, i) => {
+                  if (!dayData) {
+                    return <div key={`empty-${i}`} className="aspect-square" />;
+                  }
+
+                  const { day, dateStr, isCompleted, isFuture, isToday } = dayData;
+
+                  return (
+                    <button
+                      key={dateStr}
+                      onClick={() => handleTogglePastDate(dateStr)}
+                      disabled={isFuture || pastEntrySaving}
+                      className={`
+                        aspect-square rounded-lg flex items-center justify-center text-sm font-medium
+                        transition-all duration-150 relative
+                        ${isFuture ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-95"}
+                        ${isToday ? "ring-2 ring-offset-1" : ""}
+                        ${
+                          isToday
+                            ? isDarkMode
+                              ? "ring-lift-primary ring-offset-iron-900"
+                              : "ring-workout-primary ring-offset-white"
+                            : ""
+                        }
+                      `}
+                      style={{
+                        backgroundColor: isCompleted
+                          ? pastEntryTrackable?.color
+                          : isDarkMode
+                            ? "#27272a"
+                            : "#f1f5f9",
+                        color: isCompleted
+                          ? "#000"
+                          : isDarkMode
+                            ? "#71717a"
+                            : "#64748b",
+                      }}
+                    >
+                      {day}
+                      {isCompleted && (
+                        <Check
+                          className="absolute w-3 h-3"
+                          style={{
+                            top: "2px",
+                            right: "2px",
+                            color: "#000",
+                            opacity: 0.5,
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-iron-800">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-5 h-5 rounded"
+                    style={{ backgroundColor: isDarkMode ? "#27272a" : "#f1f5f9" }}
+                  />
+                  <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Not tracked
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-5 h-5 rounded"
+                    style={{ backgroundColor: pastEntryTrackable?.color }}
+                  />
+                  <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Completed
+                  </span>
+                </div>
+              </div>
+
+              {/* Instructions */}
+              <p className={`text-xs text-center mt-3 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                Tap a date to toggle completion
+              </p>
+
+              {/* Close Button */}
+              <button
+                onClick={() => setPastEntryTrackable(null)}
+                className={`w-full mt-4 py-3 rounded-xl font-medium ${
+                  isDarkMode
+                    ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                    : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                }`}
+              >
+                Done
+              </button>
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
     </Layout>
   );

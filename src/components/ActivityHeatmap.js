@@ -24,20 +24,7 @@ function getTodayLocal() {
 
 // Day names - full names for clarity
 const DAYS_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // Theme-aware color scales
 const HEATMAP_COLORS = {
@@ -61,15 +48,13 @@ function generateGridData(activityData, weeksToShow) {
 
   // Create activity lookup map
   const dataMap = new Map();
-  activityData.forEach((item) => {
+  activityData.forEach(item => {
     dataMap.set(item.date, item.count);
   });
 
   // Calculate the start date (oldest date)
   const startDate = new Date(today);
-  startDate.setDate(
-    startDate.getDate() - (weeksToShow - 1) * 7 - today.getDay(),
-  );
+  startDate.setDate(startDate.getDate() - (weeksToShow - 1) * 7 - today.getDay());
 
   const grid = [];
   const monthLabels = [];
@@ -113,8 +98,7 @@ function generateGridData(activityData, weeksToShow) {
     // Add month label at the start of each month
     if (
       weekIndex === 0 ||
-      (weekIndex > 0 &&
-        reversedGrid[weekIndex - 1][0].date.getMonth() !== monthIndex)
+      (weekIndex > 0 && reversedGrid[weekIndex - 1][0].date.getMonth() !== monthIndex)
     ) {
       monthLabels.push({ week: weekIndex, month: MONTHS[monthIndex] });
     }
@@ -141,25 +125,25 @@ export default function ActivityHeatmap({
   // Generate grid data
   const { grid, monthLabels } = useMemo(
     () => generateGridData(data, weeksToShow),
-    [data, weeksToShow],
+    [data, weeksToShow]
   );
 
   // Find max value for color scaling
   const maxValue = useMemo(() => {
     let max = 1;
-    data.forEach((item) => {
+    data.forEach(item => {
       if (item.count > max) max = item.count;
     });
     return max;
   }, [data]);
 
   // Check if today has activity
-  const todayHasActivity = data.some((d) => d.date === todayStr);
+  const todayHasActivity = data.some(d => d.date === todayStr);
 
   // Color palette based on type, theme, or custom color
   const colorPalette = useMemo(() => {
     if (color) {
-      const baseColor = isDarkMode ? "#1c1c1e" : "#f1f5f9";
+      const baseColor = !isDarkMode ? "#1c111e" : "#f1f5f9";
       return [baseColor, `${color}30`, `${color}60`, `${color}90`, color];
     }
     const themeColors = isDarkMode ? HEATMAP_COLORS.dark : HEATMAP_COLORS.light;
@@ -167,7 +151,7 @@ export default function ActivityHeatmap({
   }, [type, color, isDarkMode]);
 
   // Get color level
-  const getColorLevel = (count) => {
+  const getColorLevel = count => {
     if (count === 0) return 0;
     return Math.min(4, Math.ceil((count / maxValue) * 4));
   };
@@ -178,9 +162,7 @@ export default function ActivityHeatmap({
   return (
     <div
       className={`rounded-2xl ${compact ? "p-3" : "p-4"} relative ${
-        isDarkMode
-          ? "bg-iron-900/50"
-          : "bg-white border border-slate-200 shadow-sm"
+        isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
       }`}
     >
       {/* Header with Today badge and hover info */}
@@ -196,31 +178,17 @@ export default function ActivityHeatmap({
             </h3>
           )}
           {subtitle && !hoveredCell && (
-            <p
-              className={`text-xs mt-0.5 ${
-                isDarkMode ? "text-iron-500" : "text-slate-500"
-              }`}
-            >
+            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               {subtitle}
             </p>
           )}
           {/* Hovered cell info - replaces subtitle when hovering */}
           {hoveredCell && (
             <p className="text-xs mt-0.5">
-              <span
-                className={`font-medium ${
-                  isDarkMode ? "text-iron-100" : "text-slate-800"
-                }`}
-              >
+              <span className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                 {formatDateDisplay(hoveredCell.date)}
               </span>
-              <span
-                className={`mx-1 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-400"
-                }`}
-              >
-                ·
-              </span>
+              <span className={`mx-1 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>·</span>
               <span
                 className={
                   hoveredCell.count > 0
@@ -249,16 +217,11 @@ export default function ActivityHeatmap({
       </div>
 
       {/* Heatmap Grid */}
-      <div
-        className={`overflow-x-auto scrollbar-hide ${compact ? "" : "-mx-2 px-2"}`}
-      >
+      <div className={`overflow-x-auto scrollbar-hide ${compact ? "" : "-mx-2 px-2"}`}>
         <div className="inline-block">
           {/* Month labels row */}
           {!compact && (
-            <div
-              className="flex mb-1"
-              style={{ marginLeft: `${36 + cellGap}px` }}
-            >
+            <div className="flex mb-1" style={{ marginLeft: `${36 + cellGap}px` }}>
               <div className="relative w-full" style={{ height: "14px" }}>
                 {monthLabels.map(({ week, month }, i) => (
                   <span
@@ -278,10 +241,7 @@ export default function ActivityHeatmap({
           {/* Grid with day labels */}
           <div className="flex">
             {/* Day labels column - aligned with each row */}
-            <div
-              className="flex flex-col"
-              style={{ gap: `${cellGap}px`, marginRight: "4px" }}
-            >
+            <div className="flex flex-col" style={{ gap: `${cellGap}px`, marginRight: "4px" }}>
               {DAYS_FULL.map((day, i) => (
                 <div
                   key={i}
@@ -303,11 +263,7 @@ export default function ActivityHeatmap({
             {/* Weeks grid */}
             <div className="flex" style={{ gap: `${cellGap}px` }}>
               {grid.map((week, weekIndex) => (
-                <div
-                  key={weekIndex}
-                  className="flex flex-col"
-                  style={{ gap: `${cellGap}px` }}
-                >
+                <div key={weekIndex} className="flex flex-col" style={{ gap: `${cellGap}px` }}>
                   {week.map((cell, dayIndex) => {
                     const level = getColorLevel(cell.count);
                     const isHovered = hoveredCell?.dateStr === cell.dateStr;
@@ -332,13 +288,9 @@ export default function ActivityHeatmap({
                               : "none",
                           outlineOffset: "-1px",
                         }}
-                        onMouseEnter={() =>
-                          !cell.isFuture && setHoveredCell(cell)
-                        }
+                        onMouseEnter={() => !cell.isFuture && setHoveredCell(cell)}
                         onMouseLeave={() => setHoveredCell(null)}
-                        onTouchStart={() =>
-                          !cell.isFuture && setHoveredCell(cell)
-                        }
+                        onTouchStart={() => !cell.isFuture && setHoveredCell(cell)}
                       >
                         {/* Show date number for today */}
                         {cell.isToday && (
@@ -371,25 +323,13 @@ export default function ActivityHeatmap({
       {/* Legend */}
       {!compact && (
         <div className="flex items-center justify-end gap-1 mt-3">
-          <span
-            className={`text-[10px] mr-1 ${
-              isDarkMode ? "text-iron-600" : "text-slate-400"
-            }`}
-          >
+          <span className={`text-[10px] mr-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
             Less
           </span>
           {colorPalette.map((c, i) => (
-            <div
-              key={i}
-              className="w-[11px] h-[11px] rounded-sm"
-              style={{ backgroundColor: c }}
-            />
+            <div key={i} className="w-[11px] h-[11px] rounded-sm" style={{ backgroundColor: c }} />
           ))}
-          <span
-            className={`text-[10px] ml-1 ${
-              isDarkMode ? "text-iron-600" : "text-slate-400"
-            }`}
-          >
+          <span className={`text-[10px] ml-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
             More
           </span>
         </div>
@@ -402,11 +342,7 @@ export default function ActivityHeatmap({
 function TodayBadge({ date, hasActivity, color, compact, isDarkMode }) {
   return (
     <div className="flex items-center gap-2 flex-shrink-0">
-      <span
-        className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-      >
-        Today
-      </span>
+      <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Today</span>
       <div
         className={`
           flex items-center justify-center font-bold rounded-md
@@ -414,11 +350,7 @@ function TodayBadge({ date, hasActivity, color, compact, isDarkMode }) {
           ${compact ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs"}
         `}
         style={{
-          backgroundColor: hasActivity
-            ? color
-            : isDarkMode
-              ? "#1c1c1e"
-              : "#f1f5f9",
+          backgroundColor: hasActivity ? color : isDarkMode ? "#1c1c1e" : "#f1f5f9",
           border: `2px solid ${hasActivity ? color : isDarkMode ? "#27272a" : "#e2e8f0"}`,
           boxShadow: hasActivity ? `0 0 10px ${color}60` : "none",
         }}

@@ -721,6 +721,88 @@ export function WorkoutProvider({ children }) {
     [user, today, todayEntries]
   );
 
+  // Toggle tracking entry for a specific date (for past entries)
+  const toggleTrackingEntryForDate = useCallback(
+    async (trackableId, date, isCompleted, value = null) => {
+      if (!user) return { success: false };
+
+      // Check if entry exists for this date
+      const { data: existing } = await supabase
+        .from("tracking_entries")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("trackable_id", trackableId)
+        .eq("date", date)
+        .single();
+
+      if (existing) {
+        if (isCompleted) {
+          // Update existing entry
+          const { error } = await supabase
+            .from("tracking_entries")
+            .update({ is_completed: isCompleted, value })
+            .eq("id", existing.id);
+
+          if (!error) {
+            // If it's today, update todayEntries
+            if (date === today) {
+              setTodayEntries(prev => ({
+                ...prev,
+                [trackableId]: { ...existing, is_completed: isCompleted, value },
+              }));
+            }
+            return { success: true, action: "updated" };
+          }
+        } else {
+          // Delete entry if unchecking
+          const { error } = await supabase
+            .from("tracking_entries")
+            .delete()
+            .eq("id", existing.id);
+
+          if (!error) {
+            // If it's today, update todayEntries
+            if (date === today) {
+              setTodayEntries(prev => {
+                const newEntries = { ...prev };
+                delete newEntries[trackableId];
+                return newEntries;
+              });
+            }
+            return { success: true, action: "deleted" };
+          }
+        }
+      } else if (isCompleted) {
+        // Create new entry
+        const { data, error } = await supabase
+          .from("tracking_entries")
+          .insert({
+            user_id: user.id,
+            trackable_id: trackableId,
+            date,
+            is_completed: isCompleted,
+            value,
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          // If it's today, update todayEntries
+          if (date === today) {
+            setTodayEntries(prev => ({
+              ...prev,
+              [trackableId]: data,
+            }));
+          }
+          return { success: true, action: "created" };
+        }
+      }
+
+      return { success: false };
+    },
+    [user, today]
+  );
+
   // Log exercise (legacy - for backwards compatibility)
   const logExercise = useCallback(
     async (exercise, { weight, reps, sets }) => {
@@ -1337,6 +1419,7 @@ export function WorkoutProvider({ children }) {
         loadActiveSession,
         loadEventTypes,
         toggleTrackingEntry,
+        toggleTrackingEntryForDate,
         logExercise,
         getExerciseLogs,
         getTrackingEntries,

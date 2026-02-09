@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
@@ -13,9 +13,7 @@ import {
   Calendar,
   Flame,
   Target,
-  ChevronDown,
   Dumbbell,
-  BarChart3,
 } from "lucide-react";
 
 export default function Progress() {
@@ -36,8 +34,6 @@ export default function Progress() {
     getTodaySetLogs,
     getFoodEntries,
   } = useWorkout();
-
-  const [expandedHabit, setExpandedHabit] = useState(null);
 
   // Helper function for local date formatting
   const getLocalDateStr = (date = new Date()) => {
@@ -615,81 +611,6 @@ export default function Progress() {
             </CollapsibleSection>
           )}
 
-          {/* Individual Habit Heatmaps - Collapsible */}
-          {trackables.length > 0 && (
-            <CollapsibleSection
-              title="Habit Breakdown"
-              icon={BarChart3}
-              count={trackables.length}
-              defaultOpen={false}
-              isDarkMode={isDarkMode}
-            >
-              {trackables.map((trackable) => {
-                const isExpanded = expandedHabit === trackable.id;
-                const data = habitDataByTrackable[trackable.id] || [];
-                const daysTracked = data.length;
-
-                return (
-                  <div
-                    key={trackable.id}
-                    className={`rounded-xl overflow-hidden ${
-                      isDarkMode ? "bg-iron-900/30" : "bg-slate-100"
-                    }`}
-                  >
-                    <button
-                      onClick={() =>
-                        setExpandedHabit(isExpanded ? null : trackable.id)
-                      }
-                      className="w-full p-3 flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center text-base"
-                          style={{ backgroundColor: `${trackable.color}30` }}
-                        >
-                          {trackable.icon}
-                        </div>
-                        <div className="text-left">
-                          <p
-                            className={`font-medium text-sm ${
-                              isDarkMode ? "text-iron-100" : "text-slate-800"
-                            }`}
-                          >
-                            {trackable.name}
-                          </p>
-                          <p
-                            className={`text-xs ${
-                              isDarkMode ? "text-iron-500" : "text-slate-500"
-                            }`}
-                          >
-                            {daysTracked} days
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronDown
-                        className={`w-4 h-4 transition-transform ${
-                          isExpanded ? "rotate-180" : ""
-                        } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                      />
-                    </button>
-
-                    {isExpanded && (
-                      <div className="px-3 pb-3">
-                        <ActivityHeatmap
-                          data={data}
-                          type="habit"
-                          label=""
-                          color={trackable.color}
-                          compact={true}
-                          isDarkMode={isDarkMode}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </CollapsibleSection>
-          )}
         </div>
       </div>
     </Layout>

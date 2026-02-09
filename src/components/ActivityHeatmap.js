@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Format date to YYYY-MM-DD in LOCAL timezone
 function formatDateLocal(date) {
@@ -8,354 +10,385 @@ function formatDateLocal(date) {
   return `${year}-${month}-${day}`;
 }
 
-// Format date for display
-function formatDateDisplay(date) {
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 // Get today's date string in local timezone
 function getTodayLocal() {
   return formatDateLocal(new Date());
 }
 
-// Day names - full names for clarity
-const DAYS_FULL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+const DAY_NAMES = ["S", "M", "T", "W", "T", "F", "S"];
 
-// Theme-aware color scales
-const HEATMAP_COLORS = {
-  // Batman (dark) - yellow/gold tones
-  dark: {
-    workout: ["#1c1c1e", "#422006", "#713f12", "#a16207", "#fbbf24"],
-    habit: ["#1c1c1e", "#1e3a5f", "#1e40af", "#3b82f6", "#60a5fa"],
-  },
-  // Spiderman (light) - red/blue tones
-  light: {
-    workout: ["#f1f5f9", "#fecaca", "#f87171", "#ef4444", "#dc2626"],
-    habit: ["#f1f5f9", "#dbeafe", "#60a5fa", "#3b82f6", "#2563eb"],
-  },
-};
-
-// Generate grid data - current month first (reversed order)
-function generateGridData(activityData, weeksToShow) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = formatDateLocal(today);
-
-  // Create activity lookup map
-  const dataMap = new Map();
-  activityData.forEach(item => {
-    dataMap.set(item.date, item.count);
-  });
-
-  // Calculate the start date (oldest date)
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - (weeksToShow - 1) * 7 - today.getDay());
-
-  const grid = [];
-  const monthLabels = [];
-  let currentDate = new Date(startDate);
-  let lastMonth = -1;
-
-  // Build grid from oldest to newest first
-  for (let week = 0; week < weeksToShow; week++) {
-    const weekData = [];
-
-    for (let day = 0; day < 7; day++) {
-      const dateStr = formatDateLocal(currentDate);
-      const count = dataMap.get(dateStr) || 0;
-      const isFuture = currentDate > today;
-      const isToday = dateStr === todayStr;
-
-      weekData.push({
-        date: new Date(currentDate),
-        dateStr,
-        count,
-        isFuture,
-        isToday,
-        dayOfWeek: day,
-        dayName: DAYS_FULL[day],
-      });
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    grid.push(weekData);
-  }
-
-  // Reverse the grid so current week is first (on the left)
-  const reversedGrid = [...grid].reverse();
-
-  // Calculate month labels for reversed grid
-  reversedGrid.forEach((week, weekIndex) => {
-    const firstDayOfWeek = week[0];
-    const monthIndex = firstDayOfWeek.date.getMonth();
-
-    // Add month label at the start of each month
-    if (
-      weekIndex === 0 ||
-      (weekIndex > 0 && reversedGrid[weekIndex - 1][0].date.getMonth() !== monthIndex)
-    ) {
-      monthLabels.push({ week: weekIndex, month: MONTHS[monthIndex] });
-    }
-  });
-
-  return { grid: reversedGrid, monthLabels };
-}
+// Green color for completed
+const COMPLETED_COLOR = "#22c55e";
 
 export default function ActivityHeatmap({
   data = [],
   type = "workout",
   label = "Activity",
   subtitle = "",
-  color = null,
   compact = false,
   isDarkMode = true,
+  onDateClick = null,
 }) {
-  const [hoveredCell, setHoveredCell] = useState(null);
-  const todayDate = new Date().getDate();
   const todayStr = getTodayLocal();
+  const today = new Date();
 
-  const weeksToShow = compact ? 12 : 53;
+  // State for current view (year and month)
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [direction, setDirection] = useState(0);
 
-  // Generate grid data
-  const { grid, monthLabels } = useMemo(
-    () => generateGridData(data, weeksToShow),
-    [data, weeksToShow]
-  );
-
-  // Find max value for color scaling
-  const maxValue = useMemo(() => {
-    let max = 1;
+  // Create activity lookup map
+  const dataMap = useMemo(() => {
+    const map = new Map();
     data.forEach(item => {
-      if (item.count > max) max = item.count;
+      map.set(item.date, item.count);
     });
-    return max;
+    return map;
   }, [data]);
 
-  // Check if today has activity
-  const todayHasActivity = data.some(d => d.date === todayStr);
+  // Get available years from data (2026 onwards)
+  const availableYears = useMemo(() => {
+    const years = new Set([2026]);
+    const currentYear = new Date().getFullYear();
+    years.add(currentYear);
+    data.forEach(item => {
+      const year = parseInt(item.date.split("-")[0]);
+      if (year >= 2026) years.add(year);
+    });
+    for (let y = 2026; y <= currentYear; y++) years.add(y);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [data]);
 
-  // Color palette based on type, theme, or custom color
-  const colorPalette = useMemo(() => {
-    if (color) {
-      const baseColor = !isDarkMode ? "#1c111e" : "#f1f5f9";
-      return [baseColor, `${color}30`, `${color}60`, `${color}90`, color];
+  // Calculate stats
+  const stats = useMemo(() => {
+    const completed = data.filter(d => d.count > 0).length;
+    // Calculate current streak
+    let streak = 0;
+    let checkDate = new Date();
+    checkDate.setHours(0, 0, 0, 0);
+    
+    while (true) {
+      const dateStr = formatDateLocal(checkDate);
+      if (dataMap.has(dateStr) && dataMap.get(dateStr) > 0) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (dateStr === todayStr) {
+        // Today not completed yet, check yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
-    const themeColors = isDarkMode ? HEATMAP_COLORS.dark : HEATMAP_COLORS.light;
-    return themeColors[type] || themeColors.workout;
-  }, [type, color, isDarkMode]);
+    
+    return { completed, streak };
+  }, [data, dataMap, todayStr]);
 
-  // Get color level
-  const getColorLevel = count => {
-    if (count === 0) return 0;
-    return Math.min(4, Math.ceil((count / maxValue) * 4));
+  // Get calendar days for current month view
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const lastDay = new Date(viewYear, viewMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    for (let i = 0; i < startDayOfWeek; i++) days.push(null);
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const count = dataMap.get(dateStr) || 0;
+      days.push({
+        day,
+        dateStr,
+        count,
+        isCompleted: count > 0,
+        isFuture: dateStr > todayStr,
+        isToday: dateStr === todayStr,
+      });
+    }
+    return days;
+  }, [viewYear, viewMonth, dataMap, todayStr]);
+
+  // Navigation
+  const canGoNext = viewYear < today.getFullYear() || 
+    (viewYear === today.getFullYear() && viewMonth < today.getMonth());
+  const canGoPrev = viewYear > 2026 || (viewYear === 2026 && viewMonth > 0);
+
+  const handlePrevMonth = () => {
+    setDirection(-1);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
   };
 
-  const cellSize = compact ? 12 : 13;
-  const cellGap = 3;
+  const handleNextMonth = () => {
+    setDirection(1);
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  const handleYearChange = year => {
+    setDirection(year > viewYear ? 1 : -1);
+    setViewYear(year);
+    if (year === today.getFullYear() && viewMonth > today.getMonth()) {
+      setViewMonth(today.getMonth());
+    }
+  };
+
+  const slideVariants = {
+    enter: (dir) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir) => ({ x: dir > 0 ? -50 : 50, opacity: 0 }),
+  };
 
   return (
     <div
-      className={`rounded-2xl ${compact ? "p-3" : "p-4"} relative ${
-        isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
+      className={`rounded-3xl overflow-hidden ${
+        isDarkMode 
+          ? "bg-gradient-to-br from-iron-900 to-iron-950 shadow-xl shadow-black/20" 
+          : "bg-gradient-to-br from-white to-slate-50 shadow-lg shadow-slate-200/50 border border-slate-200/80"
       }`}
     >
-      {/* Header with Today badge and hover info */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex-1 min-w-0">
-          {label && (
-            <h3
-              className={`font-semibold ${compact ? "text-xs" : "text-sm"} ${
-                isDarkMode ? "text-iron-100" : "text-slate-800"
-              }`}
-            >
-              {label}
-            </h3>
-          )}
-          {subtitle && !hoveredCell && (
-            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              {subtitle}
-            </p>
-          )}
-          {/* Hovered cell info - replaces subtitle when hovering */}
-          {hoveredCell && (
-            <p className="text-xs mt-0.5">
-              <span className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                {formatDateDisplay(hoveredCell.date)}
-              </span>
-              <span className={`mx-1 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>·</span>
-              <span
-                className={
-                  hoveredCell.count > 0
-                    ? isDarkMode
-                      ? "text-lift-primary"
-                      : "text-workout-primary"
-                    : isDarkMode
-                      ? "text-iron-500"
-                      : "text-slate-500"
-                }
-              >
-                {hoveredCell.count} {type === "workout" ? "sets" : "completed"}
-              </span>
-            </p>
-          )}
-        </div>
-
-        {/* Today indicator */}
-        <TodayBadge
-          date={todayDate}
-          hasActivity={todayHasActivity}
-          color={colorPalette[4]}
-          compact={compact}
-          isDarkMode={isDarkMode}
-        />
-      </div>
-
-      {/* Heatmap Grid */}
-      <div className={`overflow-x-auto scrollbar-hide ${compact ? "" : "-mx-2 px-2"}`}>
-        <div className="inline-block">
-          {/* Month labels row */}
-          {!compact && (
-            <div className="flex mb-1" style={{ marginLeft: `${36 + cellGap}px` }}>
-              <div className="relative w-full" style={{ height: "14px" }}>
-                {monthLabels.map(({ week, month }, i) => (
-                  <span
-                    key={i}
-                    className={`absolute text-[10px] ${
-                      isDarkMode ? "text-iron-500" : "text-slate-500"
-                    }`}
-                    style={{ left: `${week * (cellSize + cellGap)}px` }}
-                  >
-                    {month}
-                  </span>
-                ))}
+      {/* Header */}
+      <div className={`px-4 pt-4 pb-3 ${compact ? "px-3 pt-3 pb-2" : ""}`}>
+        {label && (
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={`p-2 rounded-xl ${
+                isDarkMode ? "bg-green-500/10" : "bg-green-500/10"
+              }`}>
+                <Calendar className={`w-4 h-4 ${
+                  isDarkMode ? "text-green-400" : "text-green-600"
+                }`} />
+              </div>
+              <div>
+                <h3 className={`font-bold ${compact ? "text-sm" : "text-base"} ${
+                  isDarkMode ? "text-iron-100" : "text-slate-800"
+                }`}>
+                  {label}
+                </h3>
+                {subtitle && (
+                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    {subtitle}
+                  </p>
+                )}
               </div>
             </div>
-          )}
-
-          {/* Grid with day labels */}
-          <div className="flex">
-            {/* Day labels column - aligned with each row */}
-            <div className="flex flex-col" style={{ gap: `${cellGap}px`, marginRight: "4px" }}>
-              {DAYS_FULL.map((day, i) => (
-                <div
-                  key={i}
-                  className={`
-                    flex items-center justify-end
-                    ${compact ? "text-[9px]" : "text-[10px]"}
-                    ${isDarkMode ? "text-iron-500" : "text-slate-500"}
-                  `}
-                  style={{
-                    height: `${cellSize}px`,
-                    width: compact ? "16px" : "28px",
-                  }}
-                >
-                  {compact ? day[0] : i % 2 === 1 ? day : ""}
+            
+            {/* Stats Pills */}
+            <div className="flex gap-2">
+              {stats.streak > 0 && (
+                <div className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                  isDarkMode 
+                    ? "bg-orange-500/20 text-orange-400" 
+                    : "bg-orange-500/10 text-orange-600"
+                }`}>
+                  🔥 {stats.streak}
                 </div>
-              ))}
-            </div>
-
-            {/* Weeks grid */}
-            <div className="flex" style={{ gap: `${cellGap}px` }}>
-              {grid.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col" style={{ gap: `${cellGap}px` }}>
-                  {week.map((cell, dayIndex) => {
-                    const level = getColorLevel(cell.count);
-                    const isHovered = hoveredCell?.dateStr === cell.dateStr;
-
-                    return (
-                      <div
-                        key={dayIndex}
-                        className="rounded-sm cursor-pointer"
-                        style={{
-                          width: `${cellSize}px`,
-                          height: `${cellSize}px`,
-                          backgroundColor: cell.isFuture
-                            ? isDarkMode
-                              ? "#0d1117"
-                              : "#f8fafc"
-                            : colorPalette[level],
-                          opacity: cell.isFuture ? 0.3 : 1,
-                          outline: cell.isToday
-                            ? `2px solid ${isDarkMode ? "rgba(251,191,36,0.5)" : "rgba(220,38,38,0.5)"}`
-                            : isHovered
-                              ? `2px solid ${isDarkMode ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}`
-                              : "none",
-                          outlineOffset: "-1px",
-                        }}
-                        onMouseEnter={() => !cell.isFuture && setHoveredCell(cell)}
-                        onMouseLeave={() => setHoveredCell(null)}
-                        onTouchStart={() => !cell.isFuture && setHoveredCell(cell)}
-                      >
-                        {/* Show date number for today */}
-                        {cell.isToday && (
-                          <div
-                            className="w-full h-full flex items-center justify-center text-[8px] font-bold"
-                            style={{
-                              color:
-                                level > 0
-                                  ? isDarkMode
-                                    ? "#000"
-                                    : "#fff"
-                                  : isDarkMode
-                                    ? "#666"
-                                    : "#94a3b8",
-                            }}
-                          >
-                            {cell.date.getDate()}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+              )}
+              <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                isDarkMode 
+                  ? "bg-green-500/20 text-green-400" 
+                  : "bg-green-500/10 text-green-600"
+              }`}>
+                {stats.completed} days
+              </div>
             </div>
           </div>
+        )}
+
+        {/* Year Pills */}
+        {!compact && availableYears.length > 1 && (
+          <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide">
+            {availableYears.map(year => (
+              <motion.button
+                key={year}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleYearChange(year)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  viewYear === year
+                    ? isDarkMode
+                      ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
+                      : "bg-green-500 text-white shadow-lg shadow-green-500/30"
+                    : isDarkMode
+                      ? "bg-iron-800/80 text-iron-400 hover:bg-iron-700"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {year}
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        {/* Month Navigation */}
+        <div className="flex items-center justify-between">
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handlePrevMonth}
+            disabled={!canGoPrev}
+            className={`p-2 rounded-xl disabled:opacity-30 transition-colors ${
+              isDarkMode
+                ? "bg-iron-800/50 text-iron-300 hover:bg-iron-700 active:bg-iron-600"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300"
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </motion.button>
+
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={`${viewYear}-${viewMonth}`}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.2 }}
+              className="text-center"
+            >
+              <h4 className={`font-bold text-lg ${
+                isDarkMode ? "text-iron-100" : "text-slate-800"
+              }`}>
+                {MONTH_NAMES[viewMonth]}
+              </h4>
+              <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                {viewYear}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={handleNextMonth}
+            disabled={!canGoNext}
+            className={`p-2 rounded-xl disabled:opacity-30 transition-colors ${
+              isDarkMode
+                ? "bg-iron-800/50 text-iron-300 hover:bg-iron-700 active:bg-iron-600"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300"
+            }`}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </motion.button>
         </div>
       </div>
 
-      {/* Legend */}
-      {!compact && (
-        <div className="flex items-center justify-end gap-1 mt-3">
-          <span className={`text-[10px] mr-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-            Less
-          </span>
-          {colorPalette.map((c, i) => (
-            <div key={i} className="w-[11px] h-[11px] rounded-sm" style={{ backgroundColor: c }} />
+      {/* Calendar */}
+      <div className={`px-4 pb-4 ${compact ? "px-3 pb-3" : ""}`}>
+        {/* Day Headers */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {DAY_NAMES.map((day, i) => (
+            <div
+              key={i}
+              className={`text-center text-[11px] font-semibold py-2 ${
+                i === 0 || i === 6
+                  ? isDarkMode ? "text-iron-600" : "text-slate-400"
+                  : isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
+            >
+              {day}
+            </div>
           ))}
-          <span className={`text-[10px] ml-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-            More
-          </span>
         </div>
-      )}
-    </div>
-  );
-}
 
-// Today badge showing the date number
-function TodayBadge({ date, hasActivity, color, compact, isDarkMode }) {
-  return (
-    <div className="flex items-center gap-2 flex-shrink-0">
-      <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Today</span>
-      <div
-        className={`
-          flex items-center justify-center font-bold rounded-md
-          ${hasActivity ? (isDarkMode ? "text-iron-950" : "text-white") : isDarkMode ? "text-iron-400" : "text-slate-500"}
-          ${compact ? "w-6 h-6 text-[10px]" : "w-8 h-8 text-xs"}
-        `}
-        style={{
-          backgroundColor: hasActivity ? color : isDarkMode ? "#1c1c1e" : "#f1f5f9",
-          border: `2px solid ${hasActivity ? color : isDarkMode ? "#27272a" : "#e2e8f0"}`,
-          boxShadow: hasActivity ? `0 0 10px ${color}60` : "none",
-        }}
-      >
-        {date}
+        {/* Calendar Grid */}
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={`${viewYear}-${viewMonth}`}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.2 }}
+            className="grid grid-cols-7 gap-1.5"
+          >
+            {calendarDays.map((dayData, i) => {
+              if (!dayData) {
+                return <div key={`empty-${i}`} className="aspect-square" />;
+              }
+
+              const { day, dateStr, isCompleted, isFuture, isToday } = dayData;
+
+              return (
+                <motion.button
+                  key={dateStr}
+                  whileTap={!isFuture && onDateClick ? { scale: 0.85 } : {}}
+                  onClick={() => onDateClick && !isFuture && onDateClick(dateStr, isCompleted)}
+                  disabled={isFuture || !onDateClick}
+                  className={`
+                    aspect-square rounded-xl flex items-center justify-center
+                    text-sm font-semibold transition-all duration-200 relative
+                    ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}
+                  `}
+                  style={{
+                    backgroundColor: isCompleted
+                      ? COMPLETED_COLOR
+                      : isToday
+                        ? isDarkMode ? "#3f3f46" : "#e2e8f0"
+                        : isDarkMode ? "#27272a" : "#f1f5f9",
+                    color: isCompleted
+                      ? "#fff"
+                      : isToday
+                        ? isDarkMode ? "#fff" : "#1e293b"
+                        : isDarkMode ? "#71717a" : "#94a3b8",
+                    boxShadow: isCompleted 
+                      ? "0 2px 8px rgba(34, 197, 94, 0.4)" 
+                      : isToday && !isCompleted
+                        ? isDarkMode 
+                          ? "inset 0 0 0 2px #ef4444" 
+                          : "inset 0 0 0 2px #dc2626"
+                        : "none",
+                  }}
+                >
+                  {day}
+                  {isToday && (
+                    <span 
+                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                      style={{ backgroundColor: isCompleted ? "#fff" : "#ef4444" }}
+                    />
+                  )}
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Legend */}
+        {!compact && (
+          <div className={`flex items-center justify-center gap-6 mt-4 pt-4 border-t ${
+            isDarkMode ? "border-iron-800/50" : "border-slate-200"
+          }`}>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-4 h-4 rounded-md"
+                style={{ backgroundColor: isDarkMode ? "#27272a" : "#f1f5f9" }}
+              />
+              <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                Missed
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded-md shadow-sm" 
+                style={{ backgroundColor: COMPLETED_COLOR, boxShadow: "0 2px 4px rgba(34, 197, 94, 0.3)" }} 
+              />
+              <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                Completed
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -70,6 +70,7 @@ export default function Layout({ children }) {
     return tab?.id || "today";
   });
   const [direction, setDirection] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const containerRef = useRef(null);
   const cardRefs = useRef([]);
@@ -77,6 +78,27 @@ export default function Layout({ children }) {
   const scrollTimeoutRef = useRef(null);
 
   const currentIndex = tabs.findIndex(t => t.id === activeTab);
+
+  // Detect keyboard visibility on mobile
+  useEffect(() => {
+    const initialHeight = window.innerHeight;
+    
+    const handleResize = () => {
+      const currentHeight = window.visualViewport?.height || window.innerHeight;
+      const heightDiff = initialHeight - currentHeight;
+      // If height decreased by more than 150px, keyboard is likely open
+      setIsKeyboardVisible(heightDiff > 150);
+    };
+
+    // Use visualViewport API if available (better for iOS)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport.removeEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // Scroll-based animations
   const { scrollYProgress } = useScroll({ container: containerRef });
@@ -263,14 +285,14 @@ export default function Layout({ children }) {
         })}
       </div>
 
-      {/* Fixed Bottom Navigation Bar */}
+      {/* Fixed Bottom Navigation Bar - Hidden when keyboard is open */}
       <motion.nav
         initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        animate={{ y: isKeyboardVisible ? 100 : 0 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
         className={`flex-shrink-0 border-t ${
           isDarkMode ? "bg-iron-950 border-iron-800/50" : "bg-slate-50 border-slate-200"
-        }`}
+        } ${isKeyboardVisible ? "pointer-events-none" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-center justify-around py-2 px-1">

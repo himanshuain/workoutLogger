@@ -21,25 +21,74 @@ const DrawerOverlay = React.forwardRef(({ className, ...props }, ref) => (
 DrawerOverlay.displayName = "DrawerOverlay";
 
 const DrawerContent = React.forwardRef(
-  ({ className, children, ...props }, ref) => (
-    <DrawerPortal>
-      <DrawerOverlay />
-      <DialogPrimitive.Content
-        ref={ref}
-        className={cn(
-          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-3xl border-t border-iron-800 bg-iron-900 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-          className,
-        )}
-        style={{
-          paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
-        }}
-        {...props}
-      >
-        <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-iron-700" />
-        {children}
-      </DialogPrimitive.Content>
-    </DrawerPortal>
-  ),
+  ({ className, children, ...props }, ref) => {
+    const [keyboardVisible, setKeyboardVisible] = React.useState(false);
+    const contentRef = React.useRef(null);
+
+    React.useEffect(() => {
+      // Detect keyboard on iOS/mobile by checking viewport height changes
+      const initialHeight = window.innerHeight;
+      
+      const handleResize = () => {
+        const currentHeight = window.visualViewport?.height || window.innerHeight;
+        const heightDiff = initialHeight - currentHeight;
+        // If height decreased by more than 150px, keyboard is likely open
+        setKeyboardVisible(heightDiff > 150);
+      };
+
+      // Use visualViewport API if available (better for iOS)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleResize);
+        return () => window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }
+    }, []);
+
+    // Handle focus on inputs to scroll them into view
+    React.useEffect(() => {
+      const content = contentRef.current;
+      if (!content) return;
+
+      const handleFocus = (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+          // Small delay to let keyboard appear
+          setTimeout(() => {
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        }
+      };
+
+      content.addEventListener('focusin', handleFocus);
+      return () => content.removeEventListener('focusin', handleFocus);
+    }, []);
+
+    return (
+      <DrawerPortal>
+        <DrawerOverlay />
+        <DialogPrimitive.Content
+          ref={(node) => {
+            contentRef.current = node;
+            if (typeof ref === 'function') ref(node);
+            else if (ref) ref.current = node;
+          }}
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-t border-iron-800 bg-iron-900 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+            className,
+          )}
+          style={{
+            maxHeight: keyboardVisible ? '85vh' : '90vh',
+            paddingBottom: keyboardVisible ? '1rem' : 'calc(1.5rem + env(safe-area-inset-bottom))',
+          }}
+          {...props}
+        >
+          <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-iron-700 flex-shrink-0" />
+          {children}
+        </DialogPrimitive.Content>
+      </DrawerPortal>
+    );
+  },
 );
 DrawerContent.displayName = "DrawerContent";
 

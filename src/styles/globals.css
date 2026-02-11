@@ -495,3 +495,51 @@ input[type="number"] {
 .light .progress-bar-fill {
   @apply bg-workout-primary;
 }
+
+/* iOS Keyboard handling - prevent layout shift */
+@supports (-webkit-touch-callout: none) {
+  /* iOS only */
+  html {
+    height: -webkit-fill-available;
+  }
+  
+  body {
+    min-height: -webkit-fill-available;
+    min-height: 100vh;
+  }
+}
+
+/* Ensure fixed elements don't jump when keyboard opens on iOS */
+.fixed-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* Use transform for hiding instead of bottom position */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.fixed-bottom-nav.keyboard-open {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Drawer adjustments for keyboard */
+[data-radix-dialog-content] {
+  /* Prevent iOS from pushing content up too much */
+  position: fixed !important;
+  bottom: 0 !important;
+  max-height: 90vh !important;
+}
+
+/* When input is focused inside drawer, adjust positioning */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific */
+  [data-radix-dialog-content]:has(input:focus),
+  [data-radix-dialog-content]:has(textarea:focus) {
+    /* Let iOS handle the keyboard positioning naturally */
+    position: fixed !important;
+    bottom: 0 !important;
+  }
+}

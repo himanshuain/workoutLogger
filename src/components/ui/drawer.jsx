@@ -22,46 +22,36 @@ DrawerOverlay.displayName = "DrawerOverlay";
 
 const DrawerContent = React.forwardRef(
   ({ className, children, ...props }, ref) => {
-    const [keyboardVisible, setKeyboardVisible] = React.useState(false);
+    const [isInputFocused, setIsInputFocused] = React.useState(false);
     const contentRef = React.useRef(null);
 
+    // Track input focus/blur to detect keyboard
     React.useEffect(() => {
-      // Detect keyboard on iOS/mobile by checking viewport height changes
-      const initialHeight = window.innerHeight;
-      
-      const handleResize = () => {
-        const currentHeight = window.visualViewport?.height || window.innerHeight;
-        const heightDiff = initialHeight - currentHeight;
-        // If height decreased by more than 150px, keyboard is likely open
-        setKeyboardVisible(heightDiff > 150);
-      };
-
-      // Use visualViewport API if available (better for iOS)
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', handleResize);
-        return () => window.visualViewport.removeEventListener('resize', handleResize);
-      } else {
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-      }
-    }, []);
-
-    // Handle focus on inputs to scroll them into view
-    React.useEffect(() => {
-      const content = contentRef.current;
-      if (!content) return;
-
-      const handleFocus = (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-          // Small delay to let keyboard appear
-          setTimeout(() => {
-            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 300);
+      const handleFocusIn = (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+          setIsInputFocused(true);
         }
       };
 
-      content.addEventListener('focusin', handleFocus);
-      return () => content.removeEventListener('focusin', handleFocus);
+      const handleFocusOut = (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+          // Small delay to handle focus moving between inputs
+          setTimeout(() => {
+            const activeEl = document.activeElement;
+            if (activeEl?.tagName !== 'INPUT' && activeEl?.tagName !== 'TEXTAREA' && activeEl?.tagName !== 'SELECT') {
+              setIsInputFocused(false);
+            }
+          }, 100);
+        }
+      };
+
+      document.addEventListener('focusin', handleFocusIn);
+      document.addEventListener('focusout', handleFocusOut);
+      
+      return () => {
+        document.removeEventListener('focusin', handleFocusIn);
+        document.removeEventListener('focusout', handleFocusOut);
+      };
     }, []);
 
     return (
@@ -74,12 +64,13 @@ const DrawerContent = React.forwardRef(
             else if (ref) ref.current = node;
           }}
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-3xl border-t border-iron-800 bg-iron-900 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+            "fixed inset-x-0 z-50 flex flex-col rounded-t-3xl border-t border-iron-800 bg-iron-900 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
             className,
           )}
           style={{
-            maxHeight: keyboardVisible ? '85vh' : '90vh',
-            paddingBottom: keyboardVisible ? '1rem' : 'calc(1.5rem + env(safe-area-inset-bottom))',
+            bottom: 0,
+            maxHeight: '90vh',
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))',
           }}
           {...props}
         >

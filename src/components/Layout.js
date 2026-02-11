@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { useTheme } from "@/context/ThemeContext";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, CalendarClock } from "lucide-react";
@@ -40,20 +41,20 @@ const headerVariants = {
 };
 
 const contentVariants = {
-  initial: { opacity: 0, y: 15 },
+  initial: { opacity: 0.8, y: 5 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, delay: 0.15, ease: "easeOut" },
+    transition: { duration: 0.15, delay: 0, ease: "easeOut" },
   },
 };
 
 const previewCardVariants = {
-  initial: { opacity: 0, scale: 0.9 },
+  initial: { opacity: 0.5, scale: 0.95 },
   animate: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+    transition: { duration: 0.2, ease: "easeOut" },
   },
 };
 
@@ -79,26 +80,55 @@ export default function Layout({ children }) {
 
   const currentIndex = tabs.findIndex(t => t.id === activeTab);
 
-  // Detect keyboard visibility on mobile
+  // Detect keyboard visibility by tracking input focus (more reliable on iOS)
   useEffect(() => {
-    const initialHeight = window.innerHeight;
-    
-    const handleResize = () => {
-      const currentHeight = window.visualViewport?.height || window.innerHeight;
-      const heightDiff = initialHeight - currentHeight;
-      // If height decreased by more than 150px, keyboard is likely open
-      setIsKeyboardVisible(heightDiff > 150);
+    const handleFocusIn = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        setIsKeyboardVisible(true);
+      }
     };
 
-    // Use visualViewport API if available (better for iOS)
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleResize);
-      return () => window.visualViewport.removeEventListener('resize', handleResize);
-    } else {
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    const handleFocusOut = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        // Small delay to handle focus moving between inputs
+        setTimeout(() => {
+          const activeEl = document.activeElement;
+          if (activeEl?.tagName !== 'INPUT' && activeEl?.tagName !== 'TEXTAREA' && activeEl?.tagName !== 'SELECT') {
+            setIsKeyboardVisible(false);
+          }
+        }, 100);
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+    
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
+    };
   }, []);
+
+  // Prefetch adjacent pages for faster navigation
+  useEffect(() => {
+    const prefetchAdjacent = () => {
+      // Prefetch previous and next tabs
+      if (currentIndex > 0) {
+        router.prefetch(tabs[currentIndex - 1].href);
+      }
+      if (currentIndex < tabs.length - 1) {
+        router.prefetch(tabs[currentIndex + 1].href);
+      }
+      // Also prefetch 2 tabs ahead/behind for smoother scrolling
+      if (currentIndex > 1) {
+        router.prefetch(tabs[currentIndex - 2].href);
+      }
+      if (currentIndex < tabs.length - 2) {
+        router.prefetch(tabs[currentIndex + 2].href);
+      }
+    };
+    prefetchAdjacent();
+  }, [currentIndex, router]);
 
   // Scroll-based animations
   const { scrollYProgress } = useScroll({ container: containerRef });
@@ -164,17 +194,20 @@ export default function Layout({ children }) {
       });
 
       // Navigate if snapped to a different tab
-      if (bestMatch !== currentIndex && bestVisibility > 0.5) {
+      if (bestMatch !== currentIndex && bestVisibility > 0.6) {
         const targetTab = tabs[bestMatch];
         if (targetTab) {
           if (window.navigator?.vibrate) {
             window.navigator.vibrate(10);
           }
           setDirection(bestMatch > currentIndex ? 1 : -1);
-          router.push(targetTab.href);
+          // Update activeTab IMMEDIATELY so UI renders instantly
+          setActiveTab(targetTab.id);
+          // Then update the URL in background (shallow to avoid re-render)
+          router.replace(targetTab.href, undefined, { shallow: true, scroll: false });
         }
       }
-    }, 150);
+    }, 50); // Reduced to 50ms for even faster response
   }, [currentIndex, router]);
 
   const handleTabClick = useCallback(
@@ -182,14 +215,17 @@ export default function Layout({ children }) {
       const idx = tabs.findIndex(t => t.id === tab.id);
       const card = cardRefs.current[idx];
       setDirection(idx > currentIndex ? 1 : -1);
+      // Update activeTab IMMEDIATELY so UI renders instantly
+      setActiveTab(tab.id);
       if (card) {
         isScrollingRef.current = true;
         card.scrollIntoView({ behavior: "smooth", block: "start" });
         setTimeout(() => {
           isScrollingRef.current = false;
-          router.push(tab.href);
-        }, 300);
+        }, 200);
       }
+      // Update URL in background
+      router.replace(tab.href, undefined, { shallow: true, scroll: false });
       if (window.navigator?.vibrate) {
         window.navigator.vibrate(5);
       }
@@ -246,38 +282,48 @@ export default function Layout({ children }) {
                     </motion.div>
                   </AnimatePresence>
                 ) : (
-                  // Preview card for non-active tabs
-                  <motion.div
-                    variants={previewCardVariants}
-                    initial="initial"
-                    animate="animate"
-                    className="flex flex-col items-center justify-center h-full px-6"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.1, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
-                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-4 ${
-                        isDarkMode ? "bg-iron-900" : "bg-slate-100"
-                      }`}
-                    >
-                      <Icon
-                        className={`w-10 h-10 ${
-                          isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                  // Animated running person placeholder - shows briefly during navigation
+                  <div className="flex flex-col items-center justify-center h-full px-6">
+                    <div className="relative">
+                      {/* Running track/path */}
+                      <div 
+                        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-1 rounded-full ${
+                          isDarkMode ? "bg-iron-800" : "bg-slate-200"
                         }`}
                       />
-                    </motion.div>
-                    <motion.h2
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15, duration: 0.3 }}
-                      className={`text-2xl font-bold mb-2 ${
-                        isDarkMode ? "text-iron-100" : "text-slate-800"
-                      }`}
-                    >
-                      {tab.label}
-                    </motion.h2>
-                  </motion.div>
+                      {/* Animated runner */}
+                      <div 
+                        className="text-5xl animate-bounce"
+                        style={{
+                          animationDuration: '0.5s',
+                          animationTimingFunction: 'ease-in-out',
+                        }}
+                      >
+                        🏃
+                      </div>
+                      {/* Motion lines */}
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+                        <div 
+                          className={`h-0.5 rounded-full animate-pulse ${
+                            isDarkMode ? "bg-lift-primary/60" : "bg-workout-primary/60"
+                          }`}
+                          style={{ width: '12px', animationDelay: '0ms' }}
+                        />
+                        <div 
+                          className={`h-0.5 rounded-full animate-pulse ${
+                            isDarkMode ? "bg-lift-primary/40" : "bg-workout-primary/40"
+                          }`}
+                          style={{ width: '18px', animationDelay: '100ms' }}
+                        />
+                        <div 
+                          className={`h-0.5 rounded-full animate-pulse ${
+                            isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+                          }`}
+                          style={{ width: '10px', animationDelay: '200ms' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 )}
               </main>
             </div>
@@ -286,13 +332,10 @@ export default function Layout({ children }) {
       </div>
 
       {/* Fixed Bottom Navigation Bar - Hidden when keyboard is open */}
-      <motion.nav
-        initial={{ y: 100 }}
-        animate={{ y: isKeyboardVisible ? 100 : 0 }}
-        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className={`flex-shrink-0 border-t ${
+      <nav
+        className={`fixed-bottom-nav flex-shrink-0 border-t z-40 ${
           isDarkMode ? "bg-iron-950 border-iron-800/50" : "bg-slate-50 border-slate-200"
-        } ${isKeyboardVisible ? "pointer-events-none" : ""}`}
+        } ${isKeyboardVisible ? "keyboard-open" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-center justify-around py-2 px-1">
@@ -359,7 +402,7 @@ export default function Layout({ children }) {
             );
           })}
         </div>
-      </motion.nav>
+      </nav>
     </div>
   );
 }

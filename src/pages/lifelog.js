@@ -6,11 +6,13 @@ import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1044,54 +1046,23 @@ export default function LifeLog() {
         )}
       </div>
 
-      {/* Add Event Type Drawer */}
-      <Drawer open={showAddDrawer} onOpenChange={setShowAddDrawer}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Add Event Type</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-4 overflow-y-auto max-h-[70vh]">
+      {/* Add Event Type Modal */}
+      <Modal open={showAddDrawer} onOpenChange={setShowAddDrawer}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add Event Type</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             {/* Name */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Name
               </label>
               <input
                 type="text"
                 value={newEvent.name}
-                onChange={(e) =>
-                  setNewEvent({ ...newEvent, name: e.target.value })
-                }
+                onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
                 placeholder="e.g., Haircut, Doctor Visit"
-                className={`input-field ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-100 placeholder-iron-600"
-                    : "bg-slate-100 text-slate-800 placeholder-slate-400"
-                }`}
-                autoFocus
-              />
-            </div>
-
-            {/* Description (Optional) */}
-            <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
-                Description (optional)
-              </label>
-              <input
-                type="text"
-                value={newEvent.description}
-                onChange={(e) =>
-                  setNewEvent({ ...newEvent, description: e.target.value })
-                }
-                placeholder="e.g., Every 4-6 weeks"
                 className={`input-field ${
                   isDarkMode
                     ? "bg-iron-800 text-iron-100 placeholder-iron-600"
@@ -1102,11 +1073,7 @@ export default function LifeLog() {
 
             {/* Reminder Days (Optional) */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Remind after days (optional)
               </label>
               <input
@@ -1115,9 +1082,7 @@ export default function LifeLog() {
                 onChange={(e) =>
                   setNewEvent({
                     ...newEvent,
-                    reminder_days: e.target.value
-                      ? parseInt(e.target.value)
-                      : null,
+                    reminder_days: e.target.value ? parseInt(e.target.value) : null,
                   })
                 }
                 placeholder="e.g., 30 for monthly"
@@ -1127,22 +1092,14 @@ export default function LifeLog() {
                     : "bg-slate-100 text-slate-800 placeholder-slate-400"
                 }`}
               />
-              <p
-                className={`text-xs mt-1 ${
-                  isDarkMode ? "text-iron-600" : "text-slate-400"
-                }`}
-              >
+              <p className={`text-xs mt-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
                 Event will be highlighted when overdue
               </p>
             </div>
 
             {/* Icon */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
               <div className="flex flex-wrap gap-2">
@@ -1150,7 +1107,7 @@ export default function LifeLog() {
                   <button
                     key={icon}
                     onClick={() => setNewEvent({ ...newEvent, icon })}
-                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center ${
+                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center ${
                       newEvent.icon === icon
                         ? isDarkMode
                           ? "bg-iron-700 ring-2 ring-lift-primary"
@@ -1168,11 +1125,7 @@ export default function LifeLog() {
 
             {/* Color */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
               <div className="flex flex-wrap gap-2">
@@ -1180,10 +1133,8 @@ export default function LifeLog() {
                   <button
                     key={color}
                     onClick={() => setNewEvent({ ...newEvent, color })}
-                    className={`w-10 h-10 rounded-xl transition-transform ${
-                      newEvent.color === color
-                        ? "ring-2 ring-white ring-offset-2 scale-110"
-                        : ""
+                    className={`w-9 h-9 rounded-lg transition-transform ${
+                      newEvent.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
                     }`}
                     style={{
                       backgroundColor: color,
@@ -1193,122 +1144,63 @@ export default function LifeLog() {
                 ))}
               </div>
             </div>
-
-            {/* Preview */}
-            <div
-              className={`p-4 rounded-xl ${
-                isDarkMode ? "bg-iron-800/50" : "bg-slate-100"
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowAddDrawer(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
-              <p
-                className={`text-xs mb-2 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
-                Preview
-              </p>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                  style={{ backgroundColor: `${newEvent.color}20` }}
-                >
-                  {newEvent.icon}
-                </div>
-                <div>
-                  <p
-                    className={`font-bold ${
-                      isDarkMode ? "text-iron-100" : "text-slate-800"
-                    }`}
-                  >
-                    {newEvent.name || "Event Name"}
-                  </p>
-                  <p
-                    className={`text-sm ${
-                      isDarkMode ? "text-iron-500" : "text-slate-500"
-                    }`}
-                  >
-                    Never logged
-                  </p>
-                </div>
-              </div>
-            </div>
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateEvent}
+              disabled={!newEvent.name.trim()}
+              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              Add Event
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-2 pb-safe">
-              <button
-                onClick={() => setShowAddDrawer(false)}
-                className={`flex-1 py-3.5 rounded-xl font-medium ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-400"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateEvent}
-                disabled={!newEvent.name.trim()}
-                className={`flex-1 py-3.5 rounded-xl font-bold disabled:opacity-50 ${
-                  isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                }`}
-              >
-                Add Event
-              </button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Log Event Drawer */}
-      <Drawer open={showLogDrawer} onOpenChange={setShowLogDrawer}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>
+      {/* Log Event Modal */}
+      <Modal open={showLogDrawer} onOpenChange={setShowLogDrawer}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               <span className="mr-2">{selectedEvent?.icon}</span>
               Log {selectedEvent?.name}
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-4">
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             {/* Date */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Date
               </label>
               <input
                 type="date"
                 value={logDetails.date}
-                onChange={(e) =>
-                  setLogDetails({ ...logDetails, date: e.target.value })
-                }
+                onChange={(e) => setLogDetails({ ...logDetails, date: e.target.value })}
                 className={`input-field ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-100"
-                    : "bg-slate-100 text-slate-800"
+                  isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-100 text-slate-800"
                 }`}
               />
             </div>
 
             {/* Notes (Optional) */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Notes (optional)
               </label>
               <input
                 type="text"
                 value={logDetails.notes}
-                onChange={(e) =>
-                  setLogDetails({ ...logDetails, notes: e.target.value })
-                }
+                onChange={(e) => setLogDetails({ ...logDetails, notes: e.target.value })}
                 placeholder="e.g., Short trim"
                 className={`input-field ${
                   isDarkMode
@@ -1320,19 +1212,13 @@ export default function LifeLog() {
 
             {/* Cost (Optional) */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Cost (optional)
               </label>
               <input
                 type="number"
                 value={logDetails.cost}
-                onChange={(e) =>
-                  setLogDetails({ ...logDetails, cost: e.target.value })
-                }
+                onChange={(e) => setLogDetails({ ...logDetails, cost: e.target.value })}
                 placeholder="e.g., 30"
                 className={`input-field ${
                   isDarkMode
@@ -1341,45 +1227,39 @@ export default function LifeLog() {
                 }`}
               />
             </div>
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowLogDrawer(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleLogEvent}
+              className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              Log Event
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-2 pb-safe">
-              <button
-                onClick={() => setShowLogDrawer(false)}
-                className={`flex-1 py-3.5 rounded-xl font-medium ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-400"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleLogEvent}
-                className={`flex-1 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 ${
-                  isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                Log Event
-              </button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
-
-      {/* History Drawer */}
-      <Drawer open={showHistoryDrawer} onOpenChange={setShowHistoryDrawer}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>
+      {/* History Modal */}
+      <Modal open={showHistoryDrawer} onOpenChange={setShowHistoryDrawer}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               <span className="mr-2">{selectedEvent?.icon}</span>
               {selectedEvent?.name} History
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 overflow-y-auto max-h-[60vh]">
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody>
             {isLoadingLogs ? (
               <div className="py-8 text-center">
                 <div
@@ -1391,11 +1271,7 @@ export default function LifeLog() {
                 />
               </div>
             ) : eventLogs.length === 0 ? (
-              <div
-                className={`py-8 text-center ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
+              <div className={`py-8 text-center ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                 <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
                 <p>No logs yet</p>
               </div>
@@ -1403,71 +1279,36 @@ export default function LifeLog() {
               <div className="space-y-2">
                 {eventLogs.map((log, index) => {
                   const logDate = new Date(log.date);
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
+                  const todayDate = new Date();
+                  todayDate.setHours(0, 0, 0, 0);
                   logDate.setHours(0, 0, 0, 0);
-                  const daysSince = Math.floor(
-                    (today - logDate) / (1000 * 60 * 60 * 24),
-                  );
+                  const daysSince = Math.floor((todayDate - logDate) / (1000 * 60 * 60 * 24));
 
                   return (
                     <div
                       key={log.id}
-                      className={`p-3 rounded-xl ${
-                        isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                      }`}
+                      className={`p-3 rounded-xl ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <p
-                            className={`font-medium ${
-                              isDarkMode ? "text-iron-100" : "text-slate-800"
-                            }`}
-                          >
+                          <p className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                             {formatDate(log.date)}
                           </p>
-                          <p
-                            className={`text-sm ${
-                              isDarkMode ? "text-iron-500" : "text-slate-500"
-                            }`}
-                          >
+                          <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                             {formatDaysSince(daysSince)}
                             {index > 0 && eventLogs[index - 1] && (
-                              <span
-                                className={
-                                  isDarkMode
-                                    ? "text-iron-600"
-                                    : "text-slate-400"
-                                }
-                              >
-                                {" "}
-                                ·{" "}
-                                {Math.floor(
-                                  (new Date(eventLogs[index - 1].date) -
-                                    new Date(log.date)) /
-                                    (1000 * 60 * 60 * 24),
-                                )}{" "}
-                                days after
+                              <span className={isDarkMode ? "text-iron-600" : "text-slate-400"}>
+                                {" "}· {Math.floor((new Date(eventLogs[index - 1].date) - new Date(log.date)) / (1000 * 60 * 60 * 24))} days after
                               </span>
                             )}
                           </p>
                           {log.notes && (
-                            <p
-                              className={`text-sm mt-1 ${
-                                isDarkMode ? "text-iron-400" : "text-slate-600"
-                              }`}
-                            >
+                            <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                               {log.notes}
                             </p>
                           )}
                           {log.cost && (
-                            <p
-                              className={`text-sm ${
-                                isDarkMode
-                                  ? "text-lift-primary"
-                                  : "text-workout-primary"
-                              }`}
-                            >
+                            <p className={`text-sm ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
                               ₹{log.cost}
                             </p>
                           )}
@@ -1475,9 +1316,7 @@ export default function LifeLog() {
                         <button
                           onClick={() => handleDeleteLog(log.id)}
                           className={`p-2 rounded-lg ${
-                            isDarkMode
-                              ? "text-iron-500 hover:bg-iron-700"
-                              : "text-slate-400 hover:bg-slate-200"
+                            isDarkMode ? "text-iron-500 hover:bg-iron-700" : "text-slate-400 hover:bg-slate-200"
                           }`}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1488,9 +1327,9 @@ export default function LifeLog() {
                 })}
               </div>
             )}
-          </div>
-        </DrawerContent>
-      </Drawer>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Duplicate Entry Confirmation Dialog */}
       <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
@@ -1542,13 +1381,15 @@ export default function LifeLog() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Add/Edit Habit Drawer */}
-      <Drawer open={showAddHabitModal} onOpenChange={setShowAddHabitModal}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>{editingTrackable ? "Edit Habit" : "Add Habit"}</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-4 overflow-y-auto max-h-[70vh]">
+      {/* Add/Edit Habit Modal */}
+      <Modal open={showAddHabitModal} onOpenChange={setShowAddHabitModal}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              {editingTrackable ? "Edit Habit" : "Add Habit"}
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             {/* Name */}
             <div>
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
@@ -1564,7 +1405,6 @@ export default function LifeLog() {
                     ? "bg-iron-800 text-iron-100 placeholder-iron-600"
                     : "bg-slate-100 text-slate-800 placeholder-slate-400"
                 }`}
-                autoFocus
               />
             </div>
 
@@ -1578,7 +1418,7 @@ export default function LifeLog() {
                   <button
                     key={icon}
                     onClick={() => setNewPill({ ...newPill, icon })}
-                    className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all ${
+                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center transition-all ${
                       newPill.icon === icon
                         ? isDarkMode
                           ? "bg-lift-primary/20 ring-2 ring-lift-primary"
@@ -1604,7 +1444,7 @@ export default function LifeLog() {
                   <button
                     key={color}
                     onClick={() => setNewPill({ ...newPill, color })}
-                    className={`w-10 h-10 rounded-xl transition-all ${
+                    className={`w-9 h-9 rounded-lg transition-all ${
                       newPill.color === color ? "ring-2 ring-offset-2" : ""
                     }`}
                     style={{
@@ -1630,12 +1470,8 @@ export default function LifeLog() {
                 onClick={() => setNewPill({ ...newPill, has_value: !newPill.has_value })}
                 className={`w-12 h-7 rounded-full transition-colors ${
                   newPill.has_value
-                    ? isDarkMode
-                      ? "bg-lift-primary"
-                      : "bg-workout-primary"
-                    : isDarkMode
-                      ? "bg-iron-700"
-                      : "bg-slate-200"
+                    ? isDarkMode ? "bg-lift-primary" : "bg-workout-primary"
+                    : isDarkMode ? "bg-iron-700" : "bg-slate-200"
                 }`}
               >
                 <div
@@ -1665,44 +1501,46 @@ export default function LifeLog() {
                 />
               </div>
             )}
-
-            {/* Save Button */}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowAddHabitModal(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              Cancel
+            </button>
             <button
               onClick={handleSavePill}
               disabled={!newPill.name.trim()}
-              className={`w-full py-3.5 rounded-xl font-bold transition-colors ${
+              className={`flex-1 py-3 rounded-xl font-bold transition-colors ${
                 newPill.name.trim()
-                  ? isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                  : isDarkMode
-                    ? "bg-iron-800 text-iron-600"
-                    : "bg-slate-200 text-slate-400"
+                  ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                  : isDarkMode ? "bg-iron-800 text-iron-600" : "bg-slate-200 text-slate-400"
               }`}
             >
               {editingTrackable ? "Save Changes" : "Add Habit"}
             </button>
-          </div>
-        </DrawerContent>
-      </Drawer>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-      {/* Past Entry Drawer */}
-      <Drawer open={!!pastEntryTrackable} onOpenChange={(open) => !open && setPastEntryTrackable(null)}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2">
+      {/* Past Entry Modal */}
+      <Modal open={!!pastEntryTrackable} onOpenChange={(open) => !open && setPastEntryTrackable(null)}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={`flex items-center gap-2 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
               <span>{pastEntryTrackable?.icon}</span>
               Add Past Entries
-            </DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 overflow-y-auto max-h-[70vh]">
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody>
             {/* Month Navigation */}
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => handlePastEntryMonthChange(-1)}
-                className={`p-2 rounded-lg ${
-                  isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-100"
-                }`}
+                className={`p-2 rounded-lg ${isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-100"}`}
               >
                 <ChevronLeft className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`} />
               </button>
@@ -1711,9 +1549,7 @@ export default function LifeLog() {
               </h3>
               <button
                 onClick={() => handlePastEntryMonthChange(1)}
-                className={`p-2 rounded-lg ${
-                  isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-100"
-                }`}
+                className={`p-2 rounded-lg ${isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-100"}`}
               >
                 <ChevronRight className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`} />
               </button>
@@ -1724,9 +1560,7 @@ export default function LifeLog() {
               {DAY_NAMES.map((day, i) => (
                 <div
                   key={i}
-                  className={`text-center text-xs font-medium py-1 ${
-                    isDarkMode ? "text-iron-500" : "text-slate-500"
-                  }`}
+                  className={`text-center text-xs font-medium py-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
                 >
                   {day}
                 </div>
@@ -1749,7 +1583,7 @@ export default function LifeLog() {
                     key={day}
                     onClick={() => !isFuture && handleTogglePastDate(dateStr)}
                     disabled={isFuture || pastEntrySaving}
-                    className={`aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
+                    className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
                       isFuture
                         ? isDarkMode
                           ? "text-iron-700 cursor-not-allowed"
@@ -1775,7 +1609,7 @@ export default function LifeLog() {
             </div>
 
             {/* Legend */}
-            <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-dashed ${isDarkMode ? 'border-iron-800' : 'border-slate-200'}">
+            <div className={`flex items-center justify-center gap-6 mt-4 pt-4 border-t border-dashed ${isDarkMode ? "border-iron-800" : "border-slate-200"}`}>
               <div className="flex items-center gap-2">
                 <div className={`w-4 h-4 rounded ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`} />
                 <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Missed</span>
@@ -1785,21 +1619,19 @@ export default function LifeLog() {
                 <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Completed</span>
               </div>
             </div>
-
-            {/* Done Button */}
+          </ModalBody>
+          <ModalFooter>
             <button
               onClick={() => setPastEntryTrackable(null)}
-              className={`mt-4 w-full py-3 rounded-xl font-bold ${
-                isDarkMode
-                  ? "bg-lift-primary text-iron-950"
-                  : "bg-workout-primary text-white"
+              className={`w-full py-3 rounded-xl font-bold ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
               Done
             </button>
-          </div>
-        </DrawerContent>
-      </Drawer>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Notification Settings Drawer */}
       {notificationTrackable && (

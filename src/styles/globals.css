@@ -496,9 +496,8 @@ input[type="number"] {
   @apply bg-workout-primary;
 }
 
-/* iOS Keyboard handling - prevent layout shift */
+/* iOS specific - prevent viewport resize issues */
 @supports (-webkit-touch-callout: none) {
-  /* iOS only */
   html {
     height: -webkit-fill-available;
   }
@@ -509,37 +508,10 @@ input[type="number"] {
   }
 }
 
-/* Ensure fixed elements don't jump when keyboard opens on iOS */
+/* Fixed bottom nav bar */
 .fixed-bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  /* Use transform for hiding instead of bottom position */
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.fixed-bottom-nav.keyboard-open {
-  transform: translateY(100%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* Drawer adjustments for keyboard */
-[data-radix-dialog-content] {
-  /* Prevent iOS from pushing content up too much */
-  position: fixed !important;
-  bottom: 0 !important;
-  max-height: 90vh !important;
-}
-
-/* When input is focused inside drawer, adjust positioning */
-@supports (-webkit-touch-callout: none) {
-  /* iOS Safari specific */
-  [data-radix-dialog-content]:has(input:focus),
-  [data-radix-dialog-content]:has(textarea:focus) {
-    /* Let iOS handle the keyboard positioning naturally */
-    position: fixed !important;
-    bottom: 0 !important;
-  }
 }

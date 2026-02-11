@@ -7,11 +7,13 @@ import Layout from "@/components/Layout";
 import HabitPills from "@/components/HabitPills";
 import QuickStats from "@/components/QuickStats";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import {
   Plus,
   Dumbbell,
@@ -527,134 +529,92 @@ export default function Home() {
         </section>
       </div>
 
-      {/* Routine Selector Drawer */}
-      <Drawer open={showRoutineSelector} onOpenChange={setShowRoutineSelector}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Choose a Routine</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-2 max-h-[60vh] overflow-y-auto">
+      {/* Routine Selector Modal */}
+      <Modal open={showRoutineSelector} onOpenChange={setShowRoutineSelector}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Choose a Routine</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-2">
             {routines.map((routine) => (
               <button
                 key={routine.id}
                 onClick={() => handleStartWorkout(routine)}
-                className={`
-                  w-full p-4 rounded-2xl text-left transition-all
-                  ${
-                    isDarkMode
-                      ? "bg-iron-800 hover:bg-iron-700"
-                      : "bg-slate-100 hover:bg-slate-200"
-                  }
-                `}
+                className={`w-full p-4 rounded-2xl text-left transition-all ${
+                  isDarkMode ? "bg-iron-800 hover:bg-iron-700" : "bg-slate-100 hover:bg-slate-200"
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: `${routine.color}20` }}
                   >
-                    <Dumbbell
-                      className="w-6 h-6"
-                      style={{ color: routine.color }}
-                    />
+                    <Dumbbell className="w-6 h-6" style={{ color: routine.color }} />
                   </div>
                   <div className="flex-1">
-                    <p
-                      className={`font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                    >
+                    <p className={`font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                       {routine.name}
                     </p>
-                    <p
-                      className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                    >
+                    <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                       {routine.routine_exercises?.length || 0} exercises
                     </p>
                   </div>
-                  <ChevronRight
-                    className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                  />
+                  <ChevronRight className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
                 </div>
               </button>
             ))}
-          </div>
-        </DrawerContent>
-      </Drawer>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
-      {/* Add Habit Drawer */}
-      <Drawer open={showAddHabitDrawer} onOpenChange={setShowAddHabitDrawer}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Add New Habit</DrawerTitle>
-          </DrawerHeader>
-
-          <div className="px-4 pb-24 space-y-4 overflow-y-auto max-h-[70vh]">
+      {/* Add Habit Modal */}
+      <Modal open={showAddHabitDrawer} onOpenChange={setShowAddHabitDrawer}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add New Habit</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             {/* Name */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Name
               </label>
               <input
                 type="text"
                 value={newHabit.name}
-                onChange={(e) =>
-                  setNewHabit({ ...newHabit, name: e.target.value })
-                }
+                onChange={(e) => setNewHabit({ ...newHabit, name: e.target.value })}
                 placeholder="e.g., Water, Sleep, Creatine"
                 className={`input-field ${
                   isDarkMode
                     ? "bg-iron-800 text-iron-100 placeholder-iron-600"
                     : "bg-slate-100 text-slate-800 placeholder-slate-400"
                 }`}
-                autoFocus
               />
             </div>
 
             {/* Type */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Type
               </label>
               <div className="flex gap-2">
                 <button
-                  onClick={() =>
-                    setNewHabit({
-                      ...newHabit,
-                      type: "habit",
-                      has_value: false,
-                    })
-                  }
+                  onClick={() => setNewHabit({ ...newHabit, type: "habit", has_value: false })}
                   className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
                     newHabit.type === "habit"
-                      ? isDarkMode
-                        ? "bg-lift-primary text-iron-950"
-                        : "bg-workout-primary text-white"
-                      : isDarkMode
-                        ? "bg-iron-800 text-iron-400"
-                        : "bg-slate-100 text-slate-600"
+                      ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                      : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   {newHabit.type === "habit" && <Check className="w-4 h-4" />}
                   Habit (Yes/No)
                 </button>
                 <button
-                  onClick={() =>
-                    setNewHabit({
-                      ...newHabit,
-                      type: "health",
-                      has_value: true,
-                    })
-                  }
+                  onClick={() => setNewHabit({ ...newHabit, type: "health", has_value: true })}
                   className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
                     newHabit.type === "health"
-                      ? isDarkMode
-                        ? "bg-lift-primary text-iron-950"
-                        : "bg-workout-primary text-white"
-                      : isDarkMode
-                        ? "bg-iron-800 text-iron-400"
-                        : "bg-slate-100 text-slate-600"
+                      ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                      : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   {newHabit.type === "health" && <Check className="w-4 h-4" />}
@@ -666,17 +626,13 @@ export default function Home() {
             {/* Value Unit (for health type) */}
             {newHabit.type === "health" && (
               <div>
-                <label
-                  className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-                >
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                   Unit
                 </label>
                 <input
                   type="text"
                   value={newHabit.value_unit}
-                  onChange={(e) =>
-                    setNewHabit({ ...newHabit, value_unit: e.target.value })
-                  }
+                  onChange={(e) => setNewHabit({ ...newHabit, value_unit: e.target.value })}
                   placeholder="e.g., hours, liters, 1-10"
                   className={`input-field ${
                     isDarkMode
@@ -689,9 +645,7 @@ export default function Home() {
 
             {/* Icon */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
               <div className="flex flex-wrap gap-2">
@@ -699,14 +653,10 @@ export default function Home() {
                   <button
                     key={icon}
                     onClick={() => setNewHabit({ ...newHabit, icon })}
-                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center ${
+                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center ${
                       newHabit.icon === icon
-                        ? isDarkMode
-                          ? "bg-iron-700 ring-2 ring-lift-primary"
-                          : "bg-slate-200 ring-2 ring-workout-primary"
-                        : isDarkMode
-                          ? "bg-iron-800"
-                          : "bg-slate-100"
+                        ? isDarkMode ? "bg-iron-700 ring-2 ring-lift-primary" : "bg-slate-200 ring-2 ring-workout-primary"
+                        : isDarkMode ? "bg-iron-800" : "bg-slate-100"
                     }`}
                   >
                     {icon}
@@ -717,9 +667,7 @@ export default function Home() {
 
             {/* Color */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
               <div className="flex flex-wrap gap-2">
@@ -727,10 +675,8 @@ export default function Home() {
                   <button
                     key={color}
                     onClick={() => setNewHabit({ ...newHabit, color })}
-                    className={`w-10 h-10 rounded-xl transition-transform ${
-                      newHabit.color === color
-                        ? "ring-2 ring-white ring-offset-2 scale-110"
-                        : ""
+                    className={`w-9 h-9 rounded-lg transition-transform ${
+                      newHabit.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
                     }`}
                     style={{
                       backgroundColor: color,
@@ -740,59 +686,29 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
-            {/* Preview */}
-            <div
-              className={`p-4 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-100"}`}
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowAddHabitDrawer(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+              }`}
             >
-              <p
-                className={`text-xs mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-              >
-                Preview
-              </p>
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-iron-950 font-medium"
-                style={{ backgroundColor: newHabit.color }}
-              >
-                <span>{newHabit.icon}</span>
-                <Check className="w-4 h-4" />
-                <span>{newHabit.name || "Name"}</span>
-                {newHabit.has_value && (
-                  <span className="text-xs bg-black/20 px-1.5 py-0.5 rounded-full">
-                    8 {newHabit.value_unit}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-2 pb-safe">
-              <button
-                onClick={() => setShowAddHabitDrawer(false)}
-                className={`flex-1 py-3.5 rounded-xl font-medium ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-400"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveHabit}
-                disabled={!newHabit.name.trim()}
-                className={`flex-1 py-3.5 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
-                  isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                Add Habit
-              </button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveHabit}
+              disabled={!newHabit.name.trim()}
+              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              Add Habit
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Layout>
   );
 }

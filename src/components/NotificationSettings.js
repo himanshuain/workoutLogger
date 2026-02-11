@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Bell, BellOff, Clock, Check } from "lucide-react";
 import NotificationService from "@/lib/notifications";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 
 const DAYS = [
   { id: 0, short: "S", name: "Sun" },
@@ -104,16 +106,16 @@ export default function NotificationSettings({ trackable, onClose }) {
   };
 
   return (
-    <Drawer open={isOpen} onOpenChange={handleClose}>
-      <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle className="flex items-center gap-2">
+    <Modal open={isOpen} onOpenChange={handleClose}>
+      <ModalContent className="bg-iron-900 border-iron-800">
+        <ModalHeader>
+          <ModalTitle className="flex items-center gap-2 text-iron-100">
             <Bell className="w-5 h-5" />
             Reminder for {trackable.name}
-          </DrawerTitle>
-        </DrawerHeader>
+          </ModalTitle>
+        </ModalHeader>
 
-        <div className="px-4 pb-4 space-y-5">
+        <ModalBody className="space-y-5">
           {/* Permission Status */}
           {permissionStatus !== "granted" && (
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
@@ -144,7 +146,7 @@ export default function NotificationSettings({ trackable, onClose }) {
           )}
 
           {/* Enable Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-iron-900">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-iron-800">
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
@@ -260,27 +262,26 @@ export default function NotificationSettings({ trackable, onClose }) {
               </div>
             </>
           )}
+        </ModalBody>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-2 pb-safe">
-            <button
-              onClick={handleClose}
-              className="flex-1 py-3.5 rounded-xl bg-iron-800 text-iron-400 font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={schedule.enabled && schedule.days.length === 0}
-              className="flex-1 py-3.5 rounded-xl bg-lift-primary text-iron-950 font-bold
-                       disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <Check className="w-4 h-4" />
-              Save
-            </button>
-          </div>
-        </div>
-      </DrawerContent>
-    </Drawer>
+        <ModalFooter>
+          <button
+            onClick={handleClose}
+            className="flex-1 py-3 rounded-xl bg-iron-800 text-iron-400 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={schedule.enabled && schedule.days.length === 0}
+            className="flex-1 py-3 rounded-xl bg-lift-primary text-iron-950 font-bold
+                     disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Check className="w-4 h-4" />
+            Save
+          </button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

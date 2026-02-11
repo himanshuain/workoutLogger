@@ -5,11 +5,13 @@ import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import ExerciseAutocomplete from "@/components/ExerciseAutocomplete";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import {
   Plus,
   Dumbbell,
@@ -298,29 +300,24 @@ export default function Routines() {
         </div>
       </div>
 
-      {/* Create/Edit Routine Drawer */}
-      <Drawer open={showCreateDrawer} onOpenChange={setShowCreateDrawer}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle>
+      {/* Create/Edit Routine Modal */}
+      <Modal open={showCreateDrawer} onOpenChange={setShowCreateDrawer}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               {editingRoutine ? "Edit Routine" : "Create Routine"}
-            </DrawerTitle>
-          </DrawerHeader>
-
-          <div className="px-4 pb-24 space-y-4 overflow-y-auto max-h-[70vh]">
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             {/* Name */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Routine Name
               </label>
               <input
                 type="text"
                 value={newRoutine.name}
-                onChange={(e) =>
-                  setNewRoutine({ ...newRoutine, name: e.target.value })
-                }
+                onChange={(e) => setNewRoutine({ ...newRoutine, name: e.target.value })}
                 placeholder="e.g., Upper Body Strength"
                 className={`input-field ${isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-100 text-slate-800"}`}
               />
@@ -328,22 +325,16 @@ export default function Routines() {
 
             {/* Day Selection */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Assign to Day (optional)
               </label>
               <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() =>
-                    setNewRoutine({ ...newRoutine, day_of_week: null })
-                  }
+                  onClick={() => setNewRoutine({ ...newRoutine, day_of_week: null })}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                     newRoutine.day_of_week === null
                       ? "bg-workout-primary text-white"
-                      : isDarkMode
-                        ? "bg-iron-800 text-iron-400"
-                        : "bg-slate-100 text-slate-600"
+                      : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
                   }`}
                 >
                   Any
@@ -351,15 +342,11 @@ export default function Routines() {
                 {DAYS.map((day) => (
                   <button
                     key={day.value}
-                    onClick={() =>
-                      setNewRoutine({ ...newRoutine, day_of_week: day.value })
-                    }
+                    onClick={() => setNewRoutine({ ...newRoutine, day_of_week: day.value })}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       newRoutine.day_of_week === day.value
                         ? "bg-workout-primary text-white"
-                        : isDarkMode
-                          ? "bg-iron-800 text-iron-400"
-                          : "bg-slate-100 text-slate-600"
+                        : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
                     }`}
                   >
                     {day.short}
@@ -370,9 +357,7 @@ export default function Routines() {
 
             {/* Color */}
             <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
               <div className="flex flex-wrap gap-2">
@@ -380,10 +365,8 @@ export default function Routines() {
                   <button
                     key={color}
                     onClick={() => setNewRoutine({ ...newRoutine, color })}
-                    className={`w-10 h-10 rounded-xl transition-transform ${
-                      newRoutine.color === color
-                        ? "ring-2 ring-white ring-offset-2 scale-110"
-                        : ""
+                    className={`w-9 h-9 rounded-lg transition-transform ${
+                      newRoutine.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
                     }`}
                     style={{
                       backgroundColor: color,
@@ -397,96 +380,55 @@ export default function Routines() {
             {/* Exercises */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label
-                  className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-                >
+                <label className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                   Exercises ({newRoutine.exercises.length})
                 </label>
                 <button
                   onClick={() => setShowExercisePicker(true)}
-                  className="flex items-center gap-1 text-workout-primary text-sm font-medium"
+                  className={`flex items-center gap-1 text-sm font-medium ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
                 >
                   <Plus className="w-4 h-4" />
                   Add
                 </button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[30vh] overflow-y-auto">
                 {newRoutine.exercises.map((ex, index) => (
                   <div
                     key={index}
-                    className={`flex items-center gap-3 p-3 rounded-xl ${
-                      isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                    }`}
+                    className={`flex items-center gap-2 p-2 rounded-xl ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
                   >
-                    <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                        isDarkMode
-                          ? "bg-iron-700 text-iron-400"
-                          : "bg-slate-200 text-slate-500"
-                      }`}
-                    >
+                    <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
+                      isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
+                    }`}>
                       {index + 1}
                     </div>
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                      >
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium text-sm truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                         {ex.exercise_name}
                       </p>
-                      <p
-                        className={`text-xs capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                      >
-                        {ex.category}
-                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() =>
-                          handleUpdateExerciseSets(
-                            index,
-                            Math.max(1, ex.target_sets - 1),
-                          )
-                        }
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isDarkMode
-                            ? "bg-iron-700 text-iron-400"
-                            : "bg-slate-200 text-slate-500"
+                        onClick={() => handleUpdateExerciseSets(index, Math.max(1, ex.target_sets - 1))}
+                        className={`w-6 h-6 rounded flex items-center justify-center ${
+                          isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
                         }`}
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-3 h-3" />
                       </button>
-                      <span
-                        className={`w-8 text-center font-medium ${
-                          isDarkMode ? "text-iron-300" : "text-slate-600"
-                        }`}
-                      >
+                      <span className={`w-5 text-center text-sm font-medium ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
                         {ex.target_sets}
                       </span>
                       <button
-                        onClick={() =>
-                          handleUpdateExerciseSets(
-                            index,
-                            Math.min(10, ex.target_sets + 1),
-                          )
-                        }
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isDarkMode
-                            ? "bg-iron-700 text-iron-400"
-                            : "bg-slate-200 text-slate-500"
+                        onClick={() => handleUpdateExerciseSets(index, Math.min(10, ex.target_sets + 1))}
+                        className={`w-6 h-6 rounded flex items-center justify-center ${
+                          isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
                         }`}
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-3 h-3" />
                       </button>
-                      <span
-                        className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                      >
-                        sets
-                      </span>
-                      <button
-                        onClick={() => handleRemoveExercise(index)}
-                        className="p-1 text-red-500"
-                      >
+                      <button onClick={() => handleRemoveExercise(index)} className="p-1 text-red-500">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -496,67 +438,57 @@ export default function Routines() {
                 {newRoutine.exercises.length === 0 && (
                   <button
                     onClick={() => setShowExercisePicker(true)}
-                    className={`
-                      w-full p-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2
-                      ${
-                        isDarkMode
-                          ? "border-iron-700 text-iron-500"
-                          : "border-slate-300 text-slate-500"
-                      }
-                    `}
+                    className={`w-full p-4 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 ${
+                      isDarkMode ? "border-iron-700 text-iron-500" : "border-slate-300 text-slate-500"
+                    }`}
                   >
                     <Plus className="w-5 h-5" />
-                    <span className="text-sm">
-                      Add exercises to this routine
-                    </span>
+                    <span className="text-sm">Add exercises to this routine</span>
                   </button>
                 )}
               </div>
             </div>
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowCreateDrawer(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveRoutine}
+              disabled={!newRoutine.name.trim() || newRoutine.exercises.length === 0}
+              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              {editingRoutine ? "Save" : "Create"}
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-2 pb-safe">
-              <button
-                onClick={() => setShowCreateDrawer(false)}
-                className={`flex-1 py-3.5 rounded-xl font-medium ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-400"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveRoutine}
-                disabled={
-                  !newRoutine.name.trim() || newRoutine.exercises.length === 0
-                }
-                className="flex-1 py-3.5 rounded-xl bg-workout-primary text-white font-bold
-                         disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                {editingRoutine ? "Save" : "Create"}
-              </button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
-
-      {/* Exercise Picker Drawer */}
-      <Drawer open={showExercisePicker} onOpenChange={setShowExercisePicker}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Add Exercise</DrawerTitle>
-          </DrawerHeader>
-          <ExerciseAutocomplete
-            exercises={exercises}
-            recentExercises={[]}
-            loggedToday={new Set()}
-            onSelect={handleAddExercise}
-            onClose={() => setShowExercisePicker(false)}
-          />
-        </DrawerContent>
-      </Drawer>
+      {/* Exercise Picker Modal */}
+      <Modal open={showExercisePicker} onOpenChange={setShowExercisePicker}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add Exercise</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="p-0">
+            <ExerciseAutocomplete
+              exercises={exercises}
+              recentExercises={[]}
+              loggedToday={new Set()}
+              onSelect={handleAddExercise}
+              onClose={() => setShowExercisePicker(false)}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Layout>
   );
 }

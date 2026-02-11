@@ -6,11 +6,13 @@ import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import {
   Plus,
   Check,
@@ -829,29 +831,22 @@ export default function Food() {
       </div>
 
       {/* Add/Edit Food Modal */}
-      <Drawer open={showAddModal} onOpenChange={setShowAddModal}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>
+      <Modal open={showAddModal} onOpenChange={setShowAddModal}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               {editingItem ? "Edit Food Item" : "Add Food Item"}
-            </DrawerTitle>
-          </DrawerHeader>
-
-          <div className="px-4 pb-24 space-y-4 overflow-y-auto max-h-[70vh]">
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Name
               </label>
               <input
                 type="text"
                 value={newFood.name}
-                onChange={(e) =>
-                  setNewFood({ ...newFood, name: e.target.value })
-                }
+                onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
                 placeholder="e.g., Eggs, Protein Shake"
                 className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
                   isDarkMode
@@ -863,19 +858,13 @@ export default function Food() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label
-                  className={`block text-sm mb-2 ${
-                    isDarkMode ? "text-iron-400" : "text-slate-600"
-                  }`}
-                >
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                   Unit
                 </label>
                 <input
                   type="text"
                   value={newFood.unit}
-                  onChange={(e) =>
-                    setNewFood({ ...newFood, unit: e.target.value })
-                  }
+                  onChange={(e) => setNewFood({ ...newFood, unit: e.target.value })}
                   placeholder="servings, eggs, ml"
                   className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
                     isDarkMode
@@ -885,11 +874,7 @@ export default function Food() {
                 />
               </div>
               <div>
-                <label
-                  className={`block text-sm mb-2 ${
-                    isDarkMode ? "text-iron-400" : "text-slate-600"
-                  }`}
-                >
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                   Default Qty
                 </label>
                 <input
@@ -897,12 +882,7 @@ export default function Food() {
                   step="0.5"
                   min="0.5"
                   value={newFood.default_quantity}
-                  onChange={(e) =>
-                    setNewFood({
-                      ...newFood,
-                      default_quantity: parseFloat(e.target.value) || 1,
-                    })
-                  }
+                  onChange={(e) => setNewFood({ ...newFood, default_quantity: parseFloat(e.target.value) || 1 })}
                   className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
@@ -913,11 +893,7 @@ export default function Food() {
             </div>
 
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
               <div className="flex flex-wrap gap-2">
@@ -925,14 +901,10 @@ export default function Food() {
                   <button
                     key={icon}
                     onClick={() => setNewFood({ ...newFood, icon })}
-                    className={`w-10 h-10 rounded-xl text-xl flex items-center justify-center ${
+                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center ${
                       newFood.icon === icon
-                        ? isDarkMode
-                          ? "bg-iron-700 ring-2 ring-lift-primary"
-                          : "bg-slate-200 ring-2 ring-amber-500"
-                        : isDarkMode
-                          ? "bg-iron-800"
-                          : "bg-slate-100"
+                        ? isDarkMode ? "bg-iron-700 ring-2 ring-lift-primary" : "bg-slate-200 ring-2 ring-amber-500"
+                        : isDarkMode ? "bg-iron-800" : "bg-slate-100"
                     }`}
                   >
                     {icon}
@@ -942,11 +914,7 @@ export default function Food() {
             </div>
 
             <div>
-              <label
-                className={`block text-sm mb-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-600"
-                }`}
-              >
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
               <div className="flex flex-wrap gap-2">
@@ -954,10 +922,8 @@ export default function Food() {
                   <button
                     key={color}
                     onClick={() => setNewFood({ ...newFood, color })}
-                    className={`w-10 h-10 rounded-xl transition-transform ${
-                      newFood.color === color
-                        ? "ring-2 ring-white ring-offset-2 scale-110"
-                        : ""
+                    className={`w-9 h-9 rounded-lg transition-transform ${
+                      newFood.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
                     }`}
                     style={{
                       backgroundColor: color,
@@ -967,122 +933,62 @@ export default function Food() {
                 ))}
               </div>
             </div>
-
-            <div
-              className={`p-4 rounded-xl ${
-                isDarkMode ? "bg-iron-800/50" : "bg-slate-100"
+          </ModalBody>
+          <ModalFooter>
+            {editingItem && (
+              <button
+                onClick={() => {
+                  handleDeleteFood(editingItem.id);
+                  setShowAddModal(false);
+                }}
+                className="px-4 py-3 rounded-xl bg-red-500/20 text-red-400 font-medium"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={() => setShowAddModal(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
-              <p
-                className={`text-xs mb-2 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
-                Preview
-              </p>
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                  style={{ backgroundColor: newFood.color }}
-                >
-                  {newFood.icon}
-                </div>
-                <div>
-                  <p
-                    className={`font-medium ${
-                      isDarkMode ? "text-iron-100" : "text-slate-800"
-                    }`}
-                  >
-                    {newFood.name || "Food Name"}
-                  </p>
-                  <p
-                    className={`text-sm ${
-                      isDarkMode ? "text-iron-500" : "text-slate-500"
-                    }`}
-                  >
-                    {newFood.default_quantity} {newFood.unit}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2 pb-safe">
-              {editingItem && (
-                <button
-                  onClick={() => {
-                    handleDeleteFood(editingItem.id);
-                    setShowAddModal(false);
-                  }}
-                  className="px-4 py-3 rounded-xl bg-red-500/20 text-red-400 font-medium"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              )}
-              <button
-                onClick={() => setShowAddModal(false)}
-                className={`flex-1 py-3 rounded-xl font-medium ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-400"
-                    : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveFood}
-                disabled={!newFood.name.trim()}
-                className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
-                  isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-amber-500 text-white"
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                {editingItem ? "Save" : "Add"}
-              </button>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveFood}
+              disabled={!newFood.name.trim()}
+              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              {editingItem ? "Save" : "Add"}
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Quantity Modal */}
-      <Drawer
-        open={!!showQuantityModal}
-        onOpenChange={() => setShowQuantityModal(null)}
-      >
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>How much?</DrawerTitle>
-          </DrawerHeader>
-          <div className="px-4 pb-4 space-y-4">
+      <Modal open={!!showQuantityModal} onOpenChange={() => setShowQuantityModal(null)}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>How much?</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
             <div className="flex items-center justify-center gap-4 py-6">
               <button
-                onClick={() =>
-                  setTempQuantity(Math.max(0.5, tempQuantity - 0.5))
-                }
+                onClick={() => setTempQuantity(Math.max(0.5, tempQuantity - 0.5))}
                 className={`w-14 h-14 rounded-xl flex items-center justify-center ${
                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
                 }`}
               >
-                <Minus
-                  className={`w-6 h-6 ${
-                    isDarkMode ? "text-iron-300" : "text-slate-600"
-                  }`}
-                />
+                <Minus className={`w-6 h-6 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
               </button>
               <div className="text-center w-24">
-                <span
-                  className={`text-4xl font-bold ${
-                    isDarkMode ? "text-iron-100" : "text-slate-800"
-                  }`}
-                >
+                <span className={`text-4xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                   {tempQuantity}
                 </span>
-                <p
-                  className={`text-sm ${
-                    isDarkMode ? "text-iron-500" : "text-slate-500"
-                  }`}
-                >
+                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                   {showQuantityModal?.unit}
                 </p>
               </div>
@@ -1092,27 +998,23 @@ export default function Food() {
                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
                 }`}
               >
-                <Plus
-                  className={`w-6 h-6 ${
-                    isDarkMode ? "text-iron-300" : "text-slate-600"
-                  }`}
-                />
+                <Plus className={`w-6 h-6 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
               </button>
             </div>
+          </ModalBody>
+          <ModalFooter>
             <button
               onClick={handleQuantityConfirm}
-              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 mb-safe ${
-                isDarkMode
-                  ? "bg-lift-primary text-iron-950"
-                  : "bg-amber-500 text-white"
+              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
               }`}
             >
               <Check className="w-5 h-5" />
               Log {tempQuantity} {showQuantityModal?.unit}
             </button>
-          </div>
-        </DrawerContent>
-      </Drawer>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Layout>
   );
 }

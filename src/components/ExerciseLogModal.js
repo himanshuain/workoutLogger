@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { X, Minus, Plus, Check, Zap, RotateCcw, Trash2 } from "lucide-react";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
 import ExerciseIcon from "@/components/ExerciseIcon";
 
 export default function ExerciseLogModal({
@@ -144,35 +146,29 @@ export default function ExerciseLogModal({
   const completedSets = sets.filter((s) => s.completed).length;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[90vh]">
-        <DrawerHeader className="border-b border-iron-800 pb-4">
+    <Modal open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <ModalContent className="bg-iron-900 border-iron-800">
+        <ModalHeader className="border-b border-iron-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
               <ExerciseIcon
                 name={exercise?.name}
-                className="w-10 h-10"
+                className="w-8 h-8"
                 color="#22c55e"
               />
             </div>
             <div className="flex-1 min-w-0">
-              <DrawerTitle className="text-xl truncate">
+              <ModalTitle className="text-lg truncate text-iron-100">
                 {exercise?.name}
-              </DrawerTitle>
+              </ModalTitle>
               <p className="text-iron-500 text-sm capitalize">
                 {exercise?.category}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-iron-800 flex items-center justify-center flex-shrink-0"
-            >
-              <X className="w-4 h-4 text-iron-400" />
-            </button>
           </div>
-        </DrawerHeader>
+        </ModalHeader>
 
-        <div className="px-4 py-4 space-y-4 overflow-y-auto max-h-[60vh]">
+        <ModalBody className="space-y-4">
           {/* Quick Presets */}
           {presets.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -413,6 +409,9 @@ export default function ExerciseLogModal({
             </div>
           </div>
 
+        </ModalBody>
+
+        <ModalFooter>
           {/* Log Button */}
           <button
             onClick={handleLog}
@@ -434,8 +433,8 @@ export default function ExerciseLogModal({
               </>
             )}
           </button>
-        </div>
-      </DrawerContent>
-    </Drawer>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

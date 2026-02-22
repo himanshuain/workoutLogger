@@ -1455,6 +1455,27 @@ export function WorkoutProvider({ children }) {
     [user, loadEventTypes]
   );
 
+  // Update an event log
+  const updateEventLog = useCallback(
+    async (logId, updates) => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("event_logs")
+        .update(updates)
+        .eq("id", logId)
+        .select()
+        .single();
+
+      if (!error && data) {
+        await loadEventTypes();
+        return data;
+      }
+      return null;
+    },
+    [user, loadEventTypes]
+  );
+
   // Get all logs for an event type
   const getEventLogs = useCallback(
     async eventTypeId => {
@@ -1581,6 +1602,7 @@ export function WorkoutProvider({ children }) {
         deleteEventType,
         logEvent,
         deleteEventLog,
+        updateEventLog,
         getEventLogs,
       }}
     >

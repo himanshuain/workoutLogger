@@ -219,6 +219,7 @@ export default function Layout({ children }) {
         isScrollingRef.current = false;
       }, 100);
     }
+
   }, [currentIndex, isSettingsPage]);
 
   // Detect which page the mandatory snap settled on
@@ -336,29 +337,31 @@ export default function Layout({ children }) {
               <div
                 key={tab.id}
                 ref={el => (cardRefs.current[idx] = el)}
-                className="nav-clearance"
                 style={{
                   scrollSnapAlign: "start",
                   scrollSnapStop: "always",
-                  minHeight: "100%",
+                  height: "100%",
+                  flexShrink: 0,
                 }}
               >
-                {isActive ? (
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={`content-${tab.id}`}
-                      variants={contentVariants}
-                      initial="initial"
-                      animate="animate"
-                    >
-                      {children}
-                    </motion.div>
-                  </AnimatePresence>
-                ) : (
-                  <div className="p-4">
-                    <SkeletonPage isDarkMode={isDarkMode} />
-                  </div>
-                )}
+                <div className="h-full overflow-y-auto nav-clearance" style={{ WebkitOverflowScrolling: "touch" }}>
+                  {isActive ? (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={`content-${tab.id}`}
+                        variants={contentVariants}
+                        initial="initial"
+                        animate="animate"
+                      >
+                        {children}
+                      </motion.div>
+                    </AnimatePresence>
+                  ) : (
+                    <div className="p-4">
+                      <SkeletonPage isDarkMode={isDarkMode} />
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

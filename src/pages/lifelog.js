@@ -150,6 +150,7 @@ export default function LifeLog() {
     deleteEventType,
     logEvent,
     deleteEventLog,
+    updateEventLog,
     getEventLogs,
     trackables,
     todayEntries,
@@ -191,6 +192,10 @@ export default function LifeLog() {
 
   // Delete confirmation state (habit, eventType, log)
   const [deleteConfirm, setDeleteConfirm] = useState({ type: null, data: null });
+
+  // Edit log state
+  const [editingLog, setEditingLog] = useState(null);
+  const [editLogDetails, setEditLogDetails] = useState({ date: "", notes: "", cost: "" });
 
   // Habits state
   const [activeTab, setActiveTab] = useState("events"); // "events" or "habits"
@@ -636,6 +641,36 @@ export default function LifeLog() {
     setDeleteConfirm({ type: "log", data: { logId, eventTypeId: evtId } });
   };
 
+  const handleEditLog = (log, eventTypeId) => {
+    setEditingLog({ ...log, eventTypeId });
+    setEditLogDetails({
+      date: log.date,
+      notes: log.notes || "",
+      cost: log.cost || "",
+    });
+  };
+
+  const handleSaveEditLog = async () => {
+    if (!editingLog) return;
+    const result = await updateEventLog(editingLog.id, {
+      date: editLogDetails.date,
+      notes: editLogDetails.notes || null,
+      cost: editLogDetails.cost ? parseFloat(editLogDetails.cost) : null,
+    });
+    if (result) {
+      toast.success("Log updated");
+      if (expandedEvent === editingLog.eventTypeId) {
+        const logs = await getEventLogs(editingLog.eventTypeId);
+        setExpandedEventLogs(logs);
+      }
+      if (selectedEvent?.id === editingLog.eventTypeId) {
+        const logs = await getEventLogs(editingLog.eventTypeId);
+        setEventLogs(logs);
+      }
+    }
+    setEditingLog(null);
+  };
+
   // Execute delete based on deleteConfirm type (called from AlertDialog)
   const handleConfirmDelete = async () => {
     if (!deleteConfirm.type || !deleteConfirm.data) return;
@@ -825,22 +860,24 @@ export default function LifeLog() {
               const isExpanded = expandedEvent === eventType.id;
 
               return (
-                <ContextMenu key={eventType.id}>
-                  <ContextMenuTrigger asChild>
-                    <div
-                      className={`rounded-2xl overflow-hidden transition-all duration-200 ${
-                        isDarkMode
-                          ? "bg-iron-900"
-                          : "bg-white shadow-sm"
-                      } ${isOverdue 
-                        ? isDarkMode 
-                          ? "ring-1 ring-amber-500/40" 
-                          : "ring-1 ring-amber-400/50"
-                        : isDarkMode
-                          ? ""
-                          : "border border-slate-200/80"
-                      }`}
-                    >
+                <div
+                  key={eventType.id}
+                  className={`rounded-2xl overflow-hidden transition-all duration-200 ${
+                    isDarkMode
+                      ? "bg-iron-900"
+                      : "bg-white shadow-sm"
+                  } ${isOverdue 
+                    ? isDarkMode 
+                      ? "ring-1 ring-amber-500/40" 
+                      : "ring-1 ring-amber-400/50"
+                    : isDarkMode
+                      ? ""
+                      : "border border-slate-200/80"
+                  }`}
+                >
+                  {/* Header — context menu only on this part */}
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
                       <div className="flex items-center gap-3 p-3.5">
                         <button
                           onClick={() => toggleExpandEvent(eventType)}
@@ -895,126 +932,142 @@ export default function LifeLog() {
                           <Check className="w-4 h-4" strokeWidth={3} />
                         </button>
                       </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                      <ContextMenuItem
+                        destructive
+                        onClick={() => handleDeleteEventType(eventType)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Event
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
 
-                      {isExpanded && (
-                        <div className={`px-3.5 pb-3.5 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-                          {isLoadingExpandedLogs ? (
-                            <div className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
-                              Loading...
-                            </div>
-                          ) : expandedEventLogs.length === 0 ? (
-                            <div className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
-                              No history yet
-                            </div>
-                          ) : (
-                            <div className="relative pt-3">
-                              {/* Timeline */}
-                              <div className={`absolute left-[15px] top-3 bottom-0 w-px ${isDarkMode ? "bg-iron-800" : "bg-slate-200"}`} />
-                              <div className="space-y-0">
-                                {expandedEventLogs.slice(0, 10).map((log, idx) => {
-                                  const logDate = new Date(log.date);
-                                  const todayDate = new Date();
-                                  todayDate.setHours(0, 0, 0, 0);
-                                  logDate.setHours(0, 0, 0, 0);
-                                  const daysSince = Math.floor((todayDate - logDate) / (1000 * 60 * 60 * 24));
-                                  const gap = idx > 0
-                                    ? Math.floor((new Date(expandedEventLogs[idx - 1].date) - new Date(log.date)) / (1000 * 60 * 60 * 24))
-                                    : null;
+                  {/* Expanded Timeline — separate from event context menu */}
+                  {isExpanded && (
+                    <div className={`px-3.5 pb-3.5 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+                      {isLoadingExpandedLogs ? (
+                        <div className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                          Loading...
+                        </div>
+                      ) : expandedEventLogs.length === 0 ? (
+                        <div className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                          No history yet
+                        </div>
+                      ) : (
+                        <div className="pt-3 space-y-1.5">
+                          {expandedEventLogs.slice(0, 10).map((log, idx) => {
+                            const logDate = new Date(log.date);
+                            const todayDate = new Date();
+                            todayDate.setHours(0, 0, 0, 0);
+                            logDate.setHours(0, 0, 0, 0);
+                            const daysSince = Math.floor((todayDate - logDate) / (1000 * 60 * 60 * 24));
+                            const gap = idx > 0
+                              ? Math.floor((new Date(expandedEventLogs[idx - 1].date) - new Date(log.date)) / (1000 * 60 * 60 * 24))
+                              : null;
 
-                                  return (
-                                    <div key={log.id}>
-                                      {gap !== null && gap > 0 && (
-                                        <div className="relative flex items-center py-0.5" style={{ marginLeft: "3px" }}>
-                                          <span
-                                            className={`text-[9px] font-medium px-1.5 py-px rounded-full relative z-10 ${
-                                              isDarkMode ? "bg-iron-900 text-iron-600 border border-iron-800" : "bg-white text-slate-400 border border-slate-200"
-                                            }`}
-                                          >
-                                            {gap}d
+                            return (
+                              <div key={log.id}>
+                                {gap !== null && gap > 0 && (
+                                  <div className="flex justify-center py-0.5">
+                                    <span
+                                      className={`text-[9px] font-medium px-1.5 py-px rounded-full ${
+                                        isDarkMode ? "bg-iron-800/80 text-iron-600 border border-iron-700/50" : "bg-slate-100 text-slate-400 border border-slate-200"
+                                      }`}
+                                    >
+                                      {gap}d gap
+                                    </span>
+                                  </div>
+                                )}
+                                <ContextMenu>
+                                  <ContextMenuTrigger asChild>
+                                    <div
+                                      className={`flex items-start gap-3 p-2.5 rounded-xl border transition-colors ${
+                                        idx === 0
+                                          ? isDarkMode
+                                            ? "border-iron-700/70 bg-iron-800/40"
+                                            : "border-slate-200 bg-slate-50"
+                                          : isDarkMode
+                                            ? "border-iron-800/50 bg-transparent"
+                                            : "border-slate-100 bg-transparent"
+                                      }`}
+                                    >
+                                      <div
+                                        className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                                        style={{
+                                          backgroundColor: idx === 0 ? eventType.color : (isDarkMode ? "#3f3f46" : "#cbd5e1"),
+                                        }}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <p className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                            {formatDate(log.date)}
+                                          </p>
+                                          <span className={`text-[10px] flex-shrink-0 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                                            {formatDaysSince(daysSince)}
                                           </span>
                                         </div>
-                                      )}
-                                      <ContextMenu>
-                                        <ContextMenuTrigger asChild>
-                                          <div className="flex items-start gap-3 py-2 relative">
-                                            <div
-                                              className="w-[7px] h-[7px] rounded-full mt-1.5 flex-shrink-0 relative z-10 ring-2"
-                                              style={{
-                                                backgroundColor: idx === 0 ? eventType.color : (isDarkMode ? "#3f3f46" : "#cbd5e1"),
-                                                ringColor: isDarkMode ? "#18181b" : "#ffffff",
-                                              }}
-                                            />
-                                            <div className="flex-1 min-w-0 ml-1">
-                                              <p className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                                                {formatDate(log.date)}
-                                              </p>
-                                              <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
-                                                {formatDaysSince(daysSince)}
-                                              </p>
-                                              {log.notes && (
-                                                <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
-                                                  {log.notes}
-                                                </p>
-                                              )}
-                                              {log.cost && (
-                                                <p className={`text-xs mt-0.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
-                                                  ₹{log.cost}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </ContextMenuTrigger>
-                                        <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
-                                          <ContextMenuItem
-                                            destructive
-                                            onClick={() => handleDeleteLog(log.id, eventType.id)}
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                            Delete Log
-                                          </ContextMenuItem>
-                                        </ContextMenuContent>
-                                      </ContextMenu>
+                                        {log.notes && (
+                                          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                                            {log.notes}
+                                          </p>
+                                        )}
+                                        {log.cost && (
+                                          <p className={`text-xs mt-0.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
+                                            ₹{log.cost}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
-                                  );
-                                })}
+                                  </ContextMenuTrigger>
+                                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                                    <ContextMenuItem
+                                      onClick={() => handleEditLog(log, eventType.id)}
+                                      className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                      Edit Log
+                                    </ContextMenuItem>
+                                    <ContextMenuSeparator />
+                                    <ContextMenuItem
+                                      destructive
+                                      onClick={() => handleDeleteLog(log.id, eventType.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Delete Log
+                                    </ContextMenuItem>
+                                  </ContextMenuContent>
+                                </ContextMenu>
                               </div>
-                              {expandedEventLogs.length > 10 && (
-                                <button
-                                  onClick={() => openHistoryDrawer(eventType)}
-                                  className={`mt-2 w-full text-center text-xs font-medium py-2 rounded-lg ${
-                                    isDarkMode ? "text-iron-400 active:bg-iron-800" : "text-slate-500 active:bg-slate-100"
-                                  }`}
-                                >
-                                  View all {expandedEventLogs.length} entries
-                                </button>
-                              )}
-                            </div>
+                            );
+                          })}
+                          {expandedEventLogs.length > 10 && (
+                            <button
+                              onClick={() => openHistoryDrawer(eventType)}
+                              className={`mt-1 w-full text-center text-xs font-medium py-2 rounded-lg ${
+                                isDarkMode ? "text-iron-400 active:bg-iron-800" : "text-slate-500 active:bg-slate-100"
+                              }`}
+                            >
+                              View all {expandedEventLogs.length} entries
+                            </button>
                           )}
-                          <button
-                            onClick={() => openLogDrawer(eventType)}
-                            className={`mt-2 w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
-                              isDarkMode
-                                ? "bg-iron-800 text-iron-300 active:bg-iron-700"
-                                : "bg-slate-100 text-slate-600 active:bg-slate-200"
-                            }`}
-                          >
-                            <CalendarPlus className="w-3.5 h-3.5" />
-                            Log with Details
-                          </button>
                         </div>
                       )}
+                      <button
+                        onClick={() => openLogDrawer(eventType)}
+                        className={`mt-2 w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
+                          isDarkMode
+                            ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                            : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                        }`}
+                      >
+                        <CalendarPlus className="w-3.5 h-3.5" />
+                        Log with Details
+                      </button>
                     </div>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
-                    <ContextMenuItem
-                      destructive
-                      onClick={() => handleDeleteEventType(eventType)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Event
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
+                  )}
+                </div>
               );
             })
           )}
@@ -1438,6 +1491,14 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
                         <ContextMenuItem
+                          onClick={() => handleEditLog(log, selectedEvent?.id)}
+                          className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          Edit Log
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
                           destructive
                           onClick={() => handleDeleteLog(log.id)}
                         >
@@ -1451,6 +1512,89 @@ export default function LifeLog() {
               </div>
             )}
           </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Log Modal */}
+      <Modal open={!!editingLog} onOpenChange={(open) => !open && setEditingLog(null)}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Edit Log
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                  Date
+                </label>
+                <input
+                  type="date"
+                  value={editLogDetails.date}
+                  onChange={(e) => setEditLogDetails({ ...editLogDetails, date: e.target.value })}
+                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-100 focus:ring-lift-primary/50"
+                      : "bg-slate-100 text-slate-800 focus:ring-amber-500/50"
+                  }`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                  Notes
+                </label>
+                <input
+                  type="text"
+                  value={editLogDetails.notes}
+                  onChange={(e) => setEditLogDetails({ ...editLogDetails, notes: e.target.value })}
+                  placeholder="Optional notes"
+                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
+                      : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
+                  }`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                  Cost (₹)
+                </label>
+                <input
+                  type="number"
+                  value={editLogDetails.cost}
+                  onChange={(e) => setEditLogDetails({ ...editLogDetails, cost: e.target.value })}
+                  placeholder="Optional cost"
+                  min="0"
+                  step="0.01"
+                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
+                      : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
+                  }`}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setEditingLog(null)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEditLog}
+              className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              Save
+            </button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 

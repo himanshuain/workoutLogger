@@ -1,0 +1,20 @@
+---
+description: After making code changes, kill and restart the Next.js dev server
+alwaysApply: true
+---
+
+# Dev Server Restart
+
+After making code changes to this project, always kill the running Next.js dev server and restart it:
+
+```bash
+# Kill any running dev server on ports 3000/3001
+lsof -ti:3000,3001 2>/dev/null | xargs kill -9 2>/dev/null
+
+# Restart dev server
+cd /Users/himanshu.jain/Desktop/workout-logger && npm run dev
+```
+
+- Check terminals for an existing dev server before starting a new one
+- Kill the existing process before restarting
+- Wait for "Ready" output before considering the server started

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Search, Check } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import { ExerciseInfoCard } from "@/components/ExerciseLibrary";
 
 export default function ExerciseAutocomplete({
   exercises = [],

@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import HabitPills from "@/components/HabitPills";
-import QuickStats from "@/components/QuickStats";
+import DayPicker from "@/components/DayPicker";
 import {
   Modal,
   ModalContent,
@@ -15,6 +15,17 @@ import {
   ModalFooter,
 } from "@/components/ui/modal";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import {
   Plus,
   Dumbbell,
   Sparkles,
@@ -23,9 +34,19 @@ import {
   Play,
   Calendar,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Edit3,
   Clock,
+  History,
+  Trash2,
+  Pencil,
+  Save,
+  X,
+  Target,
+  Flame,
 } from "lucide-react";
+import ExerciseIcon from "@/components/ExerciseIcon";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -70,6 +91,10 @@ export default function Home() {
     startWorkoutSession,
     getTodaySession,
     getTodayRoutine,
+    getWorkoutSessions,
+    deleteSetLog,
+    deleteWorkoutSession,
+    updateSetLogData,
   } = useWorkout();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -83,6 +108,7 @@ export default function Home() {
     color: "#22c55e",
     has_value: false,
     value_unit: "",
+    active_days: null,
   });
 
   // Get today's routine
@@ -95,10 +121,53 @@ export default function Home() {
     enabled: !!user,
   });
 
-  // Stats
-  const habitsCompletedToday = useMemo(() => {
-    return Object.values(todayEntries).filter((e) => e.is_completed).length;
-  }, [todayEntries]);
+  // Recent workout sessions (last 7 days)
+  const recentStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const { data: recentSessions = [] } = useQuery({
+    queryKey: ["recentSessions", user?.id, recentStart, today],
+    queryFn: async () => {
+      const sessions = await getWorkoutSessions(recentStart, today);
+      return sessions
+        .filter((s) => s.status === "completed")
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 5);
+    },
+    enabled: !!user,
+  });
+
+  const [expandedSession, setExpandedSession] = useState(null);
+  const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: "set"|"session", id, label }
+
+  // Sticky note
+  const NOTE_KEY = "workout-logger-note";
+  const [note, setNote] = useState("");
+  const [noteLoaded, setNoteLoaded] = useState(false);
+  const saveTimerRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      setNote(localStorage.getItem(NOTE_KEY) || "");
+    } catch {}
+    setNoteLoaded(true);
+  }, []);
+
+  const handleNoteChange = useCallback((e) => {
+    const val = e.target.value;
+    setNote(val);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(NOTE_KEY, val); } catch {}
+    }, 300);
+  }, []);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -169,6 +238,7 @@ export default function Home() {
       color: "#22c55e",
       has_value: false,
       value_unit: "",
+      active_days: null,
     });
 
     if (window.navigator?.vibrate) {
@@ -498,17 +568,30 @@ export default function Home() {
           )}
         </section>
 
-        {/* Quick Stats */}
-        <QuickStats
-          exerciseCount={
-            hasCompletedSession
-              ? todaySession?.set_logs?.filter((s) => s.is_completed).length ||
-                0
-              : 0
-          }
-          habitsCompleted={habitsCompletedToday}
-          habitsTotal={trackables.length}
-        />
+        {/* Note Billboard */}
+        {noteLoaded && (
+          <section className="mb-6">
+            <div
+              className={`rounded-2xl p-3 ${
+                isDarkMode
+                  ? "bg-iron-900/50"
+                  : "bg-amber-50 border border-amber-200/50"
+              }`}
+            >
+              <textarea
+                value={note}
+                onChange={handleNoteChange}
+                placeholder="Jot something down..."
+                rows={2}
+                className={`w-full bg-transparent resize-none text-sm leading-relaxed outline-none placeholder-opacity-40 ${
+                  isDarkMode
+                    ? "text-iron-200 placeholder-iron-600"
+                    : "text-slate-700 placeholder-slate-400"
+                }`}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Today's Habits */}
         <section className="mt-6">
@@ -521,11 +604,249 @@ export default function Home() {
             Habits
           </h3>
           <HabitPills
-            trackables={trackables}
+            trackables={trackables.filter(t => t.name !== "Body Weight" && (!t.active_days || t.active_days.includes(new Date().getDay())))}
             entries={todayEntries}
             onToggle={handleToggleHabit}
             onAddNew={() => setShowAddHabitDrawer(true)}
           />
+        </section>
+
+        {/* Recent Workouts */}
+        <section className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3
+              className={`text-xs font-medium uppercase tracking-wider flex items-center gap-2 ${
+                isDarkMode ? "text-iron-400" : "text-slate-500"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              Workout History
+            </h3>
+            <button
+              onClick={() => router.push("/history")}
+              className={`text-xs flex items-center gap-0.5 ${
+                isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
+              }`}
+            >
+              View All <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          {recentSessions.length === 0 ? (
+            <div className={`rounded-2xl p-6 text-center ${isDarkMode ? "bg-iron-900/50" : "bg-slate-50"}`}>
+              <Dumbbell className={`w-8 h-8 mx-auto mb-2 ${isDarkMode ? "text-iron-700" : "text-slate-300"}`} />
+              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>No workouts yet</p>
+              <p className={`text-xs mt-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>Complete a workout to see it here</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentSessions.map((session) => {
+                const completedSets = (session.set_logs || []).filter((s) => s.is_completed);
+                const totalVolume = completedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
+                const exerciseNames = [...new Set(completedSets.map((s) => s.exercise_name))];
+                const isExpanded = expandedSession === session.id;
+                const dateObj = new Date(session.date + "T00:00:00");
+                const todayObj = new Date();
+                todayObj.setHours(0, 0, 0, 0);
+                const yesterday = new Date(todayObj);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const dateLabel =
+                  dateObj.toDateString() === todayObj.toDateString()
+                    ? "Today"
+                    : dateObj.toDateString() === yesterday.toDateString()
+                    ? "Yesterday"
+                    : dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+
+                return (
+                  <div
+                    key={session.id}
+                    className={`rounded-2xl overflow-hidden ${
+                      isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
+                    }`}
+                  >
+                    {/* Session header */}
+                    <button
+                      onClick={() => setExpandedSession(isExpanded ? null : session.id)}
+                      className="w-full p-3.5 text-left active:scale-[0.99] transition-transform"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                              {dateLabel}
+                            </span>
+                            {session.routine_name && (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full truncate max-w-[120px] ${
+                                isDarkMode ? "bg-lift-primary/15 text-lift-primary" : "bg-workout-primary/10 text-workout-primary"
+                              }`}>
+                                {session.routine_name}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className={`text-xs flex items-center gap-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                              <Target className="w-3 h-3" />
+                              {exerciseNames.length} exercise{exerciseNames.length !== 1 ? "s" : ""}
+                            </span>
+                            <span className={`text-xs flex items-center gap-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                              <Flame className="w-3 h-3" />
+                              {completedSets.length} sets
+                            </span>
+                            {totalVolume > 0 && (
+                              <span className={`text-xs flex items-center gap-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                                <Dumbbell className="w-3 h-3" />
+                                {Math.round(totalVolume).toLocaleString()} kg
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {isExpanded ? (
+                          <ChevronUp className={`w-4 h-4 flex-shrink-0 ml-2 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
+                        ) : (
+                          <ChevronDown className={`w-4 h-4 flex-shrink-0 ml-2 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Expanded exercise details */}
+                    {isExpanded && (
+                      <div className={`px-3.5 pb-3 space-y-2 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+                        <div className="pt-2.5">
+                          {(() => {
+                            const byExercise = {};
+                            completedSets.forEach((s) => {
+                              const name = s.exercise_name || "Exercise";
+                              if (!byExercise[name]) byExercise[name] = { sets: [], volume: 0 };
+                              byExercise[name].sets.push(s);
+                              byExercise[name].volume += (s.weight || 0) * (s.reps || 0);
+                            });
+                            return Object.entries(byExercise).map(([name, { sets, volume }]) => (
+                              <div key={name} className={`rounded-2xl p-3 mb-2 last:mb-0 ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+                                {/* Exercise header */}
+                                <div className="flex items-center gap-2.5 mb-2">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-700/70" : "bg-slate-100"}`}>
+                                    <ExerciseIcon name={name} className="w-5 h-5" color={isDarkMode ? "#a1a1aa" : "#64748b"} />
+                                  </div>
+                                  <p className={`text-sm font-semibold truncate flex-1 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                                    {name}
+                                  </p>
+                                  <span className={`text-[11px] flex-shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                                    {sets.length} set{sets.length !== 1 ? "s" : ""}
+                                    {volume > 0 ? ` · ${Math.round(volume).toLocaleString()} kg` : ""}
+                                  </span>
+                                </div>
+                                {/* Individual sets */}
+                                <div className="ml-[2.625rem] space-y-0.5">
+                                  {sets.map((s, idx) => (
+                                    <div
+                                      key={s.id}
+                                      className={`flex items-center gap-2 py-1.5 ${idx > 0 ? `border-t ${isDarkMode ? "border-iron-700/30" : "border-slate-100"}` : ""}`}
+                                    >
+                                      <span className={`w-5 text-center text-[10px] font-bold rounded-md py-0.5 flex-shrink-0 ${isDarkMode ? "bg-iron-700 text-iron-500" : "bg-slate-100 text-slate-400"}`}>
+                                        {idx + 1}
+                                      </span>
+
+                                      {editingSet?.id === s.id ? (
+                                        <div className="flex items-center gap-1.5 flex-1">
+                                          <input
+                                            type="number"
+                                            step="0.5"
+                                            value={editingSet.weight}
+                                            onChange={(e) => setEditingSet({ ...editingSet, weight: e.target.value })}
+                                            className={`w-16 px-2 py-1 rounded-lg text-xs text-center ${isDarkMode ? "bg-iron-700 text-iron-100 border border-iron-600" : "bg-white text-slate-800 border border-slate-200"}`}
+                                          />
+                                          <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>kg ×</span>
+                                          <input
+                                            type="number"
+                                            value={editingSet.reps}
+                                            onChange={(e) => setEditingSet({ ...editingSet, reps: e.target.value })}
+                                            className={`w-14 px-2 py-1 rounded-lg text-xs text-center ${isDarkMode ? "bg-iron-700 text-iron-100 border border-iron-600" : "bg-white text-slate-800 border border-slate-200"}`}
+                                          />
+                                          <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
+                                          <button
+                                            onClick={async () => {
+                                              const ok = await updateSetLogData(editingSet.id, {
+                                                weight: parseFloat(editingSet.weight) || 0,
+                                                reps: parseInt(editingSet.reps) || 0,
+                                              });
+                                              if (ok) toast.success("Set updated");
+                                              setEditingSet(null);
+                                            }}
+                                            className={`p-1 rounded-lg ${isDarkMode ? "text-green-400 active:bg-iron-700" : "text-green-600 active:bg-slate-200"}`}
+                                          >
+                                            <Save className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingSet(null)}
+                                            className={`p-1 rounded-lg ${isDarkMode ? "text-iron-500 active:bg-iron-700" : "text-slate-400 active:bg-slate-200"}`}
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            {s.weight ? (
+                                              <>
+                                                <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                                  {s.weight} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>kg</span>
+                                                </span>
+                                                <span className={`text-xs ${isDarkMode ? "text-iron-600" : "text-slate-300"}`}>×</span>
+                                                <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                                  {s.reps} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
+                                                </span>
+                                              </>
+                                            ) : (
+                                              <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                                {s.reps} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
+                                              </span>
+                                            )}
+                                          </div>
+                                          <button
+                                            onClick={() => setEditingSet({ id: s.id, weight: s.weight || "", reps: s.reps || "" })}
+                                            className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-600 active:text-iron-300 active:bg-iron-700" : "text-slate-300 active:text-slate-600 active:bg-slate-200"}`}
+                                          >
+                                            <Pencil className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => setDeleteConfirm({ type: "set", id: s.id, label: `${name} — Set ${idx + 1}` })}
+                                            className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-600 active:text-red-400 active:bg-iron-700" : "text-slate-300 active:text-red-500 active:bg-slate-200"}`}
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+
+                        {/* Delete entire session */}
+                        <button
+                          onClick={() => setDeleteConfirm({
+                            type: "session",
+                            id: session.id,
+                            label: `${session.routine_name || "Workout"} on ${dateLabel}`,
+                          })}
+                          className={`w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
+                            isDarkMode
+                              ? "text-red-400/70 active:text-red-400 active:bg-red-500/10"
+                              : "text-red-400 active:text-red-500 active:bg-red-50"
+                          }`}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          Delete Workout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
 
@@ -686,6 +1007,13 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+            {/* Active Days */}
+            <DayPicker
+              value={newHabit.active_days}
+              onChange={(days) => setNewHabit({ ...newHabit, active_days: days })}
+              isDarkMode={isDarkMode}
+            />
           </ModalBody>
           <ModalFooter>
             <button
@@ -709,6 +1037,43 @@ export default function Home() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Delete {deleteConfirm?.type === "session" ? "Workout" : "Set"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              {deleteConfirm?.type === "session"
+                ? `This will permanently delete "${deleteConfirm?.label}" and all its sets.`
+                : `Delete ${deleteConfirm?.label}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deleteConfirm) return;
+                if (deleteConfirm.type === "session") {
+                  const ok = await deleteWorkoutSession(deleteConfirm.id);
+                  if (ok) toast.success("Workout deleted");
+                } else {
+                  const ok = await deleteSetLog(deleteConfirm.id);
+                  if (ok) toast.success("Set deleted");
+                }
+                setDeleteConfirm(null);
+              }}
+              className="bg-red-600 text-white hover:bg-red-700 border-0"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

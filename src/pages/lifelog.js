@@ -5,6 +5,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import DayPicker from "@/components/DayPicker";
 import {
   Modal,
   ModalContent,
@@ -45,6 +46,7 @@ import {
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import NotificationService from "@/lib/notifications";
+import { toast } from "sonner";
 
 const EVENT_ICONS = [
   "💇",
@@ -175,6 +177,9 @@ export default function LifeLog() {
   const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [pendingLogAction, setPendingLogAction] = useState(null);
 
+  // Delete confirmation state (habit, eventType, log)
+  const [deleteConfirm, setDeleteConfirm] = useState({ type: null, data: null });
+
   // Habits state
   const [activeTab, setActiveTab] = useState("events"); // "events" or "habits"
   const [showAddHabitModal, setShowAddHabitModal] = useState(false);
@@ -195,6 +200,7 @@ export default function LifeLog() {
     color: "#22c55e",
     has_value: false,
     value_unit: "",
+    active_days: null,
   });
 
   // Helper function for local date formatting
@@ -229,7 +235,7 @@ export default function LifeLog() {
         }
       });
       const heatmapData = {};
-      trackables.forEach(trackable => {
+      trackables.filter(t => t.name !== "Body Weight").forEach(trackable => {
         const trackableData = { ...(dataByTrackable[trackable.id] || {}) };
         const todayEntry = todayEntries[trackable.id];
         if (todayEntry?.is_completed) {
@@ -280,25 +286,31 @@ export default function LifeLog() {
   const handleCreateEvent = async () => {
     if (!newEvent.name.trim()) return;
 
-    await createEventType({
-      name: newEvent.name.trim(),
-      icon: newEvent.icon,
-      color: newEvent.color,
-      description: newEvent.description.trim() || null,
-      reminder_days: newEvent.reminder_days || null,
-    });
+    try {
+      await createEventType({
+        name: newEvent.name.trim(),
+        icon: newEvent.icon,
+        color: newEvent.color,
+        description: newEvent.description.trim() || null,
+        reminder_days: newEvent.reminder_days || null,
+      });
 
-    setShowAddDrawer(false);
-    setNewEvent({
-      name: "",
-      icon: "📅",
-      color: "#3b82f6",
-      description: "",
-      reminder_days: null,
-    });
+      toast.success("Event type created");
+      setShowAddDrawer(false);
+      setNewEvent({
+        name: "",
+        icon: "📅",
+        color: "#3b82f6",
+        description: "",
+        reminder_days: null,
+      });
 
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(10);
+      }
+    } catch (error) {
+      console.error("Error creating event type:", error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -313,27 +325,36 @@ export default function LifeLog() {
       color: newPill.color,
       has_value: newPill.has_value,
       value_unit: newPill.has_value ? newPill.value_unit : null,
+      active_days: newPill.active_days,
     };
 
-    if (editingTrackable) {
-      await updateTrackable(editingTrackable.id, pillData);
-    } else {
-      await createTrackable(pillData);
-    }
+    try {
+      if (editingTrackable) {
+        await updateTrackable(editingTrackable.id, pillData);
+        toast.success("Habit updated");
+      } else {
+        await createTrackable(pillData);
+        toast.success("Habit created");
+      }
 
-    setShowAddHabitModal(false);
-    setEditingTrackable(null);
-    setNewPill({
-      name: "",
-      type: "habit",
-      icon: "💧",
-      color: "#22c55e",
-      has_value: false,
-      value_unit: "",
-    });
+      setShowAddHabitModal(false);
+      setEditingTrackable(null);
+      setNewPill({
+        name: "",
+        type: "habit",
+        icon: "💧",
+        color: "#22c55e",
+        has_value: false,
+        value_unit: "",
+        active_days: null,
+      });
 
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(10);
+      }
+    } catch (error) {
+      console.error("Error saving habit:", error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -346,17 +367,13 @@ export default function LifeLog() {
       color: trackable.color,
       has_value: trackable.has_value || false,
       value_unit: trackable.value_unit || "",
+      active_days: trackable.active_days || null,
     });
     setShowAddHabitModal(true);
   };
 
-  const handleDeletePill = async (id) => {
-    if (confirm("Delete this habit? This will also delete all tracking data.")) {
-      await deleteTrackable(id);
-      if (window.navigator?.vibrate) {
-        window.navigator.vibrate(10);
-      }
-    }
+  const handleDeletePill = (id) => {
+    setDeleteConfirm({ type: "habit", data: { id } });
   };
 
   // Past entry drawer functions
@@ -461,22 +478,28 @@ export default function LifeLog() {
       }
     }
 
-    await logEvent(selectedEvent.id, {
-      date: logDetails.date,
-      notes: logDetails.notes.trim() || null,
-      cost: logDetails.cost ? parseFloat(logDetails.cost) : null,
-    });
+    try {
+      await logEvent(selectedEvent.id, {
+        date: logDetails.date,
+        notes: logDetails.notes.trim() || null,
+        cost: logDetails.cost ? parseFloat(logDetails.cost) : null,
+      });
 
-    setShowLogDrawer(false);
-    setSelectedEvent(null);
-    setLogDetails({
-      date: new Date().toISOString().split("T")[0],
-      notes: "",
-      cost: "",
-    });
+      toast.success("Event logged");
+      setShowLogDrawer(false);
+      setSelectedEvent(null);
+      setLogDetails({
+        date: new Date().toISOString().split("T")[0],
+        notes: "",
+        cost: "",
+      });
 
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(10);
+      }
+    } catch (error) {
+      console.error("Error logging event:", error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -499,9 +522,15 @@ export default function LifeLog() {
       }
     }
 
-    await logEvent(eventType.id);
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
+    try {
+      await logEvent(eventType.id);
+      toast.success("Event logged");
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(10);
+      }
+    } catch (error) {
+      console.error("Error logging event:", error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -528,42 +557,42 @@ export default function LifeLog() {
   };
 
   // Delete event type
-  const handleDeleteEventType = async (eventType) => {
-    if (
-      confirm(
-        `Delete "${eventType.name}"? This will also delete all ${eventType.total_logs || 0} log entries.`,
-      )
-    ) {
-      await deleteEventType(eventType.id);
-    }
+  const handleDeleteEventType = (eventType) => {
+    setDeleteConfirm({ type: "eventType", data: { eventType } });
   };
 
   // Handle confirming duplicate log
   const handleConfirmDuplicateLog = async () => {
     if (!pendingLogAction) return;
 
-    if (pendingLogAction.type === 'quick') {
-      await logEvent(pendingLogAction.eventType.id);
-    } else {
-      await logEvent(pendingLogAction.eventType.id, {
-        date: pendingLogAction.date,
-        notes: pendingLogAction.notes,
-        cost: pendingLogAction.cost,
-      });
-      setShowLogDrawer(false);
-      setSelectedEvent(null);
-      setLogDetails({
-        date: new Date().toISOString().split("T")[0],
-        notes: "",
-        cost: "",
-      });
-    }
+    try {
+      if (pendingLogAction.type === 'quick') {
+        await logEvent(pendingLogAction.eventType.id);
+      } else {
+        await logEvent(pendingLogAction.eventType.id, {
+          date: pendingLogAction.date,
+          notes: pendingLogAction.notes,
+          cost: pendingLogAction.cost,
+        });
+        setShowLogDrawer(false);
+        setSelectedEvent(null);
+        setLogDetails({
+          date: new Date().toISOString().split("T")[0],
+          notes: "",
+          cost: "",
+        });
+      }
 
-    setShowDuplicateConfirm(false);
-    setPendingLogAction(null);
+      toast.success("Event logged");
+      setShowDuplicateConfirm(false);
+      setPendingLogAction(null);
 
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(10);
+      }
+    } catch (error) {
+      console.error("Error logging event:", error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -574,13 +603,36 @@ export default function LifeLog() {
   };
 
   // Delete a log entry
-  const handleDeleteLog = async (logId) => {
+  const handleDeleteLog = (logId) => {
     if (!selectedEvent) return;
-    if (confirm("Delete this log entry?")) {
-      await deleteEventLog(logId, selectedEvent.id);
-      // Refresh logs
-      const logs = await getEventLogs(selectedEvent.id);
-      setEventLogs(logs);
+    setDeleteConfirm({ type: "log", data: { logId, eventTypeId: selectedEvent.id } });
+  };
+
+  // Execute delete based on deleteConfirm type (called from AlertDialog)
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.type || !deleteConfirm.data) return;
+    try {
+      if (deleteConfirm.type === "habit") {
+        await deleteTrackable(deleteConfirm.data.id);
+        toast.success("Habit deleted");
+        if (window.navigator?.vibrate) {
+          window.navigator.vibrate(10);
+        }
+      } else if (deleteConfirm.type === "eventType") {
+        await deleteEventType(deleteConfirm.data.eventType.id);
+        toast.success("Event type deleted");
+      } else if (deleteConfirm.type === "log") {
+        const { logId, eventTypeId } = deleteConfirm.data;
+        await deleteEventLog(logId, eventTypeId);
+        const logs = await getEventLogs(eventTypeId);
+        setEventLogs(logs);
+        toast.success("Log entry deleted");
+      }
+    } catch (error) {
+      console.error("Error deleting:", error);
+      toast.error("Something went wrong");
+    } finally {
+      setDeleteConfirm({ type: null, data: null });
     }
   };
 
@@ -624,79 +676,84 @@ export default function LifeLog() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-24">
+      <div className="px-4 py-4 pb-36">
         {/* Header */}
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
             isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
           }`}
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2
-                className={`text-xl font-bold ${
-                  isDarkMode ? "text-iron-100" : "text-slate-800"
+          <h2
+            className={`text-xl font-bold ${
+              isDarkMode ? "text-iron-100" : "text-slate-800"
+            }`}
+          >
+            Log
+          </h2>
+          <p
+            className={`text-sm mt-1 ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
+            }`}
+          >
+            {activeTab === "events" ? "Track occasional events" : "Daily habits & health"}
+          </p>
+        </div>
+
+        {/* Floating bottom bar: Tab Switcher + Add button */}
+        <div
+          className={`fixed bottom-[4.5rem] left-0 right-0 z-30 px-4 pb-2 pt-2 backdrop-blur-md ${
+            isDarkMode ? "bg-iron-950/90" : "bg-slate-50/90"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <div className={`flex-1 flex gap-1.5 p-1 rounded-xl ${
+              isDarkMode ? "bg-iron-900" : "bg-slate-100"
+            }`}>
+              <button
+                onClick={() => setActiveTab("events")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "events"
+                    ? isDarkMode
+                      ? "bg-iron-800 text-iron-100"
+                      : "bg-white text-slate-800 shadow-sm"
+                    : isDarkMode
+                      ? "text-iron-500"
+                      : "text-slate-500"
                 }`}
               >
-                Log
-              </h2>
-              <p
-                className={`text-sm mt-1 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                <div className="flex items-center justify-center gap-1.5">
+                  <Calendar className="w-4 h-4" />
+                  Events
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab("habits")}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === "habits"
+                    ? isDarkMode
+                      ? "bg-iron-800 text-iron-100"
+                      : "bg-white text-slate-800 shadow-sm"
+                    : isDarkMode
+                      ? "text-iron-500"
+                      : "text-slate-500"
                 }`}
               >
-                {activeTab === "events" ? "Track occasional events" : "Daily habits & health"}
-              </p>
+                <div className="flex items-center justify-center gap-1.5">
+                  <Heart className="w-4 h-4" />
+                  Habits
+                </div>
+              </button>
             </div>
             <button
               onClick={() => activeTab === "events" ? setShowAddDrawer(true) : setShowAddHabitModal(true)}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm ${
                 isDarkMode
                   ? "bg-lift-primary text-iron-950"
                   : "bg-workout-primary text-white"
               }`}
             >
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Tab Switcher */}
-          <div className={`mt-3 flex gap-2 p-1 rounded-xl ${
-            isDarkMode ? "bg-iron-900" : "bg-slate-100"
-          }`}>
-            <button
-              onClick={() => setActiveTab("events")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === "events"
-                  ? isDarkMode
-                    ? "bg-iron-800 text-iron-100"
-                    : "bg-white text-slate-800 shadow-sm"
-                  : isDarkMode
-                    ? "text-iron-500"
-                    : "text-slate-500"
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Events
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("habits")}
-              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === "habits"
-                  ? isDarkMode
-                    ? "bg-iron-800 text-iron-100"
-                    : "bg-white text-slate-800 shadow-sm"
-                  : isDarkMode
-                    ? "text-iron-500"
-                    : "text-slate-500"
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Heart className="w-4 h-4" />
-                Habits
-              </div>
+              <Plus className="w-4 h-4" />
+              {activeTab === "events" ? "Add Event" : "Add Habit"}
             </button>
           </div>
         </div>
@@ -895,7 +952,7 @@ export default function LifeLog() {
         {/* Habits Tab Content */}
         {activeTab === "habits" && (
           <div className="mt-4 space-y-3">
-            {trackables.length === 0 ? (
+            {trackables.filter(t => t.name !== "Body Weight").length === 0 ? (
               <div
                 className={`text-center py-12 ${
                   isDarkMode ? "text-iron-500" : "text-slate-500"
@@ -916,6 +973,7 @@ export default function LifeLog() {
                       color: "#22c55e",
                       has_value: false,
                       value_unit: "",
+                      active_days: null,
                     });
                     setShowAddHabitModal(true);
                   }}
@@ -929,16 +987,18 @@ export default function LifeLog() {
                 </button>
               </div>
             ) : (
-              trackables.map(trackable => {
+              trackables.filter(t => t.name !== "Body Weight").map(trackable => {
                 const isExpanded = expandedHabit === trackable.id;
                 const streakDays = getStreakCount(trackable.id);
+                const isScheduledToday = !trackable.active_days || trackable.active_days.includes(new Date().getDay());
+                const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
                 return (
                   <div
                     key={trackable.id}
                     className={`rounded-2xl overflow-hidden ${
                       isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
-                    }`}
+                    } ${!isScheduledToday ? "opacity-60" : ""}`}
                   >
                     {/* Habit Header */}
                     <div className="p-3 flex items-center justify-between">
@@ -958,11 +1018,22 @@ export default function LifeLog() {
                           >
                             {trackable.name}
                           </p>
-                          <p
-                            className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                          >
-                            {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p
+                              className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                            >
+                              {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
+                            </p>
+                            {trackable.active_days && (
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                                isScheduledToday
+                                  ? isDarkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-600"
+                                  : isDarkMode ? "bg-iron-800 text-iron-500" : "bg-slate-100 text-slate-400"
+                              }`}>
+                                {isScheduledToday ? "Today" : trackable.active_days.map(d => DAY_LABELS[d]).join(", ")}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <ChevronDown
                           className={`w-5 h-5 transition-transform ml-auto ${
@@ -1331,6 +1402,43 @@ export default function LifeLog() {
         </ModalContent>
       </Modal>
 
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!deleteConfirm.type}
+        onOpenChange={(open) => !open && setDeleteConfirm({ type: null, data: null })}
+      >
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              {deleteConfirm.type === "habit" && "Delete Habit"}
+              {deleteConfirm.type === "eventType" && "Delete Event Type"}
+              {deleteConfirm.type === "log" && "Delete Log Entry"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              {deleteConfirm.type === "habit" &&
+                "Delete this habit? This will also delete all tracking data."}
+              {deleteConfirm.type === "eventType" &&
+                deleteConfirm.data?.eventType &&
+                `Delete "${deleteConfirm.data.eventType.name}"? This will also delete all ${deleteConfirm.data.eventType.total_logs || 0} log entries.`}
+              {deleteConfirm.type === "log" && "Delete this log entry?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 text-white hover:bg-red-700 border-0"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Duplicate Entry Confirmation Dialog */}
       <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
         <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
@@ -1501,6 +1609,13 @@ export default function LifeLog() {
                 />
               </div>
             )}
+
+            {/* Active Days */}
+            <DayPicker
+              value={newPill.active_days}
+              onChange={(days) => setNewPill({ ...newPill, active_days: days })}
+              isDarkMode={isDarkMode}
+            />
           </ModalBody>
           <ModalFooter>
             <button

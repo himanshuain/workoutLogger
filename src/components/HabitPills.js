@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useTheme } from "@/context/ThemeContext";
+import { toast } from "sonner";
 
 export default function HabitPills({
   trackables = [],
@@ -10,8 +11,17 @@ export default function HabitPills({
   const { isDarkMode } = useTheme();
   const [valueModal, setValueModal] = useState(null);
   const [inputValue, setInputValue] = useState("");
+  const [optimisticState, setOptimisticState] = useState({});
+  const pendingRef = useRef(new Set());
 
-  const handlePillClick = (trackable) => {
+  const getEffectiveEntry = useCallback((trackableId) => {
+    if (optimisticState[trackableId] !== undefined) {
+      return optimisticState[trackableId];
+    }
+    return entries[trackableId];
+  }, [entries, optimisticState]);
+
+  const handlePillClick = async (trackable) => {
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }
@@ -23,7 +33,16 @@ export default function HabitPills({
       setValueModal(trackable);
       setInputValue(entry?.value?.toString() || "");
     } else {
-      onToggle(trackable.id, !isCompleted, null);
+      const newState = !isCompleted;
+      setOptimisticState(prev => ({ ...prev, [trackable.id]: { is_completed: newState, value: null } }));
+      try {
+        await onToggle(trackable.id, newState, null);
+      } catch {
+        setOptimisticState(prev => { const n = { ...prev }; delete n[trackable.id]; return n; });
+        toast.error("Failed to update");
+      } finally {
+        setOptimisticState(prev => { const n = { ...prev }; delete n[trackable.id]; return n; });
+      }
     }
   };
 
@@ -47,7 +66,8 @@ export default function HabitPills({
     <>
       <div className="flex flex-wrap gap-2">
         {trackables.map((trackable) => {
-          const entry = entries[trackable.id];
+          const effectiveEntry = getEffectiveEntry(trackable.id);
+          const entry = effectiveEntry || entries[trackable.id];
           const isCompleted = entry?.is_completed;
 
           return (
@@ -139,7 +159,7 @@ export default function HabitPills({
                 d="M12 4v16m8-8H4"
               />
             </svg>
-            Add
+            Add Habit
           </button>
         )}
       </div>

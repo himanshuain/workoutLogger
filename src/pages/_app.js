@@ -5,13 +5,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WorkoutProvider } from "@/context/WorkoutContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import NotificationService from "@/lib/notifications";
+import { Toaster } from "sonner";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 30, // 30 seconds
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      refetchOnWindowFocus: true,
       retry: 1,
     },
   },
@@ -61,7 +63,21 @@ export default function App({ Component, pageProps }) {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <WorkoutProvider>
-            <Component {...pageProps} />
+            <ErrorBoundary>
+              <Component {...pageProps} />
+            </ErrorBoundary>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                className: "!rounded-xl !text-sm !shadow-lg",
+                style: {
+                  background: "var(--toast-bg)",
+                  color: "var(--toast-fg)",
+                  border: "1px solid var(--toast-border)",
+                },
+              }}
+              richColors
+            />
           </WorkoutProvider>
         </QueryClientProvider>
       </ThemeProvider>

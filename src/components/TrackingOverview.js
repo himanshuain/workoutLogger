@@ -3,74 +3,7 @@ import {
   Check,
   X,
   Dumbbell,
-  TrendingUp,
-  TrendingDown,
-  Minus,
 } from "lucide-react";
-
-// Mini sparkline component
-function Sparkline({ data, color = "#fbbf24", height = 24, width = 60 }) {
-  if (!data || data.length < 2) return null;
-
-  const values = data.map((d) => d.value || d.count || 0);
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-
-  const points = values
-    .map((val, i) => {
-      const x = (i / (values.length - 1)) * width;
-      const y = height - ((val - min) / range) * (height - 4) - 2;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <svg width={width} height={height} className="overflow-visible">
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-// Trend indicator
-function TrendIndicator({ current, previous, isDarkMode }) {
-  if (current === undefined || previous === undefined) return null;
-
-  const diff = current - previous;
-  const percentage = previous > 0 ? Math.round((diff / previous) * 100) : 0;
-
-  if (diff > 0) {
-    return (
-      <span className="flex items-center gap-0.5 text-green-400 text-xs">
-        <TrendingUp className="w-3 h-3" />
-        {percentage > 0 && `+${percentage}%`}
-      </span>
-    );
-  } else if (diff < 0) {
-    return (
-      <span className="flex items-center gap-0.5 text-red-400 text-xs">
-        <TrendingDown className="w-3 h-3" />
-        {percentage}%
-      </span>
-    );
-  }
-  return (
-    <span
-      className={`flex items-center gap-0.5 text-xs ${
-        isDarkMode ? "text-iron-500" : "text-slate-500"
-      }`}
-    >
-      <Minus className="w-3 h-3" />
-    </span>
-  );
-}
 
 export default function TrackingOverview({
   trackables = [],
@@ -85,7 +18,11 @@ export default function TrackingOverview({
   days = 7,
   isDarkMode = true,
 }) {
-  // Generate last N days
+  const habits = useMemo(
+    () => trackables.filter((t) => t.name !== "Body Weight"),
+    [trackables],
+  );
+
   const dateRange = useMemo(() => {
     const dates = [];
     for (let i = 0; i < days; i++) {
@@ -99,18 +36,16 @@ export default function TrackingOverview({
         isToday: dateStr === today,
       });
     }
-    return dates.reverse();
+    return dates;
   }, [days, today]);
 
-  // Process habit data for each day
   const habitsByDate = useMemo(() => {
     const result = {};
     dateRange.forEach(({ date }) => {
       result[date] = {};
-      trackables.forEach((t) => {
+      habits.forEach((t) => {
         const habitDates = habitDataByTrackable[t.id] || [];
         const entry = habitDates.find((d) => d.date === date);
-        // Check today's entries for real-time data
         if (date === today && todayEntries[t.id]) {
           result[date][t.id] = todayEntries[t.id].is_completed;
         } else {
@@ -119,9 +54,8 @@ export default function TrackingOverview({
       });
     });
     return result;
-  }, [dateRange, trackables, habitDataByTrackable, todayEntries, today]);
+  }, [dateRange, habits, habitDataByTrackable, todayEntries, today]);
 
-  // Process workout data for each day
   const workoutsByDate = useMemo(() => {
     const result = {};
     dateRange.forEach(({ date }) => {
@@ -131,7 +65,6 @@ export default function TrackingOverview({
     return result;
   }, [dateRange, workoutData]);
 
-  // Process food data for each day
   const foodByDate = useMemo(() => {
     const result = {};
     dateRange.forEach(({ date }) => {
@@ -149,103 +82,29 @@ export default function TrackingOverview({
     return result;
   }, [dateRange, foodItems, foodDataByItem, todayFoodEntries, today]);
 
-  // Calculate habit completion rates
-  const habitStats = useMemo(() => {
-    return trackables.map((t) => {
-      const completedDays = dateRange.filter(
+  const habitCompletionCounts = useMemo(() => {
+    const counts = {};
+    habits.forEach((t) => {
+      counts[t.id] = dateRange.filter(
         (d) => habitsByDate[d.date]?.[t.id],
       ).length;
-      const rate = Math.round((completedDays / days) * 100);
-      const sparkData = dateRange.map((d) => ({
-        date: d.date,
-        count: habitsByDate[d.date]?.[t.id] ? 1 : 0,
-      }));
-      return { ...t, completedDays, rate, sparkData };
     });
-  }, [trackables, dateRange, habitsByDate, days]);
+    return counts;
+  }, [habits, dateRange, habitsByDate]);
 
-  // Calculate exercise stats
-  const exerciseStats = useMemo(() => {
-    return Object.entries(exerciseLogsByName)
-      .slice(0, 5)
-      .map(([name, logs]) => {
-        const recentLogs = logs.filter((l) =>
-          dateRange.some((d) => d.date === l.date),
-        );
-        const maxWeight =
-          recentLogs.length > 0
-            ? Math.max(...recentLogs.map((l) => l.weight))
-            : 0;
-        const avgWeight =
-          recentLogs.length > 0
-            ? Math.round(
-                recentLogs.reduce((sum, l) => sum + l.weight, 0) /
-                  recentLogs.length,
-              )
-            : 0;
-
-        // Get sparkline data (weight over time)
-        const sparkData = logs
-          .sort((a, b) => a.date.localeCompare(b.date))
-          .slice(-7)
-          .map((l) => ({ date: l.date, value: l.weight }));
-
-        // Trend calculation
-        const oldLogs = logs.filter(
-          (l) => l.date < dateRange[Math.floor(days / 2)]?.date,
-        );
-        const newLogs = logs.filter(
-          (l) => l.date >= dateRange[Math.floor(days / 2)]?.date,
-        );
-        const oldAvg =
-          oldLogs.length > 0
-            ? oldLogs.reduce((s, l) => s + l.weight, 0) / oldLogs.length
-            : 0;
-        const newAvg =
-          newLogs.length > 0
-            ? newLogs.reduce((s, l) => s + l.weight, 0) / newLogs.length
-            : 0;
-
-        return {
-          name,
-          recentCount: recentLogs.length,
-          maxWeight,
-          avgWeight,
-          sparkData,
-          oldAvg,
-          newAvg,
-        };
-      });
-  }, [exerciseLogsByName, dateRange, days]);
-
-  // Calculate food stats
-  const foodStats = useMemo(() => {
-    return foodItems.map((item) => {
-      const completedDays = dateRange.filter(
-        (d) => foodByDate[d.date]?.[item.id],
-      ).length;
-      const rate = Math.round((completedDays / days) * 100);
-      return { ...item, completedDays, rate };
-    });
-  }, [foodItems, dateRange, foodByDate, days]);
-
-  // Calculate workout trend
-  const workoutTrend = useMemo(() => {
-    const halfIndex = Math.floor(dateRange.length / 2);
-    const firstHalf = dateRange.slice(0, halfIndex);
-    const secondHalf = dateRange.slice(halfIndex);
-    const firstSum = firstHalf.reduce(
-      (s, d) => s + (workoutsByDate[d.date] || 0),
-      0,
-    );
-    const secondSum = secondHalf.reduce(
-      (s, d) => s + (workoutsByDate[d.date] || 0),
-      0,
-    );
-    return { previous: firstSum, current: secondSum };
+  const workoutDaysCount = useMemo(() => {
+    return dateRange.filter((d) => workoutsByDate[d.date] > 0).length;
   }, [dateRange, workoutsByDate]);
 
-  const accentColor = isDarkMode ? "#fbbf24" : "#dc2626";
+  const foodCompletionCounts = useMemo(() => {
+    const counts = {};
+    foodItems.forEach((item) => {
+      counts[item.id] = dateRange.filter(
+        (d) => foodByDate[d.date]?.[item.id],
+      ).length;
+    });
+    return counts;
+  }, [foodItems, dateRange, foodByDate]);
 
   return (
     <div
@@ -276,7 +135,7 @@ export default function TrackingOverview({
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto thin-scrollbar">
         <table className="w-full text-sm">
           {/* Date Header Row */}
           <thead>
@@ -305,14 +164,14 @@ export default function TrackingOverview({
                     className={`text-xs ${
                       isToday
                         ? isDarkMode
-                          ? "text-lift-primary"
-                          : "text-workout-primary"
+                          ? "text-lift-primary font-semibold"
+                          : "text-workout-primary font-semibold"
                         : isDarkMode
                           ? "text-iron-500"
                           : "text-slate-500"
                     }`}
                   >
-                    {dayName}
+                    {isToday ? "Today" : dayName}
                   </div>
                   <div
                     className={`font-bold ${
@@ -330,11 +189,11 @@ export default function TrackingOverview({
                 </th>
               ))}
               <th
-                className={`p-3 text-center font-medium min-w-[70px] ${
+                className={`p-3 text-center font-medium min-w-[50px] ${
                   isDarkMode ? "text-iron-400" : "text-slate-500"
                 }`}
               >
-                Trend
+                Done
               </th>
             </tr>
           </thead>
@@ -409,16 +268,24 @@ export default function TrackingOverview({
                 </td>
               ))}
               <td className="p-3 text-center">
-                <TrendIndicator
-                  current={workoutTrend.current}
-                  previous={workoutTrend.previous}
-                  isDarkMode={isDarkMode}
-                />
+                <span
+                  className={`text-xs font-bold ${
+                    workoutDaysCount >= Math.ceil(days * 0.7)
+                      ? "text-green-400"
+                      : workoutDaysCount >= Math.ceil(days * 0.4)
+                        ? "text-amber-400"
+                        : isDarkMode
+                          ? "text-iron-500"
+                          : "text-slate-500"
+                  }`}
+                >
+                  {workoutDaysCount}/{days}
+                </span>
               </td>
             </tr>
 
             {/* Habits Rows */}
-            {habitStats.map((habit) => (
+            {habits.map((habit) => (
               <tr
                 key={habit.id}
                 className={`border-b ${
@@ -430,17 +297,18 @@ export default function TrackingOverview({
                     isDarkMode ? "bg-iron-900" : "bg-white"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                      className="w-6 h-6 min-w-[24px] rounded-lg flex items-center justify-center text-xs"
                       style={{ backgroundColor: `${habit.color}30` }}
                     >
                       {habit.icon}
                     </div>
                     <span
-                      className={`font-medium text-xs truncate max-w-[80px] ${
-                        isDarkMode ? "text-iron-200" : "text-slate-700"
-                      }`}
+                      className={`font-medium leading-tight max-w-[72px] ${
+                        habit.name.length > 10 ? "text-[10px]" : "text-xs"
+                      } ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                      style={{ wordBreak: "break-word" }}
                     >
                       {habit.name}
                     </span>
@@ -480,24 +348,24 @@ export default function TrackingOverview({
                 ))}
                 <td className="p-3 text-center">
                   <span
-                    className={`text-xs font-medium ${
-                      habit.rate >= 70
+                    className={`text-xs font-bold ${
+                      habitCompletionCounts[habit.id] >= Math.ceil(days * 0.7)
                         ? "text-green-400"
-                        : habit.rate >= 40
+                        : habitCompletionCounts[habit.id] >= Math.ceil(days * 0.4)
                           ? "text-amber-400"
                           : isDarkMode
                             ? "text-iron-500"
                             : "text-slate-500"
                     }`}
                   >
-                    {habit.rate}%
+                    {habitCompletionCounts[habit.id]}/{days}
                   </span>
                 </td>
               </tr>
             ))}
 
             {/* Food Rows */}
-            {foodStats.map((food) => (
+            {foodItems.map((food) => (
               <tr
                 key={food.id}
                 className={`border-b ${
@@ -509,17 +377,18 @@ export default function TrackingOverview({
                     isDarkMode ? "bg-iron-900" : "bg-white"
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
+                      className="w-6 h-6 min-w-[24px] rounded-lg flex items-center justify-center text-xs"
                       style={{ backgroundColor: `${food.color}30` }}
                     >
                       {food.icon}
                     </div>
                     <span
-                      className={`font-medium text-xs truncate max-w-[80px] ${
-                        isDarkMode ? "text-iron-200" : "text-slate-700"
-                      }`}
+                      className={`font-medium leading-tight max-w-[72px] ${
+                        food.name.length > 10 ? "text-[10px]" : "text-xs"
+                      } ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                      style={{ wordBreak: "break-word" }}
                     >
                       {food.name}
                     </span>
@@ -559,17 +428,17 @@ export default function TrackingOverview({
                 ))}
                 <td className="p-3 text-center">
                   <span
-                    className={`text-xs font-medium ${
-                      food.rate >= 70
+                    className={`text-xs font-bold ${
+                      foodCompletionCounts[food.id] >= Math.ceil(days * 0.7)
                         ? "text-green-400"
-                        : food.rate >= 40
+                        : foodCompletionCounts[food.id] >= Math.ceil(days * 0.4)
                           ? "text-amber-400"
                           : isDarkMode
                             ? "text-iron-500"
                             : "text-slate-500"
                     }`}
                   >
-                    {food.rate}%
+                    {foodCompletionCounts[food.id]}/{days}
                   </span>
                 </td>
               </tr>
@@ -578,57 +447,6 @@ export default function TrackingOverview({
         </table>
       </div>
 
-      {/* Exercise Progress Section */}
-      {exerciseStats.length > 0 && (
-        <div
-          className={`border-t p-4 ${
-            isDarkMode ? "border-iron-800/50" : "border-slate-100"
-          }`}
-        >
-          <h4
-            className={`text-xs font-medium mb-3 uppercase tracking-wider ${
-              isDarkMode ? "text-iron-400" : "text-slate-500"
-            }`}
-          >
-            Top Exercises (Weight Progress)
-          </h4>
-          <div className="space-y-3">
-            {exerciseStats.map((ex) => (
-              <div key={ex.name} className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-medium truncate ${
-                      isDarkMode ? "text-iron-200" : "text-slate-700"
-                    }`}
-                  >
-                    {ex.name}
-                  </p>
-                  <p
-                    className={`text-xs ${
-                      isDarkMode ? "text-iron-500" : "text-slate-500"
-                    }`}
-                  >
-                    Max: {ex.maxWeight}kg · Avg: {ex.avgWeight}kg
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Sparkline
-                    data={ex.sparkData}
-                    color={accentColor}
-                    height={20}
-                    width={50}
-                  />
-                  <TrendIndicator
-                    current={ex.newAvg}
-                    previous={ex.oldAvg}
-                    isDarkMode={isDarkMode}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

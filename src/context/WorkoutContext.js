@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
 const WorkoutContext = createContext();
 
 export function WorkoutProvider({ children }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [exercises, setExercises] = useState([]);
   const [exerciseHistory, setExerciseHistory] = useState({});
@@ -97,6 +99,26 @@ export function WorkoutProvider({ children }) {
     }
   }, [user]);
 
+  // Helper: load/save active_days from localStorage (not in Supabase schema)
+  const getActiveDaysMap = useCallback(() => {
+    if (typeof window === "undefined" || !user) return {};
+    try {
+      const stored = localStorage.getItem(`logbook_active_days_${user.id}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  }, [user]);
+
+  const saveActiveDays = useCallback((trackableId, activeDays) => {
+    if (typeof window === "undefined" || !user) return;
+    const map = getActiveDaysMap();
+    if (activeDays === null || activeDays === undefined) {
+      delete map[trackableId];
+    } else {
+      map[trackableId] = activeDays;
+    }
+    localStorage.setItem(`logbook_active_days_${user.id}`, JSON.stringify(map));
+  }, [user, getActiveDaysMap]);
+
   // Load trackables (habits/health)
   const loadTrackables = useCallback(async () => {
     if (!user) return;
@@ -108,12 +130,17 @@ export function WorkoutProvider({ children }) {
         .order("order_index");
 
       if (!error && data) {
-        setTrackables(data);
+        const daysMap = getActiveDaysMap();
+        const enriched = data.map(t => ({
+          ...t,
+          active_days: daysMap[t.id] || null,
+        }));
+        setTrackables(enriched);
       }
     } catch (err) {
       console.error("Error loading trackables:", err);
     }
-  }, [user]);
+  }, [user, getActiveDaysMap]);
 
   // Load today's tracking entries
   const loadTodayEntries = useCallback(async () => {
@@ -526,9 +553,14 @@ export function WorkoutProvider({ children }) {
         }
 
         setActiveSession(null);
+
+        queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+        queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+        queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
       }
     },
-    [user, activeSession, exerciseHistory, loadExerciseHistory]
+    [user, activeSession, exerciseHistory, loadExerciseHistory, queryClient]
   );
 
   // Get workout session by ID
@@ -550,6 +582,66 @@ export function WorkoutProvider({ children }) {
       return data;
     },
     [user]
+  );
+
+  // Delete a single set log from a session
+  const deleteSetLog = useCallback(
+    async (setLogId) => {
+      if (!user) return false;
+      const { error } = await supabase.from("set_logs").delete().eq("id", setLogId);
+      if (!error) {
+        if (activeSession) {
+          setActiveSession(prev => ({
+            ...prev,
+            set_logs: prev.set_logs.filter(log => log.id !== setLogId),
+          }));
+        }
+        queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+        queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+        return true;
+      }
+      return false;
+    },
+    [user, activeSession, queryClient]
+  );
+
+  // Delete a full workout session and its set logs
+  const deleteWorkoutSession = useCallback(
+    async (sessionId) => {
+      if (!user) return false;
+      await supabase.from("set_logs").delete().eq("session_id", sessionId);
+      const { error } = await supabase.from("workout_sessions").delete().eq("id", sessionId);
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+        queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+        return true;
+      }
+      return false;
+    },
+    [user, queryClient]
+  );
+
+  // Update a set log (for editing history)
+  const updateSetLogData = useCallback(
+    async (setLogId, updates) => {
+      if (!user) return false;
+      const { error } = await supabase
+        .from("set_logs")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", setLogId);
+      if (!error) {
+        queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+        return true;
+      }
+      return false;
+    },
+    [user, queryClient]
   );
 
   // Get today's completed session
@@ -717,8 +809,12 @@ export function WorkoutProvider({ children }) {
           }));
         }
       }
+
+      queryClient.invalidateQueries({ queryKey: ["trackingEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["trackingEntriesForHeatmap"] });
+      queryClient.invalidateQueries({ queryKey: ["bodyWeightHistory"] });
     },
-    [user, today, todayEntries]
+    [user, today, todayEntries, queryClient]
   );
 
   // Toggle tracking entry for a specific date (for past entries)
@@ -798,9 +894,12 @@ export function WorkoutProvider({ children }) {
         }
       }
 
+      queryClient.invalidateQueries({ queryKey: ["trackingEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["trackingEntriesForHeatmap"] });
+      queryClient.invalidateQueries({ queryKey: ["bodyWeightHistory"] });
       return { success: false };
     },
-    [user, today]
+    [user, today, queryClient]
   );
 
   // Log exercise (legacy - for backwards compatibility)
@@ -849,9 +948,11 @@ export function WorkoutProvider({ children }) {
         [exercise.name]: historyEntry,
       }));
 
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["historyLogs"] });
       return data;
     },
-    [user, today, exerciseHistory]
+    [user, today, exerciseHistory, queryClient]
   );
 
   // Get exercise logs for a date range
@@ -989,23 +1090,29 @@ export function WorkoutProvider({ children }) {
     async trackable => {
       if (!user) return null;
 
+      const { active_days, ...dbFields } = trackable;
+
       const { data, error } = await supabase
         .from("trackables")
         .insert({
           user_id: user.id,
-          ...trackable,
+          ...dbFields,
           order_index: trackables.length,
         })
         .select()
         .single();
 
       if (!error && data) {
-        setTrackables(prev => [...prev, data]);
-        return data;
+        if (active_days) {
+          saveActiveDays(data.id, active_days);
+        }
+        const enriched = { ...data, active_days: active_days || null };
+        setTrackables(prev => [...prev, enriched]);
+        return enriched;
       }
       return null;
     },
-    [user, trackables]
+    [user, trackables, saveActiveDays]
   );
 
   // Update trackable
@@ -1013,13 +1120,21 @@ export function WorkoutProvider({ children }) {
     async (id, updates) => {
       if (!user) return;
 
-      const { error } = await supabase.from("trackables").update(updates).eq("id", id);
+      const { active_days, ...dbUpdates } = updates;
 
-      if (!error) {
-        setTrackables(prev => prev.map(t => (t.id === id ? { ...t, ...updates } : t)));
+      if (active_days !== undefined) {
+        saveActiveDays(id, active_days);
       }
+
+      const hasDbUpdates = Object.keys(dbUpdates).length > 0;
+      if (hasDbUpdates) {
+        const { error } = await supabase.from("trackables").update(dbUpdates).eq("id", id);
+        if (error) return;
+      }
+
+      setTrackables(prev => prev.map(t => (t.id === id ? { ...t, ...updates } : t)));
     },
-    [user]
+    [user, saveActiveDays]
   );
 
   // Delete trackable
@@ -1125,8 +1240,10 @@ export function WorkoutProvider({ children }) {
           }));
         }
       }
+
+      queryClient.invalidateQueries({ queryKey: ["foodEntries"] });
     },
-    [user, today, todayFoodEntries]
+    [user, today, todayFoodEntries, queryClient]
   );
 
   const updateFoodEntryQuantity = useCallback(
@@ -1167,8 +1284,10 @@ export function WorkoutProvider({ children }) {
           }));
         }
       }
+
+      queryClient.invalidateQueries({ queryKey: ["foodEntries"] });
     },
-    [user, today, todayFoodEntries]
+    [user, today, todayFoodEntries, queryClient]
   );
 
   const getFoodEntries = useCallback(
@@ -1453,6 +1572,9 @@ export function WorkoutProvider({ children }) {
         getWorkoutSession,
         getTodaySession,
         updateSessionExerciseIndex,
+        deleteSetLog,
+        deleteWorkoutSession,
+        updateSetLogData,
         // Life Log functions
         createEventType,
         updateEventType,

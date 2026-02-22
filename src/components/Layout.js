@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { useTheme } from "@/context/ThemeContext";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, CalendarClock } from "lucide-react";
+import { SkeletonPage } from "@/components/SkeletonLoader";
+import InstallPrompt from "@/components/InstallPrompt";
 
-const tabs = [
+const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
   { id: "routines", href: "/routines", icon: ListChecks, label: "Routines" },
   { id: "food", href: "/food", icon: Utensils, label: "Food" },
@@ -14,58 +15,119 @@ const tabs = [
   { id: "settings", href: "/settings", icon: Settings, label: "Settings" },
 ];
 
+const NAV_CONFIG_KEY = "logbook_nav_config";
+
+export function getNavConfig() {
+  if (typeof window === "undefined") return { order: null, hidden: [], labels: {} };
+  try {
+    const stored = localStorage.getItem(NAV_CONFIG_KEY);
+    return stored ? JSON.parse(stored) : { order: null, hidden: [], labels: {} };
+  } catch { return { order: null, hidden: [], labels: {} }; }
+}
+
+export function saveNavConfig(config) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(NAV_CONFIG_KEY, JSON.stringify(config));
+  window.dispatchEvent(new Event("nav-config-changed"));
+}
+
+export { DEFAULT_TABS };
+
 // Animation variants
 const cardVariants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
+  initial: { opacity: 0, y: 24, scale: 0.97 },
   animate: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { type: "spring", stiffness: 300, damping: 24, mass: 0.8 },
   },
   exit: {
     opacity: 0,
-    y: -20,
-    scale: 0.98,
-    transition: { duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] },
+    y: -16,
+    scale: 0.97,
+    transition: { duration: 0.2, ease: "easeIn" },
   },
 };
 
 const headerVariants = {
-  initial: { opacity: 0, y: -10 },
+  initial: { opacity: 0, y: -8 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, delay: 0.1 },
+    transition: { type: "spring", stiffness: 400, damping: 25, delay: 0.05 },
   },
 };
 
 const contentVariants = {
-  initial: { opacity: 0.8, y: 5 },
+  initial: { opacity: 0 },
   animate: {
     opacity: 1,
-    y: 0,
-    transition: { duration: 0.15, delay: 0, ease: "easeOut" },
+    transition: { duration: 0.15, ease: "easeOut" },
   },
 };
 
 const previewCardVariants = {
-  initial: { opacity: 0.5, scale: 0.95 },
+  initial: { opacity: 0.5, scale: 0.96 },
   animate: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.2, ease: "easeOut" },
+    transition: { type: "spring", stiffness: 400, damping: 22 },
   },
 };
 
 const navItemVariants = {
-  tap: { scale: 0.9 },
+  tap: { scale: 0.88, transition: { type: "spring", stiffness: 500, damping: 15 } },
   hover: { scale: 1.05 },
 };
+
+const DEFAULT_NAV_CONFIG = { order: null, hidden: [], labels: {} };
 
 export default function Layout({ children }) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
+
+  // Always start with the default config to avoid SSR/hydration mismatch,
+  // then sync from localStorage after mount
+  const [navConfig, setNavConfig] = useState(DEFAULT_NAV_CONFIG);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setNavConfig(getNavConfig());
+    setMounted(true);
+    const handler = () => setNavConfig(getNavConfig());
+    window.addEventListener("nav-config-changed", handler);
+    return () => window.removeEventListener("nav-config-changed", handler);
+  }, []);
+
+  // Build ordered tabs list from config
+  const allTabs = useMemo(() => {
+    let ordered = [...DEFAULT_TABS];
+    if (navConfig.order && navConfig.order.length > 0) {
+      ordered = navConfig.order
+        .map(id => DEFAULT_TABS.find(t => t.id === id))
+        .filter(Boolean);
+      DEFAULT_TABS.forEach(t => { if (!ordered.find(o => o.id === t.id)) ordered.push(t); });
+    }
+    return ordered.map(t => ({
+      ...t,
+      label: navConfig.labels?.[t.id] || t.label,
+    }));
+  }, [navConfig]);
+
+  // Scrollable tabs: exclude settings and hidden tabs
+  const scrollableTabs = useMemo(() =>
+    allTabs.filter(t => t.id !== "settings" && !(navConfig.hidden || []).includes(t.id)),
+  [allTabs, navConfig.hidden]);
+
+  // Nav bar tabs: exclude hidden tabs (settings always visible in nav)
+  const navTabs = useMemo(() =>
+    allTabs.filter(t => !(navConfig.hidden || []).includes(t.id)),
+  [allTabs, navConfig.hidden]);
+
+  // For matching: use all tabs including settings
+  const tabs = allTabs;
+
   const [activeTab, setActiveTab] = useState(() => {
     const tab = tabs.find(t => t.href === router.pathname);
     return tab?.id || "today";
@@ -78,7 +140,8 @@ export default function Layout({ children }) {
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
 
-  const currentIndex = tabs.findIndex(t => t.id === activeTab);
+  const isSettingsPage = activeTab === "settings";
+  const currentIndex = scrollableTabs.findIndex(t => t.id === activeTab);
 
   // Detect keyboard visibility by tracking input focus (more reliable on iOS)
   useEffect(() => {
@@ -112,40 +175,41 @@ export default function Layout({ children }) {
   // Prefetch adjacent pages for faster navigation
   useEffect(() => {
     const prefetchAdjacent = () => {
-      // Prefetch previous and next tabs
       if (currentIndex > 0) {
-        router.prefetch(tabs[currentIndex - 1].href);
+        router.prefetch(scrollableTabs[currentIndex - 1].href);
       }
-      if (currentIndex < tabs.length - 1) {
-        router.prefetch(tabs[currentIndex + 1].href);
+      if (currentIndex < scrollableTabs.length - 1) {
+        router.prefetch(scrollableTabs[currentIndex + 1].href);
       }
-      // Also prefetch 2 tabs ahead/behind for smoother scrolling
       if (currentIndex > 1) {
-        router.prefetch(tabs[currentIndex - 2].href);
+        router.prefetch(scrollableTabs[currentIndex - 2].href);
       }
-      if (currentIndex < tabs.length - 2) {
-        router.prefetch(tabs[currentIndex + 2].href);
+      if (currentIndex < scrollableTabs.length - 2) {
+        router.prefetch(scrollableTabs[currentIndex + 2].href);
       }
     };
-    prefetchAdjacent();
-  }, [currentIndex, router]);
+    if (currentIndex >= 0) prefetchAdjacent();
+  }, [currentIndex, router, scrollableTabs]);
 
-  // Scroll-based animations
-  const { scrollYProgress } = useScroll({ container: containerRef });
+  // Scroll-based animations (only when scroll container is active)
+  const scrollTarget = isSettingsPage ? undefined : containerRef;
+  const { scrollYProgress } = useScroll({ container: scrollTarget });
   const headerOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0.95]);
 
   // Update active tab when route changes
   useEffect(() => {
     const tab = tabs.find(t => t.href === router.pathname);
     if (tab) {
-      const newIndex = tabs.findIndex(t => t.id === tab.id);
-      setDirection(newIndex > currentIndex ? 1 : -1);
+      const oldIdx = scrollableTabs.findIndex(t => t.id === activeTab);
+      const newIdx = scrollableTabs.findIndex(t => t.id === tab.id);
+      setDirection(newIdx > oldIdx ? 1 : -1);
       setActiveTab(tab.id);
     }
   }, [router.pathname]);
 
-  // Scroll to active card on mount and route change
+  // Scroll to active card on mount and route change (only for scrollable tabs)
   useEffect(() => {
+    if (isSettingsPage || currentIndex < 0) return;
     const container = containerRef.current;
     const card = cardRefs.current[currentIndex];
     if (container && card) {
@@ -155,9 +219,9 @@ export default function Layout({ children }) {
         isScrollingRef.current = false;
       }, 100);
     }
-  }, [currentIndex]);
+  }, [currentIndex, isSettingsPage]);
 
-  // Handle scroll snap — detect which card is snapped and navigate
+  // Detect which page the mandatory snap settled on
   const handleScroll = useCallback(() => {
     if (isScrollingRef.current) return;
 
@@ -172,15 +236,13 @@ export default function Layout({ children }) {
       const containerTop = container.scrollTop;
       const containerHeight = container.clientHeight;
 
-      // Find which card is most visible
       let bestMatch = currentIndex;
       let bestVisibility = 0;
 
       cardRefs.current.forEach((card, idx) => {
         if (!card) return;
         const cardTop = card.offsetTop;
-        const cardHeight = card.offsetHeight;
-        const cardBottom = cardTop + cardHeight;
+        const cardBottom = cardTop + card.offsetHeight;
 
         const visibleTop = Math.max(cardTop, containerTop);
         const visibleBottom = Math.min(cardBottom, containerTop + containerHeight);
@@ -193,44 +255,48 @@ export default function Layout({ children }) {
         }
       });
 
-      // Navigate if snapped to a different tab
       if (bestMatch !== currentIndex && bestVisibility > 0.6) {
-        const targetTab = tabs[bestMatch];
+        const targetTab = scrollableTabs[bestMatch];
         if (targetTab) {
           if (window.navigator?.vibrate) {
             window.navigator.vibrate(10);
           }
           setDirection(bestMatch > currentIndex ? 1 : -1);
-          // Update activeTab IMMEDIATELY so UI renders instantly
           setActiveTab(targetTab.id);
-          // Then update the URL in background (shallow to avoid re-render)
           router.replace(targetTab.href, undefined, { shallow: true, scroll: false });
         }
       }
-    }, 50); // Reduced to 50ms for even faster response
-  }, [currentIndex, router]);
+    }, 100);
+  }, [currentIndex, router, scrollableTabs]);
 
   const handleTabClick = useCallback(
     tab => {
-      const idx = tabs.findIndex(t => t.id === tab.id);
-      const card = cardRefs.current[idx];
-      setDirection(idx > currentIndex ? 1 : -1);
-      // Update activeTab IMMEDIATELY so UI renders instantly
+      const scrollIdx = scrollableTabs.findIndex(t => t.id === tab.id);
       setActiveTab(tab.id);
-      if (card) {
-        isScrollingRef.current = true;
-        card.scrollIntoView({ behavior: "smooth", block: "start" });
-        setTimeout(() => {
-          isScrollingRef.current = false;
-        }, 200);
+
+      if (tab.id === "settings") {
+        router.push(tab.href, undefined, { scroll: false });
+      } else {
+        // If coming FROM settings, do a full push to re-enter scroll mode
+        if (isSettingsPage) {
+          router.push(tab.href, undefined, { scroll: false });
+        } else if (scrollIdx >= 0) {
+          const card = cardRefs.current[scrollIdx];
+          setDirection(scrollIdx > currentIndex ? 1 : -1);
+          if (card) {
+            isScrollingRef.current = true;
+            card.scrollIntoView({ behavior: "smooth", block: "start" });
+            setTimeout(() => { isScrollingRef.current = false; }, 500);
+          }
+          router.replace(tab.href, undefined, { shallow: true, scroll: false });
+        }
       }
-      // Update URL in background
-      router.replace(tab.href, undefined, { shallow: true, scroll: false });
+
       if (window.navigator?.vibrate) {
         window.navigator.vibrate(5);
       }
     },
-    [router, currentIndex]
+    [router, currentIndex, scrollableTabs, isSettingsPage]
   );
 
   return (
@@ -238,98 +304,73 @@ export default function Layout({ children }) {
       className={`h-screen flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      {/* Scrollable Tab Cards Container */}
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto"
-        style={{
-          scrollSnapType: "y mandatory",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {tabs.map((tab, idx) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          const isPrev = idx === currentIndex - 1;
-          const isNext = idx === currentIndex + 1;
-
-          return (
-            <div
-              key={tab.id}
-              ref={el => (cardRefs.current[idx] = el)}
-              className="h-full flex flex-col"
-              style={{
-                scrollSnapAlign: "start",
-                scrollSnapStop: "always",
-                minHeight: "100%",
-              }}
+      {/* Settings page: rendered directly, no scroll snap */}
+      {isSettingsPage ? (
+        <main className="flex-1 overflow-auto pb-20">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="content-settings"
+              variants={contentVariants}
+              initial="initial"
+              animate="animate"
+              className="h-full"
             >
-              {/* Card Header */}
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      ) : (
+        /* Scrollable Tab Cards Container */
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto"
+          style={{
+            scrollSnapType: "y mandatory",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {scrollableTabs.map((tab, idx) => {
+            const isActive = activeTab === tab.id;
 
-              {/* Card Content */}
-              <main className="flex-1 overflow-auto">
-                {isActive ? (
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={`content-${tab.id}`}
-                      variants={contentVariants}
-                      initial="initial"
-                      animate="animate"
-                      className="h-full"
-                    >
-                      {children}
-                    </motion.div>
-                  </AnimatePresence>
-                ) : (
-                  // Animated running person placeholder - shows briefly during navigation
-                  <div className="flex flex-col items-center justify-center h-full px-6">
-                    <div className="relative">
-                      {/* Running track/path */}
-                      <div 
-                        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-24 h-1 rounded-full ${
-                          isDarkMode ? "bg-iron-800" : "bg-slate-200"
-                        }`}
-                      />
-                      {/* Animated runner */}
-                      <div 
-                        className="text-5xl animate-bounce"
-                        style={{
-                          animationDuration: '0.5s',
-                          animationTimingFunction: 'ease-in-out',
-                        }}
+            return (
+              <div
+                key={tab.id}
+                ref={el => (cardRefs.current[idx] = el)}
+                className="h-full flex flex-col"
+                style={{
+                  scrollSnapAlign: "start",
+                  scrollSnapStop: "always",
+                  minHeight: "100%",
+                }}
+              >
+                <main className="flex-1 overflow-auto pb-20">
+                  {isActive ? (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={`content-${tab.id}`}
+                        variants={contentVariants}
+                        initial="initial"
+                        animate="animate"
+                        className="h-full"
                       >
-                        🏃
-                      </div>
-                      {/* Motion lines */}
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-                        <div 
-                          className={`h-0.5 rounded-full animate-pulse ${
-                            isDarkMode ? "bg-lift-primary/60" : "bg-workout-primary/60"
-                          }`}
-                          style={{ width: '12px', animationDelay: '0ms' }}
-                        />
-                        <div 
-                          className={`h-0.5 rounded-full animate-pulse ${
-                            isDarkMode ? "bg-lift-primary/40" : "bg-workout-primary/40"
-                          }`}
-                          style={{ width: '18px', animationDelay: '100ms' }}
-                        />
-                        <div 
-                          className={`h-0.5 rounded-full animate-pulse ${
-                            isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
-                          }`}
-                          style={{ width: '10px', animationDelay: '200ms' }}
-                        />
-                      </div>
+                        {children}
+                      </motion.div>
+                    </AnimatePresence>
+                  ) : (
+                    <div className="p-4">
+                      <SkeletonPage isDarkMode={isDarkMode} />
                     </div>
-                  </div>
-                )}
-              </main>
-            </div>
-          );
-        })}
-      </div>
+                  )}
+                </main>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt isDarkMode={isDarkMode} />
 
       {/* Fixed Bottom Navigation Bar - Hidden when keyboard is open */}
       <nav
@@ -338,8 +379,8 @@ export default function Layout({ children }) {
         } ${isKeyboardVisible ? "keyboard-open" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-center justify-around py-2 px-1">
-          {tabs.map(navTab => {
+        <div className="flex items-center justify-around py-2 px-1" role="tablist" aria-label="Main navigation">
+          {navTabs.map(navTab => {
             const NavIcon = navTab.icon;
             const isNavActive = navTab.id === activeTab;
 
@@ -350,6 +391,10 @@ export default function Layout({ children }) {
                 whileTap="tap"
                 whileHover="hover"
                 onClick={() => handleTabClick(navTab)}
+                aria-label={`Navigate to ${navTab.label}`}
+                aria-current={isNavActive ? "page" : undefined}
+                role="tab"
+                aria-selected={isNavActive}
                 className={`relative flex flex-col items-center justify-center py-2 px-3 rounded-xl min-w-[3.5rem]`}
               >
                 {/* Active indicator background */}
@@ -359,15 +404,15 @@ export default function Layout({ children }) {
                     className={`absolute inset-0 rounded-xl ${
                       isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/10"
                     }`}
-                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22, mass: 0.8 }}
                   />
                 )}
                 <motion.div
                   animate={{
-                    scale: isNavActive ? 1.1 : 1,
+                    scale: isNavActive ? 1.15 : 1,
                     y: isNavActive ? -2 : 0,
                   }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ type: "spring", stiffness: 450, damping: 18 }}
                   className="relative z-10"
                 >
                   <NavIcon

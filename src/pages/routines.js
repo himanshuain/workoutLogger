@@ -13,6 +13,17 @@ import {
   ModalFooter,
 } from "@/components/ui/modal";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import {
   Plus,
   Dumbbell,
   Trash2,
@@ -62,6 +73,7 @@ export default function Routines() {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [newRoutine, setNewRoutine] = useState({
     name: "",
     day_of_week: null,
@@ -110,25 +122,37 @@ export default function Routines() {
   const handleSaveRoutine = async () => {
     if (!newRoutine.name.trim() || newRoutine.exercises.length === 0) return;
 
-    if (editingRoutine) {
-      await updateRoutine(editingRoutine.id, newRoutine);
-    } else {
-      await createRoutine(newRoutine);
-    }
+    try {
+      if (editingRoutine) {
+        await updateRoutine(editingRoutine.id, newRoutine);
+        toast.success("Routine saved");
+      } else {
+        await createRoutine(newRoutine);
+        toast.success("Routine created");
+      }
 
-    setShowCreateDrawer(false);
-    setEditingRoutine(null);
-    setNewRoutine({
-      name: "",
-      day_of_week: null,
-      color: "#3b82f6",
-      exercises: [],
-    });
+      setShowCreateDrawer(false);
+      setEditingRoutine(null);
+      setNewRoutine({
+        name: "",
+        day_of_week: null,
+        color: "#3b82f6",
+        exercises: [],
+      });
+    } catch {
+      toast.error("Failed to save routine");
+    }
   };
 
-  const handleDeleteRoutine = async (routineId) => {
-    if (confirm("Delete this routine?")) {
-      await deleteRoutine(routineId);
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await deleteRoutine(deleteConfirm.id);
+      toast.success("Routine deleted");
+      setDeleteConfirm(null);
+    } catch {
+      toast.error("Failed to delete routine");
+      setDeleteConfirm(null);
     }
   };
 
@@ -202,7 +226,7 @@ export default function Routines() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-workout-primary text-white text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
-              New
+              New Routine
             </button>
           </div>
         </div>
@@ -264,7 +288,7 @@ export default function Routines() {
                           routine={routine}
                           isDarkMode={isDarkMode}
                           onEdit={() => handleEditRoutine(routine)}
-                          onDelete={() => handleDeleteRoutine(routine.id)}
+                          onDelete={() => setDeleteConfirm(routine)}
                         />
                       ))}
                     </div>
@@ -289,7 +313,7 @@ export default function Routines() {
                         routine={routine}
                         isDarkMode={isDarkMode}
                         onEdit={() => handleEditRoutine(routine)}
-                        onDelete={() => handleDeleteRoutine(routine.id)}
+                        onDelete={() => setDeleteConfirm(routine)}
                       />
                     ))}
                   </div>
@@ -392,48 +416,94 @@ export default function Routines() {
                 </button>
               </div>
 
-              <div className="space-y-2 max-h-[30vh] overflow-y-auto">
-                {newRoutine.exercises.map((ex, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center gap-2 p-2 rounded-xl ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
-                  >
-                    <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
-                      isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
-                    }`}>
-                      {index + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium text-sm truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                        {ex.exercise_name}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleUpdateExerciseSets(index, Math.max(1, ex.target_sets - 1))}
-                        className={`w-6 h-6 rounded flex items-center justify-center ${
-                          isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
+              <div className="space-y-1 max-h-[30vh] overflow-y-auto">
+                {newRoutine.exercises.map((ex, index) => {
+                  const isSuperset = ex.superset_group && index > 0 && newRoutine.exercises[index - 1]?.superset_group === ex.superset_group;
+                  const startsSuperset = ex.superset_group && index < newRoutine.exercises.length - 1 && newRoutine.exercises[index + 1]?.superset_group === ex.superset_group;
+
+                  return (
+                    <div key={index}>
+                      {isSuperset && (
+                        <div className={`flex items-center justify-center py-0.5`}>
+                          <div className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDarkMode ? "bg-orange-500/20 text-orange-400" : "bg-orange-100 text-orange-600"}`}>
+                            superset
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        className={`flex items-center gap-2 p-2 rounded-xl ${
+                          ex.superset_group
+                            ? isDarkMode ? "bg-orange-500/5 border border-orange-500/20" : "bg-orange-50 border border-orange-200"
+                            : isDarkMode ? "bg-iron-800" : "bg-slate-100"
                         }`}
                       >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className={`w-5 text-center text-sm font-medium ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                        {ex.target_sets}
-                      </span>
-                      <button
-                        onClick={() => handleUpdateExerciseSets(index, Math.min(10, ex.target_sets + 1))}
-                        className={`w-6 h-6 rounded flex items-center justify-center ${
+                        <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold ${
                           isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
-                        }`}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                      <button onClick={() => handleRemoveExercise(index)} className="p-1 text-red-500">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-medium text-sm truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                            {ex.exercise_name}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {index > 0 && (
+                            <button
+                              onClick={() => {
+                                const updated = [...newRoutine.exercises];
+                                const prevEx = updated[index - 1];
+                                if (ex.superset_group && prevEx.superset_group === ex.superset_group) {
+                                  updated[index] = { ...ex, superset_group: null };
+                                  const groupId = ex.superset_group;
+                                  const remaining = updated.filter(e => e.superset_group === groupId);
+                                  if (remaining.length <= 1) {
+                                    remaining.forEach(e => { e.superset_group = null; });
+                                  }
+                                } else {
+                                  const groupId = prevEx.superset_group || `ss_${Date.now()}`;
+                                  updated[index - 1] = { ...prevEx, superset_group: groupId };
+                                  updated[index] = { ...ex, superset_group: groupId };
+                                }
+                                setNewRoutine({ ...newRoutine, exercises: updated });
+                              }}
+                              title={ex.superset_group ? "Unlink superset" : "Link as superset"}
+                              className={`w-6 h-6 rounded flex items-center justify-center text-xs ${
+                                ex.superset_group
+                                  ? isDarkMode ? "bg-orange-500/30 text-orange-400" : "bg-orange-200 text-orange-600"
+                                  : isDarkMode ? "bg-iron-700 text-iron-500" : "bg-slate-200 text-slate-400"
+                              }`}
+                            >
+                              🔗
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleUpdateExerciseSets(index, Math.max(1, ex.target_sets - 1))}
+                            className={`w-6 h-6 rounded flex items-center justify-center ${
+                              isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
+                            }`}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className={`w-5 text-center text-sm font-medium ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
+                            {ex.target_sets}
+                          </span>
+                          <button
+                            onClick={() => handleUpdateExerciseSets(index, Math.min(10, ex.target_sets + 1))}
+                            className={`w-6 h-6 rounded flex items-center justify-center ${
+                              isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
+                            }`}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => handleRemoveExercise(index)} className="p-1 text-red-500">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {newRoutine.exercises.length === 0 && (
                   <button
@@ -489,6 +559,34 @@ export default function Routines() {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation AlertDialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Delete Routine
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              Are you sure you want to delete this routine? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}
+              onClick={() => setDeleteConfirm(null)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              onClick={handleConfirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
@@ -509,10 +607,10 @@ function RoutineCard({ routine, isDarkMode, onEdit, onDelete }) {
       <div className="flex items-start gap-3">
         {/* Color indicator */}
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: `${routine.color}20` }}
         >
-          <Dumbbell className="w-6 h-6" style={{ color: routine.color }} />
+          <Dumbbell className="w-5 h-5" style={{ color: routine.color }} />
         </div>
 
         {/* Content */}
@@ -547,7 +645,7 @@ function RoutineCard({ routine, isDarkMode, onEdit, onDelete }) {
         <div className="flex items-center gap-1">
           <button
             onClick={onEdit}
-            className={`p-2 rounded-lg ${isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-100"}`}
+            className={`p-2 rounded-lg ${isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"}`}
           >
             <Pencil
               className={`w-4 h-4 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
@@ -555,10 +653,10 @@ function RoutineCard({ routine, isDarkMode, onEdit, onDelete }) {
           </button>
           <button
             onClick={onDelete}
-            className={`p-2 rounded-lg ${isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-100"}`}
+            className={`p-2 rounded-lg ${isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"}`}
           >
             <Trash2
-              className={`w-4 h-4 ${isDarkMode ? "text-iron-500 hover:text-red-400" : "text-slate-400 hover:text-red-500"}`}
+              className={`w-4 h-4 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
             />
           </button>
         </div>

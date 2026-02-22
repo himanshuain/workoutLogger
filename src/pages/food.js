@@ -1,10 +1,21 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import CollapsibleSection from "@/components/CollapsibleSection";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Modal,
   ModalContent,
@@ -77,6 +88,7 @@ export default function Food() {
   const [showQuantityModal, setShowQuantityModal] = useState(null);
   const [tempQuantity, setTempQuantity] = useState(1);
   const [expandedItem, setExpandedItem] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const [newFood, setNewFood] = useState({
     name: "",
@@ -238,22 +250,28 @@ export default function Food() {
   const handleSaveFood = async () => {
     if (!newFood.name.trim()) return;
 
-    if (editingItem) {
-      await updateFoodItem(editingItem.id, newFood);
-    } else {
-      await createFoodItem(newFood);
-    }
+    try {
+      if (editingItem) {
+        await updateFoodItem(editingItem.id, newFood);
+        toast.success("Food item updated");
+      } else {
+        await createFoodItem(newFood);
+        toast.success("Food item added");
+      }
 
-    setShowAddModal(false);
-    setEditingItem(null);
-    setNewFood({
-      name: "",
-      icon: "🥚",
-      color: "#f59e0b",
-      unit: "servings",
-      default_quantity: 1,
-      category: "protein",
-    });
+      setShowAddModal(false);
+      setEditingItem(null);
+      setNewFood({
+        name: "",
+        icon: "🥚",
+        color: "#f59e0b",
+        unit: "servings",
+        default_quantity: 1,
+        category: "protein",
+      });
+    } catch {
+      toast.error("Failed to save");
+    }
   };
 
   const handleEditFood = (item) => {
@@ -269,9 +287,15 @@ export default function Food() {
     setShowAddModal(true);
   };
 
-  const handleDeleteFood = async (id) => {
-    if (confirm("Delete this food item?")) {
-      await deleteFoodItem(id);
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await deleteFoodItem(deleteConfirm.id);
+      toast.success("Food item deleted");
+      setDeleteConfirm(null);
+    } catch {
+      toast.error("Failed to save");
+      setDeleteConfirm(null);
     }
   };
 
@@ -381,7 +405,7 @@ export default function Food() {
             }`}
           >
             <Plus className="w-4 h-4" />
-            Add
+            Add Food
           </button>
         </div>
 
@@ -938,7 +962,7 @@ export default function Food() {
             {editingItem && (
               <button
                 onClick={() => {
-                  handleDeleteFood(editingItem.id);
+                  setDeleteConfirm(editingItem);
                   setShowAddModal(false);
                 }}
                 className="px-4 py-3 rounded-xl bg-red-500/20 text-red-400 font-medium"
@@ -1015,6 +1039,33 @@ export default function Food() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation AlertDialog */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Delete food item?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              This will remove &quot;{deleteConfirm?.name}&quot; and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              onClick={handleConfirmDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

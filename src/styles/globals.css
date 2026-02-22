@@ -33,6 +33,10 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  --toast-bg: #ffffff;
+  --toast-fg: #1e293b;
+  --toast-border: #e2e8f0;
 }
 
 .dark {
@@ -63,6 +67,10 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+
+  --toast-bg: #1c1c1e;
+  --toast-fg: #f4f4f5;
+  --toast-border: #27272a;
 }
 
 * {
@@ -116,6 +124,7 @@ body {
 /* Custom scrollbar for dark theme */
 .dark ::-webkit-scrollbar {
   width: 4px;
+  height: 3px;
 }
 
 .dark ::-webkit-scrollbar-track {
@@ -129,6 +138,7 @@ body {
 /* Custom scrollbar for light theme */
 .light ::-webkit-scrollbar {
   width: 4px;
+  height: 3px;
 }
 
 .light ::-webkit-scrollbar-track {
@@ -137,6 +147,23 @@ body {
 
 .light ::-webkit-scrollbar-thumb {
   @apply bg-slate-300 rounded-full;
+}
+
+/* Thin scrollbar for table containers */
+.thin-scrollbar {
+  scrollbar-width: thin;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  height: 2px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dark .thin-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-iron-700/50 rounded-full;
+}
+.light .thin-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-300/50 rounded-full;
 }
 
 /* Input number spinner removal */

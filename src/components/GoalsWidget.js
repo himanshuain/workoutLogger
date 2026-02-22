@@ -1,0 +1,385 @@
+import { useState, useMemo, useEffect } from "react";
+import { useWorkout } from "@/context/WorkoutContext";
+import { toast } from "sonner";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+} from "@/components/ui/modal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Target, Plus, Trash2, Trophy, ChevronRight } from "lucide-react";
+
+const GOAL_TYPES = [
+  { id: "workout_days", label: "Workout days per week", icon: "💪", unit: "days/week", max: 7 },
+  { id: "habit_streak", label: "Complete all habits for X days", icon: "🔥", unit: "days" },
+  { id: "weight_target", label: "Reach target weight", icon: "⚖️", unit: "kg" },
+  { id: "custom", label: "Custom goal", icon: "🎯", unit: "" },
+];
+
+function GoalProgressRing({ progress, size = 44, strokeWidth = 4, isDarkMode }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clampedProgress = Math.min(Math.max(progress, 0), 100);
+  const offset = circumference - (clampedProgress / 100) * circumference;
+  const isComplete = clampedProgress >= 100;
+
+  return (
+    <div className="relative" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={isDarkMode ? "#27272a" : "#e2e8f0"}
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={isComplete ? "#22c55e" : isDarkMode ? "#fbbf24" : "#dc2626"}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        {isComplete ? (
+          <Trophy className="w-4 h-4 text-green-400" />
+        ) : (
+          <span className={`text-[10px] font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
+            {Math.round(clampedProgress)}%
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function getStorageKey(userId) {
+  return `logbook_goals_${userId}`;
+}
+
+function loadGoals(userId) {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(getStorageKey(userId));
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveGoals(userId, goals) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(getStorageKey(userId), JSON.stringify(goals));
+}
+
+export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habitHeatmapData = [], trackables = [], todayEntries = {} }) {
+  const { user } = useWorkout();
+  const [goals, setGoals] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [newGoal, setNewGoal] = useState({
+    type: "workout_days",
+    target: "",
+    name: "",
+  });
+
+  useEffect(() => {
+    if (user?.id) {
+      setGoals(loadGoals(user.id));
+    }
+  }, [user?.id]);
+
+  const goalProgress = useMemo(() => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+
+    return goals.map((goal) => {
+      let current = 0;
+      let target = goal.target;
+      let label = "";
+
+      switch (goal.type) {
+        case "workout_days": {
+          current = workoutHeatmapData.filter((d) => d.date >= weekStartStr).length;
+          label = `${current}/${target} days this week`;
+          break;
+        }
+        case "habit_streak": {
+          let streak = 0;
+          const sortedDates = [...habitHeatmapData].sort((a, b) => b.date.localeCompare(a.date));
+          let checkDate = new Date();
+          for (let i = 0; i < 365; i++) {
+            const y = checkDate.getFullYear();
+            const m = String(checkDate.getMonth() + 1).padStart(2, "0");
+            const d = String(checkDate.getDate()).padStart(2, "0");
+            const dateStr = `${y}-${m}-${d}`;
+            const totalHabits = trackables.length;
+            const completedHabits = sortedDates.find((x) => x.date === dateStr)?.count || 0;
+            if (totalHabits > 0 && completedHabits >= totalHabits) {
+              streak++;
+              checkDate.setDate(checkDate.getDate() - 1);
+            } else if (i > 0) {
+              break;
+            } else {
+              checkDate.setDate(checkDate.getDate() - 1);
+            }
+          }
+          current = streak;
+          label = `${current}/${target} day streak`;
+          break;
+        }
+        case "weight_target": {
+          label = `Target: ${target} kg`;
+          current = 0;
+          break;
+        }
+        case "custom": {
+          current = 0;
+          label = goal.name || "Custom goal";
+          break;
+        }
+      }
+
+      const progress = target > 0 ? (current / target) * 100 : 0;
+      return { ...goal, current, progress, label };
+    });
+  }, [goals, workoutHeatmapData, habitHeatmapData, trackables]);
+
+  const handleAddGoal = () => {
+    if (!newGoal.target || !user?.id) return;
+    const goalType = GOAL_TYPES.find((t) => t.id === newGoal.type);
+    const goal = {
+      id: Date.now().toString(),
+      type: newGoal.type,
+      target: parseFloat(newGoal.target),
+      name: newGoal.type === "custom" ? newGoal.name : goalType?.label,
+      icon: goalType?.icon || "🎯",
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...goals, goal];
+    setGoals(updated);
+    saveGoals(user.id, updated);
+    toast.success("Goal added");
+    setShowAddModal(false);
+    setNewGoal({ type: "workout_days", target: "", name: "" });
+  };
+
+  const handleDeleteGoal = (goalId) => {
+    const updated = goals.filter((g) => g.id !== goalId);
+    setGoals(updated);
+    saveGoals(user.id, updated);
+    toast.success("Goal removed");
+    setDeleteConfirm(null);
+  };
+
+  const selectedType = GOAL_TYPES.find((t) => t.id === newGoal.type);
+
+  return (
+    <div className={`rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
+      {/* Header */}
+      <div className={`p-4 flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? "bg-amber-500/20" : "bg-amber-100"}`}>
+            <Target className={`w-5 h-5 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
+          </div>
+          <div>
+            <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>Goals</h3>
+            <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              {goals.length === 0 ? "Set your targets" : `${goalProgress.filter((g) => g.progress >= 100).length}/${goals.length} completed`}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className={`p-2 rounded-xl ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Goals List */}
+      {goalProgress.length > 0 && (
+        <div className={`px-4 pb-4 space-y-2`}>
+          {goalProgress.map((goal) => (
+            <div
+              key={goal.id}
+              className={`flex items-center gap-3 p-3 rounded-xl ${
+                goal.progress >= 100
+                  ? isDarkMode
+                    ? "bg-green-500/10 border border-green-500/20"
+                    : "bg-green-50 border border-green-200"
+                  : isDarkMode
+                    ? "bg-iron-800/50"
+                    : "bg-slate-50"
+              }`}
+            >
+              <GoalProgressRing progress={goal.progress} isDarkMode={isDarkMode} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">{goal.icon}</span>
+                  <p className={`text-sm font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                    {goal.name}
+                  </p>
+                </div>
+                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                  {goal.label}
+                </p>
+              </div>
+              <button
+                onClick={() => setDeleteConfirm(goal)}
+                className={`p-1.5 rounded-lg ${isDarkMode ? "text-iron-600 hover:text-iron-400 hover:bg-iron-700" : "text-slate-400 hover:text-slate-600 hover:bg-slate-200"}`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {goals.length === 0 && (
+        <div className={`px-4 pb-4`}>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className={`w-full py-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 ${
+              isDarkMode ? "border-iron-700 text-iron-500" : "border-slate-300 text-slate-400"
+            }`}
+          >
+            <Target className="w-6 h-6" />
+            <span className="text-sm">Add your first goal</span>
+          </button>
+        </div>
+      )}
+
+      {/* Add Goal Modal */}
+      <Modal open={showAddModal} onOpenChange={setShowAddModal}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add Goal</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
+            {/* Goal Type */}
+            <div className="space-y-2">
+              {GOAL_TYPES.map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => setNewGoal({ ...newGoal, type: type.id })}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                    newGoal.type === type.id
+                      ? isDarkMode
+                        ? "bg-lift-primary/10 border border-lift-primary/30"
+                        : "bg-workout-primary/5 border border-workout-primary/30"
+                      : isDarkMode
+                        ? "bg-iron-800/50 border border-transparent"
+                        : "bg-slate-50 border border-transparent"
+                  }`}
+                >
+                  <span className="text-lg">{type.icon}</span>
+                  <span className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                    {type.label}
+                  </span>
+                  <ChevronRight className={`w-4 h-4 ml-auto ${
+                    newGoal.type === type.id
+                      ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                      : isDarkMode ? "text-iron-600" : "text-slate-400"
+                  }`} />
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Name */}
+            {newGoal.type === "custom" && (
+              <div>
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>Goal Name</label>
+                <input
+                  type="text"
+                  value={newGoal.name}
+                  onChange={(e) => setNewGoal({ ...newGoal, name: e.target.value })}
+                  placeholder="e.g., Run 5km, Read 30 minutes"
+                  className={`input-field ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
+                />
+              </div>
+            )}
+
+            {/* Target Value */}
+            <div>
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                Target {selectedType?.unit ? `(${selectedType.unit})` : ""}
+              </label>
+              <input
+                type="number"
+                value={newGoal.target}
+                onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
+                placeholder={newGoal.type === "workout_days" ? "e.g., 4" : newGoal.type === "habit_streak" ? "e.g., 30" : "e.g., 70"}
+                max={selectedType?.max}
+                className={`input-field text-center text-xl font-bold ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setShowAddModal(false)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddGoal}
+              disabled={!newGoal.target || (newGoal.type === "custom" && !newGoal.name)}
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold ${
+                isDarkMode
+                  ? "bg-lift-primary text-iron-950 disabled:opacity-40"
+                  : "bg-workout-primary text-white disabled:opacity-40"
+              }`}
+            >
+              Add Goal
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Remove Goal</AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              Remove &ldquo;{deleteConfirm?.name}&rdquo;? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDeleteGoal(deleteConfirm?.id)}
+              className="bg-red-600 text-white hover:bg-red-700 border-0"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

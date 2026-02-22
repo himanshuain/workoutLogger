@@ -21,8 +21,7 @@ const MONTH_NAMES = [
 ];
 const DAY_NAMES = ["S", "M", "T", "W", "T", "F", "S"];
 
-// Green color for completed
-const COMPLETED_COLOR = "#22c55e";
+const DEFAULT_COLOR = "#22c55e";
 
 export default function ActivityHeatmap({
   data = [],
@@ -32,7 +31,9 @@ export default function ActivityHeatmap({
   compact = false,
   isDarkMode = true,
   onDateClick = null,
+  color = null,
 }) {
+  const activeColor = color || DEFAULT_COLOR;
   const todayStr = getTodayLocal();
   const today = new Date();
 
@@ -164,12 +165,8 @@ export default function ActivityHeatmap({
         {label && (
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className={`p-2 rounded-xl ${
-                isDarkMode ? "bg-green-500/10" : "bg-green-500/10"
-              }`}>
-                <Calendar className={`w-4 h-4 ${
-                  isDarkMode ? "text-green-400" : "text-green-600"
-                }`} />
+              <div className="p-2 rounded-xl" style={{ backgroundColor: `${activeColor}1A` }}>
+                <Calendar className="w-4 h-4" style={{ color: activeColor }} />
               </div>
               <div>
                 <h3 className={`font-bold ${compact ? "text-sm" : "text-base"} ${
@@ -196,11 +193,8 @@ export default function ActivityHeatmap({
                   🔥 {stats.streak}
                 </div>
               )}
-              <div className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                isDarkMode 
-                  ? "bg-green-500/20 text-green-400" 
-                  : "bg-green-500/10 text-green-600"
-              }`}>
+              <div className="px-2.5 py-1 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: `${activeColor}33`, color: activeColor }}>
                 {stats.completed} days
               </div>
             </div>
@@ -217,13 +211,12 @@ export default function ActivityHeatmap({
                 onClick={() => handleYearChange(year)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   viewYear === year
-                    ? isDarkMode
-                      ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
-                      : "bg-green-500 text-white shadow-lg shadow-green-500/30"
+                    ? "text-white shadow-lg"
                     : isDarkMode
                       ? "bg-iron-800/80 text-iron-400 hover:bg-iron-700"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
+                style={viewYear === year ? { backgroundColor: activeColor, boxShadow: `0 4px 12px ${activeColor}4D` } : {}}
               >
                 {year}
               </motion.button>
@@ -327,13 +320,14 @@ export default function ActivityHeatmap({
                   onClick={() => onDateClick && !isFuture && onDateClick(dateStr, isCompleted)}
                   disabled={isFuture || !onDateClick}
                   className={`
-                    aspect-square rounded-xl flex items-center justify-center
-                    text-sm font-semibold transition-all duration-200 relative
+                    aspect-square rounded-xl flex flex-col items-center justify-center
+                    font-semibold transition-all duration-200 relative
                     ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}
+                    ${isToday ? "text-[10px]" : "text-sm"}
                   `}
                   style={{
                     backgroundColor: isCompleted
-                      ? COMPLETED_COLOR
+                      ? activeColor
                       : isToday
                         ? isDarkMode ? "#3f3f46" : "#e2e8f0"
                         : isDarkMode ? "#27272a" : "#f1f5f9",
@@ -343,7 +337,7 @@ export default function ActivityHeatmap({
                         ? isDarkMode ? "#fff" : "#1e293b"
                         : isDarkMode ? "#71717a" : "#94a3b8",
                     boxShadow: isCompleted 
-                      ? "0 2px 8px rgba(34, 197, 94, 0.4)" 
+                      ? `0 2px 8px ${activeColor}66`
                       : isToday && !isCompleted
                         ? isDarkMode 
                           ? "inset 0 0 0 2px #ef4444" 
@@ -354,9 +348,11 @@ export default function ActivityHeatmap({
                   {day}
                   {isToday && (
                     <span 
-                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                      style={{ backgroundColor: isCompleted ? "#fff" : "#ef4444" }}
-                    />
+                      className="text-[7px] font-bold leading-none"
+                      style={{ color: isCompleted ? "#fff" : "#ef4444" }}
+                    >
+                      TODAY
+                    </span>
                   )}
                 </motion.button>
               );
@@ -381,7 +377,7 @@ export default function ActivityHeatmap({
             <div className="flex items-center gap-2">
               <div 
                 className="w-4 h-4 rounded-md shadow-sm" 
-                style={{ backgroundColor: COMPLETED_COLOR, boxShadow: "0 2px 4px rgba(34, 197, 94, 0.3)" }} 
+                style={{ backgroundColor: activeColor, boxShadow: `0 2px 4px ${activeColor}4D` }} 
               />
               <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                 Completed

@@ -1,0 +1,16 @@
+---
+description: Install npm packages from the public registry directly
+alwaysApply: true
+---
+
+# Package Installation
+
+This is a personal project. Install new packages directly from the public npm registry:
+
+```bash
+npm install <package-name>
+```
+
+- Do NOT use private registries, scoped registries, or `.npmrc` overrides
+- Use the default public npm registry (`https://registry.npmjs.org/`)
+- Always install the latest version unless a specific version is required

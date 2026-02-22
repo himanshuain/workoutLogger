@@ -173,7 +173,7 @@ export default function History() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-24 w-full max-w-full">
+      <div className="px-4 py-4 w-full max-w-full">
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"}`}
         >

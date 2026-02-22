@@ -364,7 +364,7 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-24">
+      <div className="px-4 py-4">
         {/* Date Header */}
         <div className="flex items-center justify-between mb-6">
           <div>

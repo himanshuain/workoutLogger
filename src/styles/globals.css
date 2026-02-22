@@ -542,3 +542,8 @@ input[type="number"] {
   left: 0;
   right: 0;
 }
+
+/* Bottom nav clearance — ensures content never hides behind the fixed nav */
+.nav-clearance {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}

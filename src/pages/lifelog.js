@@ -705,7 +705,7 @@ export default function LifeLog() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-44">
+      <div className="px-4 py-4 pb-16">
         {/* Header */}
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${

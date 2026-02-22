@@ -306,7 +306,7 @@ export default function Layout({ children }) {
     >
       {/* Settings page: rendered directly, no scroll snap */}
       {isSettingsPage ? (
-        <main className="flex-1 overflow-auto pb-20">
+        <main className="flex-1 overflow-auto nav-clearance">
           <AnimatePresence mode="wait">
             <motion.div
               key="content-settings"
@@ -344,7 +344,7 @@ export default function Layout({ children }) {
                   minHeight: "100%",
                 }}
               >
-                <main className="flex-1 overflow-auto pb-20">
+                <main className="flex-1 overflow-auto nav-clearance">
                   {isActive ? (
                     <AnimatePresence mode="wait">
                       <motion.div

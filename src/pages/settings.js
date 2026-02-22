@@ -302,7 +302,7 @@ export default function Settings() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-24">
+      <div className="px-4 py-4">
         {/* Header - Sticky */}
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${

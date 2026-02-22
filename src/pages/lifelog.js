@@ -676,7 +676,7 @@ export default function LifeLog() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-36">
+      <div className="px-4 py-4 pb-44">
         {/* Header */}
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
@@ -701,9 +701,10 @@ export default function LifeLog() {
 
         {/* Floating bottom bar: Tab Switcher + Add button */}
         <div
-          className={`fixed bottom-[4.5rem] left-0 right-0 z-30 px-4 pb-2 pt-2 backdrop-blur-md ${
+          className={`fixed left-0 right-0 z-30 px-4 pb-2 pt-2 backdrop-blur-md ${
             isDarkMode ? "bg-iron-950/90" : "bg-slate-50/90"
           }`}
+          style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="flex items-center gap-2">
             <div className={`flex-1 flex gap-1.5 p-1 rounded-xl ${

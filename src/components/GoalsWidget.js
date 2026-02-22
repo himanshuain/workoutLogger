@@ -19,13 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Target, Plus, Trash2, Trophy, ChevronRight } from "lucide-react";
+import { Target, Plus, Trash2, Trophy, ChevronRight, Minus, Check } from "lucide-react";
 
 const GOAL_TYPES = [
-  { id: "workout_days", label: "Workout days per week", icon: "💪", unit: "days/week", max: 7 },
-  { id: "habit_streak", label: "Complete all habits for X days", icon: "🔥", unit: "days" },
-  { id: "weight_target", label: "Reach target weight", icon: "⚖️", unit: "kg" },
-  { id: "custom", label: "Custom goal", icon: "🎯", unit: "" },
+  { id: "workout_days", label: "Workout days per week", icon: "💪", unit: "days/week", max: 7, auto: true, desc: "Auto-tracks from your workouts" },
+  { id: "habit_streak", label: "Complete all habits for X days", icon: "🔥", unit: "days", auto: true, desc: "Auto-tracks from your habits" },
+  { id: "custom", label: "Custom goal", icon: "🎯", unit: "", auto: false, desc: "Tap to update progress manually" },
 ];
 
 function GoalProgressRing({ progress, size = 44, strokeWidth = 4, isDarkMode }) {
@@ -96,6 +95,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
   const [goals, setGoals] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingGoal, setEditingGoal] = useState(null);
   const [newGoal, setNewGoal] = useState({
     type: "workout_days",
     target: "",
@@ -118,6 +118,8 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
       let current = 0;
       let target = goal.target;
       let label = "";
+      const goalType = GOAL_TYPES.find((t) => t.id === goal.type);
+      const isAuto = goalType?.auto ?? false;
 
       switch (goal.type) {
         case "workout_days": {
@@ -127,16 +129,31 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
         }
         case "habit_streak": {
           let streak = 0;
-          const sortedDates = [...habitHeatmapData].sort((a, b) => b.date.localeCompare(a.date));
+          const completedDateMap = {};
+          habitHeatmapData.forEach((x) => {
+            completedDateMap[x.date] = x.count || 0;
+          });
+          const habits = trackables.filter((t) => t.name !== "Body Weight");
           let checkDate = new Date();
           for (let i = 0; i < 365; i++) {
             const y = checkDate.getFullYear();
             const m = String(checkDate.getMonth() + 1).padStart(2, "0");
             const d = String(checkDate.getDate()).padStart(2, "0");
             const dateStr = `${y}-${m}-${d}`;
-            const totalHabits = trackables.length;
-            const completedHabits = sortedDates.find((x) => x.date === dateStr)?.count || 0;
-            if (totalHabits > 0 && completedHabits >= totalHabits) {
+            const dayOfWeek = checkDate.getDay();
+
+            const scheduledHabits = habits.filter(
+              (t) => !t.active_days || t.active_days.includes(dayOfWeek),
+            );
+            const scheduledCount = scheduledHabits.length;
+
+            if (scheduledCount === 0) {
+              checkDate.setDate(checkDate.getDate() - 1);
+              continue;
+            }
+
+            const completedCount = completedDateMap[dateStr] || 0;
+            if (completedCount >= scheduledCount) {
               streak++;
               checkDate.setDate(checkDate.getDate() - 1);
             } else if (i > 0) {
@@ -149,20 +166,15 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           label = `${current}/${target} day streak`;
           break;
         }
-        case "weight_target": {
-          label = `Target: ${target} kg`;
-          current = 0;
-          break;
-        }
         case "custom": {
-          current = 0;
-          label = goal.name || "Custom goal";
+          current = goal.current || 0;
+          label = `${current}/${target}`;
           break;
         }
       }
 
       const progress = target > 0 ? (current / target) * 100 : 0;
-      return { ...goal, current, progress, label };
+      return { ...goal, current, progress, label, isAuto };
     });
   }, [goals, workoutHeatmapData, habitHeatmapData, trackables]);
 
@@ -175,6 +187,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
       target: parseFloat(newGoal.target),
       name: newGoal.type === "custom" ? newGoal.name : goalType?.label,
       icon: goalType?.icon || "🎯",
+      current: 0,
       createdAt: new Date().toISOString(),
     };
     const updated = [...goals, goal];
@@ -191,6 +204,14 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
     saveGoals(user.id, updated);
     toast.success("Goal removed");
     setDeleteConfirm(null);
+  };
+
+  const updateGoalProgress = (goalId, newCurrent) => {
+    const updated = goals.map((g) =>
+      g.id === goalId ? { ...g, current: Math.max(0, newCurrent) } : g,
+    );
+    setGoals(updated);
+    saveGoals(user.id, updated);
   };
 
   const selectedType = GOAL_TYPES.find((t) => t.id === newGoal.type);
@@ -224,7 +245,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           {goalProgress.map((goal) => (
             <div
               key={goal.id}
-              className={`flex items-center gap-3 p-3 rounded-xl ${
+              className={`rounded-xl overflow-hidden ${
                 goal.progress >= 100
                   ? isDarkMode
                     ? "bg-green-500/10 border border-green-500/20"
@@ -234,24 +255,58 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                     : "bg-slate-50"
               }`}
             >
-              <GoalProgressRing progress={goal.progress} isDarkMode={isDarkMode} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{goal.icon}</span>
-                  <p className={`text-sm font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                    {goal.name}
+              <div className="flex items-center gap-3 p-3">
+                <GoalProgressRing progress={goal.progress} isDarkMode={isDarkMode} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">{goal.icon}</span>
+                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                      {goal.name}
+                    </p>
+                  </div>
+                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    {goal.label}
                   </p>
                 </div>
-                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {goal.label}
-                </p>
+
+                {/* Manual update for custom goals */}
+                {!goal.isAuto && goal.progress < 100 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => updateGoalProgress(goal.id, (goal.current || 0) - 1)}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-iron-700 active:bg-iron-600" : "bg-slate-200 active:bg-slate-300"}`}
+                    >
+                      <Minus className={`w-3.5 h-3.5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
+                    </button>
+                    <button
+                      onClick={() => updateGoalProgress(goal.id, (goal.current || 0) + 1)}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-lift-primary/20 active:bg-lift-primary/30" : "bg-amber-100 active:bg-amber-200"}`}
+                    >
+                      <Plus className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`} />
+                    </button>
+                  </div>
+                )}
+
+                {goal.progress >= 100 && (
+                  <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                )}
+
+                <button
+                  onClick={() => setDeleteConfirm(goal)}
+                  className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-600 active:text-iron-400 active:bg-iron-700" : "text-slate-400 active:text-slate-600 active:bg-slate-200"}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button
-                onClick={() => setDeleteConfirm(goal)}
-                className={`p-1.5 rounded-lg ${isDarkMode ? "text-iron-600 hover:text-iron-400 hover:bg-iron-700" : "text-slate-400 hover:text-slate-600 hover:bg-slate-200"}`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+
+              {/* How it's tracked hint */}
+              {goal.isAuto && (
+                <div className={`px-3 pb-2 -mt-1`}>
+                  <p className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                    Auto-tracked
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -295,10 +350,15 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                   }`}
                 >
                   <span className="text-lg">{type.icon}</span>
-                  <span className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                    {type.label}
-                  </span>
-                  <ChevronRight className={`w-4 h-4 ml-auto ${
+                  <div className="flex-1">
+                    <span className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                      {type.label}
+                    </span>
+                    <p className={`text-[10px] mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                      {type.desc}
+                    </p>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 flex-shrink-0 ${
                     newGoal.type === type.id
                       ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
                       : isDarkMode ? "text-iron-600" : "text-slate-400"
@@ -330,7 +390,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                 type="number"
                 value={newGoal.target}
                 onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
-                placeholder={newGoal.type === "workout_days" ? "e.g., 4" : newGoal.type === "habit_streak" ? "e.g., 30" : "e.g., 70"}
+                placeholder={newGoal.type === "workout_days" ? "e.g., 4" : newGoal.type === "habit_streak" ? "e.g., 30" : "e.g., 10"}
                 max={selectedType?.max}
                 className={`input-field text-center text-xl font-bold ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
               />

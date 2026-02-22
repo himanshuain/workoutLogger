@@ -362,7 +362,7 @@ export default function Food() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 pb-24">
+      <div className="px-4 py-4 pb-32">
         {/* Header */}
         <div
           className={`sticky top-0 z-30 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1 flex items-center justify-between ${

@@ -12,13 +12,7 @@ import BodyWeightTracker from "@/components/BodyWeightTracker";
 import GoalsWidget from "@/components/GoalsWidget";
 import VolumeChart from "@/components/VolumeChart";
 import MuscleHeatmap from "@/components/MuscleHeatmap";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalTitle,
-  ModalBody,
-} from "@/components/ui/modal";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody } from "@/components/ui/modal";
 import {
   TrendingUp,
   Calendar,
@@ -73,17 +67,14 @@ export default function Progress() {
       const workoutByDate = {};
       const exerciseLogsByName = {};
 
-      sessions.forEach((session) => {
+      sessions.forEach(session => {
         if (session.status === "completed") {
           // Count completed sets per date
-          const completedSets = (session.set_logs || []).filter(
-            (log) => log.is_completed,
-          );
-          workoutByDate[session.date] =
-            (workoutByDate[session.date] || 0) + completedSets.length;
+          const completedSets = (session.set_logs || []).filter(log => log.is_completed);
+          workoutByDate[session.date] = (workoutByDate[session.date] || 0) + completedSets.length;
 
           // Group by exercise name
-          completedSets.forEach((log) => {
+          completedSets.forEach(log => {
             if (!exerciseLogsByName[log.exercise_name]) {
               exerciseLogsByName[log.exercise_name] = [];
             }
@@ -118,7 +109,7 @@ export default function Progress() {
       const workoutByDate = {};
       const byExerciseName = {};
 
-      logs.forEach((log) => {
+      logs.forEach(log => {
         workoutByDate[log.date] = (workoutByDate[log.date] || 0) + 1;
         if (!byExerciseName[log.exercise_name]) {
           byExerciseName[log.exercise_name] = [];
@@ -146,7 +137,7 @@ export default function Progress() {
       const habitByDate = {};
       const byTrackable = {};
 
-      entries.forEach((entry) => {
+      entries.forEach(entry => {
         if (entry.is_completed) {
           habitByDate[entry.date] = (habitByDate[entry.date] || 0) + 1;
         }
@@ -167,7 +158,7 @@ export default function Progress() {
           Object.entries(byTrackable).map(([id, dates]) => [
             id,
             Object.entries(dates).map(([date, count]) => ({ date, count })),
-          ]),
+          ])
         ),
       };
     },
@@ -181,7 +172,7 @@ export default function Progress() {
       const entries = await getFoodEntries(startDate, today);
       const byItem = {};
 
-      entries.forEach((entry) => {
+      entries.forEach(entry => {
         if (!byItem[entry.food_item_id]) {
           byItem[entry.food_item_id] = {};
         }
@@ -193,7 +184,7 @@ export default function Progress() {
           Object.entries(byItem).map(([id, dates]) => [
             id,
             Object.entries(dates).map(([date, count]) => ({ date, count })),
-          ]),
+          ])
         ),
       };
     },
@@ -212,14 +203,14 @@ export default function Progress() {
     const dataMap = new Map();
 
     // Add legacy exercise logs
-    (legacyExerciseData?.workoutData || []).forEach((item) => {
+    (legacyExerciseData?.workoutData || []).forEach(item => {
       if (item.date !== today) {
         dataMap.set(item.date, (dataMap.get(item.date) || 0) + item.count);
       }
     });
 
     // Add new workout sessions
-    (workoutSessionData?.workoutData || []).forEach((item) => {
+    (workoutSessionData?.workoutData || []).forEach(item => {
       if (item.date !== today) {
         dataMap.set(item.date, (dataMap.get(item.date) || 0) + item.count);
       }
@@ -234,43 +225,31 @@ export default function Progress() {
       date,
       count,
     }));
-  }, [
-    legacyExerciseData?.workoutData,
-    workoutSessionData?.workoutData,
-    todaySetLogs,
-    today,
-  ]);
+  }, [legacyExerciseData?.workoutData, workoutSessionData?.workoutData, todaySetLogs, today]);
 
   // Merge exercise logs from both systems
   const exerciseLogsByName = useMemo(() => {
     const merged = { ...(legacyExerciseData?.exerciseLogsByName || {}) };
 
     // Add logs from new system
-    Object.entries(workoutSessionData?.exerciseLogsByName || {}).forEach(
-      ([name, logs]) => {
-        if (!merged[name]) {
-          merged[name] = [];
-        }
-        merged[name] = [...merged[name], ...logs];
-      },
-    );
+    Object.entries(workoutSessionData?.exerciseLogsByName || {}).forEach(([name, logs]) => {
+      if (!merged[name]) {
+        merged[name] = [];
+      }
+      merged[name] = [...merged[name], ...logs];
+    });
 
     return merged;
-  }, [
-    legacyExerciseData?.exerciseLogsByName,
-    workoutSessionData?.exerciseLogsByName,
-  ]);
+  }, [legacyExerciseData?.exerciseLogsByName, workoutSessionData?.exerciseLogsByName]);
 
   const habitHeatmapData = useMemo(() => {
     const dataMap = new Map();
-    (habitData?.habitByDate || []).forEach((item) => {
+    (habitData?.habitByDate || []).forEach(item => {
       if (item.date !== today) {
         dataMap.set(item.date, item.count);
       }
     });
-    const todayCount = Object.values(todayEntries).filter(
-      (e) => e.is_completed,
-    ).length;
+    const todayCount = Object.values(todayEntries).filter(e => e.is_completed).length;
     if (todayCount > 0) {
       dataMap.set(today, todayCount);
     }
@@ -283,11 +262,11 @@ export default function Progress() {
   // Add today's entries to habit data by trackable
   const habitDataByTrackable = useMemo(() => {
     const data = { ...(habitData?.habitDataByTrackable || {}) };
-    trackables.forEach((t) => {
+    trackables.forEach(t => {
       const todayEntry = todayEntries[t.id];
       if (todayEntry?.is_completed) {
         if (!data[t.id]) data[t.id] = [];
-        const existing = data[t.id].find((d) => d.date === today);
+        const existing = data[t.id].find(d => d.date === today);
         if (!existing) {
           data[t.id] = [...data[t.id], { date: today, count: 1 }];
         }
@@ -297,8 +276,8 @@ export default function Progress() {
   }, [habitData?.habitDataByTrackable, todayEntries, trackables, today]);
 
   const habitTrackables = useMemo(
-    () => trackables.filter((t) => t.name !== "Body Weight"),
-    [trackables],
+    () => trackables.filter(t => t.name !== "Body Weight"),
+    [trackables]
   );
 
   // Add today's food entries
@@ -306,12 +285,9 @@ export default function Progress() {
     const data = { ...(foodData?.foodDataByItem || {}) };
     Object.entries(todayFoodEntries).forEach(([itemId, entry]) => {
       if (!data[itemId]) data[itemId] = [];
-      const existing = data[itemId].find((d) => d.date === today);
+      const existing = data[itemId].find(d => d.date === today);
       if (!existing) {
-        data[itemId] = [
-          ...data[itemId],
-          { date: today, count: entry.quantity || 1 },
-        ];
+        data[itemId] = [...data[itemId], { date: today, count: entry.quantity || 1 }];
       }
     });
     return data;
@@ -329,22 +305,18 @@ export default function Progress() {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}`;
 
-    const workoutsThisMonth = workoutHeatmapData.filter((d) =>
-      d.date.startsWith(thisMonth),
-    ).length;
-    const workoutsLastMonth = workoutHeatmapData.filter((d) =>
-      d.date.startsWith(lastMonthStr),
+    const workoutsThisMonth = workoutHeatmapData.filter(d => d.date.startsWith(thisMonth)).length;
+    const workoutsLastMonth = workoutHeatmapData.filter(d =>
+      d.date.startsWith(lastMonthStr)
     ).length;
 
     // Current streak calculation
     let streak = 0;
-    const sortedDates = [...workoutHeatmapData].sort((a, b) =>
-      b.date.localeCompare(a.date),
-    );
+    const sortedDates = [...workoutHeatmapData].sort((a, b) => b.date.localeCompare(a.date));
     let checkDate = new Date();
     for (let i = 0; i < 365; i++) {
       const dateStr = getLocalDateStr(checkDate);
-      const hasActivity = sortedDates.some((d) => d.date === dateStr);
+      const hasActivity = sortedDates.some(d => d.date === dateStr);
       if (hasActivity) {
         streak++;
         checkDate.setDate(checkDate.getDate() - 1);
@@ -356,7 +328,7 @@ export default function Progress() {
     }
 
     // Calculate habits completed today
-    const habitsCompletedToday = Object.values(todayEntries).filter((e) => e.is_completed).length;
+    const habitsCompletedToday = Object.values(todayEntries).filter(e => e.is_completed).length;
     const habitsTotal = habitTrackables.length;
 
     // Calculate food logged today
@@ -378,29 +350,32 @@ export default function Progress() {
   // Calculate monthly history data for all metrics (table structure)
   const monthlyHistoryData = useMemo(() => {
     // Get all unique months from all data sources
-    const allDates = [
-      ...workoutHeatmapData.map(d => d.date),
-      ...habitHeatmapData.map(d => d.date),
-    ];
-    
-    if (allDates.length === 0) return { months: [], habitsByMonth: {}, foodByMonth: {}, workoutsByMonth: {} };
+    const allDates = [...workoutHeatmapData.map(d => d.date), ...habitHeatmapData.map(d => d.date)];
+
+    if (allDates.length === 0)
+      return { months: [], habitsByMonth: {}, foodByMonth: {}, workoutsByMonth: {} };
 
     // Find the earliest date
     const sortedDates = allDates.sort();
     const earliestDate = new Date(sortedDates[0]);
     const now = new Date();
-    
+
     const months = [];
     let currentDate = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
-    
+
     while (currentDate <= now) {
       const monthStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
       const monthShort = currentDate.toLocaleDateString("en-US", { month: "short" });
       const monthYear = currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
       const monthYearShort = `${monthShort} '${String(currentDate.getFullYear()).slice(-2)}`;
-      const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-      const isCurrent = monthStr === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      
+      const daysInMonth = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        0
+      ).getDate();
+      const isCurrent =
+        monthStr === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
       months.push({
         month: monthStr,
         monthShort,
@@ -409,13 +384,13 @@ export default function Progress() {
         daysInMonth,
         isCurrent,
       });
-      
+
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
-    
+
     // Reverse to show most recent first
     const reversedMonths = months.reverse();
-    
+
     // Calculate workouts by month
     const workoutsByMonth = {};
     reversedMonths.forEach(({ month, daysInMonth }) => {
@@ -423,13 +398,13 @@ export default function Progress() {
       const totalSets = workoutHeatmapData
         .filter(d => d.date.startsWith(month))
         .reduce((sum, d) => sum + d.count, 0);
-      workoutsByMonth[month] = { 
-        days: workoutDays, 
+      workoutsByMonth[month] = {
+        days: workoutDays,
         sets: totalSets,
-        rate: Math.round((workoutDays / daysInMonth) * 100)
+        rate: Math.round((workoutDays / daysInMonth) * 100),
       };
     });
-    
+
     // Calculate habits by month for each trackable
     const habitsByMonth = {};
     habitTrackables.forEach(t => {
@@ -439,11 +414,11 @@ export default function Progress() {
         const completedDays = habitDates.filter(d => d.date.startsWith(month)).length;
         habitsByMonth[t.id][month] = {
           days: completedDays,
-          rate: Math.round((completedDays / daysInMonth) * 100)
+          rate: Math.round((completedDays / daysInMonth) * 100),
         };
       });
     });
-    
+
     // Calculate food by month for each food item
     const foodByMonth = {};
     foodItems.forEach(item => {
@@ -453,35 +428,42 @@ export default function Progress() {
         const loggedDays = itemDates.filter(d => d.date.startsWith(month)).length;
         foodByMonth[item.id][month] = {
           days: loggedDays,
-          rate: Math.round((loggedDays / daysInMonth) * 100)
+          rate: Math.round((loggedDays / daysInMonth) * 100),
         };
       });
     });
-    
+
     return { months: reversedMonths, habitsByMonth, foodByMonth, workoutsByMonth };
-  }, [workoutHeatmapData, habitHeatmapData, habitTrackables, habitDataByTrackable, foodItems, foodDataByItem]);
+  }, [
+    workoutHeatmapData,
+    habitHeatmapData,
+    habitTrackables,
+    habitDataByTrackable,
+    foodItems,
+    foodDataByItem,
+  ]);
 
   // Calculate daily history data for selected month
   const dailyHistoryData = useMemo(() => {
     if (!selectedMonth) return { days: [], habitsByDay: {}, foodByDay: {}, workoutsByDay: {} };
-    
+
     const [year, month] = selectedMonth.split("-").map(Number);
     const daysInMonth = new Date(year, month, 0).getDate();
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const isCurrentMonth = selectedMonth === currentMonth;
     const todayDate = now.getDate();
-    
+
     const days = [];
     for (let d = daysInMonth; d >= 1; d--) {
       // Skip future days in current month
       if (isCurrentMonth && d > todayDate) continue;
-      
+
       const dateStr = `${selectedMonth}-${String(d).padStart(2, "0")}`;
       const dateObj = new Date(year, month - 1, d);
       const dayName = dateObj.toLocaleDateString("en-US", { weekday: "short" });
       const isToday = dateStr === today;
-      
+
       days.push({
         date: dateStr,
         dayNum: d,
@@ -489,14 +471,16 @@ export default function Progress() {
         isToday,
       });
     }
-    
+
     // Calculate workouts by day
     const workoutsByDay = {};
     days.forEach(({ date }) => {
       const dayData = workoutHeatmapData.find(d => d.date === date);
-      workoutsByDay[date] = dayData ? { count: dayData.count, hasActivity: true } : { count: 0, hasActivity: false };
+      workoutsByDay[date] = dayData
+        ? { count: dayData.count, hasActivity: true }
+        : { count: 0, hasActivity: false };
     });
-    
+
     // Calculate habits by day for each trackable
     const habitsByDay = {};
     habitTrackables.forEach(t => {
@@ -512,7 +496,7 @@ export default function Progress() {
         }
       });
     });
-    
+
     // Calculate food by day for each food item
     const foodByDay = {};
     foodItems.forEach(item => {
@@ -528,9 +512,19 @@ export default function Progress() {
         }
       });
     });
-    
+
     return { days, habitsByDay, foodByDay, workoutsByDay };
-  }, [selectedMonth, workoutHeatmapData, habitTrackables, habitDataByTrackable, foodItems, foodDataByItem, today, todayEntries, todayFoodEntries]);
+  }, [
+    selectedMonth,
+    workoutHeatmapData,
+    habitTrackables,
+    habitDataByTrackable,
+    foodItems,
+    foodDataByItem,
+    today,
+    todayEntries,
+    todayFoodEntries,
+  ]);
 
   if (isLoading) {
     return (
@@ -558,9 +552,7 @@ export default function Progress() {
           <button
             onClick={() => router.push("/auth")}
             className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
-              isDarkMode
-                ? "bg-lift-primary text-iron-950"
-                : "bg-workout-primary text-white"
+              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
             }`}
           >
             Sign In
@@ -579,18 +571,10 @@ export default function Progress() {
             isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
           }`}
         >
-          <h2
-            className={`text-xl font-bold ${
-              isDarkMode ? "text-iron-100" : "text-slate-800"
-            }`}
-          >
+          <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
             Progress
           </h2>
-          <p
-            className={`text-sm mt-1 ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
-          >
+          <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
             Your activity over time
           </p>
         </div>
@@ -607,16 +591,24 @@ export default function Progress() {
                     : "bg-gradient-to-r from-workout-primary/10 to-workout-primary/5 border-workout-primary/30"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
-                }`}>
-                  <Flame className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+                  }`}
+                >
+                  <Flame
+                    className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                  />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
+                  <p
+                    className={`text-2xl font-bold ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                  >
                     {stats.currentStreak}
                   </p>
-                  <p className={`text-xs ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>day streak</p>
+                  <p className={`text-xs ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                    day streak
+                  </p>
                 </div>
               </div>
 
@@ -626,16 +618,24 @@ export default function Progress() {
                   isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                }`}>
-                  <Calendar className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                  }`}
+                >
+                  <Calendar
+                    className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                  />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                  <p
+                    className={`text-2xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                  >
                     {stats.workoutsThisMonth}
                   </p>
-                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>this month</p>
+                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    this month
+                  </p>
                 </div>
               </div>
 
@@ -645,16 +645,24 @@ export default function Progress() {
                   isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                }`}>
-                  <TrendingUp className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                  }`}
+                >
+                  <TrendingUp
+                    className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                  />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                  <p
+                    className={`text-2xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                  >
                     {stats.workoutsLastMonth}
                   </p>
-                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>last month</p>
+                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    last month
+                  </p>
                 </div>
               </div>
 
@@ -664,16 +672,24 @@ export default function Progress() {
                   isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                }`}>
-                  <Target className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                  }`}
+                >
+                  <Target
+                    className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                  />
                 </div>
                 <div>
-                  <p className={`text-2xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                  <p
+                    className={`text-2xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                  >
                     {stats.totalWorkouts}
                   </p>
-                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>total days</p>
+                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    total days
+                  </p>
                 </div>
               </div>
             </div>
@@ -694,7 +710,7 @@ export default function Progress() {
               days={7}
               isDarkMode={isDarkMode}
             />
-            
+
             {/* View All-Time History Button */}
             {monthlyHistoryData.months?.length > 0 && (
               <button
@@ -740,10 +756,7 @@ export default function Progress() {
           />
 
           {/* Muscle Heatmap */}
-          <MuscleHeatmap
-            exerciseLogsByName={exerciseLogsByName}
-            isDarkMode={isDarkMode}
-          />
+          <MuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />
 
           {/* Progressive Overload */}
           {Object.keys(exerciseLogsByName).length > 0 && (
@@ -773,29 +786,37 @@ export default function Progress() {
                 ))}
             </CollapsibleSection>
           )}
-
         </div>
       </div>
 
       {/* All-Time History Modal - Table Structure */}
-      <Modal open={showMonthlyHistory} onOpenChange={(open) => {
-        setShowMonthlyHistory(open);
-        if (!open) {
-          setHistoryViewMode("monthly");
-          setSelectedMonth(null);
-        }
-      }}>
-        <ModalContent className={`max-w-[95vw] w-full max-h-[85vh] ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}`}>
+      <Modal
+        open={showMonthlyHistory}
+        onOpenChange={open => {
+          setShowMonthlyHistory(open);
+          if (!open) {
+            setHistoryViewMode("monthly");
+            setSelectedMonth(null);
+          }
+        }}
+      >
+        <ModalContent
+          className={`max-w-[95vw] w-full max-h-[85vh] overflow-hidden ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}`}
+        >
           <ModalHeader className="pb-3 border-b border-iron-800/50">
             <div className="flex flex-col gap-3 w-full pr-8">
               {/* Title Row */}
               <div className="flex items-center justify-between">
-                <ModalTitle className={`text-lg ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                <ModalTitle
+                  className={`text-lg ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                >
                   All-Time Overview
                 </ModalTitle>
-                
+
                 {/* View Toggle - Compact Pills */}
-                <div className={`flex rounded-full p-0.5 ${isDarkMode ? "bg-iron-800/80" : "bg-slate-100"}`}>
+                <div
+                  className={`flex rounded-full p-0.5 ${isDarkMode ? "bg-iron-800/80" : "bg-slate-100"}`}
+                >
                   <button
                     onClick={() => {
                       setHistoryViewMode("monthly");
@@ -834,51 +855,78 @@ export default function Progress() {
                   </button>
                 </div>
               </div>
-              
+
               {/* Subtitle / Month Selector Row */}
               <div className="flex items-center justify-between">
                 <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {monthlyHistoryData.months?.length > 0 && `Since ${monthlyHistoryData.months[monthlyHistoryData.months.length - 1]?.monthYear}`}
+                  {monthlyHistoryData.months?.length > 0 &&
+                    `Since ${monthlyHistoryData.months[monthlyHistoryData.months.length - 1]?.monthYear}`}
                 </p>
-                
+
                 {/* Month Navigator (Daily View Only) */}
                 {historyViewMode === "daily" && monthlyHistoryData.months?.length > 0 && (
-                  <div className={`flex items-center gap-1 rounded-full px-1 py-0.5 ${isDarkMode ? "bg-iron-800/60" : "bg-slate-100"}`}>
+                  <div
+                    className={`flex items-center gap-1 rounded-full px-1 py-0.5 ${isDarkMode ? "bg-iron-800/60" : "bg-slate-100"}`}
+                  >
                     <button
                       onClick={() => {
-                        const currentIndex = monthlyHistoryData.months.findIndex(m => m.month === selectedMonth);
+                        const currentIndex = monthlyHistoryData.months.findIndex(
+                          m => m.month === selectedMonth
+                        );
                         if (currentIndex < monthlyHistoryData.months.length - 1) {
                           setSelectedMonth(monthlyHistoryData.months[currentIndex + 1].month);
                         }
                       }}
-                      disabled={monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) >= monthlyHistoryData.months.length - 1}
+                      disabled={
+                        monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) >=
+                        monthlyHistoryData.months.length - 1
+                      }
                       className={`p-1.5 rounded-full transition-all ${
-                        monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) >= monthlyHistoryData.months.length - 1
-                          ? isDarkMode ? "text-iron-700 cursor-not-allowed" : "text-slate-300 cursor-not-allowed"
-                          : isDarkMode ? "text-iron-400 hover:text-iron-200 hover:bg-iron-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
+                        monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) >=
+                        monthlyHistoryData.months.length - 1
+                          ? isDarkMode
+                            ? "text-iron-700 cursor-not-allowed"
+                            : "text-slate-300 cursor-not-allowed"
+                          : isDarkMode
+                            ? "text-iron-400 hover:text-iron-200 hover:bg-iron-700"
+                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
                       }`}
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    
-                    <span className={`px-3 py-1 text-xs font-semibold min-w-[80px] text-center ${
-                      isDarkMode ? "text-iron-200" : "text-slate-700"
-                    }`}>
-                      {selectedMonth && new Date(selectedMonth + "-01").toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold min-w-[80px] text-center ${
+                        isDarkMode ? "text-iron-200" : "text-slate-700"
+                      }`}
+                    >
+                      {selectedMonth &&
+                        new Date(selectedMonth + "-01").toLocaleDateString("en-US", {
+                          month: "short",
+                          year: "numeric",
+                        })}
                     </span>
-                    
+
                     <button
                       onClick={() => {
-                        const currentIndex = monthlyHistoryData.months.findIndex(m => m.month === selectedMonth);
+                        const currentIndex = monthlyHistoryData.months.findIndex(
+                          m => m.month === selectedMonth
+                        );
                         if (currentIndex > 0) {
                           setSelectedMonth(monthlyHistoryData.months[currentIndex - 1].month);
                         }
                       }}
-                      disabled={monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) <= 0}
+                      disabled={
+                        monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) <= 0
+                      }
                       className={`p-1.5 rounded-full transition-all ${
                         monthlyHistoryData.months.findIndex(m => m.month === selectedMonth) <= 0
-                          ? isDarkMode ? "text-iron-700 cursor-not-allowed" : "text-slate-300 cursor-not-allowed"
-                          : isDarkMode ? "text-iron-400 hover:text-iron-200 hover:bg-iron-700" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
+                          ? isDarkMode
+                            ? "text-iron-700 cursor-not-allowed"
+                            : "text-slate-300 cursor-not-allowed"
+                          : isDarkMode
+                            ? "text-iron-400 hover:text-iron-200 hover:bg-iron-700"
+                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
                       }`}
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -888,8 +936,8 @@ export default function Progress() {
               </div>
             </div>
           </ModalHeader>
-          <ModalBody className="p-0 overflow-hidden">
-            <div className="overflow-auto max-h-[60vh]">
+          <ModalBody className="p-0 overflow-hidden rounded-b-2xl">
+            <div className="overflow-auto max-h-[60vh] p-1">
               {historyViewMode === "monthly" ? (
                 /* Monthly View Table */
                 <table className="w-full text-sm">
@@ -944,15 +992,25 @@ export default function Progress() {
 
                   <tbody>
                     {/* Workouts Row */}
-                    <tr className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}>
-                      <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                    <tr
+                      className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
+                    >
+                      <td
+                        className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}
+                      >
                         <div className="flex items-center gap-1.5 max-w-[100px]">
-                          <div className={`w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center ${
-                            isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
-                          }`}>
-                            <Dumbbell className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                          <div
+                            className={`w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center ${
+                              isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+                            }`}
+                          >
+                            <Dumbbell
+                              className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                            />
                           </div>
-                          <span className={`font-medium text-xs leading-tight ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                          <span
+                            className={`font-medium text-xs leading-tight ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                          >
                             Workouts
                           </span>
                         </div>
@@ -985,25 +1043,34 @@ export default function Progress() {
                                 {data.days}
                               </span>
                             ) : (
-                              <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                              <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>
+                                —
+                              </span>
                             )}
                           </td>
                         );
                       })}
                       <td className="p-3 text-center">
-                        <span className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                          {Object.values(monthlyHistoryData.workoutsByMonth || {}).reduce((sum, d) => sum + d.days, 0)}
+                        <span
+                          className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                        >
+                          {Object.values(monthlyHistoryData.workoutsByMonth || {}).reduce(
+                            (sum, d) => sum + d.days,
+                            0
+                          )}
                         </span>
                       </td>
                     </tr>
 
                     {/* Habits Rows */}
-                    {habitTrackables.map((habit) => (
+                    {habitTrackables.map(habit => (
                       <tr
                         key={habit.id}
                         className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
                       >
-                        <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                        <td
+                          className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}
+                        >
                           <div className="flex items-center gap-1.5 max-w-[100px]">
                             <div
                               className="w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center text-xs"
@@ -1011,7 +1078,10 @@ export default function Progress() {
                             >
                               {habit.icon}
                             </div>
-                            <span className={`font-medium leading-tight ${habit.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`} style={{ wordBreak: "break-word" }}>
+                            <span
+                              className={`font-medium leading-tight ${habit.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                              style={{ wordBreak: "break-word" }}
+                            >
                               {habit.name}
                             </span>
                           </div>
@@ -1036,31 +1106,42 @@ export default function Progress() {
                               {data?.days > 0 ? (
                                 <span
                                   className="inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold text-xs"
-                                  style={{ backgroundColor: `${habit.color}30`, color: habit.color }}
+                                  style={{
+                                    backgroundColor: `${habit.color}30`,
+                                    color: habit.color,
+                                  }}
                                 >
                                   {data.days}
                                 </span>
                               ) : (
-                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>
+                                  —
+                                </span>
                               )}
                             </td>
                           );
                         })}
                         <td className="p-3 text-center">
-                          <span className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                            {Object.values(monthlyHistoryData.habitsByMonth?.[habit.id] || {}).reduce((sum, d) => sum + d.days, 0)}
+                          <span
+                            className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                          >
+                            {Object.values(
+                              monthlyHistoryData.habitsByMonth?.[habit.id] || {}
+                            ).reduce((sum, d) => sum + d.days, 0)}
                           </span>
                         </td>
                       </tr>
                     ))}
 
                     {/* Food Rows */}
-                    {foodItems.map((food) => (
+                    {foodItems.map(food => (
                       <tr
                         key={food.id}
                         className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
                       >
-                        <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                        <td
+                          className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}
+                        >
                           <div className="flex items-center gap-1.5 max-w-[100px]">
                             <div
                               className="w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center text-xs"
@@ -1068,7 +1149,10 @@ export default function Progress() {
                             >
                               {food.icon}
                             </div>
-                            <span className={`font-medium leading-tight ${food.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`} style={{ wordBreak: "break-word" }}>
+                            <span
+                              className={`font-medium leading-tight ${food.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                              style={{ wordBreak: "break-word" }}
+                            >
                               {food.name}
                             </span>
                           </div>
@@ -1098,14 +1182,21 @@ export default function Progress() {
                                   {data.days}
                                 </span>
                               ) : (
-                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>
+                                  —
+                                </span>
                               )}
                             </td>
                           );
                         })}
                         <td className="p-3 text-center">
-                          <span className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                            {Object.values(monthlyHistoryData.foodByMonth?.[food.id] || {}).reduce((sum, d) => sum + d.days, 0)}
+                          <span
+                            className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                          >
+                            {Object.values(monthlyHistoryData.foodByMonth?.[food.id] || {}).reduce(
+                              (sum, d) => sum + d.days,
+                              0
+                            )}
                           </span>
                         </td>
                       </tr>
@@ -1175,15 +1266,25 @@ export default function Progress() {
 
                   <tbody>
                     {/* Workouts Row */}
-                    <tr className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}>
-                      <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                    <tr
+                      className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
+                    >
+                      <td
+                        className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}
+                      >
                         <div className="flex items-center gap-1.5 max-w-[100px]">
-                          <div className={`w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center ${
-                            isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
-                          }`}>
-                            <Dumbbell className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                          <div
+                            className={`w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center ${
+                              isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+                            }`}
+                          >
+                            <Dumbbell
+                              className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                            />
                           </div>
-                          <span className={`font-medium text-xs leading-tight ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                          <span
+                            className={`font-medium text-xs leading-tight ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                          >
                             Workouts
                           </span>
                         </div>
@@ -1204,33 +1305,43 @@ export default function Progress() {
                             {data?.hasActivity ? (
                               <span
                                 className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${
-                                  isDarkMode
-                                    ? "bg-lift-primary/20"
-                                    : "bg-workout-primary/20"
+                                  isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
                                 }`}
                               >
-                                <Check className={`w-4 h-4 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                                <Check
+                                  className={`w-4 h-4 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                                />
                               </span>
                             ) : (
-                              <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                              <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>
+                                —
+                              </span>
                             )}
                           </td>
                         );
                       })}
                       <td className="p-3 text-center">
-                        <span className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                          {Object.values(dailyHistoryData.workoutsByDay || {}).filter(d => d.hasActivity).length}
+                        <span
+                          className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                        >
+                          {
+                            Object.values(dailyHistoryData.workoutsByDay || {}).filter(
+                              d => d.hasActivity
+                            ).length
+                          }
                         </span>
                       </td>
                     </tr>
 
                     {/* Habits Rows */}
-                    {habitTrackables.map((habit) => (
+                    {habitTrackables.map(habit => (
                       <tr
                         key={habit.id}
                         className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
                       >
-                        <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                        <td
+                          className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}
+                        >
                           <div className="flex items-center gap-1.5 max-w-[100px]">
                             <div
                               className="w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center text-xs"
@@ -1238,7 +1349,10 @@ export default function Progress() {
                             >
                               {habit.icon}
                             </div>
-                            <span className={`font-medium leading-tight ${habit.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`} style={{ wordBreak: "break-word" }}>
+                            <span
+                              className={`font-medium leading-tight ${habit.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                              style={{ wordBreak: "break-word" }}
+                            >
                               {habit.name}
                             </span>
                           </div>
@@ -1264,26 +1378,36 @@ export default function Progress() {
                                   <Check className="w-4 h-4" style={{ color: habit.color }} />
                                 </span>
                               ) : (
-                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>
+                                  —
+                                </span>
                               )}
                             </td>
                           );
                         })}
                         <td className="p-3 text-center">
-                          <span className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                            {Object.values(dailyHistoryData.habitsByDay?.[habit.id] || {}).filter(Boolean).length}
+                          <span
+                            className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                          >
+                            {
+                              Object.values(dailyHistoryData.habitsByDay?.[habit.id] || {}).filter(
+                                Boolean
+                              ).length
+                            }
                           </span>
                         </td>
                       </tr>
                     ))}
 
                     {/* Food Rows */}
-                    {foodItems.map((food) => (
+                    {foodItems.map(food => (
                       <tr
                         key={food.id}
                         className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
                       >
-                        <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                        <td
+                          className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}
+                        >
                           <div className="flex items-center gap-1.5 max-w-[100px]">
                             <div
                               className="w-6 h-6 min-w-[24px] rounded-md flex items-center justify-center text-xs"
@@ -1291,7 +1415,10 @@ export default function Progress() {
                             >
                               {food.icon}
                             </div>
-                            <span className={`font-medium leading-tight ${food.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`} style={{ wordBreak: "break-word" }}>
+                            <span
+                              className={`font-medium leading-tight ${food.name.length > 12 ? "text-[10px]" : "text-xs"} ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                              style={{ wordBreak: "break-word" }}
+                            >
                               {food.name}
                             </span>
                           </div>
@@ -1317,14 +1444,22 @@ export default function Progress() {
                                   <Check className="w-4 h-4" style={{ color: food.color }} />
                                 </span>
                               ) : (
-                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                                <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>
+                                  —
+                                </span>
                               )}
                             </td>
                           );
                         })}
                         <td className="p-3 text-center">
-                          <span className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                            {Object.values(dailyHistoryData.foodByDay?.[food.id] || {}).filter(Boolean).length}
+                          <span
+                            className={`text-xs font-bold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                          >
+                            {
+                              Object.values(dailyHistoryData.foodByDay?.[food.id] || {}).filter(
+                                Boolean
+                              ).length
+                            }
                           </span>
                         </td>
                       </tr>
@@ -1334,7 +1469,9 @@ export default function Progress() {
               )}
 
               {monthlyHistoryData.months?.length === 0 && (
-                <div className={`text-center py-8 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                <div
+                  className={`text-center py-8 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                >
                   No history data available yet
                 </div>
               )}

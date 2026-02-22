@@ -5,6 +5,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import HabitPills from "@/components/HabitPills";
+import GoalsWidget from "@/components/GoalsWidget";
 import DayPicker from "@/components/DayPicker";
 import {
   Modal,
@@ -95,6 +96,7 @@ export default function Home() {
     deleteSetLog,
     deleteWorkoutSession,
     updateSetLogData,
+    getTrackingEntries,
   } = useWorkout();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -142,6 +144,40 @@ export default function Home() {
     },
     enabled: !!user,
   });
+
+  // Goals data: workout days and habit completions for the last 30 days
+  const { data: goalsWorkoutData = [] } = useQuery({
+    queryKey: ["goalsWorkoutData", user?.id, recentStart, today],
+    queryFn: async () => {
+      const sessions = await getWorkoutSessions(recentStart, today);
+      const byDate = {};
+      sessions.filter((s) => s.status === "completed").forEach((s) => {
+        byDate[s.date] = (byDate[s.date] || 0) + 1;
+      });
+      return Object.entries(byDate).map(([date, count]) => ({ date, count }));
+    },
+    enabled: !!user,
+  });
+
+  const { data: goalsHabitData = [] } = useQuery({
+    queryKey: ["goalsHabitData", user?.id, recentStart, today],
+    queryFn: async () => {
+      const entries = await getTrackingEntries(recentStart, today);
+      const byDate = {};
+      entries.forEach((e) => {
+        if (e.is_completed) {
+          byDate[e.date] = (byDate[e.date] || 0) + 1;
+        }
+      });
+      return Object.entries(byDate).map(([date, count]) => ({ date, count }));
+    },
+    enabled: !!user,
+  });
+
+  const habitTrackables = useMemo(
+    () => trackables.filter((t) => t.name !== "Body Weight"),
+    [trackables],
+  );
 
   const [expandedSession, setExpandedSession] = useState(null);
   const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
@@ -592,6 +628,17 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* Goals */}
+        <section className="mb-6">
+          <GoalsWidget
+            isDarkMode={isDarkMode}
+            workoutHeatmapData={goalsWorkoutData}
+            habitHeatmapData={goalsHabitData}
+            trackables={habitTrackables}
+            todayEntries={todayEntries}
+          />
+        </section>
 
         {/* Today's Habits */}
         <section className="mt-6">

@@ -1,9 +1,5 @@
 import { useMemo } from "react";
-import {
-  Check,
-  X,
-  Dumbbell,
-} from "lucide-react";
+import { Check, X, Dumbbell } from "lucide-react";
 
 export default function TrackingOverview({
   trackables = [],
@@ -18,10 +14,7 @@ export default function TrackingOverview({
   days = 7,
   isDarkMode = true,
 }) {
-  const habits = useMemo(
-    () => trackables.filter((t) => t.name !== "Body Weight"),
-    [trackables],
-  );
+  const habits = useMemo(() => trackables.filter(t => t.name !== "Body Weight"), [trackables]);
 
   const dateRange = useMemo(() => {
     const dates = [];
@@ -43,9 +36,9 @@ export default function TrackingOverview({
     const result = {};
     dateRange.forEach(({ date }) => {
       result[date] = {};
-      habits.forEach((t) => {
+      habits.forEach(t => {
         const habitDates = habitDataByTrackable[t.id] || [];
-        const entry = habitDates.find((d) => d.date === date);
+        const entry = habitDates.find(d => d.date === date);
         if (date === today && todayEntries[t.id]) {
           result[date][t.id] = todayEntries[t.id].is_completed;
         } else {
@@ -59,7 +52,7 @@ export default function TrackingOverview({
   const workoutsByDate = useMemo(() => {
     const result = {};
     dateRange.forEach(({ date }) => {
-      const dayData = workoutData.find((d) => d.date === date);
+      const dayData = workoutData.find(d => d.date === date);
       result[date] = dayData?.count || 0;
     });
     return result;
@@ -69,9 +62,9 @@ export default function TrackingOverview({
     const result = {};
     dateRange.forEach(({ date }) => {
       result[date] = {};
-      foodItems.forEach((item) => {
+      foodItems.forEach(item => {
         const itemDates = foodDataByItem[item.id] || [];
-        const entry = itemDates.find((d) => d.date === date);
+        const entry = itemDates.find(d => d.date === date);
         if (date === today && todayFoodEntries[item.id]) {
           result[date][item.id] = true;
         } else {
@@ -84,24 +77,20 @@ export default function TrackingOverview({
 
   const habitCompletionCounts = useMemo(() => {
     const counts = {};
-    habits.forEach((t) => {
-      counts[t.id] = dateRange.filter(
-        (d) => habitsByDate[d.date]?.[t.id],
-      ).length;
+    habits.forEach(t => {
+      counts[t.id] = dateRange.filter(d => habitsByDate[d.date]?.[t.id]).length;
     });
     return counts;
   }, [habits, dateRange, habitsByDate]);
 
   const workoutDaysCount = useMemo(() => {
-    return dateRange.filter((d) => workoutsByDate[d.date] > 0).length;
+    return dateRange.filter(d => workoutsByDate[d.date] > 0).length;
   }, [dateRange, workoutsByDate]);
 
   const foodCompletionCounts = useMemo(() => {
     const counts = {};
-    foodItems.forEach((item) => {
-      counts[item.id] = dateRange.filter(
-        (d) => foodByDate[d.date]?.[item.id],
-      ).length;
+    foodItems.forEach(item => {
+      counts[item.id] = dateRange.filter(d => foodByDate[d.date]?.[item.id]).length;
     });
     return counts;
   }, [foodItems, dateRange, foodByDate]);
@@ -109,27 +98,15 @@ export default function TrackingOverview({
   return (
     <div
       className={`rounded-2xl overflow-hidden ${
-        isDarkMode
-          ? "bg-iron-900/50"
-          : "bg-white border border-slate-200 shadow-sm"
+        isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
       }`}
     >
       {/* Header */}
-      <div
-        className={`p-4 border-b ${
-          isDarkMode ? "border-iron-800/50" : "border-slate-100"
-        }`}
-      >
-        <h3
-          className={`font-semibold ${
-            isDarkMode ? "text-iron-100" : "text-slate-800"
-          }`}
-        >
+      <div className={`p-4 border-b ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+        <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
           Weekly Overview
         </h3>
-        <p
-          className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-        >
+        <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
           Last {days} days at a glance
         </p>
       </div>
@@ -142,9 +119,7 @@ export default function TrackingOverview({
             <tr className={isDarkMode ? "bg-iron-900/30" : "bg-slate-50"}>
               <th
                 className={`sticky left-0 z-10 p-3 text-left font-medium w-32 ${
-                  isDarkMode
-                    ? "bg-iron-900 text-iron-400"
-                    : "bg-white text-slate-500"
+                  isDarkMode ? "bg-iron-900 text-iron-400" : "bg-white text-slate-500"
                 }`}
               >
                 Metric
@@ -153,11 +128,7 @@ export default function TrackingOverview({
                 <th
                   key={date}
                   className={`p-2 text-center min-w-[44px] ${
-                    isToday
-                      ? isDarkMode
-                        ? "bg-lift-primary/10"
-                        : "bg-workout-primary/10"
-                      : ""
+                    isToday ? (isDarkMode ? "bg-lift-primary/10" : "bg-workout-primary/10") : ""
                   }`}
                 >
                   <div
@@ -200,29 +171,17 @@ export default function TrackingOverview({
 
           <tbody>
             {/* Workouts Row */}
-            <tr
-              className={`border-b ${
-                isDarkMode ? "border-iron-800/30" : "border-slate-100"
-              }`}
-            >
-              <td
-                className={`sticky left-0 z-10 p-3 ${
-                  isDarkMode ? "bg-iron-900" : "bg-white"
-                }`}
-              >
+            <tr className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}>
+              <td className={`sticky left-0 z-10 p-3 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      isDarkMode
-                        ? "bg-lift-primary/20"
-                        : "bg-workout-primary/20"
+                      isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
                     }`}
                   >
                     <Dumbbell
                       className={`w-4 h-4 ${
-                        isDarkMode
-                          ? "text-lift-primary"
-                          : "text-workout-primary"
+                        isDarkMode ? "text-lift-primary" : "text-workout-primary"
                       }`}
                     />
                   </div>
@@ -239,11 +198,7 @@ export default function TrackingOverview({
                 <td
                   key={date}
                   className={`p-2 text-center ${
-                    isToday
-                      ? isDarkMode
-                        ? "bg-lift-primary/10"
-                        : "bg-workout-primary/10"
-                      : ""
+                    isToday ? (isDarkMode ? "bg-lift-primary/10" : "bg-workout-primary/10") : ""
                   }`}
                 >
                   {workoutsByDate[date] > 0 ? (
@@ -257,13 +212,7 @@ export default function TrackingOverview({
                       {workoutsByDate[date]}
                     </span>
                   ) : (
-                    <span
-                      className={
-                        isDarkMode ? "text-iron-700" : "text-slate-300"
-                      }
-                    >
-                      —
-                    </span>
+                    <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
                   )}
                 </td>
               ))}
@@ -285,18 +234,12 @@ export default function TrackingOverview({
             </tr>
 
             {/* Habits Rows */}
-            {habits.map((habit) => (
+            {habits.map(habit => (
               <tr
                 key={habit.id}
-                className={`border-b ${
-                  isDarkMode ? "border-iron-800/30" : "border-slate-100"
-                }`}
+                className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
               >
-                <td
-                  className={`sticky left-0 z-10 p-3 ${
-                    isDarkMode ? "bg-iron-900" : "bg-white"
-                  }`}
-                >
+                <td className={`sticky left-0 z-10 p-3 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
                   <div className="flex items-center gap-1.5">
                     <div
                       className="w-6 h-6 min-w-[24px] rounded-lg flex items-center justify-center text-xs"
@@ -318,11 +261,7 @@ export default function TrackingOverview({
                   <td
                     key={date}
                     className={`p-2 text-center ${
-                      isToday
-                        ? isDarkMode
-                          ? "bg-lift-primary/10"
-                          : "bg-workout-primary/10"
-                        : ""
+                      isToday ? (isDarkMode ? "bg-lift-primary/10" : "bg-workout-primary/10") : ""
                     }`}
                   >
                     {habitsByDate[date]?.[habit.id] ? (
@@ -330,19 +269,10 @@ export default function TrackingOverview({
                         className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
                         style={{ backgroundColor: `${habit.color}30` }}
                       >
-                        <Check
-                          className="w-4 h-4"
-                          style={{ color: habit.color }}
-                        />
+                        <Check className="w-4 h-4" style={{ color: habit.color }} />
                       </span>
                     ) : (
-                      <span
-                        className={
-                          isDarkMode ? "text-iron-700" : "text-slate-300"
-                        }
-                      >
-                        —
-                      </span>
+                      <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
                     )}
                   </td>
                 ))}
@@ -365,18 +295,12 @@ export default function TrackingOverview({
             ))}
 
             {/* Food Rows */}
-            {foodItems.map((food) => (
+            {foodItems.map(food => (
               <tr
                 key={food.id}
-                className={`border-b ${
-                  isDarkMode ? "border-iron-800/30" : "border-slate-100"
-                }`}
+                className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
               >
-                <td
-                  className={`sticky left-0 z-10 p-3 ${
-                    isDarkMode ? "bg-iron-900" : "bg-white"
-                  }`}
-                >
+                <td className={`sticky left-0 z-10 p-3 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
                   <div className="flex items-center gap-1.5">
                     <div
                       className="w-6 h-6 min-w-[24px] rounded-lg flex items-center justify-center text-xs"
@@ -398,11 +322,7 @@ export default function TrackingOverview({
                   <td
                     key={date}
                     className={`p-2 text-center ${
-                      isToday
-                        ? isDarkMode
-                          ? "bg-lift-primary/10"
-                          : "bg-workout-primary/10"
-                        : ""
+                      isToday ? (isDarkMode ? "bg-lift-primary/10" : "bg-workout-primary/10") : ""
                     }`}
                   >
                     {foodByDate[date]?.[food.id] ? (
@@ -410,19 +330,10 @@ export default function TrackingOverview({
                         className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
                         style={{ backgroundColor: `${food.color}30` }}
                       >
-                        <Check
-                          className="w-4 h-4"
-                          style={{ color: food.color }}
-                        />
+                        <Check className="w-4 h-4" style={{ color: food.color }} />
                       </span>
                     ) : (
-                      <span
-                        className={
-                          isDarkMode ? "text-iron-700" : "text-slate-300"
-                        }
-                      >
-                        —
-                      </span>
+                      <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
                     )}
                   </td>
                 ))}
@@ -446,7 +357,6 @@ export default function TrackingOverview({
           </tbody>
         </table>
       </div>
-
     </div>
   );
 }

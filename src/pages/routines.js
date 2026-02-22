@@ -42,6 +42,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 const DAYS = [
   { value: 0, label: "Sunday", short: "Sun" },
@@ -391,21 +392,12 @@ export default function Routines() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
-              <div className="flex flex-wrap gap-2">
-                {ROUTINE_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewRoutine({ ...newRoutine, color })}
-                    className={`w-9 h-9 rounded-lg transition-transform ${
-                      newRoutine.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
-                    }`}
-                    style={{
-                      backgroundColor: color,
-                      ringOffsetColor: isDarkMode ? "#18181b" : "#f8fafc",
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker
+                value={newRoutine.color}
+                onChange={(color) => setNewRoutine({ ...newRoutine, color })}
+                presets={ROUTINE_COLORS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             {/* Exercises */}

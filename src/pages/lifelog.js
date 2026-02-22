@@ -47,6 +47,8 @@ import {
 import NotificationSettings from "@/components/NotificationSettings";
 import NotificationService from "@/lib/notifications";
 import { toast } from "sonner";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
+import { ColorPicker } from "@/components/ui/color-picker";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -1243,25 +1245,12 @@ export default function LifeLog() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
-              <div className="flex flex-wrap gap-2">
-                {EVENT_ICONS.map((icon) => (
-                  <button
-                    key={icon}
-                    onClick={() => setNewEvent({ ...newEvent, icon })}
-                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center ${
-                      newEvent.icon === icon
-                        ? isDarkMode
-                          ? "bg-iron-700 ring-2 ring-lift-primary"
-                          : "bg-slate-200 ring-2 ring-workout-primary"
-                        : isDarkMode
-                          ? "bg-iron-800"
-                          : "bg-slate-100"
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker
+                value={newEvent.icon}
+                onChange={(icon) => setNewEvent({ ...newEvent, icon })}
+                presets={EVENT_ICONS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             {/* Color */}
@@ -1269,21 +1258,12 @@ export default function LifeLog() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
-              <div className="flex flex-wrap gap-2">
-                {EVENT_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewEvent({ ...newEvent, color })}
-                    className={`w-9 h-9 rounded-lg transition-transform ${
-                      newEvent.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
-                    }`}
-                    style={{
-                      backgroundColor: color,
-                      ringOffsetColor: isDarkMode ? "#18181b" : "#f8fafc",
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker
+                value={newEvent.color}
+                onChange={(color) => setNewEvent({ ...newEvent, color })}
+                presets={EVENT_COLORS}
+                isDarkMode={isDarkMode}
+              />
             </div>
           </ModalBody>
           <ModalFooter>
@@ -1593,25 +1573,12 @@ export default function LifeLog() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
-              <div className="flex flex-wrap gap-2">
-                {PILL_ICONS.map(icon => (
-                  <button
-                    key={icon}
-                    onClick={() => setNewPill({ ...newPill, icon })}
-                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center transition-all ${
-                      newPill.icon === icon
-                        ? isDarkMode
-                          ? "bg-lift-primary/20 ring-2 ring-lift-primary"
-                          : "bg-workout-primary/20 ring-2 ring-workout-primary"
-                        : isDarkMode
-                          ? "bg-iron-800"
-                          : "bg-slate-100"
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker
+                value={newPill.icon}
+                onChange={(icon) => setNewPill({ ...newPill, icon })}
+                presets={PILL_ICONS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             {/* Color Selection */}
@@ -1619,21 +1586,12 @@ export default function LifeLog() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
-              <div className="flex flex-wrap gap-2">
-                {PILL_COLORS.map(color => (
-                  <button
-                    key={color}
-                    onClick={() => setNewPill({ ...newPill, color })}
-                    className={`w-9 h-9 rounded-lg transition-all ${
-                      newPill.color === color ? "ring-2 ring-offset-2" : ""
-                    }`}
-                    style={{
-                      backgroundColor: color,
-                      ringColor: color,
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker
+                value={newPill.color}
+                onChange={(color) => setNewPill({ ...newPill, color })}
+                presets={PILL_COLORS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             {/* Has Value Toggle */}

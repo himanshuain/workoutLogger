@@ -55,6 +55,8 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -1036,21 +1038,12 @@ export default function Home() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
-              <div className="flex flex-wrap gap-2">
-                {PILL_ICONS.map((icon) => (
-                  <button
-                    key={icon}
-                    onClick={() => setNewHabit({ ...newHabit, icon })}
-                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center ${
-                      newHabit.icon === icon
-                        ? isDarkMode ? "bg-iron-700 ring-2 ring-lift-primary" : "bg-slate-200 ring-2 ring-workout-primary"
-                        : isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker
+                value={newHabit.icon}
+                onChange={(icon) => setNewHabit({ ...newHabit, icon })}
+                presets={PILL_ICONS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             {/* Color */}
@@ -1058,21 +1051,12 @@ export default function Home() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
-              <div className="flex flex-wrap gap-2">
-                {PILL_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewHabit({ ...newHabit, color })}
-                    className={`w-9 h-9 rounded-lg transition-transform ${
-                      newHabit.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
-                    }`}
-                    style={{
-                      backgroundColor: color,
-                      ringOffsetColor: isDarkMode ? "#18181b" : "#f8fafc",
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker
+                value={newHabit.color}
+                onChange={(color) => setNewHabit({ ...newHabit, color })}
+                presets={PILL_COLORS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             {/* Active Days */}

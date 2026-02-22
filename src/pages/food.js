@@ -44,6 +44,8 @@ import {
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 const FOOD_ICONS = [
   "🥚",
@@ -598,23 +600,29 @@ export default function Food() {
                           onClick={() => handleToggle(item)}
                           className={`
                             w-14 h-14 rounded-xl flex items-center justify-center text-2xl
-                            transition-all duration-200 active:scale-95
+                            transition-all duration-200 active:scale-90
                             ${
                               isConsumed
                                 ? "shadow-lg"
                                 : isDarkMode
-                                  ? "bg-iron-800"
-                                  : "bg-slate-100"
+                                  ? "bg-iron-800 ring-2 ring-iron-700 hover:ring-iron-500"
+                                  : "bg-slate-100 ring-2 ring-slate-200 hover:ring-slate-400"
                             }
                           `}
                           style={{
                             backgroundColor: isConsumed ? item.color : undefined,
+                            boxShadow: !isConsumed ? `0 0 0 0 ${item.color}40` : undefined,
                           }}
                         >
                           {isConsumed ? (
                             <Check className="w-6 h-6 text-white" />
                           ) : (
-                            item.icon
+                            <span className="relative">
+                              {item.icon}
+                              <span className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full ${
+                                isDarkMode ? "bg-iron-600" : "bg-slate-300"
+                              }`} />
+                            </span>
                           )}
                         </button>
 
@@ -794,6 +802,8 @@ export default function Food() {
               color="#f59e0b"
               subtitle={`${stats.daysThisMonth} days this month`}
               isDarkMode={isDarkMode}
+              progressMode
+              progressItems={foodItems}
             />
           )}
 
@@ -935,42 +945,24 @@ export default function Food() {
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Icon
               </label>
-              <div className="flex flex-wrap gap-2">
-                {FOOD_ICONS.map((icon) => (
-                  <button
-                    key={icon}
-                    onClick={() => setNewFood({ ...newFood, icon })}
-                    className={`w-9 h-9 rounded-lg text-lg flex items-center justify-center ${
-                      newFood.icon === icon
-                        ? isDarkMode ? "bg-iron-700 ring-2 ring-lift-primary" : "bg-slate-200 ring-2 ring-amber-500"
-                        : isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker
+                value={newFood.icon}
+                onChange={(icon) => setNewFood({ ...newFood, icon })}
+                presets={FOOD_ICONS}
+                isDarkMode={isDarkMode}
+              />
             </div>
 
             <div>
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
                 Color
               </label>
-              <div className="flex flex-wrap gap-2">
-                {FOOD_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewFood({ ...newFood, color })}
-                    className={`w-9 h-9 rounded-lg transition-transform ${
-                      newFood.color === color ? "ring-2 ring-white ring-offset-2 scale-110" : ""
-                    }`}
-                    style={{
-                      backgroundColor: color,
-                      ringOffsetColor: isDarkMode ? "#18181b" : "#f8fafc",
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker
+                value={newFood.color}
+                onChange={(color) => setNewFood({ ...newFood, color })}
+                presets={FOOD_COLORS}
+                isDarkMode={isDarkMode}
+              />
             </div>
           </ModalBody>
           <ModalFooter>

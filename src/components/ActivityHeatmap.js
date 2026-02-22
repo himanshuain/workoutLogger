@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Format date to YYYY-MM-DD in LOCAL timezone
@@ -32,6 +32,8 @@ export default function ActivityHeatmap({
   isDarkMode = true,
   onDateClick = null,
   color = null,
+  progressMode = false,
+  progressItems = [],
 }) {
   const activeColor = color || DEFAULT_COLOR;
   const todayStr = getTodayLocal();
@@ -88,6 +90,61 @@ export default function ActivityHeatmap({
     return { completed, streak };
   }, [data, dataMap, todayStr]);
 
+  // Progress mode: compute milestones and per-date totals from item creation dates
+  const { getProgressTotal, milestones } = useMemo(() => {
+    if (!progressMode || !progressItems.length) {
+      return { getProgressTotal: () => 0, milestones: [] };
+    }
+
+    const sorted = [...progressItems]
+      .map(item => ({
+        ...item,
+        addedDate: item.created_at ? formatDateLocal(new Date(item.created_at)) : "2020-01-01",
+      }))
+      .sort((a, b) => a.addedDate.localeCompare(b.addedDate));
+
+    // Build milestones: each date where the count changed
+    const ms = [];
+    let runningCount = 0;
+    const dateItemsMap = {};
+
+    sorted.forEach(item => {
+      const d = item.addedDate;
+      if (!dateItemsMap[d]) dateItemsMap[d] = [];
+      dateItemsMap[d].push(item);
+    });
+
+    Object.keys(dateItemsMap).sort().forEach(d => {
+      runningCount += dateItemsMap[d].length;
+      ms.push({
+        date: d,
+        totalAfter: runningCount,
+        items: dateItemsMap[d],
+      });
+    });
+
+    // Build a lookup: for any date, how many items existed
+    const getTotalForDate = (dateStr) => {
+      let total = 0;
+      for (const m of ms) {
+        if (m.date <= dateStr) total = m.totalAfter;
+        else break;
+      }
+      return total;
+    };
+
+    return { getProgressTotal: getTotalForDate, milestones: ms };
+  }, [progressMode, progressItems]);
+
+  const [expandedMilestone, setExpandedMilestone] = useState(null);
+
+  // Which milestones fall in the current month view
+  const monthMilestones = useMemo(() => {
+    if (!progressMode) return [];
+    const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
+    return milestones.filter(m => m.date.startsWith(prefix));
+  }, [progressMode, milestones, viewYear, viewMonth]);
+
   // Get calendar days for current month view
   const calendarDays = useMemo(() => {
     const firstDay = new Date(viewYear, viewMonth, 1);
@@ -112,6 +169,72 @@ export default function ActivityHeatmap({
     }
     return days;
   }, [viewYear, viewMonth, dataMap, todayStr]);
+
+  // Group calendar into rows with milestone headers inserted between rows
+  const calendarSegments = useMemo(() => {
+    if (!progressMode) return null;
+
+    const monthStart = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-01`;
+    const priorTotal = getProgressTotal(
+      // Day before this month
+      new Date(viewYear, viewMonth, 0).toISOString().split("T")[0]
+    );
+    const priorItems = progressItems.filter(pi => {
+      const piDate = pi.created_at ? formatDateLocal(new Date(pi.created_at)) : "2020-01-01";
+      return piDate < monthStart;
+    });
+
+    const hasPriorItems = priorItems.length > 0;
+    const hasMonthMilestones = monthMilestones.length > 0;
+
+    if (!hasPriorItems && !hasMonthMilestones) return null;
+
+    // Split into rows of 7
+    const rows = [];
+    for (let i = 0; i < calendarDays.length; i += 7) {
+      rows.push(calendarDays.slice(i, i + 7));
+    }
+
+    const milestoneDateSet = new Map();
+    monthMilestones.forEach(m => {
+      const dayNum = parseInt(m.date.split("-")[2], 10);
+      milestoneDateSet.set(dayNum, m);
+    });
+
+    const segments = [];
+    const usedMilestones = new Set();
+
+    // Show a starting-count banner if items existed before this month
+    if (hasPriorItems) {
+      segments.push({
+        type: "milestone",
+        milestone: {
+          date: "__prior__",
+          totalAfter: priorTotal,
+          items: priorItems,
+          isPrior: true,
+        },
+      });
+    }
+
+    rows.forEach((row, rowIdx) => {
+      const rowMilestones = [];
+      row.forEach(dayData => {
+        if (dayData && milestoneDateSet.has(dayData.day) && !usedMilestones.has(dayData.day)) {
+          rowMilestones.push(milestoneDateSet.get(dayData.day));
+          usedMilestones.add(dayData.day);
+        }
+      });
+
+      rowMilestones.forEach(m => {
+        segments.push({ type: "milestone", milestone: m });
+      });
+
+      segments.push({ type: "row", days: row, rowIdx });
+    });
+
+    return segments;
+  }, [progressMode, monthMilestones, calendarDays, getProgressTotal, progressItems, viewYear, viewMonth]);
 
   // Navigation
   const canGoNext = viewYear < today.getFullYear() || 
@@ -144,6 +267,71 @@ export default function ActivityHeatmap({
     if (year === today.getFullYear() && viewMonth > today.getMonth()) {
       setViewMonth(today.getMonth());
     }
+  };
+
+  const renderProgressDay = (dayData) => {
+    const { day, dateStr, count, isFuture, isToday } = dayData;
+    const dayTotal = getProgressTotal(dateStr);
+    const progress = dayTotal > 0 ? Math.min(count / dayTotal, 1) : 0;
+    const isAllDone = progress >= 1;
+    const size = 40;
+    const strokeWidth = 2.5;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - progress * circumference;
+    const ringColor = isAllDone ? "#22c55e" : activeColor;
+
+    return (
+      <motion.button
+        key={dateStr}
+        whileTap={!isFuture && onDateClick ? { scale: 0.85 } : {}}
+        onClick={() => onDateClick && !isFuture && onDateClick(dateStr, dayData.isCompleted)}
+        disabled={isFuture || !onDateClick}
+        className={`aspect-square flex items-center justify-center relative ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}`}
+      >
+        <svg width={size} height={size} className="absolute inset-0 m-auto -rotate-90">
+          <circle
+            cx={size / 2} cy={size / 2} r={radius}
+            fill="none"
+            stroke={isDarkMode ? "#27272a" : "#e2e8f0"}
+            strokeWidth={strokeWidth}
+          />
+          {count > 0 && (
+            <circle
+              cx={size / 2} cy={size / 2} r={radius}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              className="transition-all duration-300"
+            />
+          )}
+        </svg>
+        <div className={`relative z-10 flex flex-col items-center justify-center ${isToday ? "text-[10px]" : "text-xs"}`}>
+          <span
+            className="font-semibold"
+            style={{
+              color: isAllDone
+                ? "#22c55e"
+                : count > 0
+                  ? activeColor
+                  : isToday
+                    ? isDarkMode ? "#fff" : "#1e293b"
+                    : isDarkMode ? "#52525b" : "#94a3b8",
+            }}
+          >
+            {day}
+          </span>
+          {isToday && (
+            <span className="text-[6px] font-bold leading-none" style={{ color: isAllDone ? "#22c55e" : "#ef4444" }}>
+              TODAY
+            </span>
+          )}
+        </div>
+      </motion.button>
+    );
   };
 
   const slideVariants = {
@@ -304,85 +492,208 @@ export default function ActivityHeatmap({
             animate="center"
             exit="exit"
             transition={{ duration: 0.2 }}
-            className="grid grid-cols-7 gap-1.5"
           >
-            {calendarDays.map((dayData, i) => {
-              if (!dayData) {
-                return <div key={`empty-${i}`} className="aspect-square" />;
-              }
+            {progressMode && calendarSegments ? (
+              calendarSegments.map((segment, segIdx) => {
+                if (segment.type === "milestone") {
+                  const m = segment.milestone;
+                  const isExpanded = expandedMilestone === m.date;
+                  return (
+                    <div key={`ms-${m.date}`} className="my-1.5">
+                      <button
+                        onClick={() => setExpandedMilestone(isExpanded ? null : m.date)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
+                          isDarkMode
+                            ? "bg-amber-500/10 text-amber-400 hover:bg-amber-500/15"
+                            : "bg-amber-50 text-amber-600 hover:bg-amber-100"
+                        }`}
+                      >
+                        <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold ${
+                          isDarkMode ? "bg-amber-500/20" : "bg-amber-100"
+                        }`}>
+                          {m.totalAfter}
+                        </span>
+                        <span>
+                          {m.totalAfter} item{m.totalAfter !== 1 ? "s" : ""} tracked
+                        </span>
+                        <span className={`ml-auto text-[10px] font-normal ${isDarkMode ? "text-amber-500/60" : "text-amber-500"}`}>
+                          {m.isPrior ? "start of month" : `from ${new Date(m.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                        </span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                      </button>
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className={`mt-1 ml-3 pl-3 border-l-2 space-y-1 ${
+                              isDarkMode ? "border-amber-500/20" : "border-amber-200"
+                            }`}>
+                              {(() => {
+                                const priorList = m.isPrior ? [] : progressItems.filter(pi => {
+                                  const piDate = pi.created_at ? formatDateLocal(new Date(pi.created_at)) : "2020-01-01";
+                                  return piDate < m.date;
+                                });
+                                const allItems = [
+                                  ...priorList.map(it => ({ ...it, isNew: false })),
+                                  ...m.items.map(it => ({ ...it, isNew: !m.isPrior })),
+                                ];
+                                return allItems.map((item, idx) => (
+                                  <div
+                                    key={item.id || idx}
+                                    className={`flex items-center gap-2 py-1 text-xs ${
+                                      isDarkMode ? "text-iron-400" : "text-slate-600"
+                                    }`}
+                                  >
+                                    <span>{item.emoji || "🍽️"}</span>
+                                    <span className="font-medium">{item.name}</span>
+                                    {item.isNew && (
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                        isDarkMode ? "bg-amber-500/15 text-amber-400" : "bg-amber-100 text-amber-600"
+                                      }`}>
+                                        new
+                                      </span>
+                                    )}
+                                  </div>
+                                ));
+                              })()}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                }
 
-              const { day, dateStr, isCompleted, isFuture, isToday } = dayData;
+                // Row of days
+                return (
+                  <div key={`row-${segment.rowIdx}`} className="grid grid-cols-7 gap-1.5">
+                    {segment.days.map((dayData, di) => {
+                      if (!dayData) {
+                        return <div key={`empty-${segment.rowIdx}-${di}`} className="aspect-square" />;
+                      }
+                      return renderProgressDay(dayData);
+                    })}
+                  </div>
+                );
+              })
+            ) : progressMode ? (
+              <div className="grid grid-cols-7 gap-1.5">
+                {calendarDays.map((dayData, i) => {
+                  if (!dayData) return <div key={`empty-${i}`} className="aspect-square" />;
+                  return renderProgressDay(dayData);
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-7 gap-1.5">
+                {calendarDays.map((dayData, i) => {
+                  if (!dayData) {
+                    return <div key={`empty-${i}`} className="aspect-square" />;
+                  }
 
-              return (
-                <motion.button
-                  key={dateStr}
-                  whileTap={!isFuture && onDateClick ? { scale: 0.85 } : {}}
-                  onClick={() => onDateClick && !isFuture && onDateClick(dateStr, isCompleted)}
-                  disabled={isFuture || !onDateClick}
-                  className={`
-                    aspect-square rounded-xl flex flex-col items-center justify-center
-                    font-semibold transition-all duration-200 relative
-                    ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}
-                    ${isToday ? "text-[10px]" : "text-sm"}
-                  `}
-                  style={{
-                    backgroundColor: isCompleted
-                      ? activeColor
-                      : isToday
-                        ? isDarkMode ? "#3f3f46" : "#e2e8f0"
-                        : isDarkMode ? "#27272a" : "#f1f5f9",
-                    color: isCompleted
-                      ? "#fff"
-                      : isToday
-                        ? isDarkMode ? "#fff" : "#1e293b"
-                        : isDarkMode ? "#71717a" : "#94a3b8",
-                    boxShadow: isCompleted 
-                      ? `0 2px 8px ${activeColor}66`
-                      : isToday && !isCompleted
-                        ? isDarkMode 
-                          ? "inset 0 0 0 2px #ef4444" 
-                          : "inset 0 0 0 2px #dc2626"
-                        : "none",
-                  }}
-                >
-                  {day}
-                  {isToday && (
-                    <span 
-                      className="text-[7px] font-bold leading-none"
-                      style={{ color: isCompleted ? "#fff" : "#ef4444" }}
+                  const { day, dateStr, count, isCompleted, isFuture, isToday } = dayData;
+
+                  return (
+                    <motion.button
+                      key={dateStr}
+                      whileTap={!isFuture && onDateClick ? { scale: 0.85 } : {}}
+                      onClick={() => onDateClick && !isFuture && onDateClick(dateStr, isCompleted)}
+                      disabled={isFuture || !onDateClick}
+                      className={`
+                        aspect-square rounded-xl flex flex-col items-center justify-center
+                        font-semibold transition-all duration-200 relative
+                        ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}
+                        ${isToday ? "text-[10px]" : "text-sm"}
+                      `}
+                      style={{
+                        backgroundColor: isCompleted
+                          ? activeColor
+                          : isToday
+                            ? isDarkMode ? "#3f3f46" : "#e2e8f0"
+                            : isDarkMode ? "#27272a" : "#f1f5f9",
+                        color: isCompleted
+                          ? "#fff"
+                          : isToday
+                            ? isDarkMode ? "#fff" : "#1e293b"
+                            : isDarkMode ? "#71717a" : "#94a3b8",
+                        boxShadow: isCompleted 
+                          ? `0 2px 8px ${activeColor}66`
+                          : isToday && !isCompleted
+                            ? isDarkMode 
+                              ? "inset 0 0 0 2px #ef4444" 
+                              : "inset 0 0 0 2px #dc2626"
+                            : "none",
+                      }}
                     >
-                      TODAY
-                    </span>
-                  )}
-                </motion.button>
-              );
-            })}
+                      {day}
+                      {isToday && (
+                        <span 
+                          className="text-[7px] font-bold leading-none"
+                          style={{ color: isCompleted ? "#fff" : "#ef4444" }}
+                        >
+                          TODAY
+                        </span>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
         {/* Legend */}
         {!compact && (
-          <div className={`flex items-center justify-center gap-6 mt-4 pt-4 border-t ${
+          <div className={`flex items-center justify-center gap-5 mt-4 pt-4 border-t ${
             isDarkMode ? "border-iron-800/50" : "border-slate-200"
           }`}>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded-md"
-                style={{ backgroundColor: isDarkMode ? "#27272a" : "#f1f5f9" }}
-              />
-              <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                Missed
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-4 h-4 rounded-md shadow-sm" 
-                style={{ backgroundColor: activeColor, boxShadow: `0 2px 4px ${activeColor}4D` }} 
-              />
-              <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                Completed
-              </span>
-            </div>
+            {progressMode ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <svg width="16" height="16" className="-rotate-90">
+                    <circle cx="8" cy="8" r="6.5" fill="none" stroke={isDarkMode ? "#27272a" : "#e2e8f0"} strokeWidth="2" />
+                    <circle cx="8" cy="8" r="6.5" fill="none" stroke={activeColor} strokeWidth="2"
+                      strokeDasharray={2 * Math.PI * 6.5} strokeDashoffset={2 * Math.PI * 6.5 * 0.5} strokeLinecap="round" />
+                  </svg>
+                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Partial
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg width="16" height="16" className="-rotate-90">
+                    <circle cx="8" cy="8" r="6.5" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    All done
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-4 h-4 rounded-md"
+                    style={{ backgroundColor: isDarkMode ? "#27272a" : "#f1f5f9" }}
+                  />
+                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Missed
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded-md shadow-sm" 
+                    style={{ backgroundColor: activeColor, boxShadow: `0 2px 4px ${activeColor}4D` }} 
+                  />
+                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Completed
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

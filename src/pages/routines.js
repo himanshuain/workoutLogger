@@ -35,6 +35,13 @@ import {
   Pencil,
   Minus,
 } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 
 const DAYS = [
   { value: 0, label: "Sunday", short: "Sun" },
@@ -598,69 +605,67 @@ function RoutineCard({ routine, isDarkMode, onEdit, onDelete }) {
     0;
 
   return (
-    <div
-      className={`
-        p-4 rounded-2xl transition-all
-        ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}
-      `}
-    >
-      <div className="flex items-start gap-3">
-        {/* Color indicator */}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
         <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: `${routine.color}20` }}
+          className={`
+            p-4 rounded-2xl transition-all
+            ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}
+          `}
         >
-          <Dumbbell className="w-5 h-5" style={{ color: routine.color }} />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <h4
-            className={`font-bold truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-          >
-            {routine.name}
-          </h4>
-          <p
-            className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-          >
-            {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""} ·{" "}
-            {totalSets} sets
-          </p>
-
-          {/* Exercise preview */}
-          {exerciseCount > 0 && (
+          <div className="flex items-start gap-3">
             <div
-              className={`mt-2 text-xs ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${routine.color}20` }}
             >
-              {routine.routine_exercises
-                ?.slice(0, 3)
-                .map((ex) => ex.exercise_name)
-                .join(", ")}
-              {exerciseCount > 3 && ` +${exerciseCount - 3} more`}
+              <Dumbbell className="w-5 h-5" style={{ color: routine.color }} />
             </div>
-          )}
-        </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onEdit}
-            className={`p-2 rounded-lg ${isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"}`}
-          >
-            <Pencil
-              className={`w-4 h-4 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-            />
-          </button>
-          <button
-            onClick={onDelete}
-            className={`p-2 rounded-lg ${isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"}`}
-          >
-            <Trash2
-              className={`w-4 h-4 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-            />
-          </button>
+            <div className="flex-1 min-w-0">
+              <h4
+                className={`font-bold truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+              >
+                {routine.name}
+              </h4>
+              <p
+                className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+              >
+                {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""} ·{" "}
+                {totalSets} sets
+              </p>
+
+              {exerciseCount > 0 && (
+                <div
+                  className={`mt-2 text-xs ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+                >
+                  {routine.routine_exercises
+                    ?.slice(0, 3)
+                    .map((ex) => ex.exercise_name)
+                    .join(", ")}
+                  {exerciseCount > 3 && ` +${exerciseCount - 3} more`}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ContextMenuItem
+          onClick={onEdit}
+          className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+        >
+          <Pencil className="w-4 h-4" />
+          Edit Routine
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          destructive
+          onClick={onDelete}
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Routine
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

@@ -48,6 +48,13 @@ import {
   Flame,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -178,6 +185,15 @@ export default function Home() {
     () => trackables.filter((t) => t.name !== "Body Weight"),
     [trackables],
   );
+
+  const hasGoals = useMemo(() => {
+    if (typeof window === "undefined" || !user?.id) return false;
+    try {
+      const stored = localStorage.getItem(`logbook_goals_${user.id}`);
+      const goals = stored ? JSON.parse(stored) : [];
+      return goals.length > 0;
+    } catch { return false; }
+  }, [user?.id]);
 
   const [expandedSession, setExpandedSession] = useState(null);
   const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
@@ -630,15 +646,17 @@ export default function Home() {
         )}
 
         {/* Goals */}
-        <section className="mb-6">
-          <GoalsWidget
-            isDarkMode={isDarkMode}
-            workoutHeatmapData={goalsWorkoutData}
-            habitHeatmapData={goalsHabitData}
-            trackables={habitTrackables}
-            todayEntries={todayEntries}
-          />
-        </section>
+        {hasGoals && (
+          <section className="mb-6">
+            <GoalsWidget
+              isDarkMode={isDarkMode}
+              workoutHeatmapData={goalsWorkoutData}
+              habitHeatmapData={goalsHabitData}
+              trackables={habitTrackables}
+              todayEntries={todayEntries}
+            />
+          </section>
+        )}
 
         {/* Today's Habits */}
         <section className="mt-6">
@@ -659,6 +677,7 @@ export default function Home() {
         </section>
 
         {/* Recent Workouts */}
+        {recentSessions.length > 0 && (
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <h3
@@ -679,13 +698,7 @@ export default function Home() {
             </button>
           </div>
 
-          {recentSessions.length === 0 ? (
-            <div className={`rounded-2xl p-6 text-center ${isDarkMode ? "bg-iron-900/50" : "bg-slate-50"}`}>
-              <Dumbbell className={`w-8 h-8 mx-auto mb-2 ${isDarkMode ? "text-iron-700" : "text-slate-300"}`} />
-              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>No workouts yet</p>
-              <p className={`text-xs mt-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>Complete a workout to see it here</p>
-            </div>
-          ) : (
+          {(
             <div className="space-y-2">
               {recentSessions.map((session) => {
                 const completedSets = (session.set_logs || []).filter((s) => s.is_completed);
@@ -705,12 +718,13 @@ export default function Home() {
                     : dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
                 return (
-                  <div
-                    key={session.id}
-                    className={`rounded-2xl overflow-hidden ${
-                      isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
-                    }`}
-                  >
+                  <ContextMenu key={session.id}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className={`rounded-2xl overflow-hidden ${
+                          isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
+                        }`}
+                      >
                     {/* Session header */}
                     <button
                       onClick={() => setExpandedSession(isExpanded ? null : session.id)}
@@ -785,85 +799,91 @@ export default function Home() {
                                 {/* Individual sets */}
                                 <div className="ml-[2.625rem] space-y-0.5">
                                   {sets.map((s, idx) => (
-                                    <div
-                                      key={s.id}
-                                      className={`flex items-center gap-2 py-1.5 ${idx > 0 ? `border-t ${isDarkMode ? "border-iron-700/30" : "border-slate-100"}` : ""}`}
-                                    >
-                                      <span className={`w-5 text-center text-[10px] font-bold rounded-md py-0.5 flex-shrink-0 ${isDarkMode ? "bg-iron-700 text-iron-500" : "bg-slate-100 text-slate-400"}`}>
-                                        {idx + 1}
-                                      </span>
+                                    <ContextMenu key={s.id}>
+                                      <ContextMenuTrigger asChild>
+                                        <div
+                                          className={`flex items-center gap-2 py-1.5 ${idx > 0 ? `border-t ${isDarkMode ? "border-iron-700/30" : "border-slate-100"}` : ""}`}
+                                        >
+                                          <span className={`w-5 text-center text-[10px] font-bold rounded-md py-0.5 flex-shrink-0 ${isDarkMode ? "bg-iron-700 text-iron-500" : "bg-slate-100 text-slate-400"}`}>
+                                            {idx + 1}
+                                          </span>
 
-                                      {editingSet?.id === s.id ? (
-                                        <div className="flex items-center gap-1.5 flex-1">
-                                          <input
-                                            type="number"
-                                            step="0.5"
-                                            value={editingSet.weight}
-                                            onChange={(e) => setEditingSet({ ...editingSet, weight: e.target.value })}
-                                            className={`w-16 px-2 py-1 rounded-lg text-xs text-center ${isDarkMode ? "bg-iron-700 text-iron-100 border border-iron-600" : "bg-white text-slate-800 border border-slate-200"}`}
-                                          />
-                                          <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>kg ×</span>
-                                          <input
-                                            type="number"
-                                            value={editingSet.reps}
-                                            onChange={(e) => setEditingSet({ ...editingSet, reps: e.target.value })}
-                                            className={`w-14 px-2 py-1 rounded-lg text-xs text-center ${isDarkMode ? "bg-iron-700 text-iron-100 border border-iron-600" : "bg-white text-slate-800 border border-slate-200"}`}
-                                          />
-                                          <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
-                                          <button
-                                            onClick={async () => {
-                                              const ok = await updateSetLogData(editingSet.id, {
-                                                weight: parseFloat(editingSet.weight) || 0,
-                                                reps: parseInt(editingSet.reps) || 0,
-                                              });
-                                              if (ok) toast.success("Set updated");
-                                              setEditingSet(null);
-                                            }}
-                                            className={`p-1 rounded-lg ${isDarkMode ? "text-green-400 active:bg-iron-700" : "text-green-600 active:bg-slate-200"}`}
-                                          >
-                                            <Save className="w-3.5 h-3.5" />
-                                          </button>
-                                          <button
-                                            onClick={() => setEditingSet(null)}
-                                            className={`p-1 rounded-lg ${isDarkMode ? "text-iron-500 active:bg-iron-700" : "text-slate-400 active:bg-slate-200"}`}
-                                          >
-                                            <X className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <>
-                                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            {s.weight ? (
-                                              <>
-                                                <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                                                  {s.weight} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>kg</span>
-                                                </span>
-                                                <span className={`text-xs ${isDarkMode ? "text-iron-600" : "text-slate-300"}`}>×</span>
+                                          {editingSet?.id === s.id ? (
+                                            <div className="flex items-center gap-1.5 flex-1">
+                                              <input
+                                                type="number"
+                                                step="0.5"
+                                                value={editingSet.weight}
+                                                onChange={(e) => setEditingSet({ ...editingSet, weight: e.target.value })}
+                                                className={`w-16 px-2 py-1 rounded-lg text-xs text-center ${isDarkMode ? "bg-iron-700 text-iron-100 border border-iron-600" : "bg-white text-slate-800 border border-slate-200"}`}
+                                              />
+                                              <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>kg ×</span>
+                                              <input
+                                                type="number"
+                                                value={editingSet.reps}
+                                                onChange={(e) => setEditingSet({ ...editingSet, reps: e.target.value })}
+                                                className={`w-14 px-2 py-1 rounded-lg text-xs text-center ${isDarkMode ? "bg-iron-700 text-iron-100 border border-iron-600" : "bg-white text-slate-800 border border-slate-200"}`}
+                                              />
+                                              <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
+                                              <button
+                                                onClick={async () => {
+                                                  const ok = await updateSetLogData(editingSet.id, {
+                                                    weight: parseFloat(editingSet.weight) || 0,
+                                                    reps: parseInt(editingSet.reps) || 0,
+                                                  });
+                                                  if (ok) toast.success("Set updated");
+                                                  setEditingSet(null);
+                                                }}
+                                                className={`p-1 rounded-lg ${isDarkMode ? "text-green-400 active:bg-iron-700" : "text-green-600 active:bg-slate-200"}`}
+                                              >
+                                                <Save className="w-3.5 h-3.5" />
+                                              </button>
+                                              <button
+                                                onClick={() => setEditingSet(null)}
+                                                className={`p-1 rounded-lg ${isDarkMode ? "text-iron-500 active:bg-iron-700" : "text-slate-400 active:bg-slate-200"}`}
+                                              >
+                                                <X className="w-3.5 h-3.5" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                              {s.weight ? (
+                                                <>
+                                                  <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                                    {s.weight} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>kg</span>
+                                                  </span>
+                                                  <span className={`text-xs ${isDarkMode ? "text-iron-600" : "text-slate-300"}`}>×</span>
+                                                  <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                                    {s.reps} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
+                                                  </span>
+                                                </>
+                                              ) : (
                                                 <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
                                                   {s.reps} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
                                                 </span>
-                                              </>
-                                            ) : (
-                                              <span className={`text-sm font-semibold tabular-nums ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                                                {s.reps} <span className={`text-xs font-normal ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>reps</span>
-                                              </span>
-                                            )}
-                                          </div>
-                                          <button
-                                            onClick={() => setEditingSet({ id: s.id, weight: s.weight || "", reps: s.reps || "" })}
-                                            className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-600 active:text-iron-300 active:bg-iron-700" : "text-slate-300 active:text-slate-600 active:bg-slate-200"}`}
-                                          >
-                                            <Pencil className="w-3 h-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => setDeleteConfirm({ type: "set", id: s.id, label: `${name} — Set ${idx + 1}` })}
-                                            className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-600 active:text-red-400 active:bg-iron-700" : "text-slate-300 active:text-red-500 active:bg-slate-200"}`}
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </ContextMenuTrigger>
+                                      <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                                        <ContextMenuItem
+                                          onClick={() => setEditingSet({ id: s.id, weight: s.weight || "", reps: s.reps || "" })}
+                                          className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+                                        >
+                                          <Pencil className="w-4 h-4" />
+                                          Edit Set
+                                        </ContextMenuItem>
+                                        <ContextMenuSeparator />
+                                        <ContextMenuItem
+                                          destructive
+                                          onClick={() => setDeleteConfirm({ type: "set", id: s.id, label: `${name} — Set ${idx + 1}` })}
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                          Delete Set
+                                        </ContextMenuItem>
+                                      </ContextMenuContent>
+                                    </ContextMenu>
                                   ))}
                                 </div>
                               </div>
@@ -871,30 +891,30 @@ export default function Home() {
                           })()}
                         </div>
 
-                        {/* Delete entire session */}
-                        <button
-                          onClick={() => setDeleteConfirm({
-                            type: "session",
-                            id: session.id,
-                            label: `${session.routine_name || "Workout"} on ${dateLabel}`,
-                          })}
-                          className={`w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
-                            isDarkMode
-                              ? "text-red-400/70 active:text-red-400 active:bg-red-500/10"
-                              : "text-red-400 active:text-red-500 active:bg-red-50"
-                          }`}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          Delete Workout
-                        </button>
                       </div>
                     )}
-                  </div>
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                      <ContextMenuItem
+                        destructive
+                        onClick={() => setDeleteConfirm({
+                          type: "session",
+                          id: session.id,
+                          label: `${session.routine_name || "Workout"} on ${dateLabel}`,
+                        })}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Workout
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
             </div>
           )}
         </section>
+        )}
       </div>
 
       {/* Routine Selector Modal */}

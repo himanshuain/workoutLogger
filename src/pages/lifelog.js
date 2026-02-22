@@ -47,6 +47,13 @@ import {
 import NotificationSettings from "@/components/NotificationSettings";
 import NotificationService from "@/lib/notifications";
 import { toast } from "sonner";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 
 const EVENT_ICONS = [
   "💇",
@@ -158,6 +165,9 @@ export default function LifeLog() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [eventLogs, setEventLogs] = useState([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [expandedEvent, setExpandedEvent] = useState(null);
+  const [expandedEventLogs, setExpandedEventLogs] = useState([]);
+  const [isLoadingExpandedLogs, setIsLoadingExpandedLogs] = useState(false);
 
   const [newEvent, setNewEvent] = useState({
     name: "",
@@ -525,6 +535,10 @@ export default function LifeLog() {
     try {
       await logEvent(eventType.id);
       toast.success("Event logged");
+      if (expandedEvent === eventType.id) {
+        const logs = await getEventLogs(eventType.id);
+        setExpandedEventLogs(logs);
+      }
       if (window.navigator?.vibrate) {
         window.navigator.vibrate(10);
       }
@@ -554,6 +568,18 @@ export default function LifeLog() {
     const logs = await getEventLogs(eventType.id);
     setEventLogs(logs);
     setIsLoadingLogs(false);
+  };
+
+  const toggleExpandEvent = async (eventType) => {
+    if (expandedEvent === eventType.id) {
+      setExpandedEvent(null);
+      return;
+    }
+    setExpandedEvent(eventType.id);
+    setIsLoadingExpandedLogs(true);
+    const logs = await getEventLogs(eventType.id);
+    setExpandedEventLogs(logs);
+    setIsLoadingExpandedLogs(false);
   };
 
   // Delete event type
@@ -602,10 +628,10 @@ export default function LifeLog() {
     setPendingLogAction(null);
   };
 
-  // Delete a log entry
-  const handleDeleteLog = (logId) => {
-    if (!selectedEvent) return;
-    setDeleteConfirm({ type: "log", data: { logId, eventTypeId: selectedEvent.id } });
+  const handleDeleteLog = (logId, eventTypeId) => {
+    const evtId = eventTypeId || selectedEvent?.id;
+    if (!evtId) return;
+    setDeleteConfirm({ type: "log", data: { logId, eventTypeId: evtId } });
   };
 
   // Execute delete based on deleteConfirm type (called from AlertDialog)
@@ -626,6 +652,9 @@ export default function LifeLog() {
         await deleteEventLog(logId, eventTypeId);
         const logs = await getEventLogs(eventTypeId);
         setEventLogs(logs);
+        if (expandedEvent === eventTypeId) {
+          setExpandedEventLogs(logs);
+        }
         toast.success("Log entry deleted");
       }
     } catch (error) {
@@ -791,159 +820,199 @@ export default function LifeLog() {
                 eventType.days_since !== null &&
                 eventType.days_since >= eventType.reminder_days;
 
+              const isExpanded = expandedEvent === eventType.id;
+
               return (
-                <div
-                  key={eventType.id}
-                  className={`rounded-2xl overflow-hidden transition-all duration-200 ${
-                    isDarkMode
-                      ? "bg-gradient-to-br from-iron-900 to-iron-900/80"
-                      : "bg-white shadow-sm"
-                  } ${isOverdue 
-                    ? isDarkMode 
-                      ? "ring-1 ring-amber-500/40 shadow-lg shadow-amber-500/10" 
-                      : "ring-1 ring-amber-400/50 shadow-lg shadow-amber-500/10"
-                    : isDarkMode
-                      ? ""
-                      : "border border-slate-200/80"
-                  }`}
-                >
-                  {/* Main Content */}
-                  <div className="p-4">
-                    <div className="flex items-center gap-4">
-                      {/* Icon with gradient background */}
-                      <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 shadow-lg transition-transform active:scale-95"
-                        style={{ 
-                          background: `linear-gradient(135deg, ${eventType.color}30 0%, ${eventType.color}50 100%)`,
-                          boxShadow: `0 4px 14px ${eventType.color}25`
-                        }}
-                      >
-                        {eventType.icon}
-                      </div>
-
-                      {/* Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3
-                            className={`font-bold text-lg ${
-                              isDarkMode ? "text-iron-100" : "text-slate-800"
-                            }`}
-                          >
-                            {eventType.name}
-                          </h3>
-                          {isOverdue && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-500 flex items-center gap-1">
-                              <AlertCircle className="w-3 h-3" />
-                              Due
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Last occurrence with better styling */}
-                        <div className="flex items-center gap-2 mt-1.5">
-                          {eventType.days_since === null ? (
-                            <span className={`text-sm ${
-                              isDarkMode ? "text-iron-500" : "text-slate-400"
-                            }`}>
-                              Never logged
-                            </span>
-                          ) : (
-                            <>
-                              <span className={`inline-flex items-center gap-1 text-sm font-medium ${
-                                isOverdue
-                                  ? "text-amber-500"
-                                  : isDarkMode
-                                    ? "text-iron-300"
-                                    : "text-slate-600"
-                              }`}>
-                                <Clock className="w-3.5 h-3.5" />
-                                {formatDaysSince(eventType.days_since)}
-                              </span>
-                              {eventType.last_log && (
-                                <>
-                                  <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>·</span>
-                                  <span className={`text-sm ${
-                                    isDarkMode ? "text-iron-500" : "text-slate-400"
-                                  }`}>
-                                    {formatDate(eventType.last_log.date)}
-                                  </span>
-                                </>
-                              )}
-                            </>
-                          )}
-                        </div>
-
-                        {/* Stats pill */}
-                        {eventType.total_logs > 0 && (
-                          <div className="mt-2">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
-                              isDarkMode 
-                                ? "bg-iron-800/80 text-iron-400" 
-                                : "bg-slate-100 text-slate-500"
-                            }`}>
-                              <History className="w-3 h-3" />
-                              {eventType.total_logs} time{eventType.total_logs !== 1 ? "s" : ""} logged
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Quick Log Button - More prominent */}
-                      <button
-                        onClick={() => handleQuickLog(eventType)}
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90 ${
-                          isDarkMode
-                            ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/30"
-                            : "bg-workout-primary text-white shadow-lg shadow-workout-primary/30"
-                        }`}
-                      >
-                        <Check className="w-5 h-5" strokeWidth={3} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Actions - Redesigned as icon buttons */}
-                  <div
-                    className={`flex items-center justify-between px-4 py-2.5 ${
-                      isDarkMode ? "bg-iron-950/50" : "bg-slate-50/80"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openLogDrawer(eventType)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all active:scale-95 ${
-                          isDarkMode
-                            ? "bg-iron-800/80 text-iron-300 hover:bg-iron-700"
-                            : "bg-white text-slate-600 hover:bg-slate-100 shadow-sm"
-                        }`}
-                      >
-                        <Calendar className="w-4 h-4" />
-                        <span>Log Date</span>
-                      </button>
-                      <button
-                        onClick={() => openHistoryDrawer(eventType)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all active:scale-95 ${
-                          isDarkMode
-                            ? "bg-iron-800/80 text-iron-300 hover:bg-iron-700"
-                            : "bg-white text-slate-600 hover:bg-slate-100 shadow-sm"
-                        }`}
-                      >
-                        <History className="w-4 h-4" />
-                        <span>History</span>
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteEventType(eventType)}
-                      className={`p-2 rounded-xl transition-all active:scale-90 ${
+                <ContextMenu key={eventType.id}>
+                  <ContextMenuTrigger asChild>
+                    <div
+                      className={`rounded-2xl overflow-hidden transition-all duration-200 ${
                         isDarkMode
-                          ? "text-iron-600 hover:text-red-400 hover:bg-red-500/10"
-                          : "text-slate-400 hover:text-red-500 hover:bg-red-50"
+                          ? "bg-iron-900"
+                          : "bg-white shadow-sm"
+                      } ${isOverdue 
+                        ? isDarkMode 
+                          ? "ring-1 ring-amber-500/40" 
+                          : "ring-1 ring-amber-400/50"
+                        : isDarkMode
+                          ? ""
+                          : "border border-slate-200/80"
                       }`}
                     >
+                      <div className="flex items-center gap-3 p-3.5">
+                        <button
+                          onClick={() => toggleExpandEvent(eventType)}
+                          className="flex items-center gap-3 flex-1 min-w-0"
+                        >
+                          <div
+                            className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                            style={{ backgroundColor: `${eventType.color}25` }}
+                          >
+                            {eventType.icon}
+                          </div>
+                          <div className="text-left flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className={`font-semibold truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                                {eventType.name}
+                              </h3>
+                              {isOverdue && (
+                                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-500/20 text-amber-500 flex-shrink-0">
+                                  Due
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-xs mt-0.5 ${
+                              isOverdue
+                                ? "text-amber-500"
+                                : isDarkMode ? "text-iron-500" : "text-slate-500"
+                            }`}>
+                              {eventType.days_since === null
+                                ? "Never logged"
+                                : formatDaysSince(eventType.days_since)}
+                              {eventType.total_logs > 0 && (
+                                <span className={isDarkMode ? "text-iron-600" : "text-slate-400"}>
+                                  {" "}· {eventType.total_logs} time{eventType.total_logs !== 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <ChevronDown
+                            className={`w-4 h-4 flex-shrink-0 transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            } ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+                          />
+                        </button>
+                        <button
+                          onClick={() => handleQuickLog(eventType)}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90 ${
+                            isDarkMode
+                              ? "bg-lift-primary text-iron-950"
+                              : "bg-workout-primary text-white"
+                          }`}
+                        >
+                          <Check className="w-4 h-4" strokeWidth={3} />
+                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div className={`px-3.5 pb-3.5 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+                          {isLoadingExpandedLogs ? (
+                            <div className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                              Loading...
+                            </div>
+                          ) : expandedEventLogs.length === 0 ? (
+                            <div className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                              No history yet
+                            </div>
+                          ) : (
+                            <div className="relative pt-3">
+                              {/* Timeline */}
+                              <div className={`absolute left-[15px] top-3 bottom-0 w-px ${isDarkMode ? "bg-iron-800" : "bg-slate-200"}`} />
+                              <div className="space-y-0">
+                                {expandedEventLogs.slice(0, 10).map((log, idx) => {
+                                  const logDate = new Date(log.date);
+                                  const todayDate = new Date();
+                                  todayDate.setHours(0, 0, 0, 0);
+                                  logDate.setHours(0, 0, 0, 0);
+                                  const daysSince = Math.floor((todayDate - logDate) / (1000 * 60 * 60 * 24));
+                                  const gap = idx > 0
+                                    ? Math.floor((new Date(expandedEventLogs[idx - 1].date) - new Date(log.date)) / (1000 * 60 * 60 * 24))
+                                    : null;
+
+                                  return (
+                                    <div key={log.id}>
+                                      {gap !== null && gap > 0 && (
+                                        <div className="relative flex items-center py-0.5" style={{ marginLeft: "3px" }}>
+                                          <span
+                                            className={`text-[9px] font-medium px-1.5 py-px rounded-full relative z-10 ${
+                                              isDarkMode ? "bg-iron-900 text-iron-600 border border-iron-800" : "bg-white text-slate-400 border border-slate-200"
+                                            }`}
+                                          >
+                                            {gap}d
+                                          </span>
+                                        </div>
+                                      )}
+                                      <ContextMenu>
+                                        <ContextMenuTrigger asChild>
+                                          <div className="flex items-start gap-3 py-2 relative">
+                                            <div
+                                              className="w-[7px] h-[7px] rounded-full mt-1.5 flex-shrink-0 relative z-10 ring-2"
+                                              style={{
+                                                backgroundColor: idx === 0 ? eventType.color : (isDarkMode ? "#3f3f46" : "#cbd5e1"),
+                                                ringColor: isDarkMode ? "#18181b" : "#ffffff",
+                                              }}
+                                            />
+                                            <div className="flex-1 min-w-0 ml-1">
+                                              <p className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                                                {formatDate(log.date)}
+                                              </p>
+                                              <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                                                {formatDaysSince(daysSince)}
+                                              </p>
+                                              {log.notes && (
+                                                <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                                                  {log.notes}
+                                                </p>
+                                              )}
+                                              {log.cost && (
+                                                <p className={`text-xs mt-0.5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
+                                                  ₹{log.cost}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </ContextMenuTrigger>
+                                        <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                                          <ContextMenuItem
+                                            destructive
+                                            onClick={() => handleDeleteLog(log.id, eventType.id)}
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete Log
+                                          </ContextMenuItem>
+                                        </ContextMenuContent>
+                                      </ContextMenu>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {expandedEventLogs.length > 10 && (
+                                <button
+                                  onClick={() => openHistoryDrawer(eventType)}
+                                  className={`mt-2 w-full text-center text-xs font-medium py-2 rounded-lg ${
+                                    isDarkMode ? "text-iron-400 active:bg-iron-800" : "text-slate-500 active:bg-slate-100"
+                                  }`}
+                                >
+                                  View all {expandedEventLogs.length} entries
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => openLogDrawer(eventType)}
+                            className={`mt-2 w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
+                              isDarkMode
+                                ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                                : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                            }`}
+                          >
+                            <CalendarPlus className="w-3.5 h-3.5" />
+                            Log with Details
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                    <ContextMenuItem
+                      destructive
+                      onClick={() => handleDeleteEventType(eventType)}
+                    >
                       <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                      Delete Event
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })
           )}
@@ -995,122 +1064,122 @@ export default function LifeLog() {
                 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
                 return (
-                  <div
-                    key={trackable.id}
-                    className={`rounded-2xl overflow-hidden ${
-                      isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
-                    } ${!isScheduledToday ? "opacity-60" : ""}`}
-                  >
-                    {/* Habit Header */}
-                    <div className="p-3 flex items-center justify-between">
-                      <button
-                        onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
-                        className="flex items-center gap-3 flex-1"
+                  <ContextMenu key={trackable.id}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        className={`rounded-2xl overflow-hidden ${
+                          isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
+                        } ${!isScheduledToday ? "opacity-60" : ""}`}
                       >
-                        <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                          style={{ backgroundColor: `${trackable.color}30` }}
-                        >
-                          {trackable.icon}
-                        </div>
-                        <div className="text-left">
-                          <p
-                            className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                        {/* Habit Header */}
+                        <div className="p-3 flex items-center justify-between">
+                          <button
+                            onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
+                            className="flex items-center gap-3 flex-1"
                           >
-                            {trackable.name}
-                          </p>
-                          <div className="flex items-center gap-1.5">
-                            <p
-                              className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                              style={{ backgroundColor: `${trackable.color}30` }}
                             >
-                              {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
-                            </p>
-                            {trackable.active_days && (
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                                isScheduledToday
-                                  ? isDarkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-600"
-                                  : isDarkMode ? "bg-iron-800 text-iron-500" : "bg-slate-100 text-slate-400"
-                              }`}>
-                                {isScheduledToday ? "Today" : trackable.active_days.map(d => DAY_LABELS[d]).join(", ")}
-                              </span>
-                            )}
+                              {trackable.icon}
+                            </div>
+                            <div className="text-left">
+                              <p
+                                className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                              >
+                                {trackable.name}
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p
+                                  className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                                >
+                                  {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
+                                </p>
+                                {trackable.active_days && (
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                                    isScheduledToday
+                                      ? isDarkMode ? "bg-green-500/20 text-green-400" : "bg-green-100 text-green-600"
+                                      : isDarkMode ? "bg-iron-800 text-iron-500" : "bg-slate-100 text-slate-400"
+                                  }`}>
+                                    {isScheduledToday ? "Today" : trackable.active_days.map(d => DAY_LABELS[d]).join(", ")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <ChevronDown
+                              className={`w-5 h-5 transition-transform ml-auto ${
+                                isExpanded ? "rotate-180" : ""
+                              } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                            />
+                          </button>
+                          <div className="flex items-center gap-1 ml-2">
+                            <button
+                              onClick={() => setNotificationTrackable(trackable)}
+                              className={`p-2 rounded-lg ${
+                                isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"
+                              } ${
+                                NotificationService.getSchedule(trackable.id)?.enabled
+                                  ? isDarkMode
+                                    ? "text-lift-primary"
+                                    : "text-workout-primary"
+                                  : isDarkMode
+                                    ? "text-iron-500 hover:text-iron-300"
+                                    : "text-slate-400 hover:text-slate-600"
+                              }`}
+                            >
+                              {NotificationService.getSchedule(trackable.id)?.enabled ? (
+                                <BellRing className="w-4 h-4" />
+                              ) : (
+                                <Bell className="w-4 h-4" />
+                              )}
+                            </button>
                           </div>
                         </div>
-                        <ChevronDown
-                          className={`w-5 h-5 transition-transform ml-auto ${
-                            isExpanded ? "rotate-180" : ""
-                          } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                        />
-                      </button>
-                      <div className="flex items-center gap-1 ml-2">
-                        <button
-                          onClick={() => setNotificationTrackable(trackable)}
-                          className={`p-2 rounded-lg ${
-                            isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"
-                          } ${
-                            NotificationService.getSchedule(trackable.id)?.enabled
-                              ? isDarkMode
-                                ? "text-lift-primary"
-                                : "text-workout-primary"
-                              : isDarkMode
-                                ? "text-iron-500 hover:text-iron-300"
-                                : "text-slate-400 hover:text-slate-600"
-                          }`}
-                        >
-                          {NotificationService.getSchedule(trackable.id)?.enabled ? (
-                            <BellRing className="w-4 h-4" />
-                          ) : (
-                            <Bell className="w-4 h-4" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleEditPill(trackable)}
-                          className={`p-2 rounded-lg ${
-                            isDarkMode
-                              ? "text-iron-500 hover:text-iron-300 active:bg-iron-800"
-                              : "text-slate-400 hover:text-slate-600 active:bg-slate-100"
-                          }`}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePill(trackable.id)}
-                          className={`p-2 rounded-lg ${
-                            isDarkMode
-                              ? "text-iron-500 hover:text-red-500 active:bg-iron-800"
-                              : "text-slate-400 hover:text-red-500 active:bg-slate-100"
-                          }`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
 
-                    {/* Expanded Heatmap and Add Past Entries */}
-                    {isExpanded && (
-                      <div className="px-3 pb-3 animate-in slide-in-from-top duration-200">
-                        <ActivityHeatmap
-                          data={habitHeatmapData[trackable.id] || []}
-                          type="habit"
-                          label=""
-                          color={trackable.color}
-                          compact={true}
-                          isDarkMode={isDarkMode}
-                        />
-                        <button
-                          onClick={() => openPastEntryDrawer(trackable)}
-                          className={`mt-3 w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
-                            isDarkMode
-                              ? "bg-iron-800 text-iron-300 active:bg-iron-700"
-                              : "bg-slate-100 text-slate-600 active:bg-slate-200"
-                          }`}
-                        >
-                          <CalendarPlus className="w-4 h-4" />
-                          Add Past Entries
-                        </button>
+                        {/* Expanded Heatmap and Add Past Entries */}
+                        {isExpanded && (
+                          <div className="px-3 pb-3 animate-in slide-in-from-top duration-200">
+                            <ActivityHeatmap
+                              data={habitHeatmapData[trackable.id] || []}
+                              type="habit"
+                              label=""
+                              color={trackable.color}
+                              compact={true}
+                              isDarkMode={isDarkMode}
+                            />
+                            <button
+                              onClick={() => openPastEntryDrawer(trackable)}
+                              className={`mt-3 w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                                isDarkMode
+                                  ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                                  : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                              }`}
+                            >
+                              <CalendarPlus className="w-4 h-4" />
+                              Add Past Entries
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                      <ContextMenuItem
+                        onClick={() => handleEditPill(trackable)}
+                        className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Edit Habit
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        destructive
+                        onClick={() => handleDeletePill(trackable.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Habit
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })
             )}
@@ -1357,44 +1426,46 @@ export default function LifeLog() {
                   const daysSince = Math.floor((todayDate - logDate) / (1000 * 60 * 60 * 24));
 
                   return (
-                    <div
-                      key={log.id}
-                      className={`p-3 rounded-xl ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                            {formatDate(log.date)}
-                          </p>
-                          <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                            {formatDaysSince(daysSince)}
-                            {index > 0 && eventLogs[index - 1] && (
-                              <span className={isDarkMode ? "text-iron-600" : "text-slate-400"}>
-                                {" "}· {Math.floor((new Date(eventLogs[index - 1].date) - new Date(log.date)) / (1000 * 60 * 60 * 24))} days after
-                              </span>
+                    <ContextMenu key={log.id}>
+                      <ContextMenuTrigger asChild>
+                        <div
+                          className={`p-3 rounded-xl ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
+                        >
+                          <div>
+                            <p className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                              {formatDate(log.date)}
+                            </p>
+                            <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                              {formatDaysSince(daysSince)}
+                              {index > 0 && eventLogs[index - 1] && (
+                                <span className={isDarkMode ? "text-iron-600" : "text-slate-400"}>
+                                  {" "}· {Math.floor((new Date(eventLogs[index - 1].date) - new Date(log.date)) / (1000 * 60 * 60 * 24))} days after
+                                </span>
+                              )}
+                            </p>
+                            {log.notes && (
+                              <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                                {log.notes}
+                              </p>
                             )}
-                          </p>
-                          {log.notes && (
-                            <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
-                              {log.notes}
-                            </p>
-                          )}
-                          {log.cost && (
-                            <p className={`text-sm ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
-                              ₹{log.cost}
-                            </p>
-                          )}
+                            {log.cost && (
+                              <p className={`text-sm ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
+                                ₹{log.cost}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <button
+                      </ContextMenuTrigger>
+                      <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                        <ContextMenuItem
+                          destructive
                           onClick={() => handleDeleteLog(log.id)}
-                          className={`p-2 rounded-lg ${
-                            isDarkMode ? "text-iron-500 hover:bg-iron-700" : "text-slate-400 hover:bg-slate-200"
-                          }`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                          Delete Log
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   );
                 })}
               </div>

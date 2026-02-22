@@ -19,7 +19,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Target, Plus, Trash2, Trophy, ChevronRight, Minus, Check } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import { Target, Plus, Trash2, Trophy, ChevronRight, Minus, Check, Pencil } from "lucide-react";
 
 const GOAL_TYPES = [
   { id: "workout_days", label: "Workout days per week", icon: "💪", unit: "days/week", max: 7, auto: true, desc: "Auto-tracks from your workouts" },
@@ -206,6 +213,27 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
     setDeleteConfirm(null);
   };
 
+  const handleOpenEdit = (goal) => {
+    const goalType = GOAL_TYPES.find((t) => t.id === goal.type);
+    setEditingGoal({
+      ...goal,
+      name: goal.name || goalType?.label || "",
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingGoal || !editingGoal.target) return;
+    const updated = goals.map((g) =>
+      g.id === editingGoal.id
+        ? { ...g, target: parseFloat(editingGoal.target), name: editingGoal.type === "custom" ? editingGoal.name : g.name }
+        : g,
+    );
+    setGoals(updated);
+    saveGoals(user.id, updated);
+    toast.success("Goal updated");
+    setEditingGoal(null);
+  };
+
   const updateGoalProgress = (goalId, newCurrent) => {
     const updated = goals.map((g) =>
       g.id === goalId ? { ...g, current: Math.max(0, newCurrent) } : g,
@@ -243,71 +271,82 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
       {goalProgress.length > 0 && (
         <div className={`px-4 pb-4 space-y-2`}>
           {goalProgress.map((goal) => (
-            <div
-              key={goal.id}
-              className={`rounded-xl overflow-hidden ${
-                goal.progress >= 100
-                  ? isDarkMode
-                    ? "bg-green-500/10 border border-green-500/20"
-                    : "bg-green-50 border border-green-200"
-                  : isDarkMode
-                    ? "bg-iron-800/50"
-                    : "bg-slate-50"
-              }`}
-            >
-              <div className="flex items-center gap-3 p-3">
-                <GoalProgressRing progress={goal.progress} isDarkMode={isDarkMode} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm">{goal.icon}</span>
-                    <p className={`text-sm font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                      {goal.name}
-                    </p>
-                  </div>
-                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    {goal.label}
-                  </p>
-                </div>
-
-                {/* Manual update for custom goals */}
-                {!goal.isAuto && goal.progress < 100 && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => updateGoalProgress(goal.id, (goal.current || 0) - 1)}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-iron-700 active:bg-iron-600" : "bg-slate-200 active:bg-slate-300"}`}
-                    >
-                      <Minus className={`w-3.5 h-3.5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
-                    </button>
-                    <button
-                      onClick={() => updateGoalProgress(goal.id, (goal.current || 0) + 1)}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-lift-primary/20 active:bg-lift-primary/30" : "bg-amber-100 active:bg-amber-200"}`}
-                    >
-                      <Plus className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`} />
-                    </button>
-                  </div>
-                )}
-
-                {goal.progress >= 100 && (
-                  <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                )}
-
-                <button
-                  onClick={() => setDeleteConfirm(goal)}
-                  className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-600 active:text-iron-400 active:bg-iron-700" : "text-slate-400 active:text-slate-600 active:bg-slate-200"}`}
+            <ContextMenu key={goal.id}>
+              <ContextMenuTrigger asChild>
+                <div
+                  className={`rounded-xl overflow-hidden ${
+                    goal.progress >= 100
+                      ? isDarkMode
+                        ? "bg-green-500/10 border border-green-500/20"
+                        : "bg-green-50 border border-green-200"
+                      : isDarkMode
+                        ? "bg-iron-800/50"
+                        : "bg-slate-50"
+                  }`}
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                  <div className="flex items-center gap-3 p-3">
+                    <GoalProgressRing progress={goal.progress} isDarkMode={isDarkMode} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{goal.icon}</span>
+                        <p className={`text-sm font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                          {goal.name}
+                        </p>
+                      </div>
+                      <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                        {goal.label}
+                      </p>
+                    </div>
 
-              {/* How it's tracked hint */}
-              {goal.isAuto && (
-                <div className={`px-3 pb-2 -mt-1`}>
-                  <p className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                    Auto-tracked
-                  </p>
+                    {!goal.isAuto && goal.progress < 100 && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateGoalProgress(goal.id, (goal.current || 0) - 1)}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-iron-700 active:bg-iron-600" : "bg-slate-200 active:bg-slate-300"}`}
+                        >
+                          <Minus className={`w-3.5 h-3.5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
+                        </button>
+                        <button
+                          onClick={() => updateGoalProgress(goal.id, (goal.current || 0) + 1)}
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-lift-primary/20 active:bg-lift-primary/30" : "bg-amber-100 active:bg-amber-200"}`}
+                        >
+                          <Plus className={`w-3.5 h-3.5 ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`} />
+                        </button>
+                      </div>
+                    )}
+
+                    {goal.progress >= 100 && (
+                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    )}
+                  </div>
+
+                  {goal.isAuto && (
+                    <div className={`px-3 pb-2 -mt-1`}>
+                      <p className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                        Auto-tracked
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </ContextMenuTrigger>
+              <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                <ContextMenuItem
+                  onClick={() => handleOpenEdit(goal)}
+                  className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit Goal
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                  destructive
+                  onClick={() => setDeleteConfirm(goal)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Goal
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       )}
@@ -413,6 +452,59 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
               }`}
             >
               Add Goal
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Goal Modal */}
+      <Modal open={!!editingGoal} onOpenChange={(open) => !open && setEditingGoal(null)}>
+        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Edit Goal</ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-4">
+            {editingGoal?.type === "custom" && (
+              <div>
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>Goal Name</label>
+                <input
+                  type="text"
+                  value={editingGoal?.name || ""}
+                  onChange={(e) => setEditingGoal({ ...editingGoal, name: e.target.value })}
+                  className={`input-field ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
+                />
+              </div>
+            )}
+            <div>
+              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                Target {GOAL_TYPES.find((t) => t.id === editingGoal?.type)?.unit ? `(${GOAL_TYPES.find((t) => t.id === editingGoal?.type).unit})` : ""}
+              </label>
+              <input
+                type="number"
+                value={editingGoal?.target || ""}
+                onChange={(e) => setEditingGoal({ ...editingGoal, target: e.target.value })}
+                max={GOAL_TYPES.find((t) => t.id === editingGoal?.type)?.max}
+                className={`input-field text-center text-xl font-bold ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <button
+              onClick={() => setEditingGoal(null)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={!editingGoal?.target || (editingGoal?.type === "custom" && !editingGoal?.name)}
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold ${
+                isDarkMode
+                  ? "bg-lift-primary text-iron-950 disabled:opacity-40"
+                  : "bg-workout-primary text-white disabled:opacity-40"
+              }`}
+            >
+              Save
             </button>
           </ModalFooter>
         </ModalContent>

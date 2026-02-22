@@ -36,6 +36,13 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 
 const FOOD_ICONS = [
@@ -577,156 +584,164 @@ export default function Food() {
               const daysTracked = itemHeatmap.length;
 
               return (
-                <div
-                  key={item.id}
-                  className={`rounded-2xl overflow-hidden ${
-                    isDarkMode
-                      ? "bg-iron-900/50"
-                      : "bg-white border border-slate-200 shadow-sm"
-                  }`}
-                >
-                  <div className="p-4 flex items-center gap-3">
-                    <button
-                      onClick={() => handleToggle(item)}
-                      className={`
-                        w-14 h-14 rounded-xl flex items-center justify-center text-2xl
-                        transition-all duration-200 active:scale-95
-                        ${
-                          isConsumed
-                            ? "shadow-lg"
-                            : isDarkMode
-                              ? "bg-iron-800"
-                              : "bg-slate-100"
-                        }
-                      `}
-                      style={{
-                        backgroundColor: isConsumed ? item.color : undefined,
-                      }}
+                <ContextMenu key={item.id}>
+                  <ContextMenuTrigger asChild>
+                    <div
+                      className={`rounded-2xl overflow-hidden ${
+                        isDarkMode
+                          ? "bg-iron-900/50"
+                          : "bg-white border border-slate-200 shadow-sm"
+                      }`}
                     >
-                      {isConsumed ? (
-                        <Check className="w-6 h-6 text-white" />
-                      ) : (
-                        item.icon
-                      )}
-                    </button>
-
-                    <button
-                      className="flex-1 text-left"
-                      onClick={() => handleExpandItem(item.id)}
-                    >
-                      <p
-                        className={`font-medium ${
-                          isConsumed
-                            ? isDarkMode
-                              ? "text-iron-100"
-                              : "text-slate-800"
-                            : isDarkMode
-                              ? "text-iron-300"
-                              : "text-slate-600"
-                        }`}
-                      >
-                        {item.name}
-                      </p>
-                      <p
-                        className={`text-sm ${
-                          isDarkMode ? "text-iron-500" : "text-slate-500"
-                        }`}
-                      >
-                        {isConsumed && (
-                          <span
-                            className={
-                              isDarkMode
-                                ? "text-lift-primary"
-                                : "text-amber-500"
+                      <div className="p-4 flex items-center gap-3">
+                        <button
+                          onClick={() => handleToggle(item)}
+                          className={`
+                            w-14 h-14 rounded-xl flex items-center justify-center text-2xl
+                            transition-all duration-200 active:scale-95
+                            ${
+                              isConsumed
+                                ? "shadow-lg"
+                                : isDarkMode
+                                  ? "bg-iron-800"
+                                  : "bg-slate-100"
                             }
+                          `}
+                          style={{
+                            backgroundColor: isConsumed ? item.color : undefined,
+                          }}
+                        >
+                          {isConsumed ? (
+                            <Check className="w-6 h-6 text-white" />
+                          ) : (
+                            item.icon
+                          )}
+                        </button>
+
+                        <button
+                          className="flex-1 text-left"
+                          onClick={() => handleExpandItem(item.id)}
+                        >
+                          <p
+                            className={`font-medium ${
+                              isConsumed
+                                ? isDarkMode
+                                  ? "text-iron-100"
+                                  : "text-slate-800"
+                                : isDarkMode
+                                  ? "text-iron-300"
+                                  : "text-slate-600"
+                            }`}
                           >
-                            {quantity} {item.unit} ·{" "}
-                          </span>
+                            {item.name}
+                          </p>
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? "text-iron-500" : "text-slate-500"
+                            }`}
+                          >
+                            {isConsumed && (
+                              <span
+                                className={
+                                  isDarkMode
+                                    ? "text-lift-primary"
+                                    : "text-amber-500"
+                                }
+                              >
+                                {quantity} {item.unit} ·{" "}
+                              </span>
+                            )}
+                            {daysTracked > 0
+                              ? `${daysTracked} days tracked`
+                              : "Tap to log"}
+                          </p>
+                        </button>
+
+                        {isConsumed && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                updateFoodEntryQuantity(
+                                  item.id,
+                                  Math.max(0.5, quantity - 0.5),
+                                );
+                                queryClient.invalidateQueries(["foodHistory"]);
+                              }}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                              }`}
+                            >
+                              <Minus
+                                className={`w-4 h-4 ${
+                                  isDarkMode ? "text-iron-400" : "text-slate-500"
+                                }`}
+                              />
+                            </button>
+                            <span
+                              className={`w-8 text-center font-medium ${
+                                isDarkMode ? "text-iron-100" : "text-slate-800"
+                              }`}
+                            >
+                              {quantity}
+                            </span>
+                            <button
+                              onClick={() => {
+                                updateFoodEntryQuantity(item.id, quantity + 0.5);
+                                queryClient.invalidateQueries(["foodHistory"]);
+                              }}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                              }`}
+                            >
+                              <Plus
+                                className={`w-4 h-4 ${
+                                  isDarkMode ? "text-iron-400" : "text-slate-500"
+                                }`}
+                              />
+                            </button>
+                          </div>
                         )}
-                        {daysTracked > 0
-                          ? `${daysTracked} days tracked`
-                          : "Tap to log"}
-                      </p>
-                    </button>
 
-                    {isConsumed && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => {
-                            updateFoodEntryQuantity(
-                              item.id,
-                              Math.max(0.5, quantity - 0.5),
-                            );
-                            queryClient.invalidateQueries(["foodHistory"]);
-                          }}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                            isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                          }`}
-                        >
-                          <Minus
-                            className={`w-4 h-4 ${
-                              isDarkMode ? "text-iron-400" : "text-slate-500"
-                            }`}
-                          />
-                        </button>
-                        <span
-                          className={`w-8 text-center font-medium ${
-                            isDarkMode ? "text-iron-100" : "text-slate-800"
-                          }`}
-                        >
-                          {quantity}
-                        </span>
-                        <button
-                          onClick={() => {
-                            updateFoodEntryQuantity(item.id, quantity + 0.5);
-                            queryClient.invalidateQueries(["foodHistory"]);
-                          }}
-                          className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                            isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                          }`}
-                        >
-                          <Plus
-                            className={`w-4 h-4 ${
-                              isDarkMode ? "text-iron-400" : "text-slate-500"
-                            }`}
-                          />
-                        </button>
+                        <ChevronDown
+                          className={`w-5 h-5 transition-transform cursor-pointer flex-shrink-0 ${
+                            isExpanded ? "rotate-180" : ""
+                          } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                          onClick={() => handleExpandItem(item.id)}
+                        />
                       </div>
-                    )}
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleEditFood(item)}
-                        className={`p-2 ${
-                          isDarkMode
-                            ? "text-iron-500 hover:text-iron-300"
-                            : "text-slate-400 hover:text-slate-600"
-                        }`}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <ChevronDown
-                        className={`w-5 h-5 transition-transform cursor-pointer ${
-                          isExpanded ? "rotate-180" : ""
-                        } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                        onClick={() => handleExpandItem(item.id)}
-                      />
+                      {isExpanded && (
+                        <div className="px-4 pb-4">
+                          <ActivityHeatmap
+                            data={itemHeatmap}
+                            type="habit"
+                            label=""
+                            color={item.color}
+                            compact={true}
+                            isDarkMode={isDarkMode}
+                          />
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="px-4 pb-4">
-                      <ActivityHeatmap
-                        data={itemHeatmap}
-                        type="habit"
-                        label=""
-                        color={item.color}
-                        compact={true}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
-                  )}
-                </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                    <ContextMenuItem
+                      onClick={() => handleEditFood(item)}
+                      className={isDarkMode ? "text-iron-200" : "text-slate-700"}
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit
+                    </ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      destructive
+                      onClick={() => setDeleteConfirm(item)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
 

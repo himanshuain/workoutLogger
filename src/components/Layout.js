@@ -306,25 +306,24 @@ export default function Layout({ children }) {
     >
       {/* Settings page: rendered directly, no scroll snap */}
       {isSettingsPage ? (
-        <main className="flex-1 overflow-auto nav-clearance">
+        <main className="flex-1 overflow-y-auto scrollbar-thin nav-clearance">
           <AnimatePresence mode="wait">
             <motion.div
               key="content-settings"
               variants={contentVariants}
               initial="initial"
               animate="animate"
-              className="h-full"
             >
               {children}
             </motion.div>
           </AnimatePresence>
         </main>
       ) : (
-        /* Scrollable Tab Cards Container */
-        <div
+        /* Scrollable Tab Cards Container — single scroll context */
+        <main
           ref={containerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto scrollbar-thin"
           style={{
             scrollSnapType: "y mandatory",
             WebkitOverflowScrolling: "touch",
@@ -337,36 +336,33 @@ export default function Layout({ children }) {
               <div
                 key={tab.id}
                 ref={el => (cardRefs.current[idx] = el)}
-                className="h-full flex flex-col"
+                className="nav-clearance"
                 style={{
                   scrollSnapAlign: "start",
                   scrollSnapStop: "always",
                   minHeight: "100%",
                 }}
               >
-                <main className="flex-1 overflow-auto nav-clearance">
-                  {isActive ? (
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={`content-${tab.id}`}
-                        variants={contentVariants}
-                        initial="initial"
-                        animate="animate"
-                        className="h-full"
-                      >
-                        {children}
-                      </motion.div>
-                    </AnimatePresence>
-                  ) : (
-                    <div className="p-4">
-                      <SkeletonPage isDarkMode={isDarkMode} />
-                    </div>
-                  )}
-                </main>
+                {isActive ? (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={`content-${tab.id}`}
+                      variants={contentVariants}
+                      initial="initial"
+                      animate="animate"
+                    >
+                      {children}
+                    </motion.div>
+                  </AnimatePresence>
+                ) : (
+                  <div className="p-4">
+                    <SkeletonPage isDarkMode={isDarkMode} />
+                  </div>
+                )}
               </div>
             );
           })}
-        </div>
+        </main>
       )}
 
       {/* PWA Install Prompt */}

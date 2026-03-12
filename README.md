@@ -24,6 +24,8 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 [![PWA](https://img.shields.io/badge/PWA-Installable-purple?style=flat-square)](https://web.dev/progressive-web-apps/)
 
+[![Watch Demo Video](https://img.shields.io/badge/🎬_Watch_Demo-Loom_Video-blueviolet?style=for-the-badge&logo=loom)](https://www.loom.com/share/e39f013942ff4022ab80190e777d6394)
+
 </div>
 
 ---
@@ -91,7 +93,7 @@
 
 ## <video controls src="Screen Recording 2025-12-26 at 7.18.02 PM-1.mov" title="Title" width="300"></video>
 
-![alt text](<Screenshot 2025-12-26 at 7.33.32 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.33.28 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.33.16 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.33.04 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.32.46 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.32.38 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.32.20 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.32.12 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.31.57 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.31.31 PM.png>) ![alt text](<Screenshot 2025-12-26 at 7.31.17 PM.png>)
+<img src="Screenshot 2025-12-26 at 7.33.32 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.28 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.16 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.04 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.46 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.38 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.20 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.12 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.57 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.31 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.17 PM.png" width="200" />
 
 ## 🏗 Architecture
 

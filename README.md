@@ -34,7 +34,7 @@
 
 ## 📱 Screenshots
 
-<img src="Screenshot 2025-12-26 at 7.33.32 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.28 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.16 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.04 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.46 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.38 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.20 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.12 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.57 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.31 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.17 PM.png" width="200" />
+<img src="Screenshot 2025-12-26 at 7.33.32 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.28 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.16 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.33.04 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.46 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.38 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.20 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.32.12 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.57 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.31 PM.png" width="200" /> <img src="Screenshot 2025-12-26 at 7.31.17 PM.png" width="200" />
 
 ---
 

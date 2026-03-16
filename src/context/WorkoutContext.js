@@ -781,19 +781,96 @@ export function WorkoutProvider({ children }) {
 
     if (!uid) return;
 
-    loadExercises();
-    Promise.all([
-      loadSettings(),
-      loadExerciseHistory(),
-      loadTrackables(),
-      loadTodayEntries(),
-      loadFoodItems(),
-      loadTodayFoodEntries(),
-      loadRoutines(),
-      loadActiveSession(),
-      loadEventTypes(),
-      loadStepCards(),
-    ]);
+    async function loadInitData() {
+      try {
+        const { data, error } = await supabase.rpc("get_user_init_data", {
+          p_user_id: uid,
+          p_today: today,
+        });
+
+        if (error) throw error;
+
+        setExercises(data.exercises || []);
+
+        if (data.user_settings) setSettings(data.user_settings);
+
+        const historyMap = {};
+        for (const h of (data.exercise_history || [])) {
+          historyMap[h.exercise_name] = h;
+        }
+        setExerciseHistory(historyMap);
+
+        const daysMap = getActiveDaysMap();
+        const enriched = (data.trackables || []).map(t => ({
+          ...t,
+          active_days: daysMap[t.id] || null,
+        }));
+        setTrackables(enriched);
+
+        const entriesMap = {};
+        for (const e of (data.today_entries || [])) {
+          entriesMap[e.trackable_id] = e;
+        }
+        setTodayEntries(entriesMap);
+
+        setFoodItems(data.food_items || []);
+
+        const entriesMap2 = {};
+        for (const e of (data.today_food_entries || [])) {
+          entriesMap2[e.food_item_id] = e;
+        }
+        setTodayFoodEntries(entriesMap2);
+
+        const sortedRoutines = (data.routines || []).map(routine => ({
+          ...routine,
+          routine_exercises: (routine.routine_exercises || []).sort(
+            (a, b) => a.order_index - b.order_index
+          ),
+        }));
+        setRoutines(sortedRoutines);
+
+        setActiveSession(data.active_session || null);
+
+        const processedEvents = (data.event_types || []).map(eventType => {
+          const logs = eventType.event_logs || [];
+          const sortedLogs = logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+          const lastLog = sortedLogs[0] || null;
+          let daysSince = null;
+          if (lastLog) {
+            const lastDate = new Date(lastLog.date);
+            const todayDate = new Date();
+            todayDate.setHours(0, 0, 0, 0);
+            lastDate.setHours(0, 0, 0, 0);
+            daysSince = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+          }
+          return { ...eventType, last_log: lastLog, days_since: daysSince, total_logs: logs.length };
+        });
+        setEventTypes(processedEvents);
+
+        const processedCards = (data.step_cards || []).map(card => ({
+          ...card,
+          step_items: (card.step_items || []).sort((a, b) => a.order_index - b.order_index),
+        }));
+        setStepCards(processedCards);
+      } catch (err) {
+        console.error("RPC init failed, falling back to individual loaders:", err);
+        loadExercises();
+        Promise.all([
+          loadSettings(),
+          loadExerciseHistory(),
+          loadTrackables(),
+          loadTodayEntries(),
+          loadFoodItems(),
+          loadTodayFoodEntries(),
+          loadRoutines(),
+          loadActiveSession(),
+          loadEventTypes(),
+          loadStepCards(),
+        ]);
+      }
+    }
+
+    loadInitData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

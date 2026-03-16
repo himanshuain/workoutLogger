@@ -107,18 +107,17 @@ html {
 
 body {
   @apply font-body antialiased;
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-top: env(safe-area-inset-top);
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
 
-/* Prevent pull-to-refresh on mobile */
 html,
 body {
+  overflow: hidden;
   overscroll-behavior-y: contain;
+  height: 100%;
 }
 
 /* Custom scrollbar for dark theme */
@@ -525,14 +524,21 @@ input[type="number"] {
 
 /* iOS specific - prevent viewport resize issues */
 @supports (-webkit-touch-callout: none) {
-  html {
+  html,
+  body {
     height: -webkit-fill-available;
   }
-  
-  body {
-    min-height: -webkit-fill-available;
-    min-height: 100vh;
-  }
+}
+
+/* Vaul drawer background scaling — smooth open/close */
+[vaul-drawer-wrapper] {
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+              border-radius 0.4s cubic-bezier(0.32, 0.72, 0, 1) !important;
+  transform-origin: center top;
+}
+
+[vaul-drawer-wrapper][vaul-drawer-wrapper="true"] {
+  border-radius: 12px;
 }
 
 /* Thin, unobtrusive scrollbar for main content areas */

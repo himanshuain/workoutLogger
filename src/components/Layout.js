@@ -181,8 +181,11 @@ export default function Layout({ children }) {
   return (
     <div
       vaul-drawer-wrapper=""
-      className={`h-screen flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      className={`flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
+      style={{
+        height: "100dvh",
+        paddingTop: "env(safe-area-inset-top)",
+      }}
     >
       <main
         className="flex-1 overflow-y-auto scrollbar-thin"

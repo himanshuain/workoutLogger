@@ -4,14 +4,19 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Modal = ({ children, ...props }) => (
-  <Drawer.Root shouldScaleBackground {...props}>
+  <Drawer.Root
+    shouldScaleBackground
+    setBackgroundColorOnScale={false}
+    repositionInputs={false}
+    {...props}
+  >
     {children}
   </Drawer.Root>
 );
 Modal.displayName = "Modal";
 
 const NestedModal = ({ children, ...props }) => (
-  <Drawer.NestedRoot {...props}>
+  <Drawer.NestedRoot repositionInputs={false} {...props}>
     {children}
   </Drawer.NestedRoot>
 );
@@ -24,7 +29,10 @@ const ModalClose = Drawer.Close;
 const ModalOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <Drawer.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm", className)}
+    className={cn(
+      "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+      className,
+    )}
     {...props}
   />
 ));

@@ -8,6 +8,7 @@ import ActivityHeatmap from "@/components/ActivityHeatmap";
 import DayPicker from "@/components/DayPicker";
 import {
   Modal,
+  NestedModal,
   ModalContent,
   ModalHeader,
   ModalTitle,
@@ -52,6 +53,7 @@ import { toast } from "sonner";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -942,8 +944,16 @@ export default function LifeLog() {
         </div>
 
         {/* Events Tab Content */}
+        <AnimatePresence mode="wait">
         {activeTab === "events" && (
-          <div className="mt-4 space-y-3">
+          <motion.div
+            key="events-tab"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="mt-4 space-y-3"
+          >
             {sortedEvents.length === 0 ? (
               <div
                 className={`text-center py-12 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
@@ -1081,7 +1091,16 @@ export default function LifeLog() {
                     </ContextMenu>
 
                     {/* Expanded Timeline — separate from event context menu */}
+                    <AnimatePresence initial={false}>
                     {isExpanded && (
+                      <motion.div
+                        key={`event-expand-${eventType.id}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                        className="overflow-hidden"
+                      >
                       <div
                         className={`px-3.5 pb-3.5 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}
                       >
@@ -1301,9 +1320,15 @@ export default function LifeLog() {
                                         (1000 * 60 * 60 * 24)
                                     )
                                   : null;
+                              const staggerDelay = idx * 0.04;
 
                               return (
-                                <div key={log.id}>
+                                <motion.div
+                                  key={log.id}
+                                  initial={{ opacity: 0, y: 6 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.2, delay: staggerDelay }}
+                                >
                                   {gap !== null && gap > 0 && (
                                     <div className="flex justify-center py-0.5">
                                       <span
@@ -1409,7 +1434,7 @@ export default function LifeLog() {
                                       </ContextMenuItem>
                                     </ContextMenuContent>
                                   </ContextMenu>
-                                </div>
+                                </motion.div>
                               );
                             })}
                             {expandedEventLogs.length > 10 && (
@@ -1438,17 +1463,26 @@ export default function LifeLog() {
                           Log with Details
                         </button>
                       </div>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </div>
                 );
               })
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Habits Tab Content */}
         {activeTab === "habits" && (
-          <div className="mt-4 space-y-3">
+          <motion.div
+            key="habits-tab"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="mt-4 space-y-3"
+          >
             {trackables.filter(t => t.name !== "Body Weight").length === 0 ? (
               <div
                 className={`text-center py-12 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
@@ -1571,8 +1605,17 @@ export default function LifeLog() {
                           </div>
 
                           {/* Expanded Heatmap and Add Past Entries */}
+                          <AnimatePresence initial={false}>
                           {isExpanded && (
-                            <div className="px-3 pb-3 animate-in slide-in-from-top duration-200">
+                            <motion.div
+                              key={`habit-expand-${trackable.id}`}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                              className="overflow-hidden"
+                            >
+                            <div className="px-3 pb-3">
                               <ActivityHeatmap
                                 data={habitHeatmapData[trackable.id] || []}
                                 type="habit"
@@ -1593,7 +1636,9 @@ export default function LifeLog() {
                                 Add Past Entries
                               </button>
                             </div>
+                            </motion.div>
                           )}
+                          </AnimatePresence>
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent
@@ -1618,8 +1663,9 @@ export default function LifeLog() {
                   );
                 })
             )}
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
       </FadeIn>
 
@@ -2091,7 +2137,7 @@ export default function LifeLog() {
       </Modal>
 
       {/* Edit Log Modal */}
-      <Modal open={!!editingLog} onOpenChange={open => !open && setEditingLog(null)}>
+      <NestedModal open={!!editingLog} onOpenChange={open => !open && setEditingLog(null)}>
         <ModalContent
           className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
         >
@@ -2181,7 +2227,7 @@ export default function LifeLog() {
             </button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </NestedModal>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { FadeIn } from "@/components/ui/fade-in";
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
 import {
   DndContext,
   closestCenter,
@@ -552,33 +552,35 @@ export default function Steps() {
           </div>
         ) : (
           /* ======================== CARD VIEW ======================== */
-          <div className="grid grid-cols-2 gap-3 mt-2">
+          <StaggerContainer className="grid grid-cols-2 gap-3 mt-2">
             {stepCards.map((card) => {
               const items = card.step_items || [];
               const checked = getCheckedCount(card);
               const allDone = items.length > 0 && checked === items.length;
-              const previewItems = items.slice(0, 5);
+              const previewItems = items.slice(0, 3);
 
               return (
-                <ContextMenu key={card.id}>
-                  <ContextMenuTrigger asChild>
-                    <motion.button
-                      layoutId={`step-card-${card.id}`}
-                      onClick={() => { setZoomedCard(card.id); setNewStepText(""); }}
-                      className={`text-left rounded-2xl p-4 flex flex-col gap-3 transition-all ${
+                <StaggerItem key={card.id}>
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <motion.button
+                        layoutId={`step-card-${card.id}`}
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                        onClick={() => { setZoomedCard(card.id); setNewStepText(""); }}
+                      className={`w-full text-left rounded-2xl p-4 flex flex-col gap-2.5 transition-all ${
                         isDarkMode ? "bg-iron-900" : "bg-white shadow-sm"
                       } ${allDone ? isDarkMode ? "ring-1 ring-green-500/40" : "ring-1 ring-green-400/50" : ""}`}
                     >
                       <div className="flex items-start justify-between">
                         <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                          className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
                           style={{ backgroundColor: card.color + "20" }}
                         >
                           {card.icon}
                         </div>
                         {items.length > 0 && (
-                          <div className="relative w-7 h-7 flex-shrink-0">
-                            <svg viewBox="0 0 32 32" className="w-7 h-7 -rotate-90">
+                          <div className="relative w-6 h-6 flex-shrink-0">
+                            <svg viewBox="0 0 32 32" className="w-6 h-6 -rotate-90">
                               <circle cx="16" cy="16" r="13" fill="none" stroke={isDarkMode ? "#2a2a2e" : "#e2e8f0"} strokeWidth="3" />
                               <circle cx="16" cy="16" r="13" fill="none" stroke={allDone ? "#22c55e" : card.color} strokeWidth="3" strokeLinecap="round" strokeDasharray={`${(checked / items.length) * 81.68} 81.68`} />
                             </svg>
@@ -613,19 +615,15 @@ export default function Steps() {
                               </span>
                             </div>
                           ))}
-                          {items.length > 5 && (
+                          {items.length > 3 && (
                             <p className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                              +{items.length - 5} more
+                              +{items.length - 3} more
                             </p>
                           )}
                         </div>
                       ) : (
                         <p className={`text-xs ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>No steps yet</p>
                       )}
-
-                      <p className={`text-[10px] mt-auto ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                        {items.length === 0 ? "Tap to add steps" : `${checked}/${items.length} done`}
-                      </p>
                     </motion.button>
                   </ContextMenuTrigger>
                   <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
@@ -640,9 +638,10 @@ export default function Steps() {
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
         )}
       </div>
 
@@ -661,13 +660,14 @@ export default function Steps() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
               onClick={() => setZoomedCard(null)}
             >
               <div className={`absolute inset-0 ${isDarkMode ? "bg-black/70" : "bg-black/40"} backdrop-blur-sm`} />
               <motion.div
                 layoutId={`step-card-${card.id}`}
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
                 className={`relative w-full max-w-md max-h-[85vh] rounded-2xl overflow-hidden flex flex-col ${
                   isDarkMode ? "bg-iron-900" : "bg-white"
                 } ${allDone ? isDarkMode ? "ring-2 ring-green-500/40" : "ring-2 ring-green-400/50" : ""}`}

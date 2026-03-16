@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import ExerciseAutocomplete from "@/components/ExerciseAutocomplete";
 import {
   Modal,
+  NestedModal,
   ModalContent,
   ModalHeader,
   ModalTitle,
@@ -749,7 +750,7 @@ export default function Routines() {
       </Modal>
 
       {/* Exercise Picker Modal */}
-      <Modal open={showExercisePicker} onOpenChange={setShowExercisePicker}>
+      <NestedModal open={showExercisePicker} onOpenChange={setShowExercisePicker}>
         <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add Exercise</ModalTitle>
@@ -766,7 +767,7 @@ export default function Routines() {
             />
           </ModalBody>
         </ModalContent>
-      </Modal>
+      </NestedModal>
 
       {/* Delete Confirmation AlertDialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>

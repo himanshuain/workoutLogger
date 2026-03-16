@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useTheme } from "@/context/ThemeContext";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, CalendarClock } from "lucide-react";
+import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, CalendarClock, ClipboardList } from "lucide-react";
 import { SkeletonPage } from "@/components/SkeletonLoader";
 import InstallPrompt from "@/components/InstallPrompt";
 
@@ -11,6 +11,7 @@ const DEFAULT_TABS = [
   { id: "routines", href: "/routines", icon: ListChecks, label: "Routines" },
   { id: "food", href: "/food", icon: Utensils, label: "Food" },
   { id: "lifelog", href: "/lifelog", icon: CalendarClock, label: "Log" },
+  { id: "steps", href: "/steps", icon: ClipboardList, label: "Steps" },
   { id: "progress", href: "/progress", icon: TrendingUp, label: "Progress" },
   { id: "settings", href: "/settings", icon: Settings, label: "Settings" },
 ];

@@ -13,6 +13,7 @@ import GoalsWidget from "@/components/GoalsWidget";
 import VolumeChart from "@/components/VolumeChart";
 import MuscleHeatmap from "@/components/MuscleHeatmap";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody } from "@/components/ui/modal";
+import { FadeIn } from "@/components/ui/fade-in";
 import {
   TrendingUp,
   Calendar,
@@ -34,7 +35,6 @@ export default function Progress() {
     todayEntries,
     foodItems,
     todayFoodEntries,
-    isLoading,
     today,
     getExerciseLogs,
     getTrackingEntries,
@@ -526,21 +526,6 @@ export default function Progress() {
     todayFoodEntries,
   ]);
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div
-            className={`animate-spin w-8 h-8 border-2 rounded-full ${
-              isDarkMode
-                ? "border-lift-primary border-t-transparent"
-                : "border-workout-primary border-t-transparent"
-            }`}
-          />
-        </div>
-      </Layout>
-    );
-  }
 
   if (!user) {
     return (
@@ -564,6 +549,7 @@ export default function Progress() {
 
   return (
     <Layout>
+      <FadeIn duration={0.5}>
       <div className="px-4 py-4">
         {/* Header - Sticky */}
         <div
@@ -788,6 +774,7 @@ export default function Progress() {
           )}
         </div>
       </div>
+      </FadeIn>
 
       {/* All-Time History Modal - Table Structure */}
       <Modal

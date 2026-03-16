@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/context-menu";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { FadeIn } from "@/components/ui/fade-in";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -94,7 +95,6 @@ export default function Home() {
     activeSession,
     trackables,
     todayEntries,
-    isLoading,
     today,
     toggleTrackingEntry,
     createTrackable,
@@ -300,26 +300,6 @@ export default function Home() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className={`animate-spin w-8 h-8 border-2 rounded-full ${
-                isDarkMode
-                  ? "border-lift-primary border-t-transparent"
-                  : "border-workout-primary border-t-transparent"
-              }`}
-            />
-            <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>
-              Loading...
-            </p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   if (!user) {
     return (
@@ -366,6 +346,7 @@ export default function Home() {
 
   return (
     <Layout>
+      <FadeIn duration={0.5}>
       <div className="px-4 py-4">
         {/* Date Header */}
         <div className="flex items-center justify-between mb-6">
@@ -918,6 +899,7 @@ export default function Home() {
         </section>
         )}
       </div>
+      </FadeIn>
 
       {/* Routine Selector Modal */}
       <Modal open={showRoutineSelector} onOpenChange={setShowRoutineSelector}>

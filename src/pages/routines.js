@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -34,7 +34,11 @@ import {
   X,
   Pencil,
   Minus,
+  LayoutGrid,
+  List,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FadeIn } from "@/components/ui/fade-in";
 import {
   ContextMenu,
   ContextMenuTrigger,
@@ -75,9 +79,10 @@ export default function Routines() {
     createRoutine,
     updateRoutine,
     deleteRoutine,
-    isLoading,
   } = useWorkout();
 
+  const [viewMode, setViewMode] = useState("list");
+  const [zoomedRoutine, setZoomedRoutine] = useState(null);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState(null);
@@ -88,6 +93,16 @@ export default function Routines() {
     color: "#3b82f6",
     exercises: [],
   });
+
+  useEffect(() => {
+    const saved = localStorage.getItem("routines-view-mode");
+    if (saved === "card" || saved === "list") setViewMode(saved);
+  }, []);
+
+  const toggleViewMode = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem("routines-view-mode", mode);
+  };
 
   // Group routines by day
   const routinesByDay = useMemo(() => {
@@ -177,7 +192,6 @@ export default function Routines() {
         },
       ],
     }));
-    setShowExercisePicker(false);
   };
 
   const handleRemoveExercise = (index) => {
@@ -216,6 +230,7 @@ export default function Routines() {
 
   return (
     <Layout>
+      <FadeIn duration={0.5}>
       <div className="px-4 py-4">
         {/* Header */}
         <div
@@ -229,108 +244,300 @@ export default function Routines() {
             >
               Workout Routines
             </h2>
-            <button
-              onClick={handleCreateRoutine}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-workout-primary text-white text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              New Routine
-            </button>
+            <div className="flex items-center gap-2">
+              <div className={`flex rounded-lg p-0.5 ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
+                <button
+                  onClick={() => toggleViewMode("list")}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === "list"
+                      ? isDarkMode ? "bg-iron-700 text-iron-100" : "bg-white text-slate-800 shadow-sm"
+                      : isDarkMode ? "text-iron-500" : "text-slate-400"
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => toggleViewMode("card")}
+                  className={`p-1.5 rounded-md transition-all ${
+                    viewMode === "card"
+                      ? isDarkMode ? "bg-iron-700 text-iron-100" : "bg-white text-slate-800 shadow-sm"
+                      : isDarkMode ? "text-iron-500" : "text-slate-400"
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={handleCreateRoutine}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-workout-primary text-white text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                New Routine
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Routines List */}
+        {/* Routines */}
         <div className="space-y-6 mt-4">
           {routines.length === 0 ? (
             <button
               onClick={handleCreateRoutine}
-              className={`
-                w-full p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3
-                ${
-                  isDarkMode
-                    ? "border-iron-800 hover:border-iron-700"
-                    : "border-slate-300 hover:border-slate-400"
-                }
-              `}
+              className={`w-full p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 ${
+                isDarkMode ? "border-iron-800 hover:border-iron-700" : "border-slate-300 hover:border-slate-400"
+              }`}
             >
-              <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                }`}
-              >
-                <Dumbbell
-                  className={`w-8 h-8 ${isDarkMode ? "text-iron-400" : "text-slate-400"}`}
-                />
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
+                <Dumbbell className={`w-8 h-8 ${isDarkMode ? "text-iron-400" : "text-slate-400"}`} />
               </div>
-              <p
-                className={`font-medium ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
-                Create your first routine
-              </p>
-              <p
-                className={`text-sm ${isDarkMode ? "text-iron-600" : "text-slate-500"}`}
-              >
-                Plan your workouts for each day
-              </p>
+              <p className={`font-medium ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>Create your first routine</p>
+              <p className={`text-sm ${isDarkMode ? "text-iron-600" : "text-slate-500"}`}>Plan your workouts for each day</p>
             </button>
-          ) : (
+          ) : viewMode === "list" ? (
+            /* ======================== LIST VIEW ======================== */
             <>
-              {/* Show routines grouped by day */}
               {DAYS.map((day) => {
                 const dayRoutines = routinesByDay[day.value];
                 if (dayRoutines.length === 0) return null;
-
                 return (
                   <div key={day.value}>
-                    <h3
-                      className={`text-xs font-medium uppercase tracking-wider mb-2 ${
-                        isDarkMode ? "text-iron-500" : "text-slate-500"
-                      }`}
-                    >
-                      {day.label}
-                    </h3>
+                    <h3 className={`text-xs font-medium uppercase tracking-wider mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>{day.label}</h3>
                     <div className="space-y-2">
                       {dayRoutines.map((routine) => (
-                        <RoutineCard
-                          key={routine.id}
-                          routine={routine}
-                          isDarkMode={isDarkMode}
-                          onEdit={() => handleEditRoutine(routine)}
-                          onDelete={() => setDeleteConfirm(routine)}
-                        />
+                        <RoutineCard key={routine.id} routine={routine} isDarkMode={isDarkMode} onEdit={() => handleEditRoutine(routine)} onDelete={() => setDeleteConfirm(routine)} />
                       ))}
                     </div>
                   </div>
                 );
               })}
-
-              {/* Unassigned routines */}
               {routinesByDay["unassigned"].length > 0 && (
                 <div>
-                  <h3
-                    className={`text-xs font-medium uppercase tracking-wider mb-2 ${
-                      isDarkMode ? "text-iron-500" : "text-slate-500"
-                    }`}
-                  >
-                    Any Day
-                  </h3>
+                  <h3 className={`text-xs font-medium uppercase tracking-wider mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Any Day</h3>
                   <div className="space-y-2">
                     {routinesByDay["unassigned"].map((routine) => (
-                      <RoutineCard
-                        key={routine.id}
-                        routine={routine}
-                        isDarkMode={isDarkMode}
-                        onEdit={() => handleEditRoutine(routine)}
-                        onDelete={() => setDeleteConfirm(routine)}
-                      />
+                      <RoutineCard key={routine.id} routine={routine} isDarkMode={isDarkMode} onEdit={() => handleEditRoutine(routine)} onDelete={() => setDeleteConfirm(routine)} />
                     ))}
                   </div>
                 </div>
               )}
             </>
+          ) : (
+            /* ======================== CARD VIEW ======================== */
+            <div className="grid grid-cols-2 gap-3">
+              {routines.map((routine) => {
+                const exList = routine.routine_exercises || [];
+                const totalSets = exList.reduce((s, e) => s + e.target_sets, 0);
+                const dayLabel = routine.day_of_week != null
+                  ? DAYS.find(d => d.value === routine.day_of_week)?.short
+                  : null;
+
+                return (
+                  <ContextMenu key={routine.id}>
+                    <ContextMenuTrigger asChild>
+                      <motion.button
+                        layoutId={`routine-card-${routine.id}`}
+                        onClick={() => setZoomedRoutine(routine.id)}
+                        className={`text-left rounded-2xl p-4 flex flex-col gap-2.5 transition-all ${
+                          isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div
+                            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: `${routine.color || "#3b82f6"}20` }}
+                          >
+                            <Dumbbell className="w-5 h-5" style={{ color: routine.color || "#3b82f6" }} />
+                          </div>
+                          {dayLabel && (
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-500"}`}>
+                              {dayLabel}
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className={`font-semibold text-sm truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                          {routine.name}
+                        </h3>
+
+                        {exList.length > 0 ? (
+                          <div className="space-y-1">
+                            {exList.slice(0, 4).map((ex, i) => (
+                              <div key={i} className="flex items-center gap-1.5">
+                                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: routine.color || "#3b82f6" }} />
+                                <span className={`text-xs truncate ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                                  {ex.exercise_name}
+                                </span>
+                              </div>
+                            ))}
+                            {exList.length > 4 && (
+                              <p className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                                +{exList.length - 4} more
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className={`text-xs ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>No exercises</p>
+                        )}
+
+                        <p className={`text-[10px] mt-auto ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                          {exList.length} exercise{exList.length !== 1 ? "s" : ""} · {totalSets} sets
+                        </p>
+                      </motion.button>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                      <ContextMenuItem onClick={() => handleEditRoutine(routine)} className={isDarkMode ? "text-iron-200" : "text-slate-700"}>
+                        <Pencil className="w-4 h-4" />
+                        Edit Routine
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem destructive onClick={() => setDeleteConfirm(routine)}>
+                        <Trash2 className="w-4 h-4" />
+                        Delete Routine
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
+      </FadeIn>
+
+      {/* ======================== ZOOM OVERLAY ======================== */}
+      <AnimatePresence>
+        {zoomedRoutine && (() => {
+          const routine = routines.find(r => r.id === zoomedRoutine);
+          if (!routine) return null;
+          const exList = routine.routine_exercises || [];
+          const totalSets = exList.reduce((s, e) => s + e.target_sets, 0);
+          const dayLabel = routine.day_of_week != null
+            ? DAYS.find(d => d.value === routine.day_of_week)?.label
+            : "Any Day";
+
+          return (
+            <motion.div
+              key="routine-zoom-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setZoomedRoutine(null)}
+            >
+              <div className={`absolute inset-0 ${isDarkMode ? "bg-black/70" : "bg-black/40"} backdrop-blur-sm`} />
+              <motion.div
+                layoutId={`routine-card-${routine.id}`}
+                className={`relative w-full max-w-md max-h-[85vh] rounded-2xl overflow-hidden flex flex-col ${
+                  isDarkMode ? "bg-iron-900" : "bg-white"
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center gap-3 p-4 flex-shrink-0">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${routine.color || "#3b82f6"}20` }}
+                  >
+                    <Dumbbell className="w-6 h-6" style={{ color: routine.color || "#3b82f6" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-bold text-lg ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                      {routine.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                        {dayLabel}
+                      </span>
+                      <span className={`text-xs ${isDarkMode ? "text-iron-700" : "text-slate-300"}`}>·</span>
+                      <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                        {exList.length} exercise{exList.length !== 1 ? "s" : ""} · {totalSets} sets
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setZoomedRoutine(null)}
+                    className={`p-1.5 rounded-lg flex-shrink-0 ${isDarkMode ? "text-iron-500 hover:bg-iron-800" : "text-slate-400 hover:bg-slate-100"}`}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className={`border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`} />
+
+                {/* Exercise List */}
+                <div className="flex-1 overflow-y-auto px-4 py-3">
+                  {exList.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {exList.map((ex, i) => {
+                        const isSuperset = ex.superset_group && i > 0 && exList[i - 1]?.superset_group === ex.superset_group;
+                        return (
+                          <div key={i}>
+                            {isSuperset && (
+                              <div className="flex items-center justify-center py-0.5">
+                                <div className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isDarkMode ? "bg-orange-500/20 text-orange-400" : "bg-orange-100 text-orange-600"}`}>
+                                  superset
+                                </div>
+                              </div>
+                            )}
+                            <div className={`flex items-center gap-3 p-3 rounded-xl ${
+                              ex.superset_group
+                                ? isDarkMode ? "bg-orange-500/5 border border-orange-500/20" : "bg-orange-50 border border-orange-200"
+                                : isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
+                            }`}>
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+                                style={{ backgroundColor: `${routine.color || "#3b82f6"}20`, color: routine.color || "#3b82f6" }}
+                              >
+                                {i + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-medium text-sm truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                                  {ex.exercise_name}
+                                </p>
+                                {ex.category && (
+                                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>{ex.category}</p>
+                                )}
+                              </div>
+                              <span className={`text-sm font-semibold flex-shrink-0 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
+                                {ex.target_sets} sets
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className={`text-center py-8 text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
+                      No exercises in this routine
+                    </p>
+                  )}
+                </div>
+
+                {/* Footer Actions */}
+                <div className={`flex-shrink-0 border-t px-4 py-3 flex gap-2 ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+                  <button
+                    onClick={() => { setZoomedRoutine(null); handleEditRoutine(routine); }}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 ${
+                      isDarkMode ? "bg-iron-800 text-iron-200" : "bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => { setZoomedRoutine(null); setDeleteConfirm(routine); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 bg-red-500/10 text-red-500"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* Create/Edit Routine Modal */}
       <Modal open={showCreateDrawer} onOpenChange={setShowCreateDrawer}>
@@ -547,12 +754,14 @@ export default function Routines() {
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add Exercise</ModalTitle>
           </ModalHeader>
-          <ModalBody className="p-0">
+          <ModalBody className="p-0 !max-h-none !overflow-visible">
             <ExerciseAutocomplete
               exercises={exercises}
               recentExercises={[]}
               loggedToday={new Set()}
               onSelect={handleAddExercise}
+              isDarkMode={isDarkMode}
+              multiSelect
               onClose={() => setShowExercisePicker(false)}
             />
           </ModalBody>

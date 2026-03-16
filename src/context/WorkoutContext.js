@@ -16,11 +16,12 @@ export function WorkoutProvider({ children }) {
   const [routines, setRoutines] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
   const [eventTypes, setEventTypes] = useState([]);
+  const [stepCards, setStepCards] = useState([]);
   const [settings, setSettings] = useState({
     unit: "kg",
     dark_mode: true,
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Use local timezone for today's date
   const getLocalDateStr = (date = new Date()) => {
@@ -735,13 +736,42 @@ export function WorkoutProvider({ children }) {
     }
   }, [user]);
 
+  // Load step cards with nested items
+  const loadStepCards = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from("step_cards")
+        .select(`
+          *,
+          step_items (
+            id,
+            text,
+            order_index,
+            created_at
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("order_index");
+
+      if (!error && data) {
+        const processed = data.map(card => ({
+          ...card,
+          step_items: (card.step_items || []).sort((a, b) => a.order_index - b.order_index),
+        }));
+        setStepCards(processed);
+      }
+    } catch (err) {
+      console.error("Error loading step cards:", err);
+    }
+  }, [user]);
+
   // Initialize when user changes
   useEffect(() => {
     async function init() {
-      setIsLoading(true);
-      await loadExercises();
+      loadExercises();
       if (user) {
-        await Promise.all([
+        Promise.all([
           loadSettings(),
           loadExerciseHistory(),
           loadTrackables(),
@@ -751,9 +781,9 @@ export function WorkoutProvider({ children }) {
           loadRoutines(),
           loadActiveSession(),
           loadEventTypes(),
+          loadStepCards(),
         ]);
       }
-      setIsLoading(false);
     }
     init();
   }, [
@@ -768,6 +798,7 @@ export function WorkoutProvider({ children }) {
     loadRoutines,
     loadActiveSession,
     loadEventTypes,
+    loadStepCards,
   ]);
 
   // Toggle tracking entry (habit/health)
@@ -1497,6 +1528,147 @@ export function WorkoutProvider({ children }) {
     [user]
   );
 
+  // Step Cards CRUD
+  const createStepCard = useCallback(
+    async (card) => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("step_cards")
+        .insert({
+          user_id: user.id,
+          name: card.name,
+          icon: card.icon || "📋",
+          color: card.color || "#3b82f6",
+          order_index: stepCards.length,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setStepCards(prev => [...prev, { ...data, step_items: [] }]);
+        return data;
+      }
+      return null;
+    },
+    [user, stepCards.length]
+  );
+
+  const updateStepCard = useCallback(
+    async (id, updates) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from("step_cards")
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (!error) {
+        setStepCards(prev =>
+          prev.map(c => (c.id === id ? { ...c, ...updates } : c))
+        );
+      }
+    },
+    [user]
+  );
+
+  const deleteStepCard = useCallback(
+    async (id) => {
+      if (!user) return;
+      const { error } = await supabase.from("step_cards").delete().eq("id", id);
+      if (!error) {
+        setStepCards(prev => prev.filter(c => c.id !== id));
+      }
+    },
+    [user]
+  );
+
+  const createStepItem = useCallback(
+    async (cardId, text) => {
+      if (!user) return null;
+      const card = stepCards.find(c => c.id === cardId);
+      const orderIndex = card ? (card.step_items || []).length : 0;
+
+      const { data, error } = await supabase
+        .from("step_items")
+        .insert({
+          card_id: cardId,
+          user_id: user.id,
+          text,
+          order_index: orderIndex,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setStepCards(prev =>
+          prev.map(c =>
+            c.id === cardId
+              ? { ...c, step_items: [...(c.step_items || []), data] }
+              : c
+          )
+        );
+        return data;
+      }
+      return null;
+    },
+    [user, stepCards]
+  );
+
+  const updateStepItem = useCallback(
+    async (itemId, cardId, updates) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from("step_items")
+        .update(updates)
+        .eq("id", itemId);
+
+      if (!error) {
+        setStepCards(prev =>
+          prev.map(c =>
+            c.id === cardId
+              ? {
+                  ...c,
+                  step_items: (c.step_items || []).map(item =>
+                    item.id === itemId ? { ...item, ...updates } : item
+                  ),
+                }
+              : c
+          )
+        );
+      }
+    },
+    [user]
+  );
+
+  const deleteStepItem = useCallback(
+    async (itemId, cardId) => {
+      if (!user) return;
+      const { error } = await supabase.from("step_items").delete().eq("id", itemId);
+      if (!error) {
+        setStepCards(prev =>
+          prev.map(c =>
+            c.id === cardId
+              ? { ...c, step_items: (c.step_items || []).filter(item => item.id !== itemId) }
+              : c
+          )
+        );
+      }
+    },
+    [user]
+  );
+
+  const reorderStepItems = useCallback(
+    async (cardId, reorderedItems) => {
+      if (!user) return;
+      setStepCards(prev =>
+        prev.map(c => (c.id === cardId ? { ...c, step_items: reorderedItems } : c))
+      );
+      await supabase.from("step_items").upsert(
+        reorderedItems.map((item, i) => ({ id: item.id, card_id: cardId, user_id: user.id, text: item.text, order_index: i }))
+      );
+    },
+    [user]
+  );
+
   // Auth functions
   const signIn = useCallback(async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -1604,6 +1776,16 @@ export function WorkoutProvider({ children }) {
         deleteEventLog,
         updateEventLog,
         getEventLogs,
+        // Step Cards functions
+        stepCards,
+        loadStepCards,
+        createStepCard,
+        updateStepCard,
+        deleteStepCard,
+        createStepItem,
+        updateStepItem,
+        deleteStepItem,
+        reorderStepItems,
       }}
     >
       {children}

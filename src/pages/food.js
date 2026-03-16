@@ -46,6 +46,7 @@ import {
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { FadeIn } from "@/components/ui/fade-in";
 
 const FOOD_ICONS = [
   "🥚",
@@ -82,7 +83,6 @@ export default function Food() {
     user,
     foodItems,
     todayFoodEntries,
-    isLoading,
     today,
     createFoodItem,
     updateFoodItem,
@@ -331,21 +331,6 @@ export default function Food() {
 
   const accentColor = isDarkMode ? "#fbbf24" : "#f59e0b";
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div
-            className={`animate-spin w-8 h-8 border-2 rounded-full ${
-              isDarkMode
-                ? "border-lift-primary border-t-transparent"
-                : "border-workout-primary border-t-transparent"
-            }`}
-          />
-        </div>
-      </Layout>
-    );
-  }
 
   if (!user) {
     return (
@@ -371,6 +356,7 @@ export default function Food() {
 
   return (
     <Layout>
+      <FadeIn duration={0.5}>
       <div className="px-4 py-4">
         {/* Header */}
         <div
@@ -878,6 +864,7 @@ export default function Food() {
           )}
         </div>
       </div>
+      </FadeIn>
 
       {/* Add/Edit Food Modal */}
       <Modal open={showAddModal} onOpenChange={setShowAddModal}>

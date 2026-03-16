@@ -530,6 +530,83 @@ input[type="number"] {
   }
 }
 
+/* Glassy close button with water ripple animation */
+@keyframes water-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes glass-shimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.glass-close-btn {
+  @apply w-9 h-9 rounded-full flex items-center justify-center overflow-hidden
+         transition-all duration-200 active:scale-90;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.dark .glass-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.light .glass-close-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.glass-close-btn .ripple-ring {
+  @apply absolute rounded-full pointer-events-none;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+
+.dark .glass-close-btn .ripple-ring {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+}
+
+.light .glass-close-btn .ripple-ring {
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.12) 0%, transparent 70%);
+}
+
+.glass-close-btn:active .ripple-ring {
+  animation: water-ripple 0.5s ease-out forwards;
+}
+
+.glass-close-btn::before {
+  content: '';
+  @apply absolute inset-0 rounded-full pointer-events-none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+}
+
 /* Vaul drawer background scaling — smooth open/close */
 [vaul-drawer-wrapper] {
   transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),

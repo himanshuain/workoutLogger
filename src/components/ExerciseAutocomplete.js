@@ -164,9 +164,12 @@ export default function ExerciseAutocomplete({
       </div>
 
       {/* Bottom Bar: Search + Done */}
-      <div className={`flex-shrink-0 border-t px-3 py-2.5 flex items-center gap-2 ${
-        isDarkMode ? "border-iron-800 bg-iron-900/80" : "border-slate-200 bg-white/80"
-      }`}>
+      <div
+        className={`flex-shrink-0 border-t px-3 py-2.5 flex items-center gap-2 ${
+          isDarkMode ? "border-iron-800 bg-iron-900/80" : "border-slate-200 bg-white/80"
+        }`}
+        style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
+      >
         <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl ${
           isDarkMode ? "bg-iron-800" : "bg-slate-100"
         }`}>

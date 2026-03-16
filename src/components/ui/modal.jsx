@@ -54,8 +54,9 @@ const ModalContent = React.forwardRef(
           <div className="mx-auto mt-3 mb-1 h-1.5 w-12 flex-shrink-0 rounded-full bg-iron-600/40" />
           {children}
           {showCloseButton && (
-            <Drawer.Close className="absolute right-4 top-4 rounded-lg p-1 text-iron-500 hover:text-iron-300 hover:bg-iron-800 transition-colors">
-              <X className="h-5 w-5" />
+            <Drawer.Close className="absolute right-3 top-3 glass-close-btn">
+              <span className="ripple-ring" />
+              <X className="h-4 w-4 relative z-10 text-iron-400" />
               <span className="sr-only">Close</span>
             </Drawer.Close>
           )}

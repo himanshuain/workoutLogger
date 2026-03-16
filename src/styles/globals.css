@@ -535,14 +535,6 @@ input[type="number"] {
   }
 }
 
-/* Fixed bottom nav bar */
-.fixed-bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-}
-
 /* Thin, unobtrusive scrollbar for main content areas */
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -565,12 +557,3 @@ input[type="number"] {
   background: rgba(128, 128, 128, 0.3);
 }
 
-/* Bottom nav clearance — ensures content never hides behind the fixed nav.
-   Uses ::after as a block spacer since padding-bottom on scroll containers
-   is unreliable on mobile Safari in flex layouts. */
-.nav-clearance::after {
-  content: "";
-  display: block;
-  height: calc(7.5rem + env(safe-area-inset-bottom, 0px));
-  flex-shrink: 0;
-}

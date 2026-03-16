@@ -161,6 +161,7 @@ export default function Steps() {
     updateStepCard,
     deleteStepCard,
     createStepItem,
+    batchCreateStepItems,
     updateStepItem,
     deleteStepItem,
     reorderStepItems,
@@ -183,6 +184,8 @@ export default function Steps() {
   const [showCardModal, setShowCardModal] = useState(false);
   const [editingCardId, setEditingCardId] = useState(null);
   const [cardForm, setCardForm] = useState({ name: "", icon: "📋", color: "#3b82f6" });
+  const [cardFormSteps, setCardFormSteps] = useState([]);
+  const [cardFormStepInput, setCardFormStepInput] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [newStepText, setNewStepText] = useState("");
   const [editingItem, setEditingItem] = useState(null);
@@ -194,9 +197,13 @@ export default function Steps() {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
+  const cardFormStepInputRef = useRef(null);
+
   const resetCardForm = () => {
     setEditingCardId(null);
     setCardForm({ name: "", icon: "📋", color: "#3b82f6" });
+    setCardFormSteps([]);
+    setCardFormStepInput("");
   };
 
   const handleOpenAddCard = () => {
@@ -210,6 +217,18 @@ export default function Steps() {
     setShowCardModal(true);
   };
 
+  const handleAddCardFormStep = () => {
+    const text = cardFormStepInput.trim();
+    if (!text) return;
+    setCardFormSteps(prev => [...prev, text]);
+    setCardFormStepInput("");
+    setTimeout(() => cardFormStepInputRef.current?.focus(), 50);
+  };
+
+  const handleRemoveCardFormStep = (index) => {
+    setCardFormSteps(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSaveCard = async () => {
     if (!cardForm.name.trim()) return;
     try {
@@ -221,11 +240,14 @@ export default function Steps() {
         });
         toast.success("Card updated");
       } else {
-        await createStepCard({
+        const card = await createStepCard({
           name: cardForm.name.trim(),
           icon: cardForm.icon,
           color: cardForm.color,
         });
+        if (card && cardFormSteps.length > 0) {
+          await batchCreateStepItems(card.id, cardFormSteps);
+        }
         toast.success("Card created");
       }
       setShowCardModal(false);
@@ -784,6 +806,70 @@ export default function Steps() {
                 isDarkMode={isDarkMode}
               />
             </div>
+
+            {/* Inline steps builder — only for new cards */}
+            {!editingCardId && (
+              <div>
+                <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                  Steps <span className={isDarkMode ? "text-iron-600" : "text-slate-400"}>(optional)</span>
+                </label>
+
+                {cardFormSteps.length > 0 && (
+                  <div className="space-y-1.5 mb-3">
+                    {cardFormSteps.map((step, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                          isDarkMode ? "bg-iron-800/60 text-iron-200" : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        <span className={`w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold flex-shrink-0 ${
+                          isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-200 text-slate-500"
+                        }`}>
+                          {i + 1}
+                        </span>
+                        <span className="flex-1 truncate">{step}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCardFormStep(i)}
+                          className={`p-0.5 rounded-md flex-shrink-0 ${
+                            isDarkMode ? "text-iron-500 hover:text-red-400" : "text-slate-400 hover:text-red-500"
+                          }`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    ref={cardFormStepInputRef}
+                    type="text"
+                    value={cardFormStepInput}
+                    onChange={(e) => setCardFormStepInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddCardFormStep(); } }}
+                    placeholder={cardFormSteps.length === 0 ? "Add a step..." : "Add another step..."}
+                    className={`flex-1 input-field text-sm ${
+                      isDarkMode
+                        ? "bg-iron-800 text-iron-100 placeholder-iron-600"
+                        : "bg-slate-100 text-slate-800 placeholder-slate-400"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCardFormStep}
+                    disabled={!cardFormStepInput.trim()}
+                    className={`px-3 rounded-xl font-medium text-sm disabled:opacity-30 ${
+                      isDarkMode ? "bg-iron-700 text-iron-200" : "bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </ModalBody>
           <ModalFooter>
             <button

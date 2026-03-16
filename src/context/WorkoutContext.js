@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
@@ -33,16 +33,25 @@ export function WorkoutProvider({ children }) {
 
   const today = getLocalDateStr();
 
-  // Auth state listener
+  // Auth state listener — dedupe by user ID to prevent cascading re-renders
   useEffect(() => {
+    const setUserStable = (newUser) => {
+      setUser(prev => {
+        const prevId = prev?.id ?? null;
+        const newId = newUser?.id ?? null;
+        if (prevId === newId) return prev;
+        return newUser;
+      });
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      setUserStable(session?.user ?? null);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      setUserStable(session?.user ?? null);
     });
 
     return () => subscription.unsubscribe();
@@ -69,7 +78,7 @@ export function WorkoutProvider({ children }) {
         .from("user_settings")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         setSettings(data);
@@ -369,13 +378,9 @@ export function WorkoutProvider({ children }) {
         .eq("user_id", user.id)
         .eq("date", today)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
-      if (!error && data) {
-        setActiveSession(data);
-      } else {
-        setActiveSession(null);
-      }
+      setActiveSession(data || null);
     } catch (err) {
       setActiveSession(null);
     }
@@ -393,15 +398,14 @@ export function WorkoutProvider({ children }) {
         .eq("user_id", user.id)
         .eq("date", today)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       if (existing) {
-        // Return existing session
         const { data: session } = await supabase
           .from("workout_sessions")
           .select("*, set_logs (*)")
           .eq("id", existing.id)
-          .single();
+          .maybeSingle();
 
         setActiveSession(session);
         return session;
@@ -654,7 +658,7 @@ export function WorkoutProvider({ children }) {
       .select("*, set_logs (*)")
       .eq("user_id", user.id)
       .eq("date", today)
-      .single();
+      .maybeSingle();
 
     return data;
   }, [user, today]);
@@ -766,40 +770,32 @@ export function WorkoutProvider({ children }) {
     }
   }, [user]);
 
-  // Initialize when user changes
+  // Initialize once per user login
+  const initUserIdRef = useRef(null);
+
   useEffect(() => {
-    async function init() {
-      loadExercises();
-      if (user) {
-        Promise.all([
-          loadSettings(),
-          loadExerciseHistory(),
-          loadTrackables(),
-          loadTodayEntries(),
-          loadFoodItems(),
-          loadTodayFoodEntries(),
-          loadRoutines(),
-          loadActiveSession(),
-          loadEventTypes(),
-          loadStepCards(),
-        ]);
-      }
-    }
-    init();
-  }, [
-    user,
-    loadExercises,
-    loadSettings,
-    loadExerciseHistory,
-    loadTrackables,
-    loadTodayEntries,
-    loadFoodItems,
-    loadTodayFoodEntries,
-    loadRoutines,
-    loadActiveSession,
-    loadEventTypes,
-    loadStepCards,
-  ]);
+    const uid = user?.id ?? null;
+
+    if (uid === initUserIdRef.current) return;
+    initUserIdRef.current = uid;
+
+    if (!uid) return;
+
+    loadExercises();
+    Promise.all([
+      loadSettings(),
+      loadExerciseHistory(),
+      loadTrackables(),
+      loadTodayEntries(),
+      loadFoodItems(),
+      loadTodayFoodEntries(),
+      loadRoutines(),
+      loadActiveSession(),
+      loadEventTypes(),
+      loadStepCards(),
+    ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Toggle tracking entry (habit/health)
   const toggleTrackingEntry = useCallback(
@@ -853,14 +849,13 @@ export function WorkoutProvider({ children }) {
     async (trackableId, date, isCompleted, value = null) => {
       if (!user) return { success: false };
 
-      // Check if entry exists for this date
       const { data: existing } = await supabase
         .from("tracking_entries")
         .select("*")
         .eq("user_id", user.id)
         .eq("trackable_id", trackableId)
         .eq("date", date)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         if (isCompleted) {
@@ -1082,9 +1077,9 @@ export function WorkoutProvider({ children }) {
       .select("*, set_logs (*)")
       .eq("user_id", user.id)
       .eq("date", today)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== "PGRST116") {
+    if (error) {
       console.error("Error getting today session:", error);
       return [];
     }
@@ -1613,6 +1608,37 @@ export function WorkoutProvider({ children }) {
     [user, stepCards]
   );
 
+  const batchCreateStepItems = useCallback(
+    async (cardId, texts) => {
+      if (!user || !texts.length) return [];
+
+      const { data, error } = await supabase
+        .from("step_items")
+        .insert(
+          texts.map((text, i) => ({
+            card_id: cardId,
+            user_id: user.id,
+            text,
+            order_index: i,
+          }))
+        )
+        .select();
+
+      if (!error && data) {
+        setStepCards(prev =>
+          prev.map(c =>
+            c.id === cardId
+              ? { ...c, step_items: [...(c.step_items || []), ...data] }
+              : c
+          )
+        );
+        return data;
+      }
+      return [];
+    },
+    [user]
+  );
+
   const updateStepItem = useCallback(
     async (itemId, cardId, updates) => {
       if (!user) return;
@@ -1783,6 +1809,7 @@ export function WorkoutProvider({ children }) {
         updateStepCard,
         deleteStepCard,
         createStepItem,
+        batchCreateStepItems,
         updateStepItem,
         deleteStepItem,
         reorderStepItems,

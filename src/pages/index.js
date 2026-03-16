@@ -99,7 +99,6 @@ export default function Home() {
     toggleTrackingEntry,
     createTrackable,
     startWorkoutSession,
-    getTodaySession,
     getTodayRoutine,
     getWorkoutSessions,
     deleteSetLog,
@@ -125,14 +124,7 @@ export default function Home() {
   // Get today's routine
   const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine]);
 
-  // Check for completed session today
-  const { data: todaySession } = useQuery({
-    queryKey: ["todaySession", user?.id, today],
-    queryFn: () => getTodaySession(),
-    enabled: !!user,
-  });
-
-  // Recent workout sessions (last 7 days)
+  // Recent workout sessions (last 30 days)
   const recentStart = useMemo(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
@@ -142,31 +134,32 @@ export default function Home() {
     return `${year}-${month}-${day}`;
   }, []);
 
-  const { data: recentSessions = [] } = useQuery({
+  const { data: allRecentSessions = [] } = useQuery({
     queryKey: ["recentSessions", user?.id, recentStart, today],
-    queryFn: async () => {
-      const sessions = await getWorkoutSessions(recentStart, today);
-      return sessions
-        .filter((s) => s.status === "completed")
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(0, 5);
-    },
+    queryFn: () => getWorkoutSessions(recentStart, today),
     enabled: !!user,
   });
 
-  // Goals data: workout days and habit completions for the last 30 days
-  const { data: goalsWorkoutData = [] } = useQuery({
-    queryKey: ["goalsWorkoutData", user?.id, recentStart, today],
-    queryFn: async () => {
-      const sessions = await getWorkoutSessions(recentStart, today);
-      const byDate = {};
-      sessions.filter((s) => s.status === "completed").forEach((s) => {
-        byDate[s.date] = (byDate[s.date] || 0) + 1;
-      });
-      return Object.entries(byDate).map(([date, count]) => ({ date, count }));
-    },
-    enabled: !!user,
-  });
+  const todaySession = useMemo(() =>
+    allRecentSessions.find((s) => s.date === today && s.status === "completed") || null,
+    [allRecentSessions, today],
+  );
+
+  const recentSessions = useMemo(() =>
+    allRecentSessions
+      .filter((s) => s.status === "completed")
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5),
+    [allRecentSessions],
+  );
+
+  const goalsWorkoutData = useMemo(() => {
+    const byDate = {};
+    allRecentSessions.filter((s) => s.status === "completed").forEach((s) => {
+      byDate[s.date] = (byDate[s.date] || 0) + 1;
+    });
+    return Object.entries(byDate).map(([date, count]) => ({ date, count }));
+  }, [allRecentSessions]);
 
   const { data: goalsHabitData = [] } = useQuery({
     queryKey: ["goalsHabitData", user?.id, recentStart, today],
@@ -238,7 +231,7 @@ export default function Home() {
   // Refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries(["todaySession"]);
+    await queryClient.invalidateQueries(["recentSessions"]);
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }

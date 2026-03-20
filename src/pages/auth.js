@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
+import GoogleLoginButton from "@/components/GoogleLoginButton";
 
 export default function Auth() {
   const router = useRouter();
@@ -205,6 +206,16 @@ export default function Auth() {
             )}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-6">
+          <div className={`flex-1 h-px ${isDarkMode ? "bg-iron-800" : "bg-slate-200"}`} />
+          <span className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>or</span>
+          <div className={`flex-1 h-px ${isDarkMode ? "bg-iron-800" : "bg-slate-200"}`} />
+        </div>
+
+        {/* Google Login */}
+        <GoogleLoginButton />
 
         {/* Toggle / Back */}
         <div className="mt-6 text-center">

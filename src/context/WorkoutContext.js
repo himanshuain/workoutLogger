@@ -1796,6 +1796,17 @@ export function WorkoutProvider({ children }) {
     return { data, error };
   }, []);
 
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+    if (error) {
+      console.error("Google login error:", error.message);
+      return { error };
+    }
+    return { error: null };
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -1853,6 +1864,7 @@ export function WorkoutProvider({ children }) {
         getFoodEntries,
         updateSettings,
         signIn,
+        signInWithGoogle,
         signUp,
         resetPassword,
         signOut,

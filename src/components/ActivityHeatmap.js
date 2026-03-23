@@ -466,6 +466,7 @@ export default function ActivityHeatmap({
 
       {/* Calendar */}
       <div className={`px-4 pb-4 ${compact ? "px-3 pb-3" : ""}`}>
+        <div className="w-full md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto">
         {/* Day Headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {DAY_NAMES.map((day, i) => (
@@ -696,6 +697,7 @@ export default function ActivityHeatmap({
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -2513,6 +2513,7 @@ export default function LifeLog() {
             </ModalTitle>
           </ModalHeader>
           <ModalBody>
+            <div className="w-full md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto">
             {/* Month Navigation */}
             <div className="flex items-center justify-between mb-4">
               <button
@@ -2605,6 +2606,7 @@ export default function LifeLog() {
                   Completed
                 </span>
               </div>
+            </div>
             </div>
           </ModalBody>
           <ModalFooter>

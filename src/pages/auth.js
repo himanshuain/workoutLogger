@@ -40,10 +40,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (
-      process.env.NODE_ENV === "development" &&
-      isPrivateLanHostname(window.location.hostname)
-    ) {
+    if (process.env.NODE_ENV === "development" && isPrivateLanHostname(window.location.hostname)) {
       const site = window.location.origin;
       setLanSupabaseHints({ site, auth: `${site}/auth` });
     }
@@ -140,44 +137,6 @@ export default function Auth() {
           Simple workout logging
         </p>
       </div>
-
-      {lanSupabaseHints && (
-        <div
-          className={`w-full max-w-sm mb-4 rounded-xl border p-3 text-left text-sm ${
-            isDarkMode
-              ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
-              : "border-amber-200 bg-amber-50 text-amber-950"
-          }`}
-        >
-          <p className="font-semibold mb-1">Phone / LAN sign-in (Supabase)</p>
-          <p className={`text-xs leading-relaxed mb-2 ${isDarkMode ? "text-amber-100/90" : "text-amber-900/90"}`}>
-            <strong>Redirect URLs</strong> must include:
-          </p>
-          <code
-            className={`block break-all text-[11px] p-2 rounded-lg mb-3 ${
-              isDarkMode ? "bg-black/30 text-amber-50" : "bg-white text-slate-800 border border-amber-100"
-            }`}
-          >
-            {lanSupabaseHints.auth}
-          </code>
-          <p className={`text-xs leading-relaxed mb-2 ${isDarkMode ? "text-amber-100/90" : "text-amber-900/90"}`}>
-            If you still end up on <span className="font-mono">localhost</span> after Google, set{" "}
-            <strong>Site URL</strong> on the same page to your LAN origin (Supabase uses it when a
-            redirect is not accepted):
-          </p>
-          <code
-            className={`block break-all text-[11px] p-2 rounded-lg ${
-              isDarkMode ? "bg-black/30 text-amber-50" : "bg-white text-slate-800 border border-amber-100"
-            }`}
-          >
-            {lanSupabaseHints.site}
-          </code>
-          <p className={`text-[11px] mt-2 opacity-80 ${isDarkMode ? "text-amber-100/80" : "text-amber-900/80"}`}>
-            Optional: add <span className="font-mono">{lanSupabaseHints.site}/**</span> under Redirect URLs
-            for query/hash variants. Revert Site URL to production when you are done testing on Wi‑Fi.
-          </p>
-        </div>
-      )}
 
       {/* Form */}
       <div className="w-full max-w-sm">

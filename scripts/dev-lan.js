@@ -38,11 +38,8 @@ console.log(
 );
 
 const nextBin = require.resolve("next/dist/bin/next");
-// So OAuth / password redirects use the LAN host (not localhost, which phones cannot reach).
-const childEnv = {
-  ...process.env,
-  NEXT_PUBLIC_SITE_URL: url,
-};
+// OAuth uses window.location.origin — open the app via the URL above (or localhost on this machine).
+const childEnv = { ...process.env };
 
 const child = spawn(process.execPath, [nextBin, "dev", "-H", "0.0.0.0", "-p", PORT], {
   cwd: projectRoot,

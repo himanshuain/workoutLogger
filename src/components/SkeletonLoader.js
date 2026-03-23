@@ -49,10 +49,12 @@ export function SkeletonHeatmap({ isDarkMode = false }) {
         <div className={`h-10 w-10 rounded-xl ${c ? "bg-iron-700" : "bg-slate-200"}`} />
         <div className={`h-4 w-1/3 rounded-lg ${c ? "bg-iron-700" : "bg-slate-200"}`} />
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
-        {Array.from({ length: 42 }).map((_, i) => (
-          <div key={i} className={`aspect-square rounded-md ${c ? "bg-iron-700" : "bg-slate-200"}`} />
-        ))}
+      <div className="w-full md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto">
+        <div className="grid grid-cols-7 gap-1.5">
+          {Array.from({ length: 42 }).map((_, i) => (
+            <div key={i} className={`aspect-square rounded-md ${c ? "bg-iron-700" : "bg-slate-200"}`} />
+          ))}
+        </div>
       </div>
     </div>
   );

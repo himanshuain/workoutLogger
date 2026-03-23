@@ -1,8 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
+
+function decodeOAuthErrorDescription(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  try {
+    return decodeURIComponent(raw.replace(/\+/g, " "));
+  } catch {
+    return raw;
+  }
+}
+
+function isPrivateLanHostname(hostname) {
+  if (!hostname || hostname === "localhost") return false;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  const m = hostname.match(/^172\.(\d{1,3})\./);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    return n >= 16 && n <= 31;
+  }
+  return false;
+}
 
 export default function Auth() {
   const router = useRouter();
@@ -15,6 +36,39 @@ export default function Auth() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [lanSupabaseHints, setLanSupabaseHints] = useState(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (
+      process.env.NODE_ENV === "development" &&
+      isPrivateLanHostname(window.location.hostname)
+    ) {
+      const site = window.location.origin;
+      setLanSupabaseHints({ site, auth: `${site}/auth` });
+    }
+  }, []);
+
+  // OAuth / PKCE failures land on /auth?error=...&error_description=...
+  useEffect(() => {
+    if (!router.isReady || user) return;
+    const qIdx = router.asPath.indexOf("?");
+    if (qIdx === -1) return;
+    const params = new URLSearchParams(router.asPath.slice(qIdx + 1));
+    const errParam = params.get("error");
+    if (!errParam) return;
+
+    const desc = params.get("error_description");
+    const friendly =
+      desc && desc.length > 0
+        ? decodeOAuthErrorDescription(desc)
+        : errParam === "access_denied"
+          ? "Google sign-in was cancelled."
+          : errParam;
+
+    setError(friendly);
+    router.replace({ pathname: "/auth" }, undefined, { shallow: true });
+  }, [router.isReady, user, router.asPath, router]);
 
   // Redirect if already logged in
   if (user) {
@@ -86,6 +140,44 @@ export default function Auth() {
           Simple workout logging
         </p>
       </div>
+
+      {lanSupabaseHints && (
+        <div
+          className={`w-full max-w-sm mb-4 rounded-xl border p-3 text-left text-sm ${
+            isDarkMode
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+              : "border-amber-200 bg-amber-50 text-amber-950"
+          }`}
+        >
+          <p className="font-semibold mb-1">Phone / LAN sign-in (Supabase)</p>
+          <p className={`text-xs leading-relaxed mb-2 ${isDarkMode ? "text-amber-100/90" : "text-amber-900/90"}`}>
+            <strong>Redirect URLs</strong> must include:
+          </p>
+          <code
+            className={`block break-all text-[11px] p-2 rounded-lg mb-3 ${
+              isDarkMode ? "bg-black/30 text-amber-50" : "bg-white text-slate-800 border border-amber-100"
+            }`}
+          >
+            {lanSupabaseHints.auth}
+          </code>
+          <p className={`text-xs leading-relaxed mb-2 ${isDarkMode ? "text-amber-100/90" : "text-amber-900/90"}`}>
+            If you still end up on <span className="font-mono">localhost</span> after Google, set{" "}
+            <strong>Site URL</strong> on the same page to your LAN origin (Supabase uses it when a
+            redirect is not accepted):
+          </p>
+          <code
+            className={`block break-all text-[11px] p-2 rounded-lg ${
+              isDarkMode ? "bg-black/30 text-amber-50" : "bg-white text-slate-800 border border-amber-100"
+            }`}
+          >
+            {lanSupabaseHints.site}
+          </code>
+          <p className={`text-[11px] mt-2 opacity-80 ${isDarkMode ? "text-amber-100/80" : "text-amber-900/80"}`}>
+            Optional: add <span className="font-mono">{lanSupabaseHints.site}/**</span> under Redirect URLs
+            for query/hash variants. Revert Site URL to production when you are done testing on Wi‑Fi.
+          </p>
+        </div>
+      )}
 
       {/* Form */}
       <div className="w-full max-w-sm">

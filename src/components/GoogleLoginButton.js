@@ -1,20 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
+import { toast } from "sonner";
+
+const OAUTH_LOADING_RESET_MS = 120_000;
 
 export default function GoogleLoginButton() {
   const { signInWithGoogle } = useWorkout();
   const { isDarkMode } = useTheme();
   const [loading, setLoading] = useState(false);
+  const loadingTimeoutRef = useRef(null);
+
+  const clearLoadingTimeout = useCallback(() => {
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetLoading = useCallback(() => {
+    clearLoadingTimeout();
+    setLoading(false);
+  }, [clearLoadingTimeout]);
+
+  // Back/forward cache: user left for Google then hit "back" — React state can still show loading.
+  useEffect(() => {
+    const onPageShow = (e) => {
+      if (e.persisted) resetLoading();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [resetLoading]);
+
+  useEffect(() => () => clearLoadingTimeout(), [clearLoadingTimeout]);
 
   const handleClick = async () => {
     setLoading(true);
+    clearLoadingTimeout();
+    loadingTimeoutRef.current = setTimeout(() => {
+      loadingTimeoutRef.current = null;
+      setLoading(false);
+      toast.error("Sign-in timed out. Check your connection and try again.");
+    }, OAUTH_LOADING_RESET_MS);
+
     const { error } = await signInWithGoogle();
-    if (error) setLoading(false);
+
+    if (error) {
+      clearLoadingTimeout();
+      setLoading(false);
+      toast.error(error.message || "Could not start Google sign-in.");
+      return;
+    }
+
+    // Success path: full-page redirect to Google (or provider). Do not clear loading here.
   };
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       disabled={loading}
       className={`

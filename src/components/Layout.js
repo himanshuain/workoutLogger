@@ -188,7 +188,7 @@ export default function Layout({ children }) {
       }}
     >
       <main
-        className="flex-1 overflow-y-auto scrollbar-thin"
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-thin"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {children}

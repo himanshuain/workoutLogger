@@ -33,6 +33,8 @@ export default function WorkoutSession() {
     exerciseHistory,
   } = useWorkout();
 
+  const [showExerciseInfo, setShowExerciseInfo] = useState(false);
+
   const [session, setSession] = useState(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,6 +90,10 @@ export default function WorkoutSession() {
   // Current exercise data
   const currentExercise = exercisesWithSets[currentExerciseIndex];
   const totalExercises = exercisesWithSets.length;
+
+  useEffect(() => {
+    setShowExerciseInfo(false);
+  }, [currentExerciseIndex]);
 
   // Overall progress
   const overallProgress = useMemo(() => {
@@ -458,53 +464,83 @@ export default function WorkoutSession() {
     );
   }
 
+  const historyForExercise =
+    currentExercise?.exercise_name &&
+    exerciseHistory?.[currentExercise.exercise_name];
+
   // ============ ACTIVE WORKOUT SCREEN ============
+  // Full viewport column: workout route is not inside Layout, so h-full had no bounded parent
+  // and flex-1 overflow-y-auto never scrolled. Lock to 100dvh + in-flow footer.
   return (
     <div
-      className={`min-h-screen flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
+      className={`fixed inset-0 z-50 flex flex-col overflow-hidden touch-pan-y ${
+        isDarkMode ? "bg-iron-950" : "bg-slate-50"
+      }`}
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      {/* Header */}
-      <div
-        className={`sticky top-0 z-50 ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
+      {/* —— 1. Toolbar —— */}
+      <header
+        className={`shrink-0 flex items-center gap-3 px-4 py-3 border-b ${
+          isDarkMode ? "border-iron-800/90 bg-iron-950" : "border-slate-200 bg-slate-50"
+        }`}
       >
-        {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={handleClose}
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              isDarkMode
-                ? "bg-iron-800 text-iron-400"
-                : "bg-slate-200 text-slate-600"
+        <button
+          type="button"
+          onClick={handleClose}
+          className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${
+            isDarkMode
+              ? "bg-iron-900 text-iron-400 active:bg-iron-800"
+              : "bg-white border border-slate-200 text-slate-600 active:bg-slate-100"
+          }`}
+        >
+          <X className="w-5 h-5" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p
+            className={`text-[10px] font-semibold uppercase tracking-widest ${
+              isDarkMode ? "text-iron-500" : "text-slate-400"
             }`}
           >
-            <X className="w-5 h-5" />
-          </button>
-          <div className="text-center">
-            <h1
-              className={`font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-            >
-              {session.routine_name}
-            </h1>
-            <p
-              className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-            >
-              Exercise {currentExerciseIndex + 1} of {totalExercises}
-            </p>
-          </div>
-          <div className="w-10" />
+            Session
+          </p>
+          <h1
+            className={`font-semibold text-sm leading-tight truncate ${
+              isDarkMode ? "text-iron-100" : "text-slate-800"
+            }`}
+          >
+            {session.routine_name}
+          </h1>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowExerciseInfo(true)}
+          className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${
+            isDarkMode
+              ? "bg-iron-900 text-iron-400 active:bg-iron-800"
+              : "bg-white border border-slate-200 text-slate-600 active:bg-slate-100"
+          }`}
+          aria-label="Exercise history and tips"
+        >
+          <Info className="w-5 h-5" />
+        </button>
+      </header>
 
-        {/* Progress Bar */}
+      {/* —— 2. Exercise context (fixed) —— */}
+      <div
+        className={`shrink-0 px-4 py-3 border-b ${
+          isDarkMode ? "border-iron-800/90 bg-iron-900/40" : "border-slate-200 bg-white"
+        }`}
+      >
         <div
-          className={`h-1.5 mx-4 rounded-full overflow-hidden ${
+          className={`h-1 rounded-full overflow-hidden mb-3 ${
             isDarkMode ? "bg-iron-800" : "bg-slate-200"
           }`}
         >
           <div
-            className={`h-full transition-all duration-300 ${
+            className={`h-full rounded-full transition-all duration-300 ${
               isDarkMode ? "bg-lift-primary" : "bg-workout-primary"
             }`}
             style={{
@@ -513,109 +549,147 @@ export default function WorkoutSession() {
           />
         </div>
 
-        {/* Exercise Info Header */}
-        <div
-          className="px-4 py-4 mt-2 rounded-t-3xl text-white"
-          style={{
-            background: isDarkMode
-              ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-              : "linear-gradient(135deg, #4F8CFF 0%, #6366f1 100%)",
-          }}
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-white/70 text-sm capitalize">
-                {currentExercise.category}
-              </p>
-              <h2 className="text-2xl font-bold mt-1">
-                {currentExercise.exercise_name}
-              </h2>
-              <p className="text-white/80 mt-1">
-                {currentExercise.completedSets} of {currentExercise.totalSets}{" "}
-                sets completed
-              </p>
-            </div>
-            <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <Info className="w-5 h-5" />
-            </button>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <span
+              className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mb-1.5 ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-500"
+              }`}
+            >
+              {currentExercise.category}
+            </span>
+            <h2
+              className={`text-lg font-bold leading-snug ${
+                isDarkMode ? "text-iron-50" : "text-slate-900"
+              }`}
+            >
+              {currentExercise.exercise_name}
+            </h2>
+            <p className={`text-xs mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              Exercise {currentExerciseIndex + 1} of {totalExercises} ·{" "}
+              {currentExercise.completedSets}/{currentExercise.totalSets} sets logged
+            </p>
           </div>
+        </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-4">
-            <button
-              onClick={handlePrevious}
-              disabled={currentExerciseIndex === 0}
-              className={`flex items-center gap-1 text-sm font-medium ${
-                currentExerciseIndex === 0 ? "opacity-40" : ""
-              }`}
-            >
-              <ChevronLeft className="w-5 h-5" />
-              Previous
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={isLastExercise}
-              className={`flex items-center gap-1 text-sm font-medium ${
-                isLastExercise ? "opacity-40" : ""
-              }`}
-            >
-              Next
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+        <div
+          className={`flex items-center justify-between gap-2 mt-4 pt-3 border-t ${
+            isDarkMode ? "border-iron-800/80" : "border-slate-100"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={handlePrevious}
+            disabled={currentExerciseIndex === 0}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1 ${
+              currentExerciseIndex === 0
+                ? isDarkMode
+                  ? "text-iron-600 cursor-not-allowed"
+                  : "text-slate-300 cursor-not-allowed"
+                : isDarkMode
+                  ? "bg-iron-800 text-iron-200 active:bg-iron-700"
+                  : "bg-slate-100 text-slate-700 active:bg-slate-200"
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={isLastExercise}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1 ${
+              isLastExercise
+                ? isDarkMode
+                  ? "text-iron-600 cursor-not-allowed"
+                  : "text-slate-300 cursor-not-allowed"
+                : isDarkMode
+                  ? "bg-iron-800 text-iron-200 active:bg-iron-700"
+                  : "bg-slate-100 text-slate-700 active:bg-slate-200"
+            }`}
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Sets List */}
-      <div className="flex-1 px-4 py-4 space-y-3 overflow-y-auto pb-32">
-        {currentExercise.sets.map((setLog) => (
-          <SetCard
-            key={setLog.id}
-            setNumber={setLog.set_number}
-            weight={setLog.weight}
-            reps={setLog.reps}
-            previousWeight={setLog.previous_weight}
-            previousReps={setLog.previous_reps}
-            isCompleted={setLog.is_completed}
-            unit={unit}
-            onWeightChange={(weight) => handleSetUpdate(setLog.id, { weight })}
-            onRepsChange={(reps) => handleSetUpdate(setLog.id, { reps })}
-            onToggleComplete={(isCompleted) =>
-              handleSetUpdate(setLog.id, { is_completed: isCompleted })
-            }
-          />
-        ))}
+      {/* —— 3. Sets (scroll) —— */}
+      <div
+        className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-4 py-4 [scrollbar-gutter:stable] ${
+          isDarkMode ? "bg-iron-950" : "bg-slate-100"
+        }`}
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="flex items-end justify-between gap-2 mb-3">
+          <div>
+            <h3
+              className={`text-sm font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+            >
+              Sets
+            </h3>
+            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              Adjust reps & weight, then tap the check when done
+            </p>
+          </div>
+          <span
+            className={`shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-lg ${
+              isDarkMode ? "bg-iron-800 text-iron-300" : "bg-white border border-slate-200 text-slate-600"
+            }`}
+          >
+            {currentExercise.totalSets}
+          </span>
+        </div>
 
-        {/* Swipe hint */}
+        <div className="space-y-4">
+          {currentExercise.sets.map((setLog) => (
+            <SetCard
+              key={setLog.id}
+              setNumber={setLog.set_number}
+              weight={setLog.weight}
+              reps={setLog.reps}
+              previousWeight={setLog.previous_weight}
+              previousReps={setLog.previous_reps}
+              isCompleted={setLog.is_completed}
+              unit={unit}
+              onWeightChange={(weight) => handleSetUpdate(setLog.id, { weight })}
+              onRepsChange={(reps) => handleSetUpdate(setLog.id, { reps })}
+              onToggleComplete={(isCompleted) =>
+                handleSetUpdate(setLog.id, { is_completed: isCompleted })
+              }
+            />
+          ))}
+        </div>
+
         <p
-          className={`text-center text-sm pt-4 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+          className={`text-center text-[11px] pt-6 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
         >
-          Swipe left or right to change exercises
+          Tip: swipe horizontally to change exercise
         </p>
       </div>
 
-      {/* Bottom Action */}
+      {/* —— 4. Primary action —— */}
       <div
-        className={`
-        fixed bottom-0 left-0 right-0 p-4 border-t
-        ${isDarkMode ? "bg-iron-950 border-iron-800" : "bg-slate-50 border-slate-200"}
-      `}
-        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        className={`shrink-0 px-4 pt-3 border-t ${
+          isDarkMode ? "bg-iron-950 border-iron-800" : "bg-slate-50 border-slate-200"
+        }`}
+        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         {isLastExercise ? (
           <button
+            type="button"
             onClick={handleCompleteWorkout}
             disabled={isCompleting}
             className={`
-              w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2
+              w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2
               ${
                 allSetsCompleted
                   ? isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-green-500 text-white"
+                    ? "bg-lift-primary text-iron-950 shadow-lg"
+                    : "bg-green-500 text-white shadow-lg"
                   : isDarkMode
-                    ? "bg-iron-800 text-iron-400"
-                    : "bg-slate-200 text-slate-600"
+                    ? "bg-iron-800 text-iron-500"
+                    : "bg-slate-200 text-slate-500"
               }
             `}
           >
@@ -627,15 +701,16 @@ export default function WorkoutSession() {
             ) : (
               <>
                 <Check className="w-5 h-5" />
-                Complete Workout
+                Complete workout
               </>
             )}
           </button>
         ) : (
           <button
+            type="button"
             onClick={handleNext}
             className={`
-              w-full py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2
+              w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg
               ${
                 isDarkMode
                   ? "bg-lift-primary text-iron-950"
@@ -643,11 +718,87 @@ export default function WorkoutSession() {
               }
             `}
           >
-            Next Exercise
+            Next exercise
             <ChevronRight className="w-5 h-5" />
           </button>
         )}
       </div>
+
+      <AnimatePresence>
+        {showExerciseInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowExerciseInfo(false)}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ type: "spring", damping: 26, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`w-full max-w-md rounded-2xl p-5 shadow-xl ${
+                isDarkMode ? "bg-iron-900 border border-iron-800" : "bg-white border border-slate-200"
+              }`}
+            >
+              <h3
+                className={`text-lg font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+              >
+                {currentExercise.exercise_name}
+              </h3>
+              <p className={`text-sm capitalize mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                {currentExercise.category}
+              </p>
+              <div className={`mt-4 space-y-3 text-sm ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
+                {historyForExercise ? (
+                  <>
+                    <p>
+                      <span className={isDarkMode ? "text-iron-500" : "text-slate-400"}>Last session: </span>
+                      <span className="font-semibold tabular-nums">
+                        {historyForExercise.last_weight ?? 0}
+                        {unit} × {historyForExercise.last_reps ?? "—"} reps
+                      </span>
+                    </p>
+                    {(historyForExercise.personal_record_weight ?? 0) > 0 && (
+                      <p>
+                        <span className={isDarkMode ? "text-iron-500" : "text-slate-400"}>Personal best: </span>
+                        <span className="font-semibold tabular-nums text-amber-500">
+                          {historyForExercise.personal_record_weight}
+                          {unit}
+                        </span>
+                      </p>
+                    )}
+                    <p>
+                      <span className={isDarkMode ? "text-iron-500" : "text-slate-400"}>Logged sessions: </span>
+                      {historyForExercise.times_performed ?? 0}
+                    </p>
+                  </>
+                ) : (
+                  <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>
+                    No history for this exercise yet. Pre-filled values use your routine defaults or last known
+                    numbers once you complete workouts.
+                  </p>
+                )}
+                <p className={`text-xs leading-relaxed pt-2 border-t ${isDarkMode ? "text-iron-500 border-iron-800" : "text-slate-500 border-slate-100"}`}>
+                  Mark each set complete when you finish it. Swipe left or right on this screen to move between
+                  exercises.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowExerciseInfo(false)}
+                className={`mt-5 w-full py-3 rounded-xl font-semibold ${
+                  isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-100 text-slate-800"
+                }`}
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

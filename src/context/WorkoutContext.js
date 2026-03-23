@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { getAuthRedirectUrl } from "@/lib/authRedirect";
 
 const WorkoutContext = createContext();
 
@@ -1790,21 +1791,40 @@ export function WorkoutProvider({ children }) {
   }, []);
 
   const resetPassword = useCallback(async (email) => {
+    const redirectTo =
+      typeof window !== "undefined" ? getAuthRedirectUrl() : undefined;
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth` : undefined,
+      redirectTo,
     });
     return { data, error };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-    if (error) {
-      console.error("Google login error:", error.message);
-      return { error };
+    if (typeof window === "undefined") {
+      return { error: new Error("Google sign-in is only available in the browser.") };
     }
-    return { error: null };
+    try {
+      const redirectTo = getAuthRedirectUrl();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          // Ask Google to show the account picker (saved profiles + add account).
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+      if (error) {
+        console.error("Google login error:", error.message);
+        return { error };
+      }
+      return { error: null, data };
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      console.error("Google login error:", err);
+      return { error: err };
+    }
   }, []);
 
   const signOut = useCallback(async () => {

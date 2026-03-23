@@ -227,21 +227,20 @@ export default function Food() {
     };
   }, [todayFoodEntries, foodItems]);
 
+  const openQuantityModal = (foodItem, quantity) => {
+    setShowQuantityModal(foodItem);
+    setTempQuantity(quantity);
+  };
+
   const handleToggle = async (foodItem) => {
     const isConsumed = !!todayFoodEntries[foodItem.id];
 
     if (isConsumed) {
       await toggleFoodEntry(foodItem.id);
+      queryClient.invalidateQueries(["foodHistory"]);
     } else {
-      if (foodItem.unit && foodItem.default_quantity > 1) {
-        setShowQuantityModal(foodItem);
-        setTempQuantity(foodItem.default_quantity);
-      } else {
-        await toggleFoodEntry(foodItem.id, foodItem.default_quantity || 1);
-      }
+      openQuantityModal(foodItem, foodItem.default_quantity || 1);
     }
-
-    queryClient.invalidateQueries(["foodHistory"]);
 
     if (window.navigator?.vibrate) {
       window.navigator.vibrate(10);
@@ -249,11 +248,12 @@ export default function Food() {
   };
 
   const handleQuantityConfirm = async () => {
-    if (showQuantityModal) {
-      await updateFoodEntryQuantity(showQuantityModal.id, tempQuantity);
-      queryClient.invalidateQueries(["foodHistory"]);
-      setShowQuantityModal(null);
-    }
+    if (!showQuantityModal) return;
+    const q = Math.max(0.5, Number(tempQuantity) || 0.5);
+    await updateFoodEntryQuantity(showQuantityModal.id, q);
+    queryClient.invalidateQueries(["foodHistory"]);
+    setShowQuantityModal(null);
+    if (window.navigator?.vibrate) window.navigator.vibrate(10);
   };
 
   const handleSaveFood = async () => {
@@ -634,66 +634,41 @@ export default function Food() {
                               isDarkMode ? "text-iron-500" : "text-slate-500"
                             }`}
                           >
-                            {isConsumed && (
-                              <span
-                                className={
-                                  isDarkMode
-                                    ? "text-lift-primary"
-                                    : "text-amber-500"
-                                }
-                              >
-                                {quantity} {item.unit} ·{" "}
-                              </span>
-                            )}
+                            {isConsumed ? (
+                              <>
+                                <span
+                                  className={
+                                    isDarkMode
+                                      ? "text-lift-primary"
+                                      : "text-amber-500"
+                                  }
+                                >
+                                  Logged: {quantity} {item.unit || "units"}
+                                </span>
+                                <span className="opacity-70"> · </span>
+                              </>
+                            ) : null}
                             {daysTracked > 0
                               ? `${daysTracked} days tracked`
-                              : "Tap to log"}
+                              : "Tap icon to log — set amount in the next step"}
                           </p>
                         </button>
 
                         {isConsumed && (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => {
-                                updateFoodEntryQuantity(
-                                  item.id,
-                                  Math.max(0.5, quantity - 0.5),
-                                );
-                                queryClient.invalidateQueries(["foodHistory"]);
-                              }}
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                              }`}
-                            >
-                              <Minus
-                                className={`w-4 h-4 ${
-                                  isDarkMode ? "text-iron-400" : "text-slate-500"
-                                }`}
-                              />
-                            </button>
-                            <span
-                              className={`w-8 text-center font-medium ${
-                                isDarkMode ? "text-iron-100" : "text-slate-800"
-                              }`}
-                            >
-                              {quantity}
-                            </span>
-                            <button
-                              onClick={() => {
-                                updateFoodEntryQuantity(item.id, quantity + 0.5);
-                                queryClient.invalidateQueries(["foodHistory"]);
-                              }}
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                              }`}
-                            >
-                              <Plus
-                                className={`w-4 h-4 ${
-                                  isDarkMode ? "text-iron-400" : "text-slate-500"
-                                }`}
-                              />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openQuantityModal(item, quantity);
+                            }}
+                            className={`shrink-0 px-3 py-2 rounded-xl text-sm font-semibold ${
+                              isDarkMode
+                                ? "bg-iron-800 text-iron-200 active:bg-iron-700"
+                                : "bg-slate-100 text-slate-700 active:bg-slate-200"
+                            }`}
+                          >
+                            Change amount
+                          </button>
                         )}
 
                         <ChevronDown
@@ -987,31 +962,61 @@ export default function Food() {
       </Modal>
 
       {/* Quantity Modal */}
-      <Modal open={!!showQuantityModal} onOpenChange={() => setShowQuantityModal(null)}>
+      <Modal
+        open={!!showQuantityModal}
+        onOpenChange={(open) => !open && setShowQuantityModal(null)}
+      >
         <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
           <ModalHeader>
-            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>How much?</ModalTitle>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              {showQuantityModal && todayFoodEntries[showQuantityModal.id]
+                ? "Adjust quantity"
+                : "How much did you have?"}
+            </ModalTitle>
+            {showQuantityModal && (
+              <p className={`text-sm font-medium mt-1 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                {showQuantityModal.icon} {showQuantityModal.name}
+              </p>
+            )}
           </ModalHeader>
-          <ModalBody>
-            <div className="flex items-center justify-center gap-4 py-6">
+          <ModalBody className="space-y-4">
+            <div>
+              <label
+                htmlFor="food-qty-input"
+                className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
+                Quantity ({showQuantityModal?.unit || "units"})
+              </label>
+              <input
+                id="food-qty-input"
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0.5"
+                value={tempQuantity}
+                onChange={(e) => setTempQuantity(parseFloat(e.target.value) || 0)}
+                className={`w-full text-center text-3xl font-bold tabular-nums py-3 rounded-xl border ${
+                  isDarkMode
+                    ? "bg-iron-800 border-iron-700 text-iron-100"
+                    : "bg-slate-50 border-slate-200 text-slate-800"
+                }`}
+              />
+            </div>
+            <div className="flex items-center justify-center gap-4">
               <button
-                onClick={() => setTempQuantity(Math.max(0.5, tempQuantity - 0.5))}
+                type="button"
+                onClick={() => setTempQuantity((q) => Math.max(0.5, (Number(q) || 0) - 0.5))}
                 className={`w-14 h-14 rounded-xl flex items-center justify-center ${
                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
                 }`}
               >
                 <Minus className={`w-6 h-6 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
               </button>
-              <div className="text-center w-24">
-                <span className={`text-4xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                  {tempQuantity}
-                </span>
-                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {showQuantityModal?.unit}
-                </p>
-              </div>
               <button
-                onClick={() => setTempQuantity(tempQuantity + 0.5)}
+                type="button"
+                onClick={() => setTempQuantity((q) => (Number(q) || 0) + 0.5)}
                 className={`w-14 h-14 rounded-xl flex items-center justify-center ${
                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
                 }`}
@@ -1020,15 +1025,25 @@ export default function Food() {
               </button>
             </div>
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter className="flex-col gap-2 sm:flex-col">
             <button
+              type="button"
               onClick={handleQuantityConfirm}
               className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
               }`}
             >
               <Check className="w-5 h-5" />
-              Log {tempQuantity} {showQuantityModal?.unit}
+              Save {Math.max(0.5, Number(tempQuantity) || 0.5)} {showQuantityModal?.unit || ""}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowQuantityModal(null)}
+              className={`w-full py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              Cancel
             </button>
           </ModalFooter>
         </ModalContent>

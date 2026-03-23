@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
@@ -255,6 +255,25 @@ export default function LifeLog() {
 
   // Habits state
   const [activeTab, setActiveTab] = useState("events"); // "events" or "habits"
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const tab = router.query.tab;
+    if (tab === "habits") setActiveTab("habits");
+    else if (tab === "events") setActiveTab("events");
+  }, [router.isReady, router.query.tab]);
+
+  const goToLogTab = useCallback(
+    (tab) => {
+      setActiveTab(tab);
+      router.replace(
+        { pathname: "/lifelog", query: { ...router.query, tab } },
+        undefined,
+        { shallow: true },
+      );
+    },
+    [router],
+  );
   const [showAddHabitModal, setShowAddHabitModal] = useState(false);
   const [editingTrackable, setEditingTrackable] = useState(null);
   const [expandedHabit, setExpandedHabit] = useState(null);
@@ -890,7 +909,8 @@ export default function LifeLog() {
               }`}
             >
               <button
-                onClick={() => setActiveTab("events")}
+                type="button"
+                onClick={() => goToLogTab("events")}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                   activeTab === "events"
                     ? isDarkMode
@@ -907,7 +927,8 @@ export default function LifeLog() {
                 </div>
               </button>
               <button
-                onClick={() => setActiveTab("habits")}
+                type="button"
+                onClick={() => goToLogTab("habits")}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                   activeTab === "habits"
                     ? isDarkMode

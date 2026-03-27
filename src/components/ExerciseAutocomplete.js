@@ -1,6 +1,12 @@
 import { useState, useMemo, useRef } from "react";
+import Image from "next/image";
 import { Search, Plus, Check, X } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import { exerciseMediaUrl } from "@/lib/exerciseMedia";
+import {
+  dedupeExercisesForPicker,
+  normalizeExerciseName,
+} from "@/lib/dedupeExercisesForPicker";
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -10,6 +16,7 @@ const CATEGORIES = [
   { id: "shoulders", label: "Shoulders" },
   { id: "arms", label: "Arms" },
   { id: "core", label: "Core" },
+  { id: "other", label: "Other" },
 ];
 
 export default function ExerciseAutocomplete({
@@ -26,8 +33,21 @@ export default function ExerciseAutocomplete({
   const [selected, setSelected] = useState(new Set());
   const searchRef = useRef(null);
 
+  const dedupedExercises = useMemo(
+    () => dedupeExercisesForPicker(exercises),
+    [exercises],
+  );
+
+  const nameToCanonical = useMemo(() => {
+    const m = new Map();
+    for (const e of dedupedExercises) {
+      m.set(normalizeExerciseName(e.name), e);
+    }
+    return m;
+  }, [dedupedExercises]);
+
   const filteredExercises = useMemo(() => {
-    let list = exercises;
+    let list = dedupedExercises;
     if (activeCategory !== "all") {
       list = list.filter(e => (e.category || "other").toLowerCase() === activeCategory);
     }
@@ -38,7 +58,7 @@ export default function ExerciseAutocomplete({
       );
     }
     return list;
-  }, [exercises, search, activeCategory]);
+  }, [dedupedExercises, search, activeCategory]);
 
   const alphabetGroups = useMemo(() => {
     const groups = {};
@@ -53,8 +73,17 @@ export default function ExerciseAutocomplete({
   const filteredRecent = useMemo(() => {
     if (search) return [];
     if (activeCategory !== "all") return [];
-    return recentExercises.slice(0, 5);
-  }, [recentExercises, search, activeCategory]);
+    const seen = new Set();
+    const out = [];
+    for (const e of recentExercises) {
+      const key = normalizeExerciseName(e.name);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(nameToCanonical.get(key) ?? e);
+      if (out.length >= 5) break;
+    }
+    return out;
+  }, [recentExercises, search, activeCategory, nameToCanonical]);
 
   const handleSelect = (exercise) => {
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
@@ -72,7 +101,7 @@ export default function ExerciseAutocomplete({
 
   const handleDone = () => {
     if (multiSelect) {
-      const selectedExercises = exercises.filter(e => selected.has(e.id));
+      const selectedExercises = dedupedExercises.filter(e => selected.has(e.id));
       selectedExercises.forEach(e => onSelect(e));
     }
     onClose?.();
@@ -215,33 +244,71 @@ export default function ExerciseAutocomplete({
 }
 
 function ExerciseRow({ exercise, isDarkMode, isLogged, isSelected, onSelect }) {
+  const mediaUrl = exerciseMediaUrl(exercise);
+  const hasMedia = Boolean(mediaUrl);
+
   return (
     <button
       onClick={onSelect}
-      className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl transition-colors ${
+      className={`w-full flex items-center gap-3.5 px-2 py-3 rounded-xl transition-colors ${
         isDarkMode ? "active:bg-iron-800/70" : "active:bg-slate-50"
       }`}
     >
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-        isLogged
-          ? isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/10"
-          : isDarkMode ? "bg-iron-800" : "bg-slate-100"
-      }`}>
-        {isLogged ? (
-          <Check className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+      <div
+        className={`relative isolate h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-2xl border ${
+          isDarkMode
+            ? "border-iron-700/80 bg-iron-900"
+            : "border-slate-200/90 bg-white"
+        }`}
+      >
+        {hasMedia ? (
+          <Image
+            src={mediaUrl}
+            alt=""
+            fill
+            unoptimized
+            sizes="72px"
+            className="object-contain p-1"
+          />
         ) : (
-          <ExerciseIcon name={exercise.name} className="w-6 h-6" color={isDarkMode ? "#9ca3af" : "#64748b"} />
+          <div
+            className={`flex h-full w-full items-center justify-center ${
+              isDarkMode ? "bg-iron-800/90" : "bg-slate-100"
+            }`}
+          >
+            <ExerciseIcon
+              name={exercise.name}
+              className="h-10 w-10"
+              color={isDarkMode ? "#a1a1aa" : "#64748b"}
+            />
+          </div>
         )}
+        {isLogged ? (
+          <span
+            className={`absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full shadow-md ${
+              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+            }`}
+            aria-hidden
+          >
+            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+          </span>
+        ) : null}
       </div>
       <div className="flex-1 text-left min-w-0">
-        <p className={`text-sm font-medium truncate ${
-          isLogged
-            ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
-            : isDarkMode ? "text-iron-100" : "text-slate-800"
-        }`}>
+        <p
+          className={`text-[15px] font-semibold leading-snug ${
+            isLogged
+              ? isDarkMode
+                ? "text-lift-primary"
+                : "text-workout-primary"
+              : isDarkMode
+                ? "text-iron-100"
+                : "text-slate-800"
+          }`}
+        >
           {exercise.name}
         </p>
-        <p className={`text-[11px] capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+        <p className={`mt-0.5 text-xs capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
           {exercise.category || "Other"}
         </p>
       </div>

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
+import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 
 const WorkoutContext = createContext();
 
@@ -1325,13 +1326,15 @@ export function WorkoutProvider({ children }) {
           });
         }
       } else {
+        const item = foodItems.find(f => f.id === foodItemId);
+        const q = normalizeFoodQuantity(quantity, item);
         const { data, error } = await supabase
           .from("food_entries")
           .insert({
             user_id: user.id,
             food_item_id: foodItemId,
             date: today,
-            quantity,
+            quantity: q,
             is_completed: true,
           })
           .select()
@@ -1347,25 +1350,28 @@ export function WorkoutProvider({ children }) {
 
       queryClient.invalidateQueries({ queryKey: ["foodEntries"] });
     },
-    [user, today, todayFoodEntries, queryClient]
+    [user, today, todayFoodEntries, queryClient, foodItems]
   );
 
   const updateFoodEntryQuantity = useCallback(
     async (foodItemId, quantity) => {
       if (!user) return;
 
+      const item = foodItems.find(f => f.id === foodItemId);
+      const q = normalizeFoodQuantity(quantity, item);
+
       const existing = todayFoodEntries[foodItemId];
 
       if (existing) {
         const { error } = await supabase
           .from("food_entries")
-          .update({ quantity })
+          .update({ quantity: q })
           .eq("id", existing.id);
 
         if (!error) {
           setTodayFoodEntries(prev => ({
             ...prev,
-            [foodItemId]: { ...existing, quantity },
+            [foodItemId]: { ...existing, quantity: q },
           }));
         }
       } else {
@@ -1375,7 +1381,7 @@ export function WorkoutProvider({ children }) {
             user_id: user.id,
             food_item_id: foodItemId,
             date: today,
-            quantity,
+            quantity: q,
             is_completed: true,
           })
           .select()
@@ -1391,7 +1397,7 @@ export function WorkoutProvider({ children }) {
 
       queryClient.invalidateQueries({ queryKey: ["foodEntries"] });
     },
-    [user, today, todayFoodEntries, queryClient]
+    [user, today, todayFoodEntries, queryClient, foodItems]
   );
 
   const getFoodEntries = useCallback(
@@ -1799,6 +1805,13 @@ export function WorkoutProvider({ children }) {
     return { data, error };
   }, []);
 
+  const updatePassword = useCallback(async newPassword => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    return { data, error };
+  }, []);
+
   const signInWithGoogle = useCallback(async () => {
     if (typeof window === "undefined") {
       return { error: new Error("Google sign-in is only available in the browser.") };
@@ -1887,6 +1900,7 @@ export function WorkoutProvider({ children }) {
         signInWithGoogle,
         signUp,
         resetPassword,
+        updatePassword,
         signOut,
         // New routine functions
         createRoutine,

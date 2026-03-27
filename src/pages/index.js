@@ -30,7 +30,6 @@ import {
   Plus,
   Dumbbell,
   Sparkles,
-  Utensils,
   SlidersHorizontal,
   RefreshCw,
   Check,
@@ -59,6 +58,7 @@ import {
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
+import TodayFoodLogSection from "@/components/TodayFoodLogSection";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -108,6 +108,8 @@ export default function Home() {
     getTrackingEntries,
     foodItems,
     todayFoodEntries,
+    toggleFoodEntry,
+    updateFoodEntryQuantity,
   } = useWorkout();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -182,18 +184,6 @@ export default function Home() {
   const habitTrackables = useMemo(
     () => trackables.filter((t) => t.name !== "Body Weight"),
     [trackables],
-  );
-
-  const todaysLoggedFood = useMemo(
-    () =>
-      foodItems
-        .filter((f) => todayFoodEntries[f.id])
-        .map((f) => ({
-          ...f,
-          quantity:
-            todayFoodEntries[f.id]?.quantity ?? f.default_quantity ?? 1,
-        })),
-    [foodItems, todayFoodEntries],
   );
 
   const hasGoals = useMemo(() => {
@@ -733,73 +723,14 @@ export default function Home() {
           />
         </section>
 
-        {/* Today's food (logged items) */}
-        {foodItems.length > 0 && (
-          <section className="mt-6">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3
-                className={`text-xs font-medium uppercase tracking-wider flex items-center gap-2 ${
-                  isDarkMode ? "text-iron-400" : "text-slate-500"
-                }`}
-              >
-                <Utensils className="w-3.5 h-3.5 shrink-0" />
-                Today&apos;s food
-              </h3>
-              <button
-                type="button"
-                onClick={() => router.push("/food")}
-                className={`text-xs font-medium flex items-center gap-0.5 ${
-                  isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
-                }`}
-              >
-                Food <ChevronRight className="w-3 h-3" />
-              </button>
-            </div>
-            {todaysLoggedFood.length === 0 ? (
-              <p
-                className={`text-sm rounded-2xl px-4 py-3 ${
-                  isDarkMode ? "bg-iron-900/50 text-iron-500" : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                Nothing logged yet. Open Food to log items for today.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {todaysLoggedFood.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      onClick={() => router.push("/food")}
-                      className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors active:scale-[0.99] ${
-                        isDarkMode ? "bg-iron-900 hover:bg-iron-800/80" : "bg-white border border-slate-200 shadow-sm hover:bg-slate-50"
-                      }`}
-                    >
-                      <span
-                        className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
-                        style={{ backgroundColor: `${item.color}35` }}
-                      >
-                        {item.icon}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`font-semibold truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                        >
-                          {item.name}
-                        </p>
-                        <p className={`text-sm ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`}>
-                          {item.quantity} {item.unit || "units"}
-                        </p>
-                      </div>
-                      <ChevronRight
-                        className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                      />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
+        <TodayFoodLogSection
+          isDarkMode={isDarkMode}
+          foodItems={foodItems}
+          todayFoodEntries={todayFoodEntries}
+          toggleFoodEntry={toggleFoodEntry}
+          updateFoodEntryQuantity={updateFoodEntryQuantity}
+          queryClient={queryClient}
+        />
 
         {/* Recent Workouts */}
         {recentSessions.length > 0 && (

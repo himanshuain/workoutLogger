@@ -1,10 +1,10 @@
 /**
  * OAuth PKCE and password-reset redirects must use a URL the user can open.
  *
- * - **Development:** always `window.location.origin` so localhost vs LAN matches the tab you used.
- * - **Production:** if `NEXT_PUBLIC_SITE_URL` is set to a public URL (not localhost / private LAN),
- *   use it as the canonical origin. That way Google OAuth returns to your domain (e.g. https://app.example.com)
- *   even when someone opens the app via http://SERVER_IP:3000.
+ * - **Localhost / LAN:** always `window.location.origin` (even when NODE_ENV=production and
+ *   `NEXT_PUBLIC_SITE_URL` is set), so Google OAuth returns to the same tab (localhost, 192.168.x, etc.).
+ * - **Production (public host):** if `NEXT_PUBLIC_SITE_URL` is a public URL, use it so OAuth can return
+ *   to your canonical domain when appropriate.
  *
  * On your host (Vercel, VPS, etc.) set e.g. `NEXT_PUBLIC_SITE_URL=https://your-domain.com`
  * and add the same `https://your-domain.com/auth` in Supabase → Authentication → URL configuration.
@@ -49,6 +49,16 @@ function getTrustedProductionSiteBase() {
 
 export function getAppOrigin() {
   if (typeof window !== "undefined") {
+    try {
+      const host = window.location.hostname.toLowerCase();
+      // Always use the tab you’re on for local / LAN — even if NODE_ENV=production
+      // (e.g. `npm start` after build) and NEXT_PUBLIC_SITE_URL points at a deployed server.
+      if (isPrivateOrLocalhostHost(host)) {
+        return window.location.origin;
+      }
+    } catch {
+      // fall through
+    }
     if (process.env.NODE_ENV === "production") {
       const trusted = getTrustedProductionSiteBase();
       if (trusted) return trusted;

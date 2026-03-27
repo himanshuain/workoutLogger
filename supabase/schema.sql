@@ -12,8 +12,17 @@ CREATE TABLE IF NOT EXISTS exercises (
   name TEXT NOT NULL,
   category TEXT DEFAULT 'other',
   is_predefined BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  external_source TEXT,
+  external_id TEXT,
+  description TEXT,
+  gif_url TEXT,
+  image_url TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS exercises_external_source_id_key
+  ON exercises (external_source, external_id);
 
 -- User settings
 CREATE TABLE IF NOT EXISTS user_settings (
@@ -89,6 +98,7 @@ CREATE TABLE IF NOT EXISTS food_items (
   color TEXT DEFAULT '#f59e0b',
   unit TEXT DEFAULT 'servings',
   default_quantity DECIMAL(6,2) DEFAULT 1,
+  quantity_whole_numbers BOOLEAN DEFAULT false,
   category TEXT DEFAULT 'other',
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()

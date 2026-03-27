@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import SetCard from "@/components/SetCard";
+import { exerciseMediaUrl } from "@/lib/exerciseMedia";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -31,6 +33,7 @@ export default function WorkoutSession() {
     settings,
     routines,
     exerciseHistory,
+    exercises: exerciseCatalog,
   } = useWorkout();
 
   const [showExerciseInfo, setShowExerciseInfo] = useState(false);
@@ -468,6 +471,19 @@ export default function WorkoutSession() {
     currentExercise?.exercise_name &&
     exerciseHistory?.[currentExercise.exercise_name];
 
+  const catalogExercise = useMemo(() => {
+    if (!currentExercise) return null;
+    if (currentExercise.exercise_id) {
+      const byId = exerciseCatalog.find((e) => e.id === currentExercise.exercise_id);
+      if (byId) return byId;
+    }
+    return exerciseCatalog.find((e) => e.name === currentExercise.exercise_name) || null;
+  }, [currentExercise, exerciseCatalog]);
+
+  const guideMediaUrl = catalogExercise ? exerciseMediaUrl(catalogExercise) : null;
+  const guideDescription = catalogExercise?.description?.trim() || "";
+  const wgerMeta = catalogExercise?.external_source === "wger" ? catalogExercise.metadata : null;
+
   // ============ ACTIVE WORKOUT SCREEN ============
   // Full viewport column: workout route is not inside Layout, so h-full had no bounded parent
   // and flex-1 overflow-y-auto never scrolled. Lock to 100dvh + in-flow footer.
@@ -751,6 +767,48 @@ export default function WorkoutSession() {
               <p className={`text-sm capitalize mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                 {currentExercise.category}
               </p>
+
+              {guideMediaUrl ? (
+                <div
+                  className={`relative mt-4 aspect-video w-full max-h-48 overflow-hidden rounded-xl ${
+                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                  }`}
+                >
+                  <Image
+                    src={guideMediaUrl}
+                    alt=""
+                    fill
+                    unoptimized
+                    className="object-contain"
+                    sizes="(max-width: 448px) 100vw, 448px"
+                  />
+                </div>
+              ) : null}
+
+              {guideDescription ? (
+                <p
+                  className={`mt-3 text-sm leading-relaxed ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}
+                >
+                  {guideDescription}
+                </p>
+              ) : null}
+
+              {wgerMeta ? (
+                <p className={`text-[11px] leading-snug ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                  Exercise data and media from{" "}
+                  <a
+                    href="https://wger.de"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    wger
+                  </a>
+                  {wgerMeta.license_short ? ` (${wgerMeta.license_short})` : ""}
+                  {wgerMeta.license_author ? ` · ${wgerMeta.license_author}` : ""}.
+                </p>
+              ) : null}
+
               <div className={`mt-4 space-y-3 text-sm ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
                 {historyForExercise ? (
                   <>

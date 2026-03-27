@@ -383,6 +383,21 @@ export default function LifeLog() {
     });
   }, [eventTypes]);
 
+  /** GitHub-style calendar: one cell per day with a log (count = logs that day). */
+  const eventHeatmapData = useMemo(() => {
+    const out = {};
+    eventTypes.forEach(et => {
+      const byDate = {};
+      (et.event_logs || []).forEach(log => {
+        const d = log.date;
+        if (!d) return;
+        byDate[d] = (byDate[d] || 0) + 1;
+      });
+      out[et.id] = Object.entries(byDate).map(([date, count]) => ({ date, count }));
+    });
+    return out;
+  }, [eventTypes]);
+
   const handleEditEvent = eventType => {
     setEditingEventId(eventType.id);
     setNewEvent({
@@ -1111,7 +1126,7 @@ export default function LifeLog() {
                       </ContextMenuContent>
                     </ContextMenu>
 
-                    {/* Expanded Timeline — separate from event context menu */}
+                    {/* Expanded: heatmap + timeline — separate from event context menu */}
                     <AnimatePresence initial={false}>
                     {isExpanded && (
                       <motion.div
@@ -1125,6 +1140,16 @@ export default function LifeLog() {
                       <div
                         className={`px-3.5 pb-3.5 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}
                       >
+                        <div className="pt-3 pb-2">
+                          <ActivityHeatmap
+                            data={eventHeatmapData[eventType.id] || []}
+                            type="habit"
+                            label=""
+                            color={eventType.color}
+                            compact
+                            isDarkMode={isDarkMode}
+                          />
+                        </div>
                         {isLoadingExpandedLogs ? (
                           <div
                             className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}

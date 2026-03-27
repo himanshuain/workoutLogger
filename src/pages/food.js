@@ -24,10 +24,11 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
+import FoodQuantityModal from "@/components/FoodQuantityModal";
+import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 import {
   Plus,
   Check,
-  Minus,
   Pencil,
   Trash2,
   Utensils,
@@ -105,6 +106,7 @@ export default function Food() {
     color: "#f59e0b",
     unit: "servings",
     default_quantity: 1,
+    quantity_whole_numbers: false,
     category: "protein",
   });
 
@@ -249,7 +251,7 @@ export default function Food() {
 
   const handleQuantityConfirm = async () => {
     if (!showQuantityModal) return;
-    const q = Math.max(0.5, Number(tempQuantity) || 0.5);
+    const q = normalizeFoodQuantity(tempQuantity, showQuantityModal);
     await updateFoodEntryQuantity(showQuantityModal.id, q);
     queryClient.invalidateQueries(["foodHistory"]);
     setShowQuantityModal(null);
@@ -276,6 +278,7 @@ export default function Food() {
         color: "#f59e0b",
         unit: "servings",
         default_quantity: 1,
+        quantity_whole_numbers: false,
         category: "protein",
       });
     } catch {
@@ -291,6 +294,7 @@ export default function Food() {
       color: item.color || "#f59e0b",
       unit: item.unit || "servings",
       default_quantity: item.default_quantity || 1,
+      quantity_whole_numbers: Boolean(item.quantity_whole_numbers),
       category: item.category || "protein",
     });
     setShowAddModal(true);
@@ -389,6 +393,7 @@ export default function Food() {
                 color: "#f59e0b",
                 unit: "servings",
                 default_quantity: 1,
+                quantity_whole_numbers: false,
                 category: "protein",
               });
               setShowAddModal(true);
@@ -890,10 +895,18 @@ export default function Food() {
                 </label>
                 <input
                   type="number"
-                  step="0.5"
-                  min="0.5"
+                  step={newFood.quantity_whole_numbers ? "1" : "0.5"}
+                  min={newFood.quantity_whole_numbers ? "1" : "0.5"}
                   value={newFood.default_quantity}
-                  onChange={(e) => setNewFood({ ...newFood, default_quantity: parseFloat(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    const raw = parseFloat(e.target.value);
+                    if (newFood.quantity_whole_numbers) {
+                      const n = Math.max(1, Math.round(Number.isFinite(raw) ? raw : 1));
+                      setNewFood({ ...newFood, default_quantity: n });
+                    } else {
+                      setNewFood({ ...newFood, default_quantity: Number.isFinite(raw) ? raw : 1 });
+                    }
+                  }}
                   className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
@@ -902,6 +915,34 @@ export default function Food() {
                 />
               </div>
             </div>
+
+            <label
+              className={`flex items-start gap-3 cursor-pointer rounded-xl p-3 ${
+                isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={newFood.quantity_whole_numbers}
+                onChange={(e) => {
+                  const whole = e.target.checked;
+                  setNewFood((prev) => ({
+                    ...prev,
+                    quantity_whole_numbers: whole,
+                    default_quantity: whole
+                      ? Math.max(1, Math.round(Number(prev.default_quantity) || 1))
+                      : prev.default_quantity,
+                  }));
+                }}
+                className="mt-1 h-4 w-4 rounded border-slate-500"
+              />
+              <span className={`text-sm ${isDarkMode ? "text-iron-300" : "text-slate-700"}`}>
+                <span className="font-medium">Whole numbers only</span>
+                <span className={`block text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                  For items counted in whole units (eggs, bars, pills). No halves like 1.5.
+                </span>
+              </span>
+            </label>
 
             <div>
               <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
@@ -961,93 +1002,16 @@ export default function Food() {
         </ModalContent>
       </Modal>
 
-      {/* Quantity Modal */}
-      <Modal
+      <FoodQuantityModal
         open={!!showQuantityModal}
-        onOpenChange={(open) => !open && setShowQuantityModal(null)}
-      >
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
-          <ModalHeader>
-            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
-              {showQuantityModal && todayFoodEntries[showQuantityModal.id]
-                ? "Adjust quantity"
-                : "How much did you have?"}
-            </ModalTitle>
-            {showQuantityModal && (
-              <p className={`text-sm font-medium mt-1 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
-                {showQuantityModal.icon} {showQuantityModal.name}
-              </p>
-            )}
-          </ModalHeader>
-          <ModalBody className="space-y-4">
-            <div>
-              <label
-                htmlFor="food-qty-input"
-                className={`block text-xs font-medium uppercase tracking-wider mb-2 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
-                Quantity ({showQuantityModal?.unit || "units"})
-              </label>
-              <input
-                id="food-qty-input"
-                type="number"
-                inputMode="decimal"
-                step="0.5"
-                min="0.5"
-                value={tempQuantity}
-                onChange={(e) => setTempQuantity(parseFloat(e.target.value) || 0)}
-                className={`w-full text-center text-3xl font-bold tabular-nums py-3 rounded-xl border ${
-                  isDarkMode
-                    ? "bg-iron-800 border-iron-700 text-iron-100"
-                    : "bg-slate-50 border-slate-200 text-slate-800"
-                }`}
-              />
-            </div>
-            <div className="flex items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={() => setTempQuantity((q) => Math.max(0.5, (Number(q) || 0) - 0.5))}
-                className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                }`}
-              >
-                <Minus className={`w-6 h-6 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setTempQuantity((q) => (Number(q) || 0) + 0.5)}
-                className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                }`}
-              >
-                <Plus className={`w-6 h-6 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
-              </button>
-            </div>
-          </ModalBody>
-          <ModalFooter className="flex-col gap-2 sm:flex-col">
-            <button
-              type="button"
-              onClick={handleQuantityConfirm}
-              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
-              }`}
-            >
-              <Check className="w-5 h-5" />
-              Save {Math.max(0.5, Number(tempQuantity) || 0.5)} {showQuantityModal?.unit || ""}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowQuantityModal(null)}
-              className={`w-full py-3 rounded-xl font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              Cancel
-            </button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        item={showQuantityModal}
+        tempQuantity={tempQuantity}
+        onTempQuantityChange={setTempQuantity}
+        onConfirm={handleQuantityConfirm}
+        onClose={() => setShowQuantityModal(null)}
+        isDarkMode={isDarkMode}
+        isAdjusting={Boolean(showQuantityModal && todayFoodEntries[showQuantityModal.id])}
+      />
 
       {/* Delete Confirmation AlertDialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>

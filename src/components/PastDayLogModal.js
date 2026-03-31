@@ -1,11 +1,11 @@
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback, useRef, useLayoutEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Utensils,
   Check,
   Sunset,
   MoonStar,
-  CalendarDays,
+  Calendar,
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -16,12 +16,25 @@ import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 import {
   Modal,
+  NestedModal,
   ModalContent,
   ModalHeader,
   ModalTitle,
   ModalBody,
+  ModalFooter,
 } from "@/components/ui/modal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useWorkout } from "@/context/WorkoutContext";
+import { cn } from "@/lib/utils";
 
 const EVENT_SETTINGS_KEY = "logbook_event_settings";
 
@@ -68,7 +81,6 @@ const STRIP_WINDOW_DAYS = 35;
 
 export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
   const queryClient = useQueryClient();
-  const hiddenDateRef = useRef(null);
   const {
     user,
     foodItems,
@@ -79,6 +91,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
     getFoodEntries,
     eventTypes = [],
     logEvent,
+    deleteEventLog,
     trackables,
     toggleTrackingEntryForDate,
     getTrackingEntries,
@@ -92,8 +105,12 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
 
   const [pastLogDate, setPastLogDate] = useState(null);
   const [stripOffset, setStripOffset] = useState(0);
-  const [lifeValuePrompt, setLifeValuePrompt] = useState(null);
-  const [lifeValueInput, setLifeValueInput] = useState("");
+  /** Event type open in nested drawer (value and/or notes) */
+  const [lifeLogSheet, setLifeLogSheet] = useState(null);
+  const [lifeSheetValue, setLifeSheetValue] = useState("");
+  const [lifeSheetNotes, setLifeSheetNotes] = useState("");
+  /** Confirm removing an existing log for the selected day */
+  const [undoConfirm, setUndoConfirm] = useState(null);
 
   const todayStr = today || localDateStr();
   const yesterdayStr = addDaysStr(todayStr, -1);
@@ -117,6 +134,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
     return [...eventTypes].map(et => ({
       ...et,
       need_value: Boolean(settings[et.id]?.need_value),
+      need_notes: Boolean(settings[et.id]?.need_notes),
     }));
   }, [eventTypes]);
 
@@ -148,6 +166,29 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
     }
     return out;
   }, [stripStart]);
+
+  const stripScrollRef = useRef(null);
+  const stripAnchorRef = useRef(null);
+
+  /** Prefer scrolling to today when it appears in the strip; otherwise anchor to the newest day in view */
+  const stripScrollAnchorDate = useMemo(() => {
+    return glanceDays.includes(todayStr) ? todayStr : stripEnd;
+  }, [glanceDays, todayStr, stripEnd]);
+
+  /** Oldest → newest left to right; align scroll so today (or fallback) is at the leading edge */
+  useLayoutEffect(() => {
+    if (!open) return;
+    const anchor = stripAnchorRef.current;
+    const scrollEl = stripScrollRef.current;
+    if (!anchor || !scrollEl) return;
+    requestAnimationFrame(() => {
+      const nextLeft =
+        anchor.getBoundingClientRect().left -
+        scrollEl.getBoundingClientRect().left +
+        scrollEl.scrollLeft;
+      scrollEl.scrollTo({ left: Math.max(0, nextLeft), behavior: "auto" });
+    });
+  }, [open, stripStart, stripEnd, glanceDays, stripScrollAnchorDate, todayStr]);
 
   const sortedItems = useMemo(
     () => [...foodItems].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
@@ -265,9 +306,17 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
 
   const resetOnOpen = useCallback(() => {
     setPastLogDate(null);
-    setLifeValuePrompt(null);
-    setLifeValueInput("");
+    setLifeLogSheet(null);
+    setLifeSheetValue("");
+    setLifeSheetNotes("");
+    setUndoConfirm(null);
     setStripOffset(0);
+  }, []);
+
+  const closeLifeLogSheet = useCallback(() => {
+    setLifeLogSheet(null);
+    setLifeSheetValue("");
+    setLifeSheetNotes("");
   }, []);
 
   const handleOpenChange = useCallback(
@@ -286,33 +335,26 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
     [todayStr],
   );
 
-  const openNativeDatePicker = () => {
-    const el = hiddenDateRef.current;
-    if (!el) return;
-    if (typeof el.showPicker === "function") el.showPicker();
-    else el.click();
-  };
-
-  const handleNativeDateChange = e => {
-    const v = e.target.value;
-    if (v && v <= todayStr) pickDate(v);
-    e.target.value = "";
-  };
-
   const hasLifeLogThisDay = useCallback(
     (et, dateStr) => (et.event_logs || []).some(l => l.date === dateStr),
     [],
   );
 
+  const getLifeLogForDay = useCallback((et, dateStr) => {
+    return (et.event_logs || []).find(l => l.date === dateStr) || null;
+  }, []);
+
   const handleQuickLifeLog = async et => {
     if (!pastLogDate || !logEvent) return;
-    if (et.need_value) {
-      setLifeValuePrompt(et);
-      setLifeValueInput("");
+    const existing = getLifeLogForDay(et, pastLogDate);
+    if (existing) {
+      setUndoConfirm({ eventType: et, log: existing });
       return;
     }
-    if (hasLifeLogThisDay(et, pastLogDate)) {
-      toast.message("Already logged", { description: `${et.name} is already on this day.` });
+    if (et.need_value || et.need_notes) {
+      setLifeLogSheet(et);
+      setLifeSheetValue("");
+      setLifeSheetNotes("");
       return;
     }
     const result = await logEvent(et.id, { date: pastLogDate });
@@ -320,22 +362,47 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
     else toast.error("Could not log");
   };
 
-  const submitLifeValueLog = async () => {
-    if (!lifeValuePrompt || !pastLogDate || !logEvent) return;
-    const n = parseFloat(lifeValueInput);
-    if (!Number.isFinite(n)) {
-      toast.error("Enter a number");
+  const handleUndoLifeLog = async () => {
+    if (!undoConfirm || !deleteEventLog) return;
+    const { eventType: et, log } = undoConfirm;
+    const ok = await deleteEventLog(log.id, et.id);
+    setUndoConfirm(null);
+    if (ok) {
+      toast.success(`Removed ${et.name} for ${formatChipLabel(pastLogDate, todayStr)}`);
+    } else {
+      toast.error("Could not remove log");
+    }
+  };
+
+  const submitLifeLogSheet = async () => {
+    if (!lifeLogSheet || !pastLogDate || !logEvent) return;
+    const et = lifeLogSheet;
+    if (hasLifeLogThisDay(et, pastLogDate)) {
+      closeLifeLogSheet();
       return;
     }
-    if (hasLifeLogThisDay(lifeValuePrompt, pastLogDate)) {
-      setLifeValuePrompt(null);
-      return;
+    let cost = null;
+    if (et.need_value) {
+      const n = parseFloat(lifeSheetValue);
+      if (!Number.isFinite(n)) {
+        toast.error("Enter a numeric value");
+        return;
+      }
+      cost = n;
     }
-    const result = await logEvent(lifeValuePrompt.id, { date: pastLogDate, cost: n });
+    let notes = null;
+    if (et.need_notes) {
+      const trimmed = lifeSheetNotes.trim();
+      if (!trimmed) {
+        toast.error("Notes are required for this event");
+        return;
+      }
+      notes = trimmed;
+    }
+    const result = await logEvent(et.id, { date: pastLogDate, cost, notes });
     if (result) {
-      toast.success(`Logged ${lifeValuePrompt.name}`);
-      setLifeValuePrompt(null);
-      setLifeValueInput("");
+      toast.success(`Logged ${et.name}`);
+      closeLifeLogSheet();
     } else toast.error("Could not log");
   };
 
@@ -445,22 +512,14 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
 
   return (
     <>
-      <input
-        ref={hiddenDateRef}
-        type="date"
-        max={todayStr}
-        className="sr-only"
-        aria-hidden
-        tabIndex={-1}
-        onChange={handleNativeDateChange}
-      />
-
       <Modal open={open} onOpenChange={handleOpenChange}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={`flex max-h-[96vh] min-h-0 flex-col ${
+            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+          }`}
           showCloseButton
         >
-          <ModalHeader>
+          <ModalHeader className="shrink-0">
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Log for another day
             </ModalTitle>
@@ -468,8 +527,56 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
               Pick a day, then log food, habits, or life events.
             </p>
           </ModalHeader>
-          <ModalBody className="space-y-5 max-h-[75vh] overflow-y-auto">
-            <div>
+          <ModalBody
+            className={`flex min-h-0 flex-1 flex-col !max-h-none overflow-hidden p-0 px-0 py-0 ${
+              isDarkMode ? "" : ""
+            }`}
+          >
+            <div
+              className={`min-h-0 flex-1 overflow-y-auto overscroll-y-contain ${
+                isDarkMode ? "text-iron-100" : ""
+              }`}
+            >
+              {pastLogDate ? (
+                <div
+                  className={cn(
+                    "sticky top-0 z-20 flex items-center gap-2.5 border-b px-4 py-2",
+                    isDarkMode
+                      ? "border-iron-800 bg-iron-900/95 backdrop-blur-md"
+                      : "border-slate-100 bg-white/95 backdrop-blur-md",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                      isDarkMode ? "bg-amber-500/15 text-amber-400" : "bg-amber-100 text-amber-700",
+                    )}
+                  >
+                    <Calendar className="h-4 w-4" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        "text-[10px] font-semibold uppercase tracking-wider",
+                        isDarkMode ? "text-iron-500" : "text-slate-500",
+                      )}
+                    >
+                      Selected day
+                    </p>
+                    <p
+                      className={cn(
+                        "truncate text-sm font-bold",
+                        isDarkMode ? "text-iron-50" : "text-slate-900",
+                      )}
+                    >
+                      {formatChipLabel(pastLogDate, todayStr)}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="space-y-5 px-4 pb-6 pt-4">
+                <div>
               <p
                 className={`text-[10px] font-semibold uppercase tracking-wider mb-3 ${
                   isDarkMode ? "text-iron-500" : "text-slate-500"
@@ -532,53 +639,45 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                   </p>
                 </button>
               </div>
-            </div>
-
-            <div
-              className={`rounded-[1.25rem] p-4 ${
-                isDarkMode
-                  ? "border border-iron-700/80 bg-gradient-to-b from-iron-900/90 to-iron-950 shadow-inner shadow-black/20"
-                  : "border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/95 shadow-sm"
-              }`}
-            >
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl ${
-                        isDarkMode ? "bg-amber-500/12 text-amber-400" : "bg-amber-100 text-amber-700"
-                      }`}
-                    >
-                      <Utensils className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className={`text-sm font-semibold tracking-tight ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                        Pick a day
-                      </p>
-                      <p className={`text-[11px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                        {stripRangeLabel}
-                      </p>
-                    </div>
-                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={openNativeDatePicker}
-                  className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-all active:scale-[0.98] ${
+
+                <div
+                  className={`rounded-[1.25rem] border p-4 ${
                     isDarkMode
-                      ? "border-amber-500/25 bg-iron-950/60 text-amber-200/90 hover:border-amber-500/40 hover:bg-iron-900"
-                      : "border-amber-200 bg-amber-50/80 text-amber-900 hover:bg-amber-50"
+                      ? "border-iron-700/80 bg-gradient-to-b from-iron-900/90 to-iron-950 shadow-inner shadow-black/20"
+                      : "border-slate-200/90 bg-gradient-to-b from-white to-slate-50/95 shadow-sm"
                   }`}
                 >
-                  <CalendarDays className="h-4 w-4 opacity-80" />
-                  More dates
-                </button>
-              </div>
-              <div
-                className={`mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
+                  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                            isDarkMode ? "bg-amber-500/12 text-amber-400" : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          <Utensils className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p
+                            className={`text-sm font-semibold tracking-tight ${
+                              isDarkMode ? "text-iron-100" : "text-slate-800"
+                            }`}
+                          >
+                            Pick a day
+                          </p>
+                          <p className={`text-[11px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                            {stripRangeLabel}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] ${
+                      isDarkMode ? "text-iron-500" : "text-slate-500"
+                    }`}
+                  >
                 <span className="inline-flex items-center gap-1.5">
                   <span
                     className={`inline-block h-2 w-2 rounded-full ${
@@ -607,6 +706,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                   <ChevronLeft className="h-5 w-5" strokeWidth={2} />
                 </button>
                 <div
+                  ref={stripScrollRef}
                   className={`flex min-w-0 flex-1 gap-2 overflow-x-auto py-1 scrollbar-hide ${
                     isDarkMode ? "[mask-image:linear-gradient(90deg,transparent,black_8px,black_calc(100%-8px),transparent)]" : ""
                   }`}
@@ -627,7 +727,11 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                         : "border-red-200 bg-red-50 text-slate-800 hover:border-red-300 hover:bg-red-50/90");
 
                     return (
-                      <div key={d} className="flex flex-col items-center shrink-0">
+                      <div
+                        key={d}
+                        ref={d === stripScrollAnchorDate ? stripAnchorRef : undefined}
+                        className="flex flex-col items-center shrink-0"
+                      >
                         {showMonthLabel ? (
                           <span
                             className={`mb-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] ${
@@ -738,7 +842,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                   <ChevronRight className="h-5 w-5" strokeWidth={2} />
                 </button>
               </div>
-            </div>
+                </div>
 
             {pastLogDate && sortedItems.length > 0 && (
               <div
@@ -881,85 +985,197 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                               </p>
                               {done ? (
                                 <p className={`text-xs ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>
-                                  Logged this day
+                                  Logged · tap Undo to remove
+                                </p>
+                              ) : et.need_value && et.need_notes ? (
+                                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                                  Value & notes required
                                 </p>
                               ) : et.need_value ? (
                                 <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                                  Needs a value
+                                  Value required
+                                </p>
+                              ) : et.need_notes ? (
+                                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                                  Notes required
                                 </p>
                               ) : null}
                             </div>
                             <button
                               type="button"
-                              disabled={done}
                               onClick={() => handleQuickLifeLog(et)}
-                              className={`flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                                isDarkMode
-                                  ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
-                                  : "bg-violet-100 text-violet-800 hover:bg-violet-200"
+                              className={`flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                                done
+                                  ? isDarkMode
+                                    ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
+                                    : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                  : isDarkMode
+                                    ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
+                                    : "bg-violet-100 text-violet-800 hover:bg-violet-200"
                               }`}
                             >
-                              <Plus className="h-3.5 w-3.5" />
-                              Log
+                              {done ? (
+                                <>Undo</>
+                              ) : (
+                                <>
+                                  <Plus className="h-3.5 w-3.5" />
+                                  Log
+                                </>
+                              )}
                             </button>
                           </li>
                         );
                       })}
                     </ul>
                   )}
-
-                  {lifeValuePrompt && pastLogDate && (
-                    <div
-                      className={`mt-3 rounded-xl border p-3 ${
-                        isDarkMode ? "border-violet-500/30 bg-violet-500/10" : "border-violet-200 bg-violet-50"
-                      }`}
-                    >
-                      <p className={`mb-2 text-sm font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                        Value for {lifeValuePrompt.name}
-                      </p>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        value={lifeValueInput}
-                        onChange={e => setLifeValueInput(e.target.value)}
-                        placeholder="e.g. 12.5"
-                        className={`mb-2 w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:ring-2 ${
-                          isDarkMode
-                            ? "border-iron-700 bg-iron-900 text-iron-100 focus:ring-violet-500/40"
-                            : "border-slate-200 bg-white focus:ring-violet-400"
-                        }`}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setLifeValuePrompt(null);
-                            setLifeValueInput("");
-                          }}
-                          className={`flex-1 rounded-xl py-2.5 text-sm font-medium ${
-                            isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={submitLifeValueLog}
-                          className={`flex-1 rounded-xl py-2.5 text-sm font-bold ${
-                            isDarkMode ? "bg-violet-500 text-white" : "bg-violet-600 text-white"
-                          }`}
-                        >
-                          Save log
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </div>
+              </div>
+            </div>
           </ModalBody>
         </ModalContent>
+
+        <NestedModal
+          open={Boolean(lifeLogSheet && pastLogDate && open)}
+          onOpenChange={next => {
+            if (!next) closeLifeLogSheet();
+          }}
+        >
+          <ModalContent
+            className={`flex max-h-[85vh] min-h-0 flex-col ${
+              isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+            }`}
+            showCloseButton
+          >
+            <ModalHeader className="shrink-0">
+              <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+                {lifeLogSheet ? (
+                  <>
+                    <span className="mr-2">{lifeLogSheet.icon || "📌"}</span>
+                    Log {lifeLogSheet.name}
+                  </>
+                ) : (
+                  "Log event"
+                )}
+              </ModalTitle>
+              {lifeLogSheet && pastLogDate && (
+                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                  {formatChipLabel(pastLogDate, todayStr)}
+                </p>
+              )}
+            </ModalHeader>
+            <ModalBody className="shrink-0 space-y-4 !max-h-none overflow-visible pb-2">
+              {lifeLogSheet?.need_value && (
+                <div>
+                  <label
+                    className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+                  >
+                    Value <span className="text-red-400 normal-case">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={lifeSheetValue}
+                    onChange={e => setLifeSheetValue(e.target.value)}
+                    placeholder="e.g. 12.5"
+                    className={`w-full rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                      isDarkMode
+                        ? "border-iron-700 bg-iron-900 text-iron-100 focus:ring-violet-500/40"
+                        : "border-slate-200 bg-white focus:ring-violet-400"
+                    }`}
+                  />
+                </div>
+              )}
+              {lifeLogSheet?.need_notes && (
+                <div>
+                  <label
+                    className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+                  >
+                    Notes <span className="text-red-400 normal-case">*</span>
+                  </label>
+                  <textarea
+                    value={lifeSheetNotes}
+                    onChange={e => setLifeSheetNotes(e.target.value)}
+                    placeholder="What happened? Add any details…"
+                    rows={4}
+                    className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                      isDarkMode
+                        ? "border-iron-700 bg-iron-900 text-iron-100 placeholder:text-iron-600 focus:ring-violet-500/40"
+                        : "border-slate-200 bg-white placeholder:text-slate-400 focus:ring-violet-400"
+                    }`}
+                  />
+                </div>
+              )}
+            </ModalBody>
+            <ModalFooter className="shrink-0 pt-2">
+              <button
+                type="button"
+                onClick={closeLifeLogSheet}
+                className={`flex-1 rounded-xl py-3 text-sm font-medium ${
+                  isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitLifeLogSheet}
+                className={`flex-1 rounded-xl py-3 text-sm font-bold ${
+                  isDarkMode ? "bg-violet-500 text-white" : "bg-violet-600 text-white"
+                }`}
+              >
+                Save log
+              </button>
+            </ModalFooter>
+          </ModalContent>
+        </NestedModal>
       </Modal>
+
+      <AlertDialog
+        open={Boolean(undoConfirm)}
+        onOpenChange={next => {
+          if (!next) setUndoConfirm(null);
+        }}
+      >
+        <AlertDialogContent
+          className={`z-[200] ${isDarkMode ? "border-iron-700 bg-iron-900" : "border-slate-200 bg-white"}`}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Remove this log?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              {undoConfirm && pastLogDate && (
+                <>
+                  Remove &ldquo;{undoConfirm.eventType.name}&rdquo; for{" "}
+                  <span className="font-medium">{formatChipLabel(pastLogDate, todayStr)}</span>. You can log it again
+                  afterward.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={
+                isDarkMode
+                  ? "border-iron-600 bg-iron-800 text-iron-200 hover:bg-iron-700"
+                  : ""
+              }
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                void handleUndoLifeLog();
+              }}
+              className={isDarkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-600 hover:bg-red-500"}
+            >
+              Remove log
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <FoodQuantityModal
         open={!!qtyItem}

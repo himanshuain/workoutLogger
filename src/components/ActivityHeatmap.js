@@ -29,6 +29,8 @@ export default function ActivityHeatmap({
   label = "Activity",
   subtitle = "",
   compact = false,
+  /** Extra-dense calendar (e.g. Life log expanded rows) */
+  mini = false,
   isDarkMode = true,
   onDateClick = null,
   color = null,
@@ -274,8 +276,8 @@ export default function ActivityHeatmap({
     const dayTotal = getProgressTotal(dateStr);
     const progress = dayTotal > 0 ? Math.min(count / dayTotal, 1) : 0;
     const isAllDone = progress >= 1;
-    const size = 40;
-    const strokeWidth = 2.5;
+    const size = mini ? 30 : 40;
+    const strokeWidth = mini ? 2 : 2.5;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - progress * circumference;
@@ -309,7 +311,11 @@ export default function ActivityHeatmap({
             />
           )}
         </svg>
-        <div className={`relative z-10 flex flex-col items-center justify-center ${isToday ? "text-[10px]" : "text-xs"}`}>
+        <div
+          className={`relative z-10 flex flex-col items-center justify-center ${
+            isToday ? (mini ? "text-[8px]" : "text-[10px]") : mini ? "text-[10px]" : "text-xs"
+          }`}
+        >
           <span
             className="font-semibold"
             style={{
@@ -325,7 +331,10 @@ export default function ActivityHeatmap({
             {day}
           </span>
           {isToday && (
-            <span className="text-[6px] font-bold leading-none" style={{ color: isAllDone ? "#22c55e" : "#ef4444" }}>
+            <span
+              className={`${mini ? "text-[5px]" : "text-[6px]"} font-bold leading-none`}
+              style={{ color: isAllDone ? "#22c55e" : "#ef4444" }}
+            >
               TODAY
             </span>
           )}
@@ -340,16 +349,30 @@ export default function ActivityHeatmap({
     exit: (dir) => ({ x: dir > 0 ? -50 : 50, opacity: 0 }),
   };
 
+  const headerPad = mini ? "px-2.5 pt-2 pb-1.5" : compact ? "px-3 pt-3 pb-2" : "px-4 pt-4 pb-3";
+  const calendarPad = mini ? "px-2.5 pb-2" : compact ? "px-3 pb-3" : "px-4 pb-4";
+  const monthTitleClass = mini ? "text-sm" : "text-lg";
+  const navBtnPad = mini ? "p-1.5" : "p-2";
+  const navIconClass = mini ? "w-4 h-4" : "w-5 h-5";
+  const calMaxW = mini
+    ? "max-w-[15.25rem]"
+    : "md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem]";
+  const dayHeaderGap = mini ? "gap-0.5" : "gap-1";
+  const dayHeaderCell = mini
+    ? "text-center text-[9px] font-semibold py-1"
+    : "text-center text-[11px] font-semibold py-2";
+  const gridGap = mini ? "gap-1" : "gap-1.5";
+
   return (
     <div
-      className={`rounded-3xl overflow-hidden ${
-        isDarkMode 
-          ? "bg-gradient-to-br from-iron-900 to-iron-950 shadow-xl shadow-black/20" 
+      className={`${mini ? "rounded-2xl" : "rounded-3xl"} overflow-hidden ${
+        isDarkMode
+          ? "bg-gradient-to-br from-iron-900 to-iron-950 shadow-xl shadow-black/20"
           : "bg-gradient-to-br from-white to-slate-50 shadow-lg shadow-slate-200/50 border border-slate-200/80"
       }`}
     >
       {/* Header */}
-      <div className={`px-4 pt-4 pb-3 ${compact ? "px-3 pt-3 pb-2" : ""}`}>
+      <div className={headerPad}>
         {label && (
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -418,13 +441,13 @@ export default function ActivityHeatmap({
             whileTap={{ scale: 0.9 }}
             onClick={handlePrevMonth}
             disabled={!canGoPrev}
-            className={`p-2 rounded-xl disabled:opacity-30 transition-colors ${
+            className={`${navBtnPad} rounded-xl disabled:opacity-30 transition-colors ${
               isDarkMode
                 ? "bg-iron-800/50 text-iron-300 hover:bg-iron-700 active:bg-iron-600"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300"
             }`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className={navIconClass} />
           </motion.button>
 
           <AnimatePresence mode="wait" custom={direction}>
@@ -438,12 +461,18 @@ export default function ActivityHeatmap({
               transition={{ duration: 0.2 }}
               className="text-center"
             >
-              <h4 className={`font-bold text-lg ${
-                isDarkMode ? "text-iron-100" : "text-slate-800"
-              }`}>
+              <h4
+                className={`font-bold ${monthTitleClass} ${
+                  isDarkMode ? "text-iron-100" : "text-slate-800"
+                }`}
+              >
                 {MONTH_NAMES[viewMonth]}
               </h4>
-              <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              <p
+                className={`${mini ? "text-[10px]" : "text-xs"} ${
+                  isDarkMode ? "text-iron-500" : "text-slate-500"
+                }`}
+              >
                 {viewYear}
               </p>
             </motion.div>
@@ -453,26 +482,26 @@ export default function ActivityHeatmap({
             whileTap={{ scale: 0.9 }}
             onClick={handleNextMonth}
             disabled={!canGoNext}
-            className={`p-2 rounded-xl disabled:opacity-30 transition-colors ${
+            className={`${navBtnPad} rounded-xl disabled:opacity-30 transition-colors ${
               isDarkMode
                 ? "bg-iron-800/50 text-iron-300 hover:bg-iron-700 active:bg-iron-600"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300"
             }`}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className={navIconClass} />
           </motion.button>
         </div>
       </div>
 
       {/* Calendar */}
-      <div className={`px-4 pb-4 ${compact ? "px-3 pb-3" : ""}`}>
-        <div className="w-full md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto">
+      <div className={`${calendarPad}`}>
+        <div className={`w-full ${calMaxW} md:mx-auto`}>
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className={`grid grid-cols-7 ${dayHeaderGap} mb-2`}>
           {DAY_NAMES.map((day, i) => (
             <div
               key={i}
-              className={`text-center text-[11px] font-semibold py-2 ${
+              className={`${dayHeaderCell} ${
                 i === 0 || i === 6
                   ? isDarkMode ? "text-iron-600" : "text-slate-400"
                   : isDarkMode ? "text-iron-500" : "text-slate-500"
@@ -572,7 +601,7 @@ export default function ActivityHeatmap({
 
                 // Row of days
                 return (
-                  <div key={`row-${segment.rowIdx}`} className="grid grid-cols-7 gap-1.5">
+                  <div key={`row-${segment.rowIdx}`} className={`grid grid-cols-7 ${gridGap}`}>
                     {segment.days.map((dayData, di) => {
                       if (!dayData) {
                         return <div key={`empty-${segment.rowIdx}-${di}`} className="aspect-square" />;
@@ -583,14 +612,14 @@ export default function ActivityHeatmap({
                 );
               })
             ) : progressMode ? (
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className={`grid grid-cols-7 ${gridGap}`}>
                 {calendarDays.map((dayData, i) => {
                   if (!dayData) return <div key={`empty-${i}`} className="aspect-square" />;
                   return renderProgressDay(dayData);
                 })}
               </div>
             ) : (
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className={`grid grid-cols-7 ${gridGap}`}>
                 {calendarDays.map((dayData, i) => {
                   if (!dayData) {
                     return <div key={`empty-${i}`} className="aspect-square" />;
@@ -605,10 +634,10 @@ export default function ActivityHeatmap({
                       onClick={() => onDateClick && !isFuture && onDateClick(dateStr, isCompleted)}
                       disabled={isFuture || !onDateClick}
                       className={`
-                        aspect-square rounded-xl flex flex-col items-center justify-center
+                        aspect-square ${mini ? "rounded-lg" : "rounded-xl"} flex flex-col items-center justify-center
                         font-semibold transition-all duration-200 relative
                         ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}
-                        ${isToday ? "text-[10px]" : "text-sm"}
+                        ${isToday ? (mini ? "text-[9px]" : "text-[10px]") : mini ? "text-xs" : "text-sm"}
                       `}
                       style={{
                         backgroundColor: isCompleted
@@ -632,8 +661,8 @@ export default function ActivityHeatmap({
                     >
                       {day}
                       {isToday && (
-                        <span 
-                          className="text-[7px] font-bold leading-none"
+                        <span
+                          className={`${mini ? "text-[5px]" : "text-[7px]"} font-bold leading-none`}
                           style={{ color: isCompleted ? "#fff" : "#ef4444" }}
                         >
                           TODAY

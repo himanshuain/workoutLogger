@@ -46,6 +46,7 @@ import {
   Heart,
   BarChart3,
   Hash,
+  FileText,
 } from "lucide-react";
 import NotificationSettings from "@/components/NotificationSettings";
 import NotificationService from "@/lib/notifications";
@@ -208,6 +209,7 @@ export default function LifeLog() {
       ...et,
       track_graph: settings[et.id]?.track_graph || false,
       need_value: settings[et.id]?.need_value || false,
+      need_notes: settings[et.id]?.need_notes || false,
     }));
   }, [rawEventTypes]);
 
@@ -231,10 +233,11 @@ export default function LifeLog() {
     reminder_days: null,
     track_graph: false,
     need_value: false,
+    need_notes: false,
   });
 
-  // Value prompt state for quick-logging events that need a value
-  const [valuePrompt, setValuePrompt] = useState({ open: false, eventType: null, value: "" });
+  /** Nested sheet for value and/or notes required (stacked on Log Event modal) */
+  const [logDrawerNestedOpen, setLogDrawerNestedOpen] = useState(false);
 
   const [logDetails, setLogDetails] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -408,6 +411,7 @@ export default function LifeLog() {
       reminder_days: eventType.reminder_days || null,
       track_graph: eventType.track_graph || false,
       need_value: eventType.need_value || false,
+      need_notes: eventType.need_notes || false,
     });
     setShowAddDrawer(true);
   };
@@ -422,6 +426,7 @@ export default function LifeLog() {
       reminder_days: null,
       track_graph: false,
       need_value: false,
+      need_notes: false,
     });
   };
 
@@ -440,6 +445,7 @@ export default function LifeLog() {
         setEventSetting(editingEventId, {
           track_graph: newEvent.track_graph || false,
           need_value: newEvent.need_value || false,
+          need_notes: newEvent.need_notes || false,
         });
         toast.success("Event type updated");
       } else {
@@ -455,6 +461,7 @@ export default function LifeLog() {
           setEventSetting(created.id, {
             track_graph: newEvent.track_graph || false,
             need_value: newEvent.need_value || false,
+            need_notes: newEvent.need_notes || false,
           });
         }
         toast.success("Event type created");
@@ -619,6 +626,18 @@ export default function LifeLog() {
   const handleLogEvent = async (forceLog = false) => {
     if (!selectedEvent) return;
 
+    if (selectedEvent.need_value) {
+      const n = parseFloat(logDetails.cost);
+      if (!Number.isFinite(n)) {
+        toast.error("Enter a numeric value");
+        return;
+      }
+    }
+    if (selectedEvent.need_notes && !logDetails.notes.trim()) {
+      toast.error("Notes are required for this event");
+      return;
+    }
+
     // Check for existing entry on the same date (unless force logging)
     if (!forceLog) {
       const existingEntry = await checkExistingEntry(selectedEvent.id, logDetails.date);
@@ -645,6 +664,7 @@ export default function LifeLog() {
 
       toast.success("Event logged");
       setShowLogDrawer(false);
+      setLogDrawerNestedOpen(false);
       setSelectedEvent(null);
       setLogDetails({
         date: new Date().toISOString().split("T")[0],
@@ -663,9 +683,8 @@ export default function LifeLog() {
 
   // Quick log (log today without details)
   const handleQuickLog = async (eventType, forceLog = false) => {
-    // If event needs a value, show value prompt instead
-    if (eventType.need_value) {
-      setValuePrompt({ open: true, eventType, value: "" });
+    if (eventType.need_notes || eventType.need_value) {
+      openLogDrawer(eventType);
       return;
     }
 
@@ -702,28 +721,6 @@ export default function LifeLog() {
     }
   };
 
-  // Submit value prompt for need_value events
-  const handleValuePromptSubmit = async () => {
-    const { eventType, value } = valuePrompt;
-    if (!eventType || !value) return;
-
-    try {
-      await logEvent(eventType.id, { cost: parseFloat(value) });
-      toast.success("Event logged");
-      setValuePrompt({ open: false, eventType: null, value: "" });
-      if (expandedEvent === eventType.id) {
-        const logs = await getEventLogs(eventType.id);
-        setExpandedEventLogs(logs);
-      }
-      if (window.navigator?.vibrate) {
-        window.navigator.vibrate(10);
-      }
-    } catch (error) {
-      console.error("Error logging event:", error);
-      toast.error("Something went wrong");
-    }
-  };
-
   // Open log drawer with details
   const openLogDrawer = eventType => {
     setSelectedEvent(eventType);
@@ -732,6 +729,7 @@ export default function LifeLog() {
       notes: "",
       cost: "",
     });
+    setLogDrawerNestedOpen(Boolean(eventType.need_value || eventType.need_notes));
     setShowLogDrawer(true);
   };
 
@@ -778,6 +776,7 @@ export default function LifeLog() {
           cost: pendingLogAction.cost,
         });
         setShowLogDrawer(false);
+        setLogDrawerNestedOpen(false);
         setSelectedEvent(null);
         setLogDetails({
           date: new Date().toISOString().split("T")[0],
@@ -1147,209 +1146,46 @@ export default function LifeLog() {
                             label=""
                             color={eventType.color}
                             compact
+                            mini
                             isDarkMode={isDarkMode}
                           />
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => openLogDrawer(eventType)}
+                          className={`mt-3 w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
+                            isDarkMode
+                              ? "bg-iron-800 text-iron-300 active:bg-iron-700"
+                              : "bg-slate-100 text-slate-600 active:bg-slate-200"
+                          }`}
+                        >
+                          <CalendarPlus className="w-3.5 h-3.5" />
+                          Log with Details
+                        </button>
                         {isLoadingExpandedLogs ? (
                           <div
-                            className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                            className={`py-5 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
                           >
                             Loading...
                           </div>
-                        ) : expandedEventLogs.length === 0 ? (
-                          <div
-                            className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                          >
-                            No history yet
-                          </div>
                         ) : (
-                          <div className="pt-3 space-y-1.5">
-                            {/* Graph */}
-                            {eventType.track_graph &&
-                              expandedEventLogs.length >= 2 &&
-                              (() => {
-                                const getLogValue = (l) => {
-                                  if (l.cost != null) return parseFloat(l.cost);
-                                  if (l.notes && !isNaN(parseFloat(l.notes)) && isFinite(l.notes.trim())) return parseFloat(l.notes);
-                                  return null;
-                                };
-                                const hasValues = expandedEventLogs.some(l => getLogValue(l) != null);
-                                const sortedLogs = [...expandedEventLogs].reverse();
-                                const graphH = 80;
-                                const graphW = 280;
-
-                                if (hasValues) {
-                                  const graphLogs = sortedLogs
-                                    .filter(l => getLogValue(l) != null)
-                                    .slice(-15);
-                                  if (graphLogs.length < 2) return null;
-                                  const values = graphLogs.map(l => getLogValue(l));
-                                  const maxVal = Math.max(...values);
-                                  const minVal = Math.min(...values);
-                                  const range = maxVal - minVal || 1;
-                                  const step = graphW / (values.length - 1);
-                                  const points = values.map((v, i) => ({
-                                    x: i * step,
-                                    y: graphH - ((v - minVal) / range) * (graphH - 10) - 5,
-                                    val: v,
-                                    date: graphLogs[i].date,
-                                  }));
-                                  const linePath = points
-                                    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-                                    .join(" ");
-                                  const areaPath = `${linePath} L ${points[points.length - 1].x} ${graphH} L 0 ${graphH} Z`;
-
-                                  const activeIdx = graphTooltip?.type === "value" && graphTooltip?.eventId === eventType.id ? graphTooltip.index : null;
-
-                                  return (
-                                    <div className={`mb-3 p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
-                                      <div className="flex items-center justify-between mb-2">
-                                        <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
-                                          {activeIdx != null
-                                            ? new Date(points[activeIdx].date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                            : "Value Trend"}
-                                        </span>
-                                        <span className="text-xs font-bold" style={{ color: eventType.color }}>
-                                          {activeIdx != null ? points[activeIdx].val : values[values.length - 1]}
-                                        </span>
-                                      </div>
-                                      <svg
-                                        viewBox={`0 0 ${graphW} ${graphH}`}
-                                        className="w-full"
-                                        style={{ height: 80 }}
-                                        onMouseLeave={() => setGraphTooltip(null)}
-                                      >
-                                        <defs>
-                                          <linearGradient id={`grad-${eventType.id}`} x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor={eventType.color} stopOpacity="0.3" />
-                                            <stop offset="100%" stopColor={eventType.color} stopOpacity="0.02" />
-                                          </linearGradient>
-                                        </defs>
-                                        <path d={areaPath} fill={`url(#grad-${eventType.id})`} />
-                                        <path d={linePath} fill="none" stroke={eventType.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        {activeIdx != null && (
-                                          <line x1={points[activeIdx].x} x2={points[activeIdx].x} y1={0} y2={graphH}
-                                            stroke={isDarkMode ? "#555" : "#ccc"} strokeWidth="1" strokeDasharray="3 2" />
-                                        )}
-                                        {points.map((p, i) => (
-                                          <g key={i}>
-                                            <circle cx={p.x} cy={p.y}
-                                              r={activeIdx === i ? 5 : i === points.length - 1 ? 4 : 2.5}
-                                              fill={eventType.color}
-                                              stroke={isDarkMode ? "#1c1c1e" : "#fff"}
-                                              strokeWidth={activeIdx === i || i === points.length - 1 ? 2 : 0}
-                                            />
-                                            <circle cx={p.x} cy={p.y} r={14} fill="transparent"
-                                              onMouseEnter={() => setGraphTooltip({ type: "value", eventId: eventType.id, index: i })}
-                                              onTouchStart={(e) => { e.stopPropagation(); setGraphTooltip(prev => prev?.index === i && prev?.eventId === eventType.id ? null : { type: "value", eventId: eventType.id, index: i }); }}
-                                              style={{ cursor: "pointer" }}
-                                            />
-                                          </g>
-                                        ))}
-                                      </svg>
-                                      <div className="flex justify-between mt-1">
-                                        <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                          {new Date(graphLogs[0].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                        </span>
-                                        <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                          {new Date(graphLogs[graphLogs.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                // Frequency line graph: days between occurrences
-                                const recentLogs = sortedLogs.slice(-15);
-                                const gaps = [];
-                                for (let i = 1; i < recentLogs.length; i++) {
-                                  const d1 = new Date(recentLogs[i - 1].date);
-                                  const d2 = new Date(recentLogs[i].date);
-                                  gaps.push({
-                                    days: Math.round((d2 - d1) / (1000 * 60 * 60 * 24)),
-                                    date: recentLogs[i].date,
-                                  });
-                                }
-                                if (gaps.length < 1) return null;
-                                const gapValues = gaps.map(g => g.days);
-                                const maxGap = Math.max(...gapValues);
-                                const minGap = Math.min(...gapValues);
-                                const gapRange = maxGap - minGap || 1;
-                                const avgGap = Math.round(gapValues.reduce((s, v) => s + v, 0) / gapValues.length);
-                                const step = gaps.length > 1 ? graphW / (gaps.length - 1) : graphW / 2;
-                                const points = gapValues.map((v, i) => ({
-                                  x: gaps.length > 1 ? i * step : graphW / 2,
-                                  y: graphH - ((v - minGap) / gapRange) * (graphH - 10) - 5,
-                                  val: v,
-                                }));
-                                const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-                                const areaPath = gaps.length > 1
-                                  ? `${linePath} L ${points[points.length - 1].x} ${graphH} L 0 ${graphH} Z`
-                                  : null;
-
-                                const activeIdx = graphTooltip?.type === "freq" && graphTooltip?.eventId === eventType.id ? graphTooltip.index : null;
-
-                                return (
-                                  <div className={`mb-3 p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
-                                        {activeIdx != null
-                                          ? new Date(gaps[activeIdx].date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                          : "Frequency (days between)"}
-                                      </span>
-                                      <span className="text-xs font-bold" style={{ color: eventType.color }}>
-                                        {activeIdx != null ? `${gaps[activeIdx].days}d` : `avg ${avgGap}d`}
-                                      </span>
-                                    </div>
-                                    <svg viewBox={`0 0 ${graphW} ${graphH}`} className="w-full" style={{ height: 80 }}
-                                      onMouseLeave={() => setGraphTooltip(null)}
-                                    >
-                                      <defs>
-                                        <linearGradient id={`freq-grad-${eventType.id}`} x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="0%" stopColor={eventType.color} stopOpacity="0.3" />
-                                          <stop offset="100%" stopColor={eventType.color} stopOpacity="0.02" />
-                                        </linearGradient>
-                                      </defs>
-                                      {eventType.reminder_days && (() => {
-                                        const clampedY = graphH - ((eventType.reminder_days - minGap) / gapRange) * (graphH - 10) - 5;
-                                        return (
-                                          <line x1="0" x2={graphW} y1={clampedY} y2={clampedY}
-                                            stroke={isDarkMode ? "#ef4444" : "#f87171"} strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
-                                        );
-                                      })()}
-                                      {areaPath && <path d={areaPath} fill={`url(#freq-grad-${eventType.id})`} />}
-                                      <path d={linePath} fill="none" stroke={eventType.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                      {activeIdx != null && (
-                                        <line x1={points[activeIdx].x} x2={points[activeIdx].x} y1={0} y2={graphH}
-                                          stroke={isDarkMode ? "#555" : "#ccc"} strokeWidth="1" strokeDasharray="3 2" />
-                                      )}
-                                      {points.map((p, i) => (
-                                        <g key={i}>
-                                          <circle cx={p.x} cy={p.y}
-                                            r={activeIdx === i ? 5 : i === points.length - 1 ? 4 : 2.5}
-                                            fill={eventType.color}
-                                            stroke={isDarkMode ? "#1c1c1e" : "#fff"}
-                                            strokeWidth={activeIdx === i || i === points.length - 1 ? 2 : 0}
-                                          />
-                                          <circle cx={p.x} cy={p.y} r={14} fill="transparent"
-                                            onMouseEnter={() => setGraphTooltip({ type: "freq", eventId: eventType.id, index: i })}
-                                            onTouchStart={(e) => { e.stopPropagation(); setGraphTooltip(prev => prev?.index === i && prev?.eventId === eventType.id ? null : { type: "freq", eventId: eventType.id, index: i }); }}
-                                            style={{ cursor: "pointer" }}
-                                          />
-                                        </g>
-                                      ))}
-                                    </svg>
-                                    <div className="flex justify-between mt-1">
-                                      <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                        {new Date(recentLogs[0].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                      </span>
-                                      <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                        {new Date(recentLogs[recentLogs.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })()}
+                          <>
+                            <p
+                              className={`pt-3 text-[10px] font-semibold uppercase tracking-wider ${
+                                isDarkMode ? "text-iron-500" : "text-slate-500"
+                              }`}
+                            >
+                              Recent logs
+                            </p>
+                            {expandedEventLogs.length === 0 ? (
+                              <div
+                                className={`py-4 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                              >
+                                No history yet
+                              </div>
+                            ) : (
+                              <>
+                                <div className="pt-1 space-y-1.5">
                             {expandedEventLogs.slice(0, 10).map((log, idx) => {
                               const logDate = new Date(log.date);
                               const todayDate = new Date();
@@ -1496,18 +1332,197 @@ export default function LifeLog() {
                               </button>
                             )}
                           </div>
+                                {/* Graph */}
+                                {eventType.track_graph &&
+                                  expandedEventLogs.length >= 2 &&
+                                  (() => {
+                                    const getLogValue = (l) => {
+                                      if (l.cost != null) return parseFloat(l.cost);
+                                      if (l.notes && !isNaN(parseFloat(l.notes)) && isFinite(l.notes.trim())) return parseFloat(l.notes);
+                                      return null;
+                                    };
+                                    const hasValues = expandedEventLogs.some(l => getLogValue(l) != null);
+                                    const sortedLogs = [...expandedEventLogs].reverse();
+                                    const graphH = 80;
+                                    const graphW = 280;
+
+                                    if (hasValues) {
+                                      const graphLogs = sortedLogs
+                                        .filter(l => getLogValue(l) != null)
+                                        .slice(-15);
+                                      if (graphLogs.length < 2) return null;
+                                      const values = graphLogs.map(l => getLogValue(l));
+                                      const maxVal = Math.max(...values);
+                                      const minVal = Math.min(...values);
+                                      const range = maxVal - minVal || 1;
+                                      const step = graphW / (values.length - 1);
+                                      const points = values.map((v, i) => ({
+                                        x: i * step,
+                                        y: graphH - ((v - minVal) / range) * (graphH - 10) - 5,
+                                        val: v,
+                                        date: graphLogs[i].date,
+                                      }));
+                                      const linePath = points
+                                        .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+                                        .join(" ");
+                                      const areaPath = `${linePath} L ${points[points.length - 1].x} ${graphH} L 0 ${graphH} Z`;
+
+                                      const activeIdx = graphTooltip?.type === "value" && graphTooltip?.eventId === eventType.id ? graphTooltip.index : null;
+
+                                      return (
+                                        <div className={`mt-3 mb-3 p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+                                          <div className="flex items-center justify-between mb-2">
+                                            <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                                              {activeIdx != null
+                                                ? new Date(points[activeIdx].date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                                : "Value Trend"}
+                                            </span>
+                                            <span className="text-xs font-bold" style={{ color: eventType.color }}>
+                                              {activeIdx != null ? points[activeIdx].val : values[values.length - 1]}
+                                            </span>
+                                          </div>
+                                          <svg
+                                            viewBox={`0 0 ${graphW} ${graphH}`}
+                                            className="w-full"
+                                            style={{ height: 80 }}
+                                            onMouseLeave={() => setGraphTooltip(null)}
+                                          >
+                                            <defs>
+                                              <linearGradient id={`grad-${eventType.id}`} x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor={eventType.color} stopOpacity="0.3" />
+                                                <stop offset="100%" stopColor={eventType.color} stopOpacity="0.02" />
+                                              </linearGradient>
+                                            </defs>
+                                            <path d={areaPath} fill={`url(#grad-${eventType.id})`} />
+                                            <path d={linePath} fill="none" stroke={eventType.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                            {activeIdx != null && (
+                                              <line x1={points[activeIdx].x} x2={points[activeIdx].x} y1={0} y2={graphH}
+                                                stroke={isDarkMode ? "#555" : "#ccc"} strokeWidth="1" strokeDasharray="3 2" />
+                                            )}
+                                            {points.map((p, i) => (
+                                              <g key={i}>
+                                                <circle cx={p.x} cy={p.y}
+                                                  r={activeIdx === i ? 5 : i === points.length - 1 ? 4 : 2.5}
+                                                  fill={eventType.color}
+                                                  stroke={isDarkMode ? "#1c1c1e" : "#fff"}
+                                                  strokeWidth={activeIdx === i || i === points.length - 1 ? 2 : 0}
+                                                />
+                                                <circle cx={p.x} cy={p.y} r={14} fill="transparent"
+                                                  onMouseEnter={() => setGraphTooltip({ type: "value", eventId: eventType.id, index: i })}
+                                                  onTouchStart={(e) => { e.stopPropagation(); setGraphTooltip(prev => prev?.index === i && prev?.eventId === eventType.id ? null : { type: "value", eventId: eventType.id, index: i }); }}
+                                                  style={{ cursor: "pointer" }}
+                                                />
+                                              </g>
+                                            ))}
+                                          </svg>
+                                          <div className="flex justify-between mt-1">
+                                            <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                                              {new Date(graphLogs[0].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                            </span>
+                                            <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                                              {new Date(graphLogs[graphLogs.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+
+                                    // Frequency line graph: days between occurrences
+                                    const recentLogs = sortedLogs.slice(-15);
+                                    const gaps = [];
+                                    for (let i = 1; i < recentLogs.length; i++) {
+                                      const d1 = new Date(recentLogs[i - 1].date);
+                                      const d2 = new Date(recentLogs[i].date);
+                                      gaps.push({
+                                        days: Math.round((d2 - d1) / (1000 * 60 * 60 * 24)),
+                                        date: recentLogs[i].date,
+                                      });
+                                    }
+                                    if (gaps.length < 1) return null;
+                                    const gapValues = gaps.map(g => g.days);
+                                    const maxGap = Math.max(...gapValues);
+                                    const minGap = Math.min(...gapValues);
+                                    const gapRange = maxGap - minGap || 1;
+                                    const avgGap = Math.round(gapValues.reduce((s, v) => s + v, 0) / gapValues.length);
+                                    const step = gaps.length > 1 ? graphW / (gaps.length - 1) : graphW / 2;
+                                    const points = gapValues.map((v, i) => ({
+                                      x: gaps.length > 1 ? i * step : graphW / 2,
+                                      y: graphH - ((v - minGap) / gapRange) * (graphH - 10) - 5,
+                                      val: v,
+                                    }));
+                                    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+                                    const areaPath = gaps.length > 1
+                                      ? `${linePath} L ${points[points.length - 1].x} ${graphH} L 0 ${graphH} Z`
+                                      : null;
+
+                                    const activeIdx = graphTooltip?.type === "freq" && graphTooltip?.eventId === eventType.id ? graphTooltip.index : null;
+
+                                    return (
+                                      <div className={`mb-3 p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                                            {activeIdx != null
+                                              ? new Date(gaps[activeIdx].date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                              : "Frequency (days between)"}
+                                          </span>
+                                          <span className="text-xs font-bold" style={{ color: eventType.color }}>
+                                            {activeIdx != null ? `${gaps[activeIdx].days}d` : `avg ${avgGap}d`}
+                                          </span>
+                                        </div>
+                                        <svg viewBox={`0 0 ${graphW} ${graphH}`} className="w-full" style={{ height: 80 }}
+                                          onMouseLeave={() => setGraphTooltip(null)}
+                                        >
+                                          <defs>
+                                            <linearGradient id={`freq-grad-${eventType.id}`} x1="0" y1="0" x2="0" y2="1">
+                                              <stop offset="0%" stopColor={eventType.color} stopOpacity="0.3" />
+                                              <stop offset="100%" stopColor={eventType.color} stopOpacity="0.02" />
+                                            </linearGradient>
+                                          </defs>
+                                          {eventType.reminder_days && (() => {
+                                            const clampedY = graphH - ((eventType.reminder_days - minGap) / gapRange) * (graphH - 10) - 5;
+                                            return (
+                                              <line x1="0" x2={graphW} y1={clampedY} y2={clampedY}
+                                                stroke={isDarkMode ? "#ef4444" : "#f87171"} strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
+                                            );
+                                          })()}
+                                          {areaPath && <path d={areaPath} fill={`url(#freq-grad-${eventType.id})`} />}
+                                          <path d={linePath} fill="none" stroke={eventType.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                          {activeIdx != null && (
+                                            <line x1={points[activeIdx].x} x2={points[activeIdx].x} y1={0} y2={graphH}
+                                              stroke={isDarkMode ? "#555" : "#ccc"} strokeWidth="1" strokeDasharray="3 2" />
+                                          )}
+                                          {points.map((p, i) => (
+                                            <g key={i}>
+                                              <circle cx={p.x} cy={p.y}
+                                                r={activeIdx === i ? 5 : i === points.length - 1 ? 4 : 2.5}
+                                                fill={eventType.color}
+                                                stroke={isDarkMode ? "#1c1c1e" : "#fff"}
+                                                strokeWidth={activeIdx === i || i === points.length - 1 ? 2 : 0}
+                                              />
+                                              <circle cx={p.x} cy={p.y} r={14} fill="transparent"
+                                                onMouseEnter={() => setGraphTooltip({ type: "freq", eventId: eventType.id, index: i })}
+                                                onTouchStart={(e) => { e.stopPropagation(); setGraphTooltip(prev => prev?.index === i && prev?.eventId === eventType.id ? null : { type: "freq", eventId: eventType.id, index: i }); }}
+                                                style={{ cursor: "pointer" }}
+                                              />
+                                            </g>
+                                          ))}
+                                        </svg>
+                                        <div className="flex justify-between mt-1">
+                                          <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                                            {new Date(recentLogs[0].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                          </span>
+                                          <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                                            {new Date(recentLogs[recentLogs.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+
+                                  })()}
+                              </>
+                            )}
+                          </>
                         )}
-                        <button
-                          onClick={() => openLogDrawer(eventType)}
-                          className={`mt-2 w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
-                            isDarkMode
-                              ? "bg-iron-800 text-iron-300 active:bg-iron-700"
-                              : "bg-slate-100 text-slate-600 active:bg-slate-200"
-                          }`}
-                        >
-                          <CalendarPlus className="w-3.5 h-3.5" />
-                          Log with Details
-                        </button>
                       </div>
                       </motion.div>
                     )}
@@ -1668,6 +1683,7 @@ export default function LifeLog() {
                                 label=""
                                 color={trackable.color}
                                 compact={true}
+                                mini
                                 isDarkMode={isDarkMode}
                               />
                               <button
@@ -1852,6 +1868,48 @@ export default function LifeLog() {
               </button>
             </div>
 
+            {/* Require notes toggle */}
+            <div
+              className={`flex items-center justify-between p-3 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDarkMode ? "bg-iron-700" : "bg-slate-200"}`}
+                >
+                  <FileText className="w-4 h-4" style={{ color: newEvent.color }} />
+                </div>
+                <div>
+                  <p
+                    className={`text-sm font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                  >
+                    Require notes when logging
+                  </p>
+                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Prompt for text (e.g. details) each time you log this event
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNewEvent({ ...newEvent, need_notes: !newEvent.need_notes })}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  newEvent.need_notes
+                    ? isDarkMode
+                      ? "bg-lift-primary"
+                      : "bg-workout-primary"
+                    : isDarkMode
+                      ? "bg-iron-700"
+                      : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    newEvent.need_notes ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
+
             {/* Track Graph Toggle */}
             <div
               className={`flex items-center justify-between p-3 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
@@ -1919,78 +1977,32 @@ export default function LifeLog() {
         </ModalContent>
       </Modal>
 
-      {/* Value Prompt Modal */}
+      {/* Log Event Modal */}
       <Modal
-        open={valuePrompt.open}
-        onOpenChange={open => !open && setValuePrompt({ open: false, eventType: null, value: "" })}
+        open={showLogDrawer}
+        onOpenChange={open => {
+          setShowLogDrawer(open);
+          if (!open) setLogDrawerNestedOpen(false);
+        }}
       >
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={`flex max-h-[92vh] min-h-0 flex-col ${
+            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+          }`}
         >
-          <ModalHeader>
-            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
-              <span className="mr-2">{valuePrompt.eventType?.icon}</span>
-              Log {valuePrompt.eventType?.name}
-            </ModalTitle>
-          </ModalHeader>
-          <ModalBody>
-            <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
-                Value
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                autoFocus
-                value={valuePrompt.value}
-                onChange={e => setValuePrompt(prev => ({ ...prev, value: e.target.value }))}
-                onKeyDown={e => e.key === "Enter" && valuePrompt.value && handleValuePromptSubmit()}
-                placeholder="Enter a numeric value"
-                className={`input-field text-lg ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-100 placeholder-iron-600"
-                    : "bg-slate-100 text-slate-800 placeholder-slate-400"
-                }`}
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <button
-              onClick={() => setValuePrompt({ open: false, eventType: null, value: "" })}
-              className={`flex-1 py-3 rounded-xl font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleValuePromptSubmit}
-              disabled={!valuePrompt.value}
-              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
-            >
-              Log
-            </button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Log Event Modal */}
-      <Modal open={showLogDrawer} onOpenChange={setShowLogDrawer}>
-        <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
-        >
-          <ModalHeader>
+          <ModalHeader className="shrink-0">
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               <span className="mr-2">{selectedEvent?.icon}</span>
               Log {selectedEvent?.name}
             </ModalTitle>
           </ModalHeader>
-          <ModalBody className="space-y-4">
-            {/* Date */}
+          <ModalBody
+            className={`space-y-4 ${
+              selectedEvent?.need_value || selectedEvent?.need_notes
+                ? "shrink-0 !max-h-none overflow-visible"
+                : ""
+            }`}
+          >
             <div>
               <label
                 className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
@@ -2007,40 +2019,18 @@ export default function LifeLog() {
               />
             </div>
 
-            {/* Notes (Optional) */}
-            <div>
-              <label
-                className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-              >
-                Notes (optional)
-              </label>
-              <input
-                type="text"
-                value={logDetails.notes}
-                onChange={e => setLogDetails({ ...logDetails, notes: e.target.value })}
-                placeholder="e.g., Short trim"
-                className={`input-field ${
-                  isDarkMode
-                    ? "bg-iron-800 text-iron-100 placeholder-iron-600"
-                    : "bg-slate-100 text-slate-800 placeholder-slate-400"
-                }`}
-              />
-            </div>
-
-            {/* Value (only for need_value events) */}
-            {selectedEvent?.need_value && (
+            {!(selectedEvent?.need_value || selectedEvent?.need_notes) && (
               <div>
                 <label
                   className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
                 >
-                  Value
+                  Notes (optional)
                 </label>
                 <input
-                  type="number"
-                  inputMode="decimal"
-                  value={logDetails.cost}
-                  onChange={e => setLogDetails({ ...logDetails, cost: e.target.value })}
-                  placeholder="Enter a numeric value"
+                  type="text"
+                  value={logDetails.notes}
+                  onChange={e => setLogDetails({ ...logDetails, notes: e.target.value })}
+                  placeholder="e.g., Short trim"
                   className={`input-field ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600"
@@ -2049,26 +2039,146 @@ export default function LifeLog() {
                 />
               </div>
             )}
+
+            {(selectedEvent?.need_value || selectedEvent?.need_notes) && !logDrawerNestedOpen && (
+              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                Tap &ldquo;Add details&rdquo; to enter the required value or notes for this event.
+              </p>
+            )}
           </ModalBody>
-          <ModalFooter>
-            <button
-              onClick={() => setShowLogDrawer(false)}
-              className={`flex-1 py-3 rounded-xl font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+          {!(selectedEvent?.need_value || selectedEvent?.need_notes) ? (
+            <ModalFooter className="shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowLogDrawer(false)}
+                className={`flex-1 py-3 rounded-xl font-medium ${
+                  isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLogEvent()}
+                className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                  isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                Log Event
+              </button>
+            </ModalFooter>
+          ) : !logDrawerNestedOpen ? (
+            <ModalFooter className="shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowLogDrawer(false)}
+                className={`flex-1 py-3 rounded-xl font-medium ${
+                  isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogDrawerNestedOpen(true)}
+                className={`flex-1 py-3 rounded-xl font-bold ${
+                  isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                }`}
+              >
+                Add details
+              </button>
+            </ModalFooter>
+          ) : null}
+
+          <NestedModal
+            open={
+              Boolean(showLogDrawer && logDrawerNestedOpen && selectedEvent) &&
+              Boolean(selectedEvent?.need_value || selectedEvent?.need_notes)
+            }
+            onOpenChange={setLogDrawerNestedOpen}
+          >
+            <ModalContent
+              className={`flex max-h-[85vh] min-h-0 flex-col ${
+                isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
               }`}
+              showCloseButton
             >
-              Cancel
-            </button>
-            <button
-              onClick={handleLogEvent}
-              className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
-            >
-              <Check className="w-4 h-4" />
-              Log Event
-            </button>
-          </ModalFooter>
+              <ModalHeader className="shrink-0">
+                <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+                  Details for {selectedEvent?.name}
+                </ModalTitle>
+                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                  {logDetails.date}
+                </p>
+              </ModalHeader>
+              <ModalBody className="shrink-0 space-y-4 !max-h-none overflow-visible pb-2">
+                {selectedEvent?.need_value && (
+                  <div>
+                    <label
+                      className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+                    >
+                      Value <span className="text-red-400 normal-case">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      autoFocus
+                      value={logDetails.cost}
+                      onChange={e => setLogDetails({ ...logDetails, cost: e.target.value })}
+                      placeholder="Enter a numeric value"
+                      className={`input-field py-3 text-base ${
+                        isDarkMode
+                          ? "bg-iron-800 text-iron-100 placeholder-iron-600"
+                          : "bg-slate-100 text-slate-800 placeholder-slate-400"
+                      }`}
+                    />
+                  </div>
+                )}
+                {selectedEvent?.need_notes && (
+                  <div>
+                    <label
+                      className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+                    >
+                      Notes <span className="text-red-400 normal-case">*</span>
+                    </label>
+                    <textarea
+                      value={logDetails.notes}
+                      onChange={e => setLogDetails({ ...logDetails, notes: e.target.value })}
+                      placeholder="What happened? Add any details…"
+                      rows={4}
+                      className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                        isDarkMode
+                          ? "border-iron-700 bg-iron-800 text-iron-100 placeholder:text-iron-600 focus:ring-lift-primary/40"
+                          : "border-slate-200 bg-slate-100 text-slate-800 placeholder:text-slate-400 focus:ring-amber-500/40"
+                      }`}
+                    />
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter className="shrink-0 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setLogDrawerNestedOpen(false)}
+                  className={`flex-1 py-3 rounded-xl font-medium ${
+                    isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLogEvent()}
+                  className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                    isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                  }`}
+                >
+                  <Check className="w-4 h-4" />
+                  Log Event
+                </button>
+              </ModalFooter>
+            </ModalContent>
+          </NestedModal>
         </ModalContent>
       </Modal>
 

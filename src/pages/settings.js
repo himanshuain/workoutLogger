@@ -38,7 +38,6 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
           ? isDarkMode ? "bg-iron-900/50 opacity-50" : "bg-slate-50 opacity-50"
           : isDarkMode ? "bg-iron-800/80" : "bg-slate-100"
       }`}
-      style={{ touchAction: "none" }}
       whileDrag={{
         scale: 1.03,
         boxShadow: isDarkMode
@@ -383,7 +382,7 @@ export default function Settings() {
               Navigation Bar
             </h3>
             <div
-              className={`p-4 rounded-2xl ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}`}
+              className={`p-4 rounded-2xl max-h-[min(55vh,28rem)] overflow-y-auto overscroll-contain touch-pan-y ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}`}
             >
               <p className={`text-xs mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                 Reorder, rename, or hide navigation items. Tap the name to rename.

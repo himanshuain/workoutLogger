@@ -26,7 +26,7 @@ export default function TodayFoodLogSection({
     setTempQty(quantity);
   }, []);
 
-  const handleToggle = async (item) => {
+  const handleToggleToday = async item => {
     const consumed = !!todayFoodEntries[item.id];
     if (consumed) {
       await toggleFoodEntry(item.id);
@@ -41,7 +41,7 @@ export default function TodayFoodLogSection({
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
   };
 
-  const handleChangeAmount = (item) => {
+  const handleChangeAmountToday = item => {
     const q = todayFoodEntries[item.id]?.quantity ?? item.default_quantity ?? 1;
     openQuantity(item, q);
   };
@@ -53,6 +53,94 @@ export default function TodayFoodLogSection({
     queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
     setQtyItem(null);
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
+  };
+
+  const isAdjustingQuantity = qtyItem && !!todayFoodEntries[qtyItem.id];
+
+  const renderFoodBox = (item, consumed, quantity, onToggle, onChangeAmount, compact) => {
+    const displayQty = item.quantity_whole_numbers ? Math.round(Number(quantity)) : quantity;
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => onToggle(item)}
+        className={`flex flex-col items-stretch rounded-2xl border text-left transition-all active:scale-[0.98] ${
+          compact ? "p-2.5" : "p-3"
+        } ${
+          isDarkMode
+            ? consumed
+              ? "border-iron-700 bg-iron-900/90"
+              : "border-iron-800 bg-iron-900/60"
+            : consumed
+              ? "border-slate-200 bg-white shadow-sm"
+              : "border-slate-200/80 bg-slate-50/80"
+        }`}
+      >
+        <div className="flex items-start gap-2">
+          <span
+            className={`flex shrink-0 items-center justify-center rounded-xl text-xl ${
+              compact ? "h-10 w-10" : "h-11 w-11"
+            } ${
+              consumed
+                ? "shadow-sm"
+                : isDarkMode
+                  ? "bg-iron-800 ring-1 ring-iron-700"
+                  : "bg-white ring-1 ring-slate-200"
+            }`}
+            style={consumed ? { backgroundColor: item.color } : undefined}
+          >
+            {consumed ? <Check className="h-5 w-5 text-white" strokeWidth={2.5} /> : item.icon}
+          </span>
+          <div className="min-w-0 flex-1 pt-0.5">
+            <p
+              className={`truncate text-xs font-semibold leading-tight ${
+                consumed
+                  ? isDarkMode
+                    ? "text-iron-100"
+                    : "text-slate-800"
+                  : isDarkMode
+                    ? "text-iron-400"
+                    : "text-slate-600"
+              }`}
+            >
+              {item.name}
+            </p>
+            <p className={`mt-1 text-[10px] leading-snug ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              {consumed ? (
+                <>
+                  <span className={isDarkMode ? "text-lift-primary" : "text-amber-600"}>
+                    {displayQty} {item.unit || "units"}
+                  </span>
+                  {" · "}
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={e => {
+                      e.stopPropagation();
+                      onChangeAmount(item);
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onChangeAmount(item);
+                      }
+                    }}
+                    className={`font-medium underline-offset-2 hover:underline ${
+                      isDarkMode ? "text-iron-400" : "text-slate-600"
+                    }`}
+                  >
+                    Change
+                  </span>
+                </>
+              ) : (
+                "Tap to log"
+              )}
+            </p>
+          </div>
+        </div>
+      </button>
+    );
   };
 
   if (foodItems.length === 0) {
@@ -90,8 +178,6 @@ export default function TodayFoodLogSection({
     );
   }
 
-  const isAdjusting = qtyItem && !!todayFoodEntries[qtyItem.id];
-
   return (
     <section className="mt-6">
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -101,12 +187,12 @@ export default function TodayFoodLogSection({
           }`}
         >
           <Utensils className="w-3.5 h-3.5 shrink-0" />
-          Food (today)
+          Food
         </h3>
         <button
           type="button"
           onClick={() => router.push("/food")}
-          className={`text-xs font-medium flex items-center gap-0.5 ${
+          className={`text-xs font-medium flex items-center gap-0.5 px-2 py-1 rounded-lg ${
             isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
           }`}
         >
@@ -114,83 +200,13 @@ export default function TodayFoodLogSection({
         </button>
       </div>
 
-      <ul className="space-y-2">
-        {sortedItems.map((item) => {
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {sortedItems.map(item => {
           const consumed = !!todayFoodEntries[item.id];
-          const quantity =
-            todayFoodEntries[item.id]?.quantity ?? item.default_quantity ?? 1;
-          const displayQty = item.quantity_whole_numbers
-            ? Math.round(Number(quantity))
-            : quantity;
-
-          return (
-            <li key={item.id}>
-              <div
-                className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 ${
-                  isDarkMode ? "bg-iron-900/80" : "bg-white border border-slate-200 shadow-sm"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleToggle(item)}
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl transition-all active:scale-95 ${
-                    consumed
-                      ? "shadow-md"
-                      : isDarkMode
-                        ? "bg-iron-800 ring-1 ring-iron-700"
-                        : "bg-slate-100 ring-1 ring-slate-200"
-                  }`}
-                  style={{
-                    backgroundColor: consumed ? item.color : undefined,
-                  }}
-                  aria-label={consumed ? `Unlog ${item.name}` : `Log ${item.name}`}
-                >
-                  {consumed ? <Check className="h-6 w-6 text-white" strokeWidth={2.5} /> : item.icon}
-                </button>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={`truncate text-sm font-semibold ${
-                      consumed
-                        ? isDarkMode
-                          ? "text-iron-100"
-                          : "text-slate-800"
-                        : isDarkMode
-                          ? "text-iron-400"
-                          : "text-slate-500"
-                    }`}
-                  >
-                    {item.name}
-                  </p>
-                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    {consumed ? (
-                      <>
-                        <span className={isDarkMode ? "text-lift-primary" : "text-amber-600"}>
-                          {displayQty} {item.unit || "units"}
-                        </span>
-                        {" · "}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleChangeAmount(item);
-                          }}
-                          className={`font-medium underline-offset-2 hover:underline ${
-                            isDarkMode ? "text-iron-400" : "text-slate-600"
-                          }`}
-                        >
-                          Change
-                        </button>
-                      </>
-                    ) : (
-                      "Tap icon to log"
-                    )}
-                  </p>
-                </div>
-              </div>
-            </li>
-          );
+          const quantity = todayFoodEntries[item.id]?.quantity ?? item.default_quantity ?? 1;
+          return renderFoodBox(item, consumed, quantity, handleToggleToday, handleChangeAmountToday, false);
         })}
-      </ul>
+      </div>
 
       <FoodQuantityModal
         open={!!qtyItem}
@@ -200,7 +216,7 @@ export default function TodayFoodLogSection({
         onConfirm={handleQuantityConfirm}
         onClose={() => setQtyItem(null)}
         isDarkMode={isDarkMode}
-        isAdjusting={isAdjusting}
+        isAdjusting={isAdjustingQuantity}
       />
     </section>
   );

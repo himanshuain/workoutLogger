@@ -46,6 +46,7 @@ import {
   X,
   Target,
   Flame,
+  CalendarClock,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import {
@@ -59,6 +60,7 @@ import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
+import PastDayLogModal from "@/components/PastDayLogModal";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -113,6 +115,7 @@ export default function Home() {
   } = useWorkout();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pastLogOpen, setPastLogOpen] = useState(false);
   const [showAddHabitDrawer, setShowAddHabitDrawer] = useState(false);
   const [isStartingWorkout, setIsStartingWorkout] = useState(false);
   const [showRoutineSelector, setShowRoutineSelector] = useState(false);
@@ -367,18 +370,33 @@ export default function Home() {
               {formatDate(new Date())}
             </h2>
           </div>
-          <button
-            onClick={handleRefresh}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-              isDarkMode
-                ? "bg-iron-800 active:bg-iron-700"
-                : "bg-slate-100 active:bg-slate-200"
-            } ${isRefreshing ? "animate-spin" : ""}`}
-          >
-            <RefreshCw
-              className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
-            />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPastLogOpen(true)}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                isDarkMode
+                  ? "bg-iron-800 active:bg-iron-700 text-iron-400"
+                  : "bg-slate-100 active:bg-slate-200 text-slate-500"
+              }`}
+              aria-label="Log for another day"
+            >
+              <CalendarClock className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                isDarkMode
+                  ? "bg-iron-800 active:bg-iron-700"
+                  : "bg-slate-100 active:bg-slate-200"
+              } ${isRefreshing ? "animate-spin" : ""}`}
+            >
+              <RefreshCw
+                className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Today's Workout — structured card, minimal decoration */}
@@ -731,6 +749,8 @@ export default function Home() {
           updateFoodEntryQuantity={updateFoodEntryQuantity}
           queryClient={queryClient}
         />
+
+        <PastDayLogModal open={pastLogOpen} onOpenChange={setPastLogOpen} isDarkMode={isDarkMode} />
 
         {/* Recent Workouts */}
         {recentSessions.length > 0 && (

@@ -1310,15 +1310,33 @@ export function WorkoutProvider({ children }) {
   );
 
   const toggleFoodEntry = useCallback(
-    async (foodItemId, quantity = 1) => {
+    async (foodItemId, secondArg = 1) => {
       if (!user) return;
 
-      const existing = todayFoodEntries[foodItemId];
+      const opts =
+        secondArg !== null && typeof secondArg === "object" && !Array.isArray(secondArg)
+          ? { quantity: secondArg.quantity ?? 1, date: secondArg.date ?? today }
+          : { quantity: Number(secondArg) || 1, date: today };
+
+      const targetDate = opts.date;
+      const forToday = targetDate === today;
+
+      let existing = forToday ? todayFoodEntries[foodItemId] : null;
+      if (!forToday) {
+        const { data } = await supabase
+          .from("food_entries")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("food_item_id", foodItemId)
+          .eq("date", targetDate)
+          .maybeSingle();
+        existing = data;
+      }
 
       if (existing) {
         const { error } = await supabase.from("food_entries").delete().eq("id", existing.id);
 
-        if (!error) {
+        if (!error && forToday) {
           setTodayFoodEntries(prev => {
             const updated = { ...prev };
             delete updated[foodItemId];
@@ -1327,20 +1345,20 @@ export function WorkoutProvider({ children }) {
         }
       } else {
         const item = foodItems.find(f => f.id === foodItemId);
-        const q = normalizeFoodQuantity(quantity, item);
+        const q = normalizeFoodQuantity(opts.quantity, item);
         const { data, error } = await supabase
           .from("food_entries")
           .insert({
             user_id: user.id,
             food_item_id: foodItemId,
-            date: today,
+            date: targetDate,
             quantity: q,
             is_completed: true,
           })
           .select()
           .single();
 
-        if (!error && data) {
+        if (!error && data && forToday) {
           setTodayFoodEntries(prev => ({
             ...prev,
             [foodItemId]: data,
@@ -1349,18 +1367,30 @@ export function WorkoutProvider({ children }) {
       }
 
       queryClient.invalidateQueries({ queryKey: ["foodEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
     },
     [user, today, todayFoodEntries, queryClient, foodItems]
   );
 
   const updateFoodEntryQuantity = useCallback(
-    async (foodItemId, quantity) => {
+    async (foodItemId, quantity, entryDate = today) => {
       if (!user) return;
 
       const item = foodItems.find(f => f.id === foodItemId);
       const q = normalizeFoodQuantity(quantity, item);
+      const forToday = entryDate === today;
 
-      const existing = todayFoodEntries[foodItemId];
+      let existing = forToday ? todayFoodEntries[foodItemId] : null;
+      if (!forToday) {
+        const { data } = await supabase
+          .from("food_entries")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("food_item_id", foodItemId)
+          .eq("date", entryDate)
+          .maybeSingle();
+        existing = data;
+      }
 
       if (existing) {
         const { error } = await supabase
@@ -1368,7 +1398,7 @@ export function WorkoutProvider({ children }) {
           .update({ quantity: q })
           .eq("id", existing.id);
 
-        if (!error) {
+        if (!error && forToday) {
           setTodayFoodEntries(prev => ({
             ...prev,
             [foodItemId]: { ...existing, quantity: q },
@@ -1380,14 +1410,14 @@ export function WorkoutProvider({ children }) {
           .insert({
             user_id: user.id,
             food_item_id: foodItemId,
-            date: today,
+            date: entryDate,
             quantity: q,
             is_completed: true,
           })
           .select()
           .single();
 
-        if (!error && data) {
+        if (!error && data && forToday) {
           setTodayFoodEntries(prev => ({
             ...prev,
             [foodItemId]: data,
@@ -1396,6 +1426,7 @@ export function WorkoutProvider({ children }) {
       }
 
       queryClient.invalidateQueries({ queryKey: ["foodEntries"] });
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
     },
     [user, today, todayFoodEntries, queryClient, foodItems]
   );

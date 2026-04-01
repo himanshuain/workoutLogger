@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { Check } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import CompletionToggle from "@/components/CompletionToggle";
 import SlidingNumberPicker from "@/components/SlidingNumberPicker";
 
 const REP_SUGGESTIONS = [6, 8, 10, 12, 15];
@@ -213,25 +213,14 @@ export default function SetCard({
             {prevHint || "No prior log"}
           </span>
         </div>
-        <button
-          type="button"
+        <CompletionToggle
+          completed={isCompleted}
           onClick={handleToggle}
-          className={`
-            shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-colors active:scale-95
-            ${
-              isCompleted
-                ? isDarkMode
-                  ? "bg-lift-primary text-iron-950"
-                  : "bg-green-500 text-white"
-                : isDarkMode
-                  ? "bg-iron-800 text-iron-500"
-                  : "bg-slate-100 text-slate-400"
-            }
-          `}
-          aria-label={isCompleted ? "Mark set not done" : "Mark set complete"}
-        >
-          <Check className="w-5 h-5" strokeWidth={2.5} />
-        </button>
+          size="md"
+          isDarkMode={isDarkMode}
+          ariaLabelComplete="Mark set complete"
+          ariaLabelIncomplete="Mark set not done"
+        />
       </div>
 
       <div className="p-3 space-y-3">

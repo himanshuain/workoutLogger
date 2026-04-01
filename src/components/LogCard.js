@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ExerciseIcon from "@/components/ExerciseIcon";
-import { Check, Trash2, MoreVertical, Pencil } from "lucide-react";
+import { CircleCheck, Trash2, MoreVertical, Pencil } from "lucide-react";
 
 export default function LogCard({
   exerciseName,
@@ -96,8 +96,12 @@ export default function LogCard({
               </>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-full bg-lift-primary/20 flex items-center justify-center">
-                  <Check className="w-4 h-4 text-lift-primary" />
+                <div
+                  className="w-8 h-8 rounded-full bg-lift-primary/20 flex items-center justify-center"
+                  title="Logged"
+                  aria-hidden
+                >
+                  <CircleCheck className="w-4 h-4 text-lift-primary" strokeWidth={2} />
                 </div>
                 <button
                   onClick={toggleActions}

@@ -108,6 +108,9 @@ function SortableStepItem({ item, card, isChecked, isDarkMode, onToggle, onEdit,
 
           {/* Tappable row: checkbox + text */}
           <button
+            type="button"
+            aria-pressed={isChecked}
+            aria-label={isChecked ? "Mark step not done" : "Mark step done"}
             onClick={onToggle}
             className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
           >
@@ -118,8 +121,11 @@ function SortableStepItem({ item, card, isChecked, isDarkMode, onToggle, onEdit,
                   : isDarkMode ? "border-iron-700" : "border-slate-300"
               }`}
               style={isChecked ? { backgroundColor: card.color } : {}}
+              aria-hidden
             >
-              {isChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+              {isChecked ? (
+                <Check className="w-3 h-3 text-white" strokeWidth={3} />
+              ) : null}
             </div>
             <span
               className={`text-sm transition-all ${

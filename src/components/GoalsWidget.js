@@ -316,7 +316,12 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                     )}
 
                     {goal.progress >= 100 && (
-                      <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+                      <span
+                        className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-green-500/15"
+                        title="Goal met"
+                      >
+                        <Check className="h-5 w-5 text-green-400" strokeWidth={2.5} aria-hidden />
+                      </span>
                     )}
                   </div>
 

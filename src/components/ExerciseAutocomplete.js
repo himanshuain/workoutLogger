@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import { Search, Plus, Check, X } from "lucide-react";
+import { CompletionBadge } from "@/components/CompletionToggle";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseMediaUrl } from "@/lib/exerciseMedia";
 import {
@@ -284,13 +285,8 @@ function ExerciseRow({ exercise, isDarkMode, isLogged, isSelected, onSelect }) {
           </div>
         )}
         {isLogged ? (
-          <span
-            className={`absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full shadow-md ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
-            aria-hidden
-          >
-            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+          <span className="absolute bottom-1 right-1">
+            <CompletionBadge isDarkMode={isDarkMode} />
           </span>
         ) : null}
       </div>

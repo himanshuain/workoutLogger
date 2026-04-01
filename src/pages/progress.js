@@ -848,6 +848,11 @@ export default function Progress() {
                 <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                   {monthlyHistoryData.months?.length > 0 &&
                     `Since ${monthlyHistoryData.months[monthlyHistoryData.months.length - 1]?.monthYear}`}
+                  {historyViewMode === "daily" && monthlyHistoryData.months?.length > 0 && (
+                    <span className="block mt-1">
+                      Check marks mean completed that day; dashes mean not.
+                    </span>
+                  )}
                 </p>
 
                 {/* Month Navigator (Daily View Only) */}

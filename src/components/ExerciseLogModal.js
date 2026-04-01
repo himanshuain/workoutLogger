@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Minus, Plus, Check, Zap, RotateCcw, Trash2 } from "lucide-react";
+import CompletionToggle from "@/components/CompletionToggle";
 import {
   Modal,
   ModalContent,
@@ -326,20 +327,16 @@ export default function ExerciseLogModal({
                       : "bg-iron-800/50"
                   }`}
                 >
-                  <button
+                  <CompletionToggle
+                    completed={set.completed}
                     onClick={() => handleToggleSet(index)}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                      set.completed
-                        ? "bg-lift-primary text-iron-950"
-                        : "bg-iron-700 text-iron-400"
-                    }`}
-                  >
-                    {set.completed ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <span className="font-bold">{index + 1}</span>
-                    )}
-                  </button>
+                    size="md"
+                    variant="modal"
+                    incompleteContent={index + 1}
+                    isDarkMode
+                    ariaLabelComplete={`Mark set ${index + 1} complete`}
+                    ariaLabelIncomplete={`Mark set ${index + 1} not done`}
+                  />
 
                   <div className="flex-1 flex items-center justify-center gap-2">
                     <button

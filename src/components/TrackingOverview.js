@@ -107,7 +107,7 @@ export default function TrackingOverview({
           Weekly Overview
         </h3>
         <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-          Last {days} days at a glance
+          Last {days} days at a glance. Check marks are completed days; dashes are not.
         </p>
       </div>
 

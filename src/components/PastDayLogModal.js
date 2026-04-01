@@ -428,6 +428,12 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
       <button
         key={item.id}
         type="button"
+        aria-pressed={consumed}
+        aria-label={
+          consumed
+            ? `${item.name}, logged — tap to remove`
+            : `${item.name} — tap to log`
+        }
         onClick={() => onToggle(item)}
         className={`flex flex-col items-stretch rounded-2xl border text-left transition-all active:scale-[0.98] ${
           compact ? "p-2.5" : "p-3"
@@ -917,6 +923,10 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                           >
                             <button
                               type="button"
+                              aria-pressed={done}
+                              aria-label={
+                                done ? `Mark ${t.name} not done for this day` : `Mark ${t.name} done for this day`
+                              }
                               onClick={() => handleHabitToggle(t)}
                               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition-all ${
                                 done

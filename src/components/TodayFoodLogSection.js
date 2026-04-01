@@ -63,6 +63,12 @@ export default function TodayFoodLogSection({
       <button
         key={item.id}
         type="button"
+        aria-pressed={consumed}
+        aria-label={
+          consumed
+            ? `${item.name}, logged — tap to remove`
+            : `${item.name} — tap to log`
+        }
         onClick={() => onToggle(item)}
         className={`flex flex-col items-stretch rounded-2xl border text-left transition-all active:scale-[0.98] ${
           compact ? "p-2.5" : "p-3"

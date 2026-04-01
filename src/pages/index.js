@@ -47,6 +47,7 @@ import {
   Target,
   Flame,
   CalendarClock,
+  StickyNote,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import {
@@ -206,6 +207,7 @@ export default function Home() {
   const NOTE_KEY = "workout-logger-note";
   const [note, setNote] = useState("");
   const [noteLoaded, setNoteLoaded] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
   const saveTimerRef = useRef(null);
 
   useEffect(() => {
@@ -670,28 +672,63 @@ export default function Home() {
           )}
         </section>
 
-        {/* Note Billboard */}
+        {/* Quick note — collapsed until opened via notes button */}
         {noteLoaded && (
           <section className="mb-6">
-            <div
-              className={`rounded-2xl p-3 ${
+            <button
+              type="button"
+              onClick={() => setNoteOpen(o => !o)}
+              aria-expanded={noteOpen}
+              aria-controls="home-quick-note"
+              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors active:scale-[0.99] ${
                 isDarkMode
-                  ? "bg-iron-900/50"
-                  : "bg-amber-50 border border-amber-200/50"
+                  ? "bg-iron-900/50 hover:bg-iron-800/70 text-iron-200"
+                  : "border border-amber-200/50 bg-amber-50 hover:bg-amber-100/80 text-slate-800"
               }`}
             >
-              <textarea
-                value={note}
-                onChange={handleNoteChange}
-                placeholder="Jot something down..."
-                rows={2}
-                className={`w-full bg-transparent resize-none text-sm leading-relaxed outline-none placeholder-opacity-40 ${
-                  isDarkMode
-                    ? "text-iron-200 placeholder-iron-600"
-                    : "text-slate-700 placeholder-slate-400"
+              <span className="relative shrink-0">
+                <StickyNote
+                  className={`h-5 w-5 ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+                {note.trim() ? (
+                  <span
+                    className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lift-primary ring-2 ${
+                      isDarkMode ? "ring-iron-900" : "ring-amber-50"
+                    }`}
+                    aria-hidden
+                  />
+                ) : null}
+              </span>
+              <span className="min-w-0 flex-1 text-sm font-medium">Jot something down</span>
+              <ChevronDown
+                className={`h-4 w-4 shrink-0 opacity-70 transition-transform duration-200 ${
+                  noteOpen ? "rotate-180" : ""
                 }`}
+                aria-hidden
               />
-            </div>
+            </button>
+            {noteOpen ? (
+              <div
+                id="home-quick-note"
+                className={`mt-2 rounded-2xl p-3 ${
+                  isDarkMode ? "bg-iron-900/50" : "border border-amber-200/50 bg-amber-50"
+                }`}
+              >
+                <textarea
+                  value={note}
+                  onChange={handleNoteChange}
+                  placeholder="Type a quick note…"
+                  rows={4}
+                  className={`w-full resize-y bg-transparent text-sm leading-relaxed outline-none placeholder-opacity-40 ${
+                    isDarkMode
+                      ? "min-h-[5rem] text-iron-200 placeholder-iron-600"
+                      : "min-h-[5rem] text-slate-700 placeholder-slate-400"
+                  }`}
+                />
+              </div>
+            ) : null}
           </section>
         )}
 

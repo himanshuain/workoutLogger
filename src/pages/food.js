@@ -668,6 +668,13 @@ export default function Food() {
                     >
                       <div className="p-4 flex items-center gap-3">
                         <button
+                          type="button"
+                          aria-pressed={isConsumed}
+                          aria-label={
+                            isConsumed
+                              ? `${item.name} logged — tap to remove`
+                              : `Log ${item.name}`
+                          }
                           onClick={() => handleToggle(item)}
                           className={`
                             w-14 h-14 rounded-xl flex items-center justify-center text-2xl
@@ -1131,6 +1138,7 @@ export default function Food() {
                 >
                   <button
                     type="button"
+                    aria-pressed={consumed}
                     onClick={() => handleDayNudgeToggle(item)}
                     className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl transition-all active:scale-95 ${
                       consumed

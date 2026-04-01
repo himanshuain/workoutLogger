@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { Check } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { toast } from "sonner";
 
@@ -73,6 +74,9 @@ export default function HabitPills({
           return (
             <button
               key={trackable.id}
+              type="button"
+              aria-pressed={isCompleted}
+              aria-label={`${trackable.name}${isCompleted ? ", completed" : ", not completed"}`}
               onClick={() => handlePillClick(trackable)}
               className={`
                 relative min-h-[48px] px-5 py-3 rounded-2xl font-medium text-sm
@@ -98,19 +102,7 @@ export default function HabitPills({
               )}
 
               {isCompleted && (
-                <svg
-                  className="w-5 h-5 animate-scale-in"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={3}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                <Check className="w-5 h-5 shrink-0 animate-scale-in" strokeWidth={3} aria-hidden />
               )}
 
               <span className="font-semibold">{trackable.name}</span>

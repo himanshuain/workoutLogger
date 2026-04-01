@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { Minus, Plus, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import SlidingNumberPicker from "@/components/SlidingNumberPicker";
 
 const REP_SUGGESTIONS = [6, 8, 10, 12, 15];
 
 const KG_SUGGEST_STEP = 2.5;
 const KG_SUGGEST_MIN = 5;
-const KG_SUGGEST_COUNT = 7; // 5, 7.5, … 20
+const KG_SUGGEST_COUNT = 7;
 
 function snapToStep(value, step) {
   return Math.round(value / step) * step;
@@ -44,21 +45,41 @@ function buildWeightSuggestions(unit, previousWeight, weightStep) {
   return [45, 55, 65, 75, 85, 95, 105];
 }
 
-function FieldBlock({ title, hint, children, isDarkMode }) {
+function FieldBlock({ title, hint, children, isDarkMode, accent }) {
+  const shell =
+    accent === "reps"
+      ? isDarkMode
+        ? "bg-cyan-950/35 border border-cyan-500/25 border-l-[3px] border-l-cyan-400"
+        : "bg-cyan-50/90 border border-cyan-200/80 border-l-[3px] border-l-cyan-500"
+      : accent === "weight"
+        ? isDarkMode
+          ? "bg-amber-950/30 border border-amber-500/25 border-l-[3px] border-l-amber-400"
+          : "bg-amber-50/90 border border-amber-200/80 border-l-[3px] border-l-amber-500"
+        : isDarkMode
+          ? "bg-iron-950/80 border border-iron-800/80"
+          : "bg-slate-50 border border-slate-200";
+
+  const titleClass =
+    accent === "reps"
+      ? isDarkMode
+        ? "text-cyan-300"
+        : "text-cyan-800"
+      : accent === "weight"
+        ? isDarkMode
+          ? "text-amber-300"
+          : "text-amber-900"
+        : isDarkMode
+          ? "text-iron-300"
+          : "text-slate-700";
+
   return (
-    <div
-      className={`rounded-xl p-3 ${
-        isDarkMode ? "bg-iron-950/80 border border-iron-800/80" : "bg-slate-50 border border-slate-200"
-      }`}
-    >
+    <div className={`rounded-xl p-3 ${shell}`}>
       <div className="flex items-baseline justify-between gap-2 mb-2">
-        <span
-          className={`text-xs font-semibold ${isDarkMode ? "text-iron-300" : "text-slate-700"}`}
-        >
-          {title}
-        </span>
+        <span className={`text-xs font-bold uppercase tracking-wide ${titleClass}`}>{title}</span>
         {hint ? (
-          <span className={`text-[10px] truncate ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+          <span
+            className={`text-[10px] truncate ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+          >
             {hint}
           </span>
         ) : null}
@@ -66,6 +87,14 @@ function FieldBlock({ title, hint, children, isDarkMode }) {
       {children}
     </div>
   );
+}
+
+function formatWeightDisplay(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  const r = Math.round(n * 10) / 10;
+  if (Math.abs(r % 1) < 1e-6) return String(Math.round(r));
+  return r.toFixed(1);
 }
 
 export default function SetCard({
@@ -92,30 +121,16 @@ export default function SetCard({
   const weightStep = unit === "kg" ? 2.5 : 5;
   const weightSuggestions = useMemo(
     () => buildWeightSuggestions(unit, previousWeight, weightStep),
-    [unit, previousWeight, weightStep],
+    [unit, previousWeight, weightStep]
   );
 
-  const handleWeightChange = (delta) => {
-    const newWeight = Math.max(0, Math.min(500, localWeight + delta));
-    setLocalWeight(newWeight);
-    onWeightChange(newWeight);
-    if (window.navigator?.vibrate) window.navigator.vibrate(5);
-  };
-
-  const handleRepsChange = (delta) => {
-    const newReps = Math.max(1, Math.min(100, localReps + delta));
-    setLocalReps(newReps);
-    onRepsChange(newReps);
-    if (window.navigator?.vibrate) window.navigator.vibrate(5);
-  };
-
-  const pickReps = (n) => {
+  const handleRepsPick = n => {
     setLocalReps(n);
     onRepsChange(n);
     if (window.navigator?.vibrate) window.navigator.vibrate(5);
   };
 
-  const pickWeight = (w) => {
+  const handleWeightPick = w => {
     setLocalWeight(w);
     onWeightChange(w);
     if (window.navigator?.vibrate) window.navigator.vibrate(5);
@@ -126,29 +141,35 @@ export default function SetCard({
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
   };
 
-  const hasPrevious = previousWeight !== null && previousReps !== null;
-  const prevHint = hasPrevious ? `Last: ${previousReps}×${previousWeight}${unit}` : null;
+  const hasPrevious =
+    previousWeight !== null &&
+    previousWeight !== "" &&
+    previousReps !== null &&
+    previousReps !== "" &&
+    previousWeight !== 0 &&
+    previousReps !== 0;
+  const prevHint = hasPrevious ? `Previous: ${previousReps}×${previousWeight}${unit}` : null;
 
-  const chipClass = (active) =>
+  const chipReps = active =>
     `min-w-[2rem] px-2 py-1 rounded-md text-xs font-semibold tabular-nums transition-colors ${
       active
         ? isDarkMode
-          ? "bg-lift-primary text-iron-950"
-          : "bg-workout-primary text-white"
+          ? "bg-cyan-500 text-iron-950"
+          : "bg-cyan-600 text-white"
         : isDarkMode
-          ? "bg-iron-800/80 text-iron-400"
-          : "bg-white text-slate-600 border border-slate-200"
+          ? "bg-iron-800/80 text-cyan-200/70"
+          : "bg-white text-cyan-900/80 border border-cyan-200"
     }`;
 
-  const stepBtn = (isPlus) =>
-    `w-10 h-10 shrink-0 rounded-lg flex items-center justify-center transition-colors active:scale-95 ${
-      isPlus
+  const chipWeight = active =>
+    `min-w-[2rem] px-2 py-1 rounded-md text-xs font-semibold tabular-nums transition-colors ${
+      active
         ? isDarkMode
-          ? "bg-lift-primary text-iron-950"
-          : "bg-workout-primary text-white"
+          ? "bg-amber-500 text-iron-950"
+          : "bg-amber-600 text-white"
         : isDarkMode
-          ? "bg-iron-800 text-iron-300"
-          : "bg-white border border-slate-200 text-slate-600"
+          ? "bg-iron-800/80 text-amber-200/70"
+          : "bg-white text-amber-900/80 border border-amber-200"
     }`;
 
   return (
@@ -166,7 +187,6 @@ export default function SetCard({
         }
       `}
     >
-      {/* Card header: identity + done */}
       <div
         className={`flex items-center justify-between px-3 py-2.5 border-b ${
           isDarkMode ? "border-iron-800/80 bg-iron-900/50" : "border-slate-100 bg-slate-50/80"
@@ -215,84 +235,70 @@ export default function SetCard({
       </div>
 
       <div className="p-3 space-y-3">
-        <FieldBlock title="Reps" hint={null} isDarkMode={isDarkMode}>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleRepsChange(-1)}
-              className={stepBtn(false)}
-              aria-label="Decrease reps"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <span
-              className={`flex-1 text-center text-2xl font-bold tabular-nums ${
-                isDarkMode ? "text-iron-50" : "text-slate-900"
-              }`}
-            >
-              {localReps}
-            </span>
-            <button
-              type="button"
-              onClick={() => handleRepsChange(1)}
-              className={stepBtn(true)}
-              aria-label="Increase reps"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
+        <FieldBlock title="Reps" isDarkMode={isDarkMode} accent="reps">
+          <SlidingNumberPicker
+            value={localReps}
+            min={1}
+            max={100}
+            step={1}
+            isDarkMode={isDarkMode}
+            accent="reps"
+            unitLabel="reps"
+            onChange={n => {
+              setLocalReps(n);
+              onRepsChange(n);
+            }}
+          />
           <div
             className={`flex flex-wrap gap-1.5 mt-2.5 pt-2.5 border-t border-dashed ${
-              isDarkMode ? "border-iron-700/40" : "border-slate-200"
+              isDarkMode ? "border-cyan-800/40" : "border-cyan-200"
             }`}
           >
-            {REP_SUGGESTIONS.map((n) => (
-              <button key={n} type="button" onClick={() => pickReps(n)} className={chipClass(localReps === n)}>
+            {REP_SUGGESTIONS.map(n => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => handleRepsPick(n)}
+                className={chipReps(localReps === n)}
+              >
                 {n}
               </button>
             ))}
           </div>
         </FieldBlock>
 
-        <FieldBlock title={`Weight (${unit})`} hint={null} isDarkMode={isDarkMode}>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleWeightChange(-weightStep)}
-              className={stepBtn(false)}
-              aria-label="Decrease weight"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <span
-              className={`flex-1 text-center text-2xl font-bold tabular-nums ${
-                isDarkMode ? "text-iron-50" : "text-slate-900"
-              }`}
-            >
-              {localWeight}
-            </span>
-            <button
-              type="button"
-              onClick={() => handleWeightChange(weightStep)}
-              className={stepBtn(true)}
-              aria-label="Increase weight"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
+        <FieldBlock
+          title={`Weight (${unit})`}
+          isDarkMode={isDarkMode}
+          accent="weight"
+        >
+          <SlidingNumberPicker
+            value={localWeight}
+            min={0}
+            max={500}
+            step={weightStep}
+            isDarkMode={isDarkMode}
+            accent="weight"
+            unitLabel={unit}
+            format={formatWeightDisplay}
+            onChange={w => {
+              setLocalWeight(w);
+              onWeightChange(w);
+            }}
+          />
           <div
             className={`flex flex-wrap gap-1.5 mt-2.5 pt-2.5 border-t border-dashed ${
-              isDarkMode ? "border-iron-700/40" : "border-slate-200"
+              isDarkMode ? "border-amber-800/40" : "border-amber-200"
             }`}
           >
-            {weightSuggestions.map((w) => (
+            {weightSuggestions.map(w => (
               <button
                 key={w}
                 type="button"
-                onClick={() => pickWeight(w)}
-                className={chipClass(localWeight === w)}
+                onClick={() => handleWeightPick(w)}
+                className={chipWeight(Math.abs(localWeight - w) < 0.01)}
               >
-                {w}
+                {formatWeightDisplay(w)}
               </button>
             ))}
           </div>

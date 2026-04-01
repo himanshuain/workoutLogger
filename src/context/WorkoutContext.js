@@ -614,6 +614,71 @@ export function WorkoutProvider({ children }) {
     [user, activeSession, queryClient]
   );
 
+  /** Append one set row for an exercise in an active session */
+  const addSetLog = useCallback(
+    async ({ sessionId, exerciseName, category }) => {
+      if (!user) return null;
+
+      const { data: rows, error: fetchErr } = await supabase
+        .from("set_logs")
+        .select("set_number, weight, reps, previous_weight, previous_reps")
+        .eq("session_id", sessionId)
+        .eq("exercise_name", exerciseName);
+
+      if (fetchErr) {
+        console.error("addSetLog fetch:", fetchErr);
+        return null;
+      }
+
+      const maxNum = rows?.length ? Math.max(...rows.map(r => r.set_number)) : 0;
+      const last = rows?.length
+        ? [...rows].sort((a, b) => b.set_number - a.set_number)[0]
+        : null;
+
+      const hist = exerciseHistory[exerciseName];
+      const weight = Number(last?.weight ?? hist?.last_weight ?? 0);
+      const reps = Number(last?.reps ?? hist?.last_reps ?? 10);
+      const previousWeight = last?.previous_weight ?? hist?.last_weight ?? weight;
+      const previousReps = last?.previous_reps ?? hist?.last_reps ?? reps;
+
+      const { data: inserted, error } = await supabase
+        .from("set_logs")
+        .insert({
+          session_id: sessionId,
+          user_id: user.id,
+          exercise_name: exerciseName,
+          category: category || "other",
+          set_number: maxNum + 1,
+          weight,
+          reps,
+          is_completed: false,
+          previous_weight: previousWeight,
+          previous_reps: previousReps,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("addSetLog insert:", error);
+        return null;
+      }
+
+      if (activeSession?.id === sessionId) {
+        setActiveSession(prev => ({
+          ...prev,
+          set_logs: [...(prev.set_logs || []), inserted],
+        }));
+      }
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+
+      return inserted;
+    },
+    [user, exerciseHistory, activeSession, queryClient]
+  );
+
   // Delete a full workout session and its set logs
   const deleteWorkoutSession = useCallback(
     async (sessionId) => {
@@ -1946,6 +2011,7 @@ export function WorkoutProvider({ children }) {
         getTodaySession,
         updateSessionExerciseIndex,
         deleteSetLog,
+        addSetLog,
         deleteWorkoutSession,
         updateSetLogData,
         // Life Log functions

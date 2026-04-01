@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import SetCard from "@/components/SetCard";
+import SetSwipeDeck from "@/components/SetSwipeDeck";
 import { exerciseMediaUrl } from "@/lib/exerciseMedia";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,7 +17,16 @@ import {
   Flame,
   Target,
   Award,
+  Plus,
+  Expand,
 } from "lucide-react";
+
+const MAX_SETS_PER_EXERCISE = 20;
+
+function isVideoUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  return /\.(mp4|webm|ogg)(\?|$)/i.test(url);
+}
 
 export default function WorkoutSession() {
   const router = useRouter();
@@ -28,6 +37,7 @@ export default function WorkoutSession() {
     activeSession,
     getWorkoutSession,
     updateSetLog,
+    addSetLog,
     completeWorkoutSession,
     updateSessionExerciseIndex,
     settings,
@@ -37,6 +47,7 @@ export default function WorkoutSession() {
   } = useWorkout();
 
   const [showExerciseInfo, setShowExerciseInfo] = useState(false);
+  const [showMediaLightbox, setShowMediaLightbox] = useState(false);
 
   const [session, setSession] = useState(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -44,6 +55,8 @@ export default function WorkoutSession() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [summaryData, setSummaryData] = useState(null);
+  const [addingSet, setAddingSet] = useState(false);
+  const [activeSetIndex, setActiveSetIndex] = useState(0);
 
   // Load session data
   useEffect(() => {
@@ -96,7 +109,50 @@ export default function WorkoutSession() {
 
   useEffect(() => {
     setShowExerciseInfo(false);
+    setShowMediaLightbox(false);
+    setActiveSetIndex(0);
   }, [currentExerciseIndex]);
+
+  useEffect(() => {
+    if (!showMediaLightbox) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setShowMediaLightbox(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showMediaLightbox]);
+
+  const sortedSets = useMemo(() => {
+    if (!currentExercise?.sets) return [];
+    return [...currentExercise.sets].sort((a, b) => a.set_number - b.set_number);
+  }, [currentExercise?.sets]);
+
+  useEffect(() => {
+    setActiveSetIndex((i) => {
+      const max = Math.max(0, sortedSets.length - 1);
+      return Math.min(i, max);
+    });
+  }, [sortedSets.length]);
+
+  const handleAddSet = useCallback(async () => {
+    if (!session?.id || !currentExercise || sortedSets.length >= MAX_SETS_PER_EXERCISE) return;
+    setAddingSet(true);
+    try {
+      const row = await addSetLog({
+        sessionId: session.id,
+        exerciseName: currentExercise.exercise_name,
+        category: currentExercise.category,
+      });
+      if (row) {
+        setSession((prev) => ({
+          ...prev,
+          set_logs: [...(prev.set_logs || []), row],
+        }));
+      }
+    } finally {
+      setAddingSet(false);
+    }
+  }, [session, currentExercise, sortedSets.length, addSetLog]);
 
   // Overall progress
   const overallProgress = useMemo(() => {
@@ -111,6 +167,24 @@ export default function WorkoutSession() {
       percentage: total > 0 ? (completed / total) * 100 : 0,
     };
   }, [exercisesWithSets]);
+
+  // Must run before any conditional return (loading / summary) — same hook order every render
+  const catalogExercise = useMemo(() => {
+    if (!currentExercise) return null;
+    if (currentExercise.exercise_id) {
+      const byId = exerciseCatalog.find((e) => e.id === currentExercise.exercise_id);
+      if (byId) return byId;
+    }
+    return exerciseCatalog.find((e) => e.name === currentExercise.exercise_name) || null;
+  }, [currentExercise, exerciseCatalog]);
+
+  const guideMediaUrl = catalogExercise ? exerciseMediaUrl(catalogExercise) : null;
+  const guideDescription = catalogExercise?.description?.trim() || "";
+  const wgerMeta = catalogExercise?.external_source === "wger" ? catalogExercise.metadata : null;
+
+  const historyForExercise =
+    currentExercise?.exercise_name &&
+    exerciseHistory?.[currentExercise.exercise_name];
 
   // Handle set update
   const handleSetUpdate = useCallback(
@@ -199,33 +273,6 @@ export default function WorkoutSession() {
   const handleClose = useCallback(() => {
     router.push("/");
   }, [router]);
-
-  // Swipe handling
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      handleNext();
-    } else if (isRightSwipe) {
-      handlePrevious();
-    }
-  };
 
   if (isLoading || !session || !currentExercise) {
     return (
@@ -467,23 +514,6 @@ export default function WorkoutSession() {
     );
   }
 
-  const historyForExercise =
-    currentExercise?.exercise_name &&
-    exerciseHistory?.[currentExercise.exercise_name];
-
-  const catalogExercise = useMemo(() => {
-    if (!currentExercise) return null;
-    if (currentExercise.exercise_id) {
-      const byId = exerciseCatalog.find((e) => e.id === currentExercise.exercise_id);
-      if (byId) return byId;
-    }
-    return exerciseCatalog.find((e) => e.name === currentExercise.exercise_name) || null;
-  }, [currentExercise, exerciseCatalog]);
-
-  const guideMediaUrl = catalogExercise ? exerciseMediaUrl(catalogExercise) : null;
-  const guideDescription = catalogExercise?.description?.trim() || "";
-  const wgerMeta = catalogExercise?.external_source === "wger" ? catalogExercise.metadata : null;
-
   // ============ ACTIVE WORKOUT SCREEN ============
   // Full viewport column: workout route is not inside Layout, so h-full had no bounded parent
   // and flex-1 overflow-y-auto never scrolled. Lock to 100dvh + in-flow footer.
@@ -493,9 +523,6 @@ export default function WorkoutSession() {
         isDarkMode ? "bg-iron-950" : "bg-slate-50"
       }`}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       {/* —— 1. Toolbar —— */}
       <header
@@ -565,10 +592,55 @@ export default function WorkoutSession() {
           />
         </div>
 
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
+        <div
+          className={`flex gap-3 items-start ${
+            guideMediaUrl ? "flex-row" : "flex-col"
+          }`}
+        >
+          {guideMediaUrl ? (
+            <button
+              type="button"
+              onClick={() => setShowMediaLightbox(true)}
+              className={`relative shrink-0 w-[42%] max-w-[160px] aspect-video rounded-xl overflow-hidden border text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                isDarkMode
+                  ? "border-iron-800 bg-black/50 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-900"
+                  : "border-slate-200 bg-slate-100 focus-visible:ring-workout-primary focus-visible:ring-offset-white"
+              }`}
+              aria-label="View exercise demo full size"
+            >
+              {isVideoUrl(guideMediaUrl) ? (
+                <video
+                  src={guideMediaUrl}
+                  className="absolute inset-0 w-full h-full object-cover bg-black pointer-events-none"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- GIF animation + external URLs
+                <img
+                  src={guideMediaUrl}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover bg-black/30 pointer-events-none"
+                />
+              )}
+              <span
+                className={`absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-md border backdrop-blur-sm ${
+                  isDarkMode
+                    ? "border-iron-600/80 bg-black/50 text-iron-200"
+                    : "border-white/60 bg-black/40 text-white"
+                }`}
+                aria-hidden
+              >
+                <Expand className="h-3.5 w-3.5" />
+              </span>
+            </button>
+          ) : null}
+
+          <div className="min-w-0 flex-1 flex flex-col">
             <span
-              className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mb-1.5 ${
+              className={`inline-block self-start text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mb-1.5 ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-500"
               }`}
             >
@@ -587,47 +659,6 @@ export default function WorkoutSession() {
             </p>
           </div>
         </div>
-
-        <div
-          className={`flex items-center justify-between gap-2 mt-4 pt-3 border-t ${
-            isDarkMode ? "border-iron-800/80" : "border-slate-100"
-          }`}
-        >
-          <button
-            type="button"
-            onClick={handlePrevious}
-            disabled={currentExerciseIndex === 0}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1 ${
-              currentExerciseIndex === 0
-                ? isDarkMode
-                  ? "text-iron-600 cursor-not-allowed"
-                  : "text-slate-300 cursor-not-allowed"
-                : isDarkMode
-                  ? "bg-iron-800 text-iron-200 active:bg-iron-700"
-                  : "bg-slate-100 text-slate-700 active:bg-slate-200"
-            }`}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
-          </button>
-          <button
-            type="button"
-            onClick={handleNext}
-            disabled={isLastExercise}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1 ${
-              isLastExercise
-                ? isDarkMode
-                  ? "text-iron-600 cursor-not-allowed"
-                  : "text-slate-300 cursor-not-allowed"
-                : isDarkMode
-                  ? "bg-iron-800 text-iron-200 active:bg-iron-700"
-                  : "bg-slate-100 text-slate-700 active:bg-slate-200"
-            }`}
-          >
-            Next
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* —— 3. Sets (scroll) —— */}
@@ -637,16 +668,13 @@ export default function WorkoutSession() {
         }`}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="flex items-end justify-between gap-2 mb-3">
+        <div className="flex items-end justify-between gap-2 mb-2">
           <div>
             <h3
               className={`text-sm font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
             >
               Sets
             </h3>
-            <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              Adjust reps & weight, then tap the check when done
-            </p>
           </div>
           <span
             className={`shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-lg ${
@@ -657,87 +685,114 @@ export default function WorkoutSession() {
           </span>
         </div>
 
-        <div className="space-y-4">
-          {currentExercise.sets.map((setLog) => (
-            <SetCard
-              key={setLog.id}
-              setNumber={setLog.set_number}
-              weight={setLog.weight}
-              reps={setLog.reps}
-              previousWeight={setLog.previous_weight}
-              previousReps={setLog.previous_reps}
-              isCompleted={setLog.is_completed}
-              unit={unit}
-              onWeightChange={(weight) => handleSetUpdate(setLog.id, { weight })}
-              onRepsChange={(reps) => handleSetUpdate(setLog.id, { reps })}
-              onToggleComplete={(isCompleted) =>
-                handleSetUpdate(setLog.id, { is_completed: isCompleted })
-              }
-            />
-          ))}
-        </div>
+        <SetSwipeDeck
+          sortedSets={sortedSets}
+          activeIndex={activeSetIndex}
+          onActiveIndexChange={setActiveSetIndex}
+          unit={unit}
+          onWeightChange={(id, weight) => handleSetUpdate(id, { weight })}
+          onRepsChange={(id, reps) => handleSetUpdate(id, { reps })}
+          onToggleComplete={(id, isCompleted) => handleSetUpdate(id, { is_completed: isCompleted })}
+        />
 
-        <p
-          className={`text-center text-[11px] pt-6 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
-        >
-          Tip: swipe horizontally to change exercise
-        </p>
+        {sortedSets.length < MAX_SETS_PER_EXERCISE && (
+          <button
+            type="button"
+            onClick={handleAddSet}
+            disabled={addingSet}
+            className={`mt-4 w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border border-dashed transition-colors ${
+              isDarkMode
+                ? "border-iron-600 text-iron-300 bg-iron-900/40 active:bg-iron-800 disabled:opacity-50"
+                : "border-slate-300 text-slate-700 bg-white active:bg-slate-50 disabled:opacity-50"
+            }`}
+            aria-label="Add set"
+          >
+            {addingSet ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Add set
+          </button>
+        )}
       </div>
 
-      {/* —— 4. Primary action —— */}
+      {/* —— 4. Exercise navigation + primary action —— */}
       <div
         className={`shrink-0 px-4 pt-3 border-t ${
           isDarkMode ? "bg-iron-950 border-iron-800" : "bg-slate-50 border-slate-200"
         }`}
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
-        {isLastExercise ? (
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={handleCompleteWorkout}
-            disabled={isCompleting}
-            className={`
-              w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2
-              ${
-                allSetsCompleted
-                  ? isDarkMode
-                    ? "bg-lift-primary text-iron-950 shadow-lg"
-                    : "bg-green-500 text-white shadow-lg"
-                  : isDarkMode
-                    ? "bg-iron-800 text-iron-500"
-                    : "bg-slate-200 text-slate-500"
-              }
-            `}
+            onClick={handlePrevious}
+            disabled={currentExerciseIndex === 0}
+            aria-label="Previous exercise"
+            className={`flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-1 ${
+              currentExerciseIndex === 0
+                ? isDarkMode
+                  ? "text-iron-600 cursor-not-allowed bg-iron-900/50"
+                  : "text-slate-300 cursor-not-allowed bg-slate-100"
+                : isDarkMode
+                  ? "bg-iron-800 text-iron-200 active:bg-iron-700"
+                  : "bg-white border border-slate-200 text-slate-800 active:bg-slate-50"
+            }`}
           >
-            {isCompleting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Check className="w-5 h-5" />
-                Complete workout
-              </>
-            )}
+            <ChevronLeft className="w-4 h-4" />
+            Previous
           </button>
-        ) : (
-          <button
-            type="button"
-            onClick={handleNext}
-            className={`
-              w-full py-3.5 rounded-2xl font-bold text-base flex items-center justify-center gap-2 shadow-lg
-              ${
-                isDarkMode
-                  ? "bg-lift-primary text-iron-950"
-                  : "bg-workout-primary text-white"
-              }
-            `}
-          >
-            Next exercise
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        )}
+          {isLastExercise ? (
+            <button
+              type="button"
+              onClick={handleCompleteWorkout}
+              disabled={isCompleting}
+              aria-label="Complete workout"
+              className={`
+                flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2
+                ${
+                  allSetsCompleted
+                    ? isDarkMode
+                      ? "bg-lift-primary text-iron-950 shadow-lg"
+                      : "bg-green-500 text-white shadow-lg"
+                    : isDarkMode
+                      ? "bg-iron-800 text-iron-500"
+                      : "bg-slate-200 text-slate-500"
+                }
+              `}
+            >
+              {isCompleting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Saving
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Complete
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleNext}
+              aria-label="Next exercise"
+              className={`
+                flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-1 shadow-lg
+                ${
+                  isDarkMode
+                    ? "bg-lift-primary text-iron-950"
+                    : "bg-workout-primary text-white"
+                }
+              `}
+            >
+              Next exercise
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -853,6 +908,58 @@ export default function WorkoutSession() {
               >
                 Close
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showMediaLightbox && guideMediaUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/95 p-4 pt-[max(1rem,env(safe-area-inset-top))]"
+            onClick={() => setShowMediaLightbox(false)}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMediaLightbox(false);
+              }}
+              className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-[71] flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="flex max-h-[min(90dvh,900px)] w-full max-w-4xl flex-col items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="mb-3 max-w-full truncate px-1 text-center text-sm font-medium text-white/90 sm:mb-4">
+                {currentExercise.exercise_name}
+              </p>
+              {isVideoUrl(guideMediaUrl) ? (
+                <video
+                  src={guideMediaUrl}
+                  className="max-h-[min(80dvh,720px)] w-full max-w-full rounded-lg bg-black"
+                  controls
+                  playsInline
+                  autoPlay
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element -- GIF animation + external URLs
+                <img
+                  src={guideMediaUrl}
+                  alt=""
+                  className="max-h-[min(80dvh,720px)] w-full max-w-full rounded-lg object-contain"
+                />
+              )}
             </motion.div>
           </motion.div>
         )}

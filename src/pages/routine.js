@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
@@ -10,18 +10,20 @@ import { toast } from "sonner";
 import {
   Plus,
   Trash2,
-  Copy,
   Save,
   Moon,
+  ListChecks,
 } from "lucide-react";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalTitle,
-  ModalBody,
-  ModalFooter,
-} from "@/components/ui/modal";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const PLANNER_DAYS = [
   { value: 1, label: "Monday", short: "Mon" },
@@ -50,6 +52,26 @@ function saveRestMap(userId, map) {
   localStorage.setItem(REST_KEY(userId), JSON.stringify(map));
 }
 
+/** Mon–Sun order (0 = Sunday last in week), then templates with no day last. */
+function sortRoutinesForList(routines) {
+  const rank = (d) => {
+    if (d === null || d === undefined) return 999;
+    if (d === 0) return 7;
+    return d;
+  };
+  return [...routines].sort((a, b) => {
+    const ra = rank(a.day_of_week);
+    const rb = rank(b.day_of_week);
+    if (ra !== rb) return ra - rb;
+    return (a.name || "").localeCompare(b.name || "");
+  });
+}
+
+function routineDayLabel(dayOfWeek) {
+  if (dayOfWeek === null || dayOfWeek === undefined) return "Any day";
+  return PLANNER_DAYS.find((d) => d.value === dayOfWeek)?.label ?? "Day";
+}
+
 export default function RoutinePlannerPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
@@ -60,14 +82,16 @@ export default function RoutinePlannerPage() {
     getRoutineForDay,
     createRoutine,
     updateRoutine,
+    deleteRoutine,
   } = useWorkout();
 
   const [selectedDay, setSelectedDay] = useState(1);
   const [title, setTitle] = useState("");
   const [list, setList] = useState([]);
   const [restDay, setRestDay] = useState(false);
-  const [dupOpen, setDupOpen] = useState(false);
-  const [dupSource, setDupSource] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const routinesSorted = useMemo(() => sortRoutinesForList(routines), [routines]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -177,25 +201,12 @@ export default function RoutinePlannerPage() {
     setTitle("");
   };
 
-  const handleDuplicate = async () => {
-    const src = getRoutineForDay(dupSource);
-    if (!src?.routine_exercises?.length) {
-      toast.error("No exercises on that day");
-      return;
-    }
-    setList(
-      src.routine_exercises.map((ex, i) => ({
-        key: `dup-${Date.now()}-${i}`,
-        exercise_id: ex.exercise_id,
-        exercise_name: ex.exercise_name,
-        category: ex.category || "other",
-        target_sets: ex.target_sets || 3,
-      })),
-    );
-    if (!title.trim()) setTitle(src.name ? `${src.name} (copy)` : title);
-    setDupOpen(false);
-    toast.success("Copied exercises — review and save");
-  };
+  const handleConfirmDeleteRoutine = useCallback(async () => {
+    if (!deleteTarget?.id) return;
+    await deleteRoutine(deleteTarget.id);
+    setDeleteTarget(null);
+    toast.success("Routine deleted");
+  }, [deleteTarget, deleteRoutine]);
 
   if (!user) {
     return (
@@ -330,17 +341,6 @@ export default function RoutinePlannerPage() {
 
             <button
               type="button"
-              onClick={() => setDupOpen(true)}
-              className={`mt-2 w-full py-3.5 rounded-2xl font-medium border flex items-center justify-center gap-2 ${
-                isDarkMode ? "border-iron-700 text-iron-300" : "border-slate-200 text-slate-700"
-              }`}
-            >
-              <Copy className="w-4 h-4" />
-              Duplicate from another day
-            </button>
-
-            <button
-              type="button"
               onClick={handleClear}
               className={`mt-2 w-full py-3 text-sm font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
             >
@@ -359,55 +359,93 @@ export default function RoutinePlannerPage() {
           <Save className="w-5 h-5" />
           Save routine
         </button>
-      </div>
 
-      <Modal open={dupOpen} onOpenChange={setDupOpen}>
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
-          <ModalHeader>
-            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
-              Copy from which day?
-            </ModalTitle>
-          </ModalHeader>
-          <ModalBody>
-            <div className="flex flex-wrap gap-2">
-              {PLANNER_DAYS.filter((d) => d.value !== selectedDay).map((d) => (
-                <button
-                  key={d.value}
-                  type="button"
-                  onClick={() => setDupSource(d.value)}
-                  className={`px-3 py-2 rounded-xl text-sm font-medium ${
-                    dupSource === d.value
-                      ? isDarkMode
-                        ? "bg-lift-primary text-iron-950"
-                        : "bg-workout-primary text-white"
-                      : isDarkMode
-                        ? "bg-iron-800 text-iron-300"
-                        : "bg-slate-100 text-slate-700"
+        <section
+          className={`mt-10 pt-8 border-t ${isDarkMode ? "border-iron-800" : "border-slate-200"}`}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <ListChecks className={`w-4 h-4 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`} />
+            <h2
+              className={`text-xs font-semibold uppercase tracking-wider ${
+                isDarkMode ? "text-iron-400" : "text-slate-500"
+              }`}
+            >
+              All routines
+            </h2>
+          </div>
+          <p className={`text-sm mb-4 ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}>
+            Every saved template. Delete removes it from the database (including exercises).
+          </p>
+          {routinesSorted.length === 0 ? (
+            <p className={`text-sm ${isDarkMode ? "text-iron-600" : "text-slate-500"}`}>No routines yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {routinesSorted.map((r) => (
+                <li
+                  key={r.id}
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 ${
+                    isDarkMode ? "bg-iron-900/70 border border-iron-800" : "bg-slate-50 border border-slate-200"
                   }`}
                 >
-                  {d.short}
-                </button>
+                  <div
+                    className="w-9 h-9 rounded-xl shrink-0"
+                    style={{ backgroundColor: `${r.color || "#3b82f6"}25` }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-medium truncate ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
+                      {r.name || "Untitled"}
+                    </p>
+                    <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                      {routineDayLabel(r.day_of_week)} · {r.routine_exercises?.length || 0} exercises
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget({ id: r.id, name: r.name || "Untitled" })}
+                    className={`shrink-0 p-2.5 rounded-xl ${
+                      isDarkMode
+                        ? "text-red-400 hover:bg-red-950/50"
+                        : "text-red-600 hover:bg-red-50"
+                    }`}
+                    aria-label={`Delete routine ${r.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </li>
               ))}
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <button
-              type="button"
-              onClick={() => setDupOpen(false)}
-              className={isDarkMode ? "text-iron-400" : "text-slate-600"}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-50" : ""}>Delete routine?</AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : ""}>
+              {deleteTarget
+                ? `“${deleteTarget.name}” will be removed permanently. This cannot be undone.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={isDarkMode ? "border-iron-700 bg-iron-800 text-iron-200" : ""}
             >
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleDuplicate}
-              className={`font-semibold ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmDeleteRoutine();
+              }}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white"
             >
-              Duplicate
-            </button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }

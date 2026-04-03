@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useWorkout } from "@/context/WorkoutContext";
 import { toast } from "sonner";
 import {
@@ -26,7 +26,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
-import { Target, Plus, Trash2, Trophy, ChevronRight, Minus, Check, Pencil } from "lucide-react";
+import { Target, Plus, Trash2, Trophy, ChevronRight, ChevronDown, Minus, Check, Pencil } from "lucide-react";
 
 const GOAL_TYPES = [
   { id: "workout_days", label: "Workout days per week", icon: "💪", unit: "days/week", max: 7, auto: true, desc: "Auto-tracks from your workouts" },
@@ -98,8 +98,9 @@ function saveGoals(userId, goals) {
 }
 
 export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habitHeatmapData = [], trackables = [], todayEntries = {} }) {
-  const { user } = useWorkout();
+  const { user, settings, updateSettings } = useWorkout();
   const [goals, setGoals] = useState([]);
+  const [expanded, setExpanded] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editingGoal, setEditingGoal] = useState(null);
@@ -109,11 +110,39 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
     name: "",
   });
 
+  const persistGoals = useCallback(
+    (next) => {
+      setGoals(next);
+      if (!user?.id) return;
+      saveGoals(user.id, next);
+      void updateSettings({ goals: next });
+    },
+    [user?.id, updateSettings],
+  );
+
+  /* Show local cache until `user_settings` row is loaded from the server */
   useEffect(() => {
-    if (user?.id) {
-      setGoals(loadGoals(user.id));
+    if (!user?.id) return;
+    if (settings?.user_id) return;
+    setGoals(loadGoals(user.id));
+  }, [user?.id, settings?.user_id]);
+
+  /* Sync from Supabase `user_settings.goals`; migrate legacy localStorage once */
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!settings?.user_id) return;
+    const local = loadGoals(user.id);
+    const serverGoals = Array.isArray(settings.goals) ? settings.goals : [];
+    if (serverGoals.length > 0) {
+      setGoals(serverGoals);
+      saveGoals(user.id, serverGoals);
+    } else if (local.length > 0) {
+      setGoals(local);
+      void updateSettings({ goals: local });
+    } else {
+      setGoals([]);
     }
-  }, [user?.id]);
+  }, [user?.id, settings?.user_id, settings?.goals, updateSettings]);
 
   const goalProgress = useMemo(() => {
     const now = new Date();
@@ -198,8 +227,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
       createdAt: new Date().toISOString(),
     };
     const updated = [...goals, goal];
-    setGoals(updated);
-    saveGoals(user.id, updated);
+    persistGoals(updated);
     toast.success("Goal added");
     setShowAddModal(false);
     setNewGoal({ type: "workout_days", target: "", name: "" });
@@ -207,8 +235,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
 
   const handleDeleteGoal = (goalId) => {
     const updated = goals.filter((g) => g.id !== goalId);
-    setGoals(updated);
-    saveGoals(user.id, updated);
+    persistGoals(updated);
     toast.success("Goal removed");
     setDeleteConfirm(null);
   };
@@ -228,8 +255,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
         ? { ...g, target: parseFloat(editingGoal.target), name: editingGoal.type === "custom" ? editingGoal.name : g.name }
         : g,
     );
-    setGoals(updated);
-    saveGoals(user.id, updated);
+    persistGoals(updated);
     toast.success("Goal updated");
     setEditingGoal(null);
   };
@@ -238,37 +264,49 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
     const updated = goals.map((g) =>
       g.id === goalId ? { ...g, current: Math.max(0, newCurrent) } : g,
     );
-    setGoals(updated);
-    saveGoals(user.id, updated);
+    persistGoals(updated);
   };
 
   const selectedType = GOAL_TYPES.find((t) => t.id === newGoal.type);
 
   return (
     <div className={`rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
-      {/* Header */}
-      <div className={`p-4 flex items-center justify-between`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? "bg-amber-500/20" : "bg-amber-100"}`}>
+      {/* Header — collapsible */}
+      <div className={`p-4 flex items-center justify-between gap-2`}>
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          aria-expanded={expanded}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left rounded-xl -m-1 p-1 active:opacity-90"
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDarkMode ? "bg-amber-500/20" : "bg-amber-100"}`}>
             <Target className={`w-5 h-5 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>Goals</h3>
             <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               {goals.length === 0 ? "Set your targets" : `${goalProgress.filter((g) => g.progress >= 100).length}/${goals.length} completed`}
             </p>
           </div>
-        </div>
+          <ChevronDown
+            className={`w-5 h-5 shrink-0 transition-transform duration-200 opacity-70 ${
+              isDarkMode ? "text-iron-400" : "text-slate-500"
+            } ${expanded ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </button>
         <button
+          type="button"
           onClick={() => setShowAddModal(true)}
-          className={`p-2 rounded-xl ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
+          className={`shrink-0 p-2 rounded-xl ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
+          aria-label="Add goal"
         >
           <Plus className="w-4 h-4" />
         </button>
       </div>
 
       {/* Goals List */}
-      {goalProgress.length > 0 && (
+      {expanded && goalProgress.length > 0 && (
         <div className={`px-4 pb-4 space-y-2`}>
           {goalProgress.map((goal) => (
             <ContextMenu key={goal.id}>
@@ -356,9 +394,10 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
         </div>
       )}
 
-      {goals.length === 0 && (
+      {expanded && goals.length === 0 && (
         <div className={`px-4 pb-4`}>
           <button
+            type="button"
             onClick={() => setShowAddModal(true)}
             className={`w-full py-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 ${
               isDarkMode ? "border-iron-700 text-iron-500" : "border-slate-300 text-slate-400"

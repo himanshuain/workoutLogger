@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
   unit TEXT DEFAULT 'kg' CHECK (unit IN ('kg', 'lb')),
   dark_mode BOOLEAN DEFAULT true,
+  goals JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

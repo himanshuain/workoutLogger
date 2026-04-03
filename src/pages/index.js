@@ -34,11 +34,9 @@ import {
   RefreshCw,
   Check,
   Play,
-  Calendar,
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Edit3,
   History,
   Trash2,
   Pencil,
@@ -62,6 +60,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
 import PastDayLogModal from "@/components/PastDayLogModal";
+import TodayWorkoutSection from "@/components/workout/TodayWorkoutSection";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -103,7 +102,7 @@ export default function Home() {
     toggleTrackingEntry,
     createTrackable,
     startWorkoutSession,
-    getTodayRoutine,
+    loadActiveSession,
     getWorkoutSessions,
     deleteSetLog,
     deleteWorkoutSession,
@@ -129,9 +128,6 @@ export default function Home() {
     value_unit: "",
     active_days: null,
   });
-
-  // Get today's routine
-  const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine]);
 
   // Recent workout sessions (last 30 days)
   const recentStart = useMemo(() => {
@@ -190,15 +186,6 @@ export default function Home() {
     [trackables],
   );
 
-  const hasGoals = useMemo(() => {
-    if (typeof window === "undefined" || !user?.id) return false;
-    try {
-      const stored = localStorage.getItem(`logbook_goals_${user.id}`);
-      const goals = stored ? JSON.parse(stored) : [];
-      return goals.length > 0;
-    } catch { return false; }
-  }, [user?.id]);
-
   const [expandedSession, setExpandedSession] = useState(null);
   const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: "set"|"session", id, label }
@@ -234,18 +221,19 @@ export default function Home() {
     });
   };
 
-  const getDayName = () => {
-    return new Date().toLocaleDateString("en-US", { weekday: "long" });
-  };
-
   // Refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries(["recentSessions"]);
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      await queryClient.invalidateQueries({ queryKey: ["goalsHabitData"] });
+      toast.success("Updated");
+    } finally {
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(10);
+      }
+      setTimeout(() => setIsRefreshing(false), 500);
     }
-    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   // Start workout
@@ -256,26 +244,17 @@ export default function Home() {
     try {
       const session = await startWorkoutSession(routine);
       if (session) {
-        router.push(`/workout/${session.id}`);
+        await loadActiveSession();
+        toast.success("Workout started");
+      } else {
+        toast.error("Could not start workout");
       }
+      await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
     } catch (err) {
       console.error("Error starting workout:", err);
+      toast.error("Could not start workout");
     } finally {
       setIsStartingWorkout(false);
-    }
-  };
-
-  // Continue existing session
-  const handleContinueWorkout = () => {
-    if (activeSession) {
-      router.push(`/workout/${activeSession.id}`);
-    }
-  };
-
-  // Edit completed session
-  const handleEditSession = () => {
-    if (todaySession) {
-      router.push(`/workout/${todaySession.id}`);
     }
   };
 
@@ -302,14 +281,6 @@ export default function Home() {
       window.navigator.vibrate(10);
     }
   };
-
-  const activeSetProgress = useMemo(() => {
-    const logs = activeSession?.set_logs || [];
-    const total = logs.length;
-    const done = logs.filter((s) => s.is_completed).length;
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-    return { done, total, pct };
-  }, [activeSession]);
 
   if (!user) {
     return (
@@ -388,6 +359,7 @@ export default function Home() {
             <button
               type="button"
               onClick={handleRefresh}
+              aria-label="Refresh today"
               className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
                 isDarkMode
                   ? "bg-iron-800 active:bg-iron-700"
@@ -396,280 +368,20 @@ export default function Home() {
             >
               <RefreshCw
                 className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                aria-hidden
               />
             </button>
           </div>
         </div>
 
-        {/* Today's Workout — structured card, minimal decoration */}
+        {/* Today's Workout — new board, logger, and routine CTAs */}
         <section className="mb-6">
-          {hasActiveSession ? (
-            <div
-              className={`rounded-2xl border overflow-hidden ${
-                isDarkMode
-                  ? "border-iron-800 bg-iron-900/50"
-                  : "border-slate-200 bg-white shadow-sm"
-              }`}
-            >
-              <div
-                className={`px-4 py-2.5 flex items-center gap-2 border-b ${
-                  isDarkMode ? "border-iron-800 bg-lift-primary/10" : "border-slate-100 bg-amber-50/80"
-                }`}
-              >
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lift-primary opacity-50" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-lift-primary" />
-                </span>
-                <span
-                  className={`text-[11px] font-bold uppercase tracking-wider ${
-                    isDarkMode ? "text-lift-primary" : "text-amber-800"
-                  }`}
-                >
-                  In progress
-                </span>
-              </div>
-              <div className="p-4">
-                <h3
-                  className={`text-lg font-bold leading-tight mb-1 ${
-                    isDarkMode ? "text-iron-100" : "text-slate-900"
-                  }`}
-                >
-                  {activeSession.routine_name}
-                </h3>
-                <p className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {activeSetProgress.done} / {activeSetProgress.total} sets
-                </p>
-                <div
-                  className={`h-1.5 rounded-full overflow-hidden mb-4 ${
-                    isDarkMode ? "bg-iron-800" : "bg-slate-200"
-                  }`}
-                >
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      isDarkMode ? "bg-lift-primary" : "bg-workout-primary"
-                    }`}
-                    style={{ width: `${activeSetProgress.pct}%` }}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleContinueWorkout}
-                  className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${
-                    isDarkMode
-                      ? "bg-lift-primary text-iron-950 active:opacity-90"
-                      : "bg-workout-primary text-white active:opacity-90"
-                  }`}
-                >
-                  <Play className="w-4 h-4" fill="currentColor" />
-                  Continue workout
-                </button>
-              </div>
-            </div>
-          ) : hasCompletedSession ? (
-            <div
-              className={`rounded-2xl border overflow-hidden ${
-                isDarkMode ? "border-iron-800 bg-iron-900/50" : "border-slate-200 bg-white shadow-sm"
-              }`}
-            >
-              <div
-                className={`px-4 py-2.5 border-b ${
-                  isDarkMode ? "border-iron-800" : "border-slate-100"
-                }`}
-              >
-                <span
-                  className={`text-[11px] font-bold uppercase tracking-wider ${
-                    isDarkMode ? "text-lift-primary" : "text-green-600"
-                  }`}
-                >
-                  Completed today
-                </span>
-              </div>
-              <div className="p-4">
-                <h3
-                  className={`text-lg font-bold mb-1 ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}
-                >
-                  {todaySession.routine_name}
-                </h3>
-                <p className={`text-sm mb-4 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {(todaySession.set_logs || []).filter((s) => s.is_completed).length} sets logged
-                </p>
-                <button
-                  type="button"
-                  onClick={handleEditSession}
-                  className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border ${
-                    isDarkMode
-                      ? "border-iron-700 text-iron-200 active:bg-iron-800"
-                      : "border-slate-200 text-slate-700 active:bg-slate-50"
-                  }`}
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Review session
-                </button>
-              </div>
-            </div>
-          ) : todayRoutine ? (
-            <div
-              className={`rounded-2xl border overflow-hidden ${
-                isDarkMode ? "border-iron-800 bg-iron-900/50" : "border-slate-200 bg-white shadow-sm"
-              }`}
-            >
-              <div
-                className={`px-4 py-2.5 border-b ${
-                  isDarkMode ? "border-iron-800 bg-iron-800/30" : "border-slate-100 bg-slate-50"
-                }`}
-              >
-                <p className={`text-[11px] font-bold uppercase tracking-wider ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
-                  Today · {getDayName()}
-                </p>
-                <h3
-                  className={`text-base font-bold mt-0.5 ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}
-                >
-                  {todayRoutine.name}
-                </h3>
-              </div>
-              <div className="p-4">
-                <p className={`text-xs font-medium mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  Exercises ({todayRoutine.routine_exercises?.length || 0})
-                </p>
-                <ol
-                  className={`rounded-xl border max-h-[220px] overflow-y-auto divide-y mb-4 [scrollbar-width:thin] ${
-                    isDarkMode ? "border-iron-800 divide-iron-800" : "border-slate-200 divide-slate-100"
-                  }`}
-                >
-                  {todayRoutine.routine_exercises?.map((ex, i) => (
-                    <li
-                      key={ex.id}
-                      className={`flex items-start gap-3 px-3 py-2.5 text-sm ${
-                        isDarkMode ? "bg-iron-950/40" : "bg-slate-50/50"
-                      }`}
-                    >
-                      <span
-                        className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0 ${
-                          isDarkMode ? "bg-iron-800 text-iron-400" : "bg-white border border-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {i + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`font-medium leading-snug ${isDarkMode ? "text-iron-200" : "text-slate-800"}`}
-                        >
-                          {ex.exercise_name}
-                        </p>
-                        <p className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                          {ex.target_sets} sets · {ex.category}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <button
-                  type="button"
-                  onClick={() => handleStartWorkout(todayRoutine)}
-                  disabled={isStartingWorkout}
-                  className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 ${
-                    isDarkMode
-                      ? "bg-lift-primary text-iron-950 active:opacity-90"
-                      : "bg-workout-primary text-white active:opacity-90"
-                  }`}
-                >
-                  {isStartingWorkout ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Starting…
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4" fill="currentColor" />
-                      Start workout
-                    </>
-                  )}
-                </button>
-                <p className={`text-center text-[11px] mt-2.5 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                  Swipe between exercises during the workout
-                </p>
-              </div>
-            </div>
-          ) : routines.length > 0 ? (
-            // No routine for today, but has other routines
-            <div
-              className={`rounded-3xl p-6 ${
-                isDarkMode
-                  ? "bg-iron-900"
-                  : "bg-white border border-slate-200 shadow-sm"
-              }`}
-            >
-              <div
-                className={`flex items-center gap-2 text-sm mb-2 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
-                <Calendar className="w-4 h-4" />
-                No workout assigned for {getDayName()}
-              </div>
-              <h3
-                className={`text-xl font-bold mb-4 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-              >
-                Start a workout?
-              </h3>
-              <button
-                onClick={() => setShowRoutineSelector(true)}
-                className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
-                  isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                }`}
-              >
-                <Dumbbell className="w-5 h-5" />
-                Choose Routine
-              </button>
-            </div>
-          ) : (
-            // No routines at all
-            <button
-              onClick={() => router.push("/routines")}
-              className={`
-                w-full p-6 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3
-                ${
-                  isDarkMode
-                    ? "border-iron-800 hover:border-iron-700"
-                    : "border-slate-300 hover:border-slate-400"
-                }
-              `}
-            >
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                style={{
-                  background: isDarkMode
-                    ? "linear-gradient(135deg, #22c55e20 0%, #16a34a20 100%)"
-                    : "linear-gradient(135deg, #4F8CFF20 0%, #6366f120 100%)",
-                }}
-              >
-                <Plus
-                  className={`w-8 h-8 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
-                />
-              </div>
-              <div className="text-center">
-                <p
-                  className={`font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                >
-                  Create Your First Routine
-                </p>
-                <p
-                  className={`text-sm mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                >
-                  Plan your workouts for each day
-                </p>
-              </div>
-              <span
-                className={`text-sm flex items-center gap-1 ${
-                  isDarkMode ? "text-lift-primary" : "text-workout-primary"
-                }`}
-              >
-                Get started <ChevronRight className="w-4 h-4" />
-              </span>
-            </button>
-          )}
+          <TodayWorkoutSection
+            completedTodaySession={
+              hasCompletedSession && !hasActiveSession ? todaySession : null
+            }
+            onChooseRoutine={() => setShowRoutineSelector(true)}
+          />
         </section>
 
         {/* Quick note — collapsed until opened via notes button */}
@@ -732,18 +444,16 @@ export default function Home() {
           </section>
         )}
 
-        {/* Goals */}
-        {hasGoals && (
-          <section className="mb-6">
-            <GoalsWidget
-              isDarkMode={isDarkMode}
-              workoutHeatmapData={goalsWorkoutData}
-              habitHeatmapData={goalsHabitData}
-              trackables={habitTrackables}
-              todayEntries={todayEntries}
-            />
-          </section>
-        )}
+        {/* Goals — widget includes empty state when none saved */}
+        <section className="mb-6">
+          <GoalsWidget
+            isDarkMode={isDarkMode}
+            workoutHeatmapData={goalsWorkoutData}
+            habitHeatmapData={goalsHabitData}
+            trackables={habitTrackables}
+            todayEntries={todayEntries}
+          />
+        </section>
 
         {/* Today's Habits */}
         <section className="mt-6">
@@ -802,6 +512,7 @@ export default function Home() {
               Workout History
             </h3>
             <button
+              type="button"
               onClick={() => router.push("/history")}
               className={`text-xs flex items-center gap-0.5 ${
                 isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
@@ -810,6 +521,14 @@ export default function Home() {
               View All <ChevronRight className="w-3 h-3" />
             </button>
           </div>
+
+          {!todaySession && (
+            <p
+              className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}
+            >
+              Nothing logged today yet.
+            </p>
+          )}
 
           {(
             <div className="space-y-2">
@@ -1041,8 +760,10 @@ export default function Home() {
             {routines.map((routine) => (
               <button
                 key={routine.id}
+                type="button"
                 onClick={() => handleStartWorkout(routine)}
-                className={`w-full p-4 rounded-2xl text-left transition-all ${
+                disabled={isStartingWorkout}
+                className={`w-full p-4 rounded-2xl text-left transition-all disabled:opacity-50 disabled:pointer-events-none ${
                   isDarkMode ? "bg-iron-800 hover:bg-iron-700" : "bg-slate-100 hover:bg-slate-200"
                 }`}
               >

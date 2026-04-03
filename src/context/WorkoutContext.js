@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
+import { clearSessionClientState } from "@/lib/workoutSessionClient";
 
 const WorkoutContext = createContext();
 
@@ -360,6 +361,12 @@ export function WorkoutProvider({ children }) {
     return routines.find(r => r.day_of_week === dayOfWeek) || null;
   }, [routines]);
 
+  /** @param {number} dayOfWeek 0=Sun … 6=Sat */
+  const getRoutineForDay = useCallback(
+    dayOfWeek => routines.find(r => r.day_of_week === dayOfWeek) || null,
+    [routines],
+  );
+
   // ============================================
   // WORKOUT SESSIONS
   // ============================================
@@ -432,34 +439,7 @@ export function WorkoutProvider({ children }) {
         return null;
       }
 
-      // Create set logs for each exercise
-      const setLogs = [];
-      for (const exercise of routine.routine_exercises || []) {
-        const history = exerciseHistory[exercise.exercise_name];
-
-        for (let setNum = 1; setNum <= exercise.target_sets; setNum++) {
-          // Get previous set data for this exercise
-          const previousWeight = history?.last_weight || 0;
-          const previousReps = history?.last_reps || 10;
-
-          setLogs.push({
-            session_id: newSession.id,
-            user_id: user.id,
-            exercise_name: exercise.exercise_name,
-            category: exercise.category,
-            set_number: setNum,
-            weight: previousWeight,
-            reps: previousReps,
-            is_completed: false,
-            previous_weight: previousWeight,
-            previous_reps: previousReps,
-          });
-        }
-      }
-
-      if (setLogs.length > 0) {
-        await supabase.from("set_logs").insert(setLogs);
-      }
+      // Sets are created on demand when the user logs (flexible order, unlimited sets).
 
       // Fetch the complete session with set logs
       const { data: completeSession } = await supabase
@@ -471,7 +451,7 @@ export function WorkoutProvider({ children }) {
       setActiveSession(completeSession);
       return completeSession;
     },
-    [user, today, exerciseHistory]
+    [user, today]
   );
 
   // Update a set log
@@ -511,8 +491,14 @@ export function WorkoutProvider({ children }) {
         .eq("id", sessionId);
 
       if (!error) {
-        // Update exercise history with the completed sets
-        const session = activeSession;
+        clearSessionClientState(sessionId);
+        // Update exercise history with the completed sets (always use fresh DB row)
+        const { data: session } = await supabase
+          .from("workout_sessions")
+          .select("*, set_logs (*)")
+          .eq("id", sessionId)
+          .single();
+
         if (session && session.set_logs) {
           const exerciseMap = {};
 
@@ -562,12 +548,13 @@ export function WorkoutProvider({ children }) {
         setActiveSession(null);
 
         queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+        queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
         queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         queryClient.invalidateQueries({ queryKey: ["historySessions"] });
         queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
       }
     },
-    [user, activeSession, exerciseHistory, loadExerciseHistory, queryClient]
+    [user, exerciseHistory, loadExerciseHistory, queryClient]
   );
 
   // Get workout session by ID
@@ -2003,6 +1990,7 @@ export function WorkoutProvider({ children }) {
         updateRoutine,
         deleteRoutine,
         getTodayRoutine,
+        getRoutineForDay,
         // New session functions
         startWorkoutSession,
         updateSetLog,

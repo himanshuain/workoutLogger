@@ -8,7 +8,9 @@ function catalogRichnessScore(exercise) {
   const descLen = exercise.description?.trim().length ?? 0;
   if (descLen > 40) s += 50;
   else if (descLen > 0) s += 20;
-  if (exercise.external_source) s += 5;
+  if (exercise.external_source === "exercisedb") s += 20;
+  else if (exercise.external_source === "wger") s += 8;
+  else if (exercise.external_source) s += 5;
   return s;
 }
 
@@ -44,7 +46,9 @@ export function dedupeExercisesForPicker(exercises) {
       const exMedia = exerciseMediaUrl(ex);
       const prevMedia = exerciseMediaUrl(prev);
       if (exMedia && !prevMedia) bestByName.set(key, ex);
-      else if (ex.external_source === "wger" && !prev.external_source) bestByName.set(key, ex);
+      else if (ex.external_source === "exercisedb" && prev.external_source === "wger") {
+        bestByName.set(key, ex);
+      } else if (ex.external_source === "wger" && !prev.external_source) bestByName.set(key, ex);
     }
   }
 

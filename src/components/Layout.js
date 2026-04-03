@@ -7,7 +7,7 @@ import InstallPrompt from "@/components/InstallPrompt";
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
-  { id: "routines", href: "/routines", icon: ListChecks, label: "Routines" },
+  { id: "routines", href: "/routine", icon: ListChecks, label: "Routines" },
   { id: "food", href: "/food", icon: Utensils, label: "Food" },
   { id: "lifelog", href: "/lifelog", icon: CalendarClock, label: "Log" },
   { id: "steps", href: "/steps", icon: ClipboardList, label: "Steps" },

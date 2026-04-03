@@ -25,10 +25,10 @@ export default function App({ Component, pageProps }) {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then((registration) => {
+        .then(registration => {
           console.log("Service Worker registered:", registration.scope);
         })
-        .catch((error) => {
+        .catch(error => {
           console.log("Service Worker registration failed:", error);
         });
 
@@ -50,10 +50,7 @@ export default function App({ Component, pageProps }) {
         />
         <meta name="theme-color" content="#18181b" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Logbook" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/favicon.svg" />
@@ -67,7 +64,8 @@ export default function App({ Component, pageProps }) {
               <Component {...pageProps} />
             </ErrorBoundary>
             <Toaster
-              position="top-center"
+              position="bottom-right"
+              duration={1600}
               toastOptions={{
                 className: "!rounded-xl !text-sm !shadow-lg",
                 style: {

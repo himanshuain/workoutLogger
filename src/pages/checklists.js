@@ -41,6 +41,8 @@ import {
   LayoutGrid,
   List,
   X,
+  Play,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -196,6 +198,7 @@ export default function Steps() {
   const [newStepText, setNewStepText] = useState("");
   const [editingItem, setEditingItem] = useState(null);
   const [editItemText, setEditItemText] = useState("");
+  const [followMode, setFollowMode] = useState(null); // Card ID being followed
   const newStepInputRef = useRef(null);
 
   const sensors = useSensors(
@@ -495,6 +498,22 @@ export default function Steps() {
                             </svg>
                           </div>
                         )}
+                        {items.length > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFollowMode(card.id);
+                            }}
+                            className={`mr-2 p-2 rounded-lg transition-colors ${
+                              isDarkMode 
+                                ? "text-iron-400 hover:text-iron-200 hover:bg-iron-800" 
+                                : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                            }`}
+                            title="Follow checklist"
+                          >
+                            <Play className="w-4 h-4" />
+                          </button>
+                        )}
                         <ChevronDown className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""} ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
                       </button>
 
@@ -756,6 +775,179 @@ export default function Steps() {
                   </div>
                 </div>
               </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Follow Mode - Full Screen Checklist */}
+      <AnimatePresence>
+        {followMode && (() => {
+          const card = stepCards.find(c => c.id === followMode);
+          if (!card) return null;
+          
+          const items = card.step_items || [];
+          const checked = getCheckedCount(card);
+          const allDone = items.length > 0 && checked === items.length;
+          const progress = items.length > 0 ? (checked / items.length) * 100 : 0;
+          
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col"
+              style={{ 
+                background: isDarkMode 
+                  ? "linear-gradient(135deg, #0a0a0b 0%, #1c1c1e 100%)"
+                  : "linear-gradient(135deg, #f8fafc 0%, #ffffff 100%)"
+              }}
+            >
+              {/* Follow Mode Header */}
+              <div className={`flex-shrink-0 px-4 py-4 border-b ${
+                isDarkMode ? "border-iron-800/50" : "border-slate-200"
+              }`}>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setFollowMode(null)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      isDarkMode 
+                        ? "bg-iron-800 text-iron-300 hover:bg-iron-700" 
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                        style={{ backgroundColor: card.color + "20" }}
+                      >
+                        {card.icon}
+                      </div>
+                      <div>
+                        <h1 className="text-screen-title">{card.name}</h1>
+                        <p className="text-metadata">
+                          {checked}/{items.length} completed • {Math.round(progress)}%
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Bar */}
+                    <div className={`mt-3 h-2 rounded-full overflow-hidden ${
+                      isDarkMode ? "bg-iron-800" : "bg-slate-200"
+                    }`}>
+                      <div 
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ 
+                          width: `${progress}%`,
+                          backgroundColor: allDone ? "#22c55e" : card.color
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {checked > 0 && (
+                    <button
+                      onClick={() => resetChecks(card.id)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                        isDarkMode 
+                          ? "bg-iron-800 text-iron-300 hover:bg-iron-700" 
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Follow Mode Steps */}
+              <div className="flex-1 overflow-y-auto px-4 py-6">
+                <div className="max-w-lg mx-auto space-y-4">
+                  {items.map((item, index) => {
+                    const isChecked = !!checkedItems[item.id];
+                    const isNext = !isChecked && items.slice(0, index).every(prevItem => checkedItems[prevItem.id]);
+                    
+                    return (
+                      <motion.button
+                        key={item.id}
+                        onClick={() => toggleCheck(item.id)}
+                        className={`w-full text-left p-4 rounded-2xl transition-all ${
+                          isChecked
+                            ? "opacity-60"
+                            : isNext
+                              ? isDarkMode 
+                                ? "bg-iron-800 ring-2 ring-lift-primary/50" 
+                                : "bg-white ring-2 ring-workout-primary/50 shadow-lg"
+                              : isDarkMode 
+                                ? "bg-iron-900/50" 
+                                : "bg-white shadow-sm"
+                        }`}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`mt-1 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                            isChecked
+                              ? "border-green-500 bg-green-500"
+                              : isNext
+                                ? `border-2`
+                                : isDarkMode
+                                  ? "border-iron-700"
+                                  : "border-slate-300"
+                          }`}
+                          style={isNext && !isChecked ? { borderColor: card.color } : {}}
+                          >
+                            {isChecked && <Check className="w-4 h-4 text-white" strokeWidth={3} />}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                isDarkMode ? "bg-iron-700 text-iron-400" : "bg-slate-100 text-slate-500"
+                              }`}>
+                                {index + 1}
+                              </span>
+                              {isNext && (
+                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                  isDarkMode ? "bg-lift-primary/20 text-lift-primary" : "bg-workout-primary/10 text-workout-primary"
+                                }`}>
+                                  Next
+                                </span>
+                              )}
+                            </div>
+                            <p className={`font-medium ${
+                              isChecked 
+                                ? isDarkMode ? "text-iron-500 line-through" : "text-slate-400 line-through"
+                                : isDarkMode ? "text-iron-100" : "text-slate-900"
+                            }`}>
+                              {item.text}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                  
+                  {allDone && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center py-8"
+                    >
+                      <div className="text-6xl mb-4">🎉</div>
+                      <h3 className="text-xl font-bold text-green-500 mb-2">
+                        Checklist Complete!
+                      </h3>
+                      <p className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                        Great job completing all {items.length} steps
+                      </p>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
             </motion.div>
           );
         })()}

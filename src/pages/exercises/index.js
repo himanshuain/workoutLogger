@@ -188,7 +188,7 @@ export default function ExercisesSearchPage() {
           exercises: rows,
         });
         toast.success(`Routine created with ${rows.length} exercise(s)`);
-        router.push("/routine");
+        router.push("/plan");
         return;
       }
 
@@ -217,7 +217,7 @@ export default function ExercisesSearchPage() {
         exercises: existing,
       });
       toast.success(`Added ${added} exercise(s) to routine`);
-      router.push("/routine");
+      router.push("/plan");
     } finally {
       setAddingBatch(false);
     }

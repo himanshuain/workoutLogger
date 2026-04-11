@@ -270,7 +270,7 @@ export default function LifeLog() {
     (tab) => {
       setActiveTab(tab);
       router.replace(
-        { pathname: "/lifelog", query: { ...router.query, tab } },
+        { pathname: "/log", query: { ...router.query, tab } },
         undefined,
         { shallow: true },
       );

@@ -45,7 +45,7 @@ export default function ExercisePreviewPanel({ exercise, isDarkMode, hideHeading
     const day = router.query.routineDay;
     if (typeof day !== "string") {
       toast.error("Open Routine planner and pick a day first");
-      router.push("/routine");
+      router.push("/plan");
       return;
     }
     const dayNum = parseInt(day, 10);
@@ -69,7 +69,7 @@ export default function ExercisePreviewPanel({ exercise, isDarkMode, hideHeading
         exercises: [row],
       });
       toast.success("Routine created with exercise");
-      router.push("/routine");
+      router.push("/plan");
       return;
     }
 
@@ -91,7 +91,7 @@ export default function ExercisePreviewPanel({ exercise, isDarkMode, hideHeading
       exercises: existing,
     });
     toast.success("Added to routine");
-    router.push("/routine");
+    router.push("/plan");
   };
 
   if (!exercise) return null;

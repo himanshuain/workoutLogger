@@ -42,7 +42,7 @@ export default function CustomExercisePage() {
     const day = router.query.routineDay;
     if (typeof day !== "string") {
       toast.error("Pick a day in Routine planner first");
-      router.push("/routine");
+      router.push("/plan");
       return;
     }
     const dayNum = parseInt(day, 10);
@@ -64,7 +64,7 @@ export default function CustomExercisePage() {
         exercises: [row],
       });
       toast.success("Routine created with exercise");
-      router.push("/routine");
+      router.push("/plan");
       return;
     }
 
@@ -86,7 +86,7 @@ export default function CustomExercisePage() {
       exercises: existing,
     });
     toast.success("Added to routine");
-    router.push("/routine");
+    router.push("/plan");
   };
 
   if (!user) {

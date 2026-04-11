@@ -99,7 +99,7 @@ export default function WorkoutSummaryPage() {
       exercises: existing,
     });
     toast.success("Added to your routine");
-    router.push("/routine");
+    router.push("/plan");
   };
 
   if (!router.isReady || loading || !sessionId) {

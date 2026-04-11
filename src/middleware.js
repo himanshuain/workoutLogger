@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
 
 /**
- * Supabase often appends ?code= to the configured Site URL. If Site URL has no path
- * (e.g. http://host:3000), the callback lands on / instead of /auth — PKCE/session
- * handling and UX expect /auth. Forward those requests before the page loads.
+ * Middleware to handle:
+ * 1. Supabase auth callback redirects
+ * 2. Route redirects for renamed pages
  */
 export function middleware(request) {
   const { pathname, searchParams } = request.nextUrl;
+  
+  // Handle route redirects for renamed pages
+  const routeRedirects = {
+    "/lifelog": "/log",
+    "/routine": "/plan", 
+    "/steps": "/checklists"
+  };
+  
+  if (routeRedirects[pathname]) {
+    const url = request.nextUrl.clone();
+    url.pathname = routeRedirects[pathname];
+    return NextResponse.redirect(url);
+  }
+  
+  // Handle Supabase auth callback redirects
   if (pathname !== "/") return NextResponse.next();
 
   const code = searchParams.get("code");
@@ -19,5 +34,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: "/",
+  matcher: ["/", "/lifelog", "/routine", "/steps"],
 };

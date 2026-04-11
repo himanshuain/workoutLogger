@@ -208,7 +208,7 @@ export default function History() {
                 return (
                   <div
                     key={date}
-                    className={`rounded-2xl overflow-hidden transition-all ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}`}
+                    className="card overflow-hidden transition-all"
                   >
                     {/* Collapsed header */}
                     <button

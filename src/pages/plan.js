@@ -219,12 +219,8 @@ export default function RoutinePlannerPage() {
   return (
     <Layout>
       <div className="px-5 pt-8 pb-28 max-w-lg mx-auto">
-        <h1
-          className={`text-2xl font-semibold tracking-tight ${
-            isDarkMode ? "text-iron-50" : "text-slate-900"
-          }`}
-        >
-          Routine planner
+        <h1 className="text-screen-title">
+          Workout Planner
         </h1>
 
         <div className="mt-6 flex gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
@@ -252,7 +248,7 @@ export default function RoutinePlannerPage() {
         </div>
 
         <div className="mt-6 space-y-2">
-          <p className={`text-sm font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+          <p className="text-section-header">
             {PLANNER_DAYS.find((d) => d.value === selectedDay)?.label}
           </p>
           <input
@@ -265,7 +261,7 @@ export default function RoutinePlannerPage() {
                 : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
             }`}
           />
-          <p className={`text-sm leading-relaxed ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+          <p className="text-body">
             You can perform these in any order while logging.
           </p>
         </div>
@@ -290,11 +286,7 @@ export default function RoutinePlannerPage() {
                 keyExtractor={(item) => item.key}
                 isDarkMode={isDarkMode}
                 renderItem={(item) => (
-                  <div
-                    className={`flex items-center gap-3 p-3 rounded-2xl ${
-                      isDarkMode ? "bg-iron-900/60 border border-iron-800" : "bg-white border border-slate-200 shadow-sm"
-                    }`}
-                  >
+                  <div className="card-secondary flex items-center gap-3">
                     <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-iron-800">
                       {thumb(item.exercise_name) ? (
                         <Image

@@ -325,7 +325,7 @@ export default function Settings() {
               Appearance
             </h3>
             <div
-              className={`p-4 rounded-2xl ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}`}
+              className="card"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -382,7 +382,7 @@ export default function Settings() {
               Navigation Bar
             </h3>
             <div
-              className={`p-4 rounded-2xl max-h-[min(55vh,28rem)] overflow-y-auto overscroll-contain touch-pan-y ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}`}
+              className="card max-h-[min(55vh,28rem)] overflow-y-auto overscroll-contain touch-pan-y"
             >
               <p className={`text-xs mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                 Reorder, rename, or hide navigation items. Tap the name to rename.
@@ -402,7 +402,7 @@ export default function Settings() {
               Account
             </h3>
             <div
-              className={`p-4 rounded-2xl ${isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"}`}
+              className="card"
             >
               <div className="flex items-center justify-between mb-4">
                 <div>

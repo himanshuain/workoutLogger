@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { Check } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export default function HabitPills({
   trackables = [],
@@ -72,16 +73,19 @@ export default function HabitPills({
           const isCompleted = entry?.is_completed;
 
           return (
-            <button
+            <motion.button
               key={trackable.id}
               type="button"
               aria-pressed={isCompleted}
               aria-label={`${trackable.name}${isCompleted ? ", completed" : ", not completed"}`}
               onClick={() => handlePillClick(trackable)}
+              whileTap={{ scale: 0.95 }}
+              animate={isCompleted ? { scale: [1, 1.05, 1] } : {}}
+              transition={{ duration: 0.3, ease: "easeOut" }}
               className={`
                 relative min-h-[44px] px-4 py-2.5 rounded-xl font-medium text-sm
                 transition-all duration-200 ease-out
-                active:scale-95 flex items-center gap-2
+                flex items-center gap-2
                 ${
                   isCompleted
                     ? "text-iron-950 shadow-md"
@@ -102,7 +106,13 @@ export default function HabitPills({
               )}
 
               {isCompleted && (
-                <Check className="w-5 h-5 shrink-0 animate-scale-in" strokeWidth={3} aria-hidden />
+                <motion.div
+                  initial={{ scale: 0, rotate: -90 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 20 }}
+                >
+                  <Check className="w-5 h-5 shrink-0" strokeWidth={3} aria-hidden />
+                </motion.div>
               )}
 
               <span className="font-semibold">{trackable.name}</span>
@@ -121,7 +131,7 @@ export default function HabitPills({
                   {trackable.value_unit ? ` ${trackable.value_unit}` : ""}
                 </span>
               )}
-            </button>
+            </motion.button>
           );
         })}
 

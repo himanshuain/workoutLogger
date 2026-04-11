@@ -1,19 +1,21 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import Layout from "@/components/Layout";
 import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
+import ExerciseIcon from "@/components/ExerciseIcon";
 import { Modal, ModalContent, ModalBody, ModalHeader, ModalTitle } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getExerciseEquipment } from "@/lib/exerciseMedia";
+import { getExerciseEquipment, exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 import {
   PARENT_CHIPS,
   getSubcategoriesForParent,
   exerciseMatchesSubFilter,
 } from "@/lib/exerciseSubcategories";
-import { Plus, Grid3X3, List, LayoutGrid } from "lucide-react";
+import { Plus, Grid3X3, List, LayoutGrid, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -239,13 +241,22 @@ export default function ExercisesSearchPage() {
           isRoutinePicker && selectedIds.size > 0 ? "pb-40" : "pb-28"
         }`}
       >
-        <h1
-          className={`text-2xl font-semibold tracking-tight ${
-            isDarkMode ? "text-iron-50" : "text-slate-900"
-          }`}
-        >
-          Search exercise
-        </h1>
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => router.back()}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+              isDarkMode
+                ? "bg-iron-800 text-iron-300 hover:bg-iron-700"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-screen-title flex-1">
+            Search exercise
+          </h1>
+        </div>
         {isRoutinePicker && (
           <p className={`mt-2 text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
             Tap a row to select or deselect. Tap the <span className="font-medium">image</span> for
@@ -411,14 +422,40 @@ export default function ExercisesSearchPage() {
                     key={ex.id}
                     type="button"
                     onClick={() => openPreview(ex.id)}
-                    className={`${cardClass} p-3 text-left ${
+                    className={`${cardClass} overflow-hidden text-left ${
                       isDarkMode ? "hover:bg-iron-900" : "hover:bg-slate-50"
                     }`}
                   >
-                    <div className="aspect-square mb-3">
-                      <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} className="w-full h-full" />
+                    <div className="aspect-square relative mb-3">
+                      {(() => {
+                        const url = exerciseMediaUrl(ex);
+                        if (url) {
+                          return (
+                            <Image
+                              src={url}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              unoptimized={exerciseImageUnoptimized(url)}
+                            />
+                          );
+                        } else {
+                          return (
+                            <div className={`w-full h-full flex items-center justify-center ${
+                              isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                            }`}>
+                              <ExerciseIcon 
+                                name={ex.name} 
+                                className="w-12 h-12" 
+                                color={isDarkMode ? "#71717a" : "#94a3b8"} 
+                              />
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
-                    <div>
+                    <div className="p-3">
                       <p className={`font-semibold text-sm leading-tight ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
                         {ex.name}
                       </p>
@@ -441,13 +478,39 @@ export default function ExercisesSearchPage() {
                   <button
                     type="button"
                     onClick={() => openPreview(ex.id)}
-                    className="w-full p-3 text-left"
+                    className="w-full"
                   >
-                    <div className="aspect-square mb-3">
-                      <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} className="w-full h-full" />
+                    <div className="aspect-square relative">
+                      {(() => {
+                        const url = exerciseMediaUrl(ex);
+                        if (url) {
+                          return (
+                            <Image
+                              src={url}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              unoptimized={exerciseImageUnoptimized(url)}
+                            />
+                          );
+                        } else {
+                          return (
+                            <div className={`w-full h-full flex items-center justify-center ${
+                              isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                            }`}>
+                              <ExerciseIcon 
+                                name={ex.name} 
+                                className="w-12 h-12" 
+                                color={isDarkMode ? "#71717a" : "#94a3b8"} 
+                              />
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
                   </button>
-                  <div className="px-3 pb-3">
+                  <div className="p-3">
                     <button
                       type="button"
                       onClick={() => toggleSelection(ex.id)}

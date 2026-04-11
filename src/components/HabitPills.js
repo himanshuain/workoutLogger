@@ -79,21 +79,21 @@ export default function HabitPills({
               aria-label={`${trackable.name}${isCompleted ? ", completed" : ", not completed"}`}
               onClick={() => handlePillClick(trackable)}
               className={`
-                relative min-h-[48px] px-5 py-3 rounded-2xl font-medium text-sm
-                transition-all duration-300 ease-out
-                active:scale-95 flex items-center gap-2.5
+                relative min-h-[44px] px-4 py-2.5 rounded-xl font-medium text-sm
+                transition-all duration-200 ease-out
+                active:scale-95 flex items-center gap-2
                 ${
                   isCompleted
-                    ? "text-iron-950 shadow-lg"
+                    ? "text-iron-950 shadow-md"
                     : isDarkMode
-                      ? "bg-iron-800/70 text-iron-300 active:bg-iron-700/70"
-                      : "bg-slate-200 text-slate-600 active:bg-slate-300"
+                      ? "bg-iron-800/40 text-iron-400 active:bg-iron-700/50 border border-iron-700/30"
+                      : "bg-slate-100 text-slate-500 active:bg-slate-200 border border-slate-200"
                 }
               `}
               style={{
                 backgroundColor: isCompleted ? trackable.color : undefined,
                 boxShadow: isCompleted
-                  ? `0 4px 14px ${trackable.color}40`
+                  ? `0 2px 8px ${trackable.color}30`
                   : undefined,
               }}
             >
@@ -129,12 +129,12 @@ export default function HabitPills({
           <button
             onClick={onAddNew}
             className={`
-              min-h-[48px] px-5 py-3 rounded-2xl font-medium text-sm
-              border-2 border-dashed transition-colors flex items-center gap-2
+              min-h-[44px] px-4 py-2.5 rounded-xl font-medium text-sm
+              border border-dashed transition-colors flex items-center gap-2 active:scale-95
               ${
                 isDarkMode
-                  ? "border-iron-700 text-iron-500 active:border-iron-600 active:text-iron-400"
-                  : "border-slate-300 text-slate-500 active:border-slate-400 active:text-slate-600"
+                  ? "border-iron-700/50 text-iron-600 active:border-iron-600 active:text-iron-500"
+                  : "border-slate-300 text-slate-400 active:border-slate-400 active:text-slate-500"
               }
             `}
           >

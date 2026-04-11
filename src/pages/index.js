@@ -47,6 +47,7 @@ import {
   CalendarClock,
   StickyNote,
   Settings,
+  ClipboardList,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import {
@@ -391,6 +392,22 @@ export default function Home() {
             }
             onChooseRoutine={() => setShowRoutineSelector(true)}
           />
+          
+          {/* Quick Checklist Access */}
+          <div className="mt-4 max-w-lg mx-auto">
+            <button
+              type="button"
+              onClick={() => router.push("/checklists")}
+              className={`w-full py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors ${
+                isDarkMode
+                  ? "bg-iron-800/40 text-iron-400 hover:bg-iron-800/60 active:text-iron-300 border border-iron-700/30"
+                  : "bg-slate-100/70 text-slate-500 hover:bg-slate-100 active:text-slate-600 border border-slate-200"
+              }`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              Quick Checklists
+            </button>
+          </div>
         </section>
 
         {/* Quick note — collapsed until opened via notes button */}
@@ -401,10 +418,10 @@ export default function Home() {
               onClick={() => setNoteOpen(o => !o)}
               aria-expanded={noteOpen}
               aria-controls="home-quick-note"
-              className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-colors active:scale-[0.99] ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors active:scale-[0.99] ${
                 isDarkMode
-                  ? "bg-iron-900/50 hover:bg-iron-800/70 text-iron-200"
-                  : "border border-amber-200/50 bg-amber-50 hover:bg-amber-100/80 text-slate-800"
+                  ? "bg-iron-800/30 hover:bg-iron-800/50 text-iron-300 border border-iron-700/20"
+                  : "border border-amber-200/30 bg-amber-50/50 hover:bg-amber-50 text-slate-700"
               }`}
             >
               <span className="relative shrink-0">
@@ -422,7 +439,7 @@ export default function Home() {
                   />
                 ) : null}
               </span>
-              <span className="min-w-0 flex-1 text-sm font-medium">Jot something down</span>
+              <span className="min-w-0 flex-1 text-sm font-normal">Jot something down</span>
               <ChevronDown
                 className={`h-4 w-4 shrink-0 opacity-70 transition-transform duration-200 ${
                   noteOpen ? "rotate-180" : ""
@@ -433,8 +450,8 @@ export default function Home() {
             {noteOpen ? (
               <div
                 id="home-quick-note"
-                className={`mt-2 rounded-2xl p-3 ${
-                  isDarkMode ? "bg-iron-900/50" : "border border-amber-200/50 bg-amber-50"
+                className={`mt-2 rounded-xl p-3 ${
+                  isDarkMode ? "bg-iron-800/30 border border-iron-700/20" : "border border-amber-200/30 bg-amber-50/50"
                 }`}
               >
                 <textarea
@@ -476,8 +493,8 @@ export default function Home() {
               onClick={() => router.push("/log?tab=habits")}
               className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
                 isDarkMode
-                  ? "text-iron-400 bg-iron-900/80 hover:bg-iron-800 active:text-iron-200"
-                  : "text-slate-600 bg-slate-100 hover:bg-slate-200 active:text-slate-800"
+                  ? "text-iron-500 bg-iron-800/40 hover:bg-iron-800/60 active:text-iron-400"
+                  : "text-slate-500 bg-slate-100/70 hover:bg-slate-100 active:text-slate-600"
               }`}
               aria-label="Manage habits"
             >

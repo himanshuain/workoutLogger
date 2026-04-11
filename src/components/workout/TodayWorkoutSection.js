@@ -173,7 +173,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   if (completedTodaySession && !hasSession) {
     return (
       <div className="max-w-lg mx-auto">
-        <div className="card-secondary overflow-hidden">
+        <div className="card-hero overflow-hidden">
           <div
             className={`px-4 py-2.5 border-b ${
               isDarkMode ? "border-iron-800" : "border-slate-100"

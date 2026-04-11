@@ -84,10 +84,6 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     bumpExtras();
   }, [router.asPath, bumpExtras]);
 
-  useEffect(() => {
-    setThumbFailed({});
-  }, [activeSession?.id, plannedExercises.length]);
-
   const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine, routines]);
 
   /** When user starts a session from "Choose routine" on a day with no template, exercises come from the session's routine_id. */
@@ -113,6 +109,10 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     () => mergePlannedExercises(templateRoutine, extras),
     [templateRoutine, extras]
   );
+
+  useEffect(() => {
+    setThumbFailed({});
+  }, [activeSession?.id, plannedExercises.length]);
 
   const setLogs = activeSession?.set_logs || [];
 

@@ -503,7 +503,7 @@ export default function Home() {
             </h3>
             <button
               type="button"
-              onClick={() => router.push("/log?tab=habits")}
+              onClick={() => router.push("/lifelog")}
               className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
                 isDarkMode
                   ? "text-iron-500 bg-iron-800/40 hover:bg-iron-800/60 active:text-iron-400"

@@ -914,9 +914,22 @@ export default function LogPage() {
           <div className={`rounded-2xl border p-3 ${
             isDarkMode ? "border-iron-800" : "border-slate-200"
           }`}>
-            <div className="mb-2 flex items-center gap-2">
-              <ListChecks className={`h-4 w-4 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
-              <p className="text-card-subtitle">Habits & life log</p>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <ListChecks className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
+                <p className="text-card-subtitle">Habits & life log</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => router.push("/lifelog")}
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg ${
+                  isDarkMode
+                    ? "bg-iron-800 text-emerald-400 hover:bg-iron-700"
+                    : "bg-slate-200 text-emerald-700 hover:bg-slate-300"
+                }`}
+              >
+                Manage
+              </button>
             </div>
             
             {!pastLogDate ? (
@@ -928,7 +941,17 @@ export default function LogPage() {
                 <p className="text-section-header mb-2">Habits</p>
                 {habitList.length === 0 ? (
                   <p className="text-body mb-4">
-                    No habits for this weekday, or add habits from the Today section.
+                    No habits for this weekday. Add habits on Today, or open{" "}
+                    <button
+                      type="button"
+                      onClick={() => router.push("/lifelog")}
+                      className={`font-semibold underline underline-offset-2 ${
+                        isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                      }`}
+                    >
+                      Lifelog
+                    </button>{" "}
+                    to create and schedule them.
                   </p>
                 ) : (
                   <ul className="mb-4 space-y-2">
@@ -963,7 +986,11 @@ export default function LogPage() {
                           <div className="min-w-0 flex-1 text-left">
                             <p className="text-card-subtitle truncate">{t.name}</p>
                             <p className="text-metadata">
-                              {done ? "Done this day" : t.has_value ? "Needs amount — use Log → Habits" : "Tap to toggle"}
+                              {done
+                                ? "Done this day"
+                                : t.has_value
+                                  ? "Needs amount — log in Lifelog"
+                                  : "Tap to toggle"}
                             </p>
                           </div>
                         </li>
@@ -975,7 +1002,17 @@ export default function LogPage() {
                 <p className="text-section-header mb-2">Life log</p>
                 {sortedLifeEvents.length === 0 ? (
                   <p className="text-body">
-                    No event types yet. Add them on the Log tab.
+                    No event types yet.{" "}
+                    <button
+                      type="button"
+                      onClick={() => router.push("/lifelog")}
+                      className={`font-semibold underline underline-offset-2 ${
+                        isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                      }`}
+                    >
+                      Open Lifelog
+                    </button>{" "}
+                    to create life events, reminders, and habit details.
                   </p>
                 ) : (
                   <ul className="space-y-2">

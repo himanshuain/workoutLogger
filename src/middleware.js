@@ -10,9 +10,8 @@ export function middleware(request) {
   
   // Handle route redirects for renamed pages
   const routeRedirects = {
-    "/lifelog": "/log",
-    "/routine": "/plan", 
-    "/steps": "/checklists"
+    "/routine": "/plan",
+    "/steps": "/checklists",
   };
   
   if (routeRedirects[pathname]) {
@@ -34,5 +33,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/", "/lifelog", "/routine", "/steps"],
+  matcher: ["/", "/routine", "/steps"],
 };

@@ -6,29 +6,30 @@
   --safe-area-inset-bottom: env(safe-area-inset-bottom);
   --safe-area-inset-top: env(safe-area-inset-top);
 
-  /* Spiderman Light Theme - Red & Blue */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
-  --bg-card: #ffffff;
-  --bg-card-hover: #fef2f2;
+  /* Light Theme - Unified with Tailwind slate scale */
+  --bg-primary: #f8fafc; /* slate-50 */
+  --bg-secondary: #ffffff; /* white */
+  --bg-tertiary: #f1f5f9; /* slate-100 */
+  --bg-card: #ffffff; /* white */
+  --bg-card-hover: #f8fafc; /* slate-50 */
+  --bg-elevated: #ffffff; /* white with shadow */
 
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-faint: #94a3b8;
+  --text-primary: #1e293b; /* slate-800 */
+  --text-secondary: #475569; /* slate-600 */
+  --text-muted: #64748b; /* slate-500 */
+  --text-faint: #94a3b8; /* slate-400 */
 
-  --border-color: #e2e8f0;
-  --border-light: #f1f5f9;
+  --border-color: #e2e8f0; /* slate-200 */
+  --border-light: #f1f5f9; /* slate-100 */
 
-  /* Spiderman colors - Red primary, Blue secondary */
-  --accent-primary: #dc2626;
-  --accent-secondary: #2563eb;
-  --accent-success: #22c55e;
+  /* Light theme accent colors - Red primary */
+  --accent-primary: #dc2626; /* workout-primary */
+  --accent-secondary: #b91c1c; /* workout-secondary */
+  --accent-success: #22c55e; /* green-500 */
   --accent-success-light: rgba(34, 197, 94, 0.1);
 
   --gradient-start: #dc2626;
-  --gradient-end: #2563eb;
+  --gradient-end: #b91c1c;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -40,33 +41,35 @@
 }
 
 .dark {
-  /* Batman Dark Theme - Dark grays with Yellow accent */
-  --bg-primary: #0a0a0b;
-  --bg-secondary: #1c1c1e;
-  --bg-tertiary: #27272a;
-  --bg-card: #1c1c1e;
-  --bg-card-hover: #27272a;
+  /* Dark Theme - Layered surfaces with gold accents */
+  --bg-primary: #0a0a0b; /* iron-950 - deepest background */
+  --bg-secondary: #1c1c1e; /* iron-900 - standard surface */
+  --bg-tertiary: #27272a; /* iron-800 - elevated surface */
+  --bg-card: #1c1c1e; /* iron-900 - standard cards */
+  --bg-card-hover: #27272a; /* iron-800 - hover state */
+  --bg-elevated: #3f3f46; /* iron-700 - hero/elevated cards */
 
-  --text-primary: #f4f4f5;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  --text-faint: #52525b;
+  --text-primary: #f4f4f5; /* iron-100 - primary text */
+  --text-secondary: #a1a1aa; /* iron-400 - secondary text */
+  --text-muted: #71717a; /* iron-500 - muted text */
+  --text-faint: #52525b; /* iron-600 - faint text */
 
-  --border-color: #27272a;
-  --border-light: #1c1c1e;
+  --border-color: #27272a; /* iron-800 - standard borders */
+  --border-light: #3f3f46; /* iron-700 - subtle borders */
 
-  /* Batman colors - Yellow/Gold accent */
-  --accent-primary: #fbbf24;
-  --accent-secondary: #f59e0b;
-  --accent-success: #fbbf24;
-  --accent-success-light: rgba(251, 191, 36, 0.2);
+  /* Dark theme accent colors - Gold primary */
+  --accent-primary: #fbbf24; /* lift-primary */
+  --accent-secondary: #f59e0b; /* lift-secondary */
+  --accent-success: #22c55e; /* green-500 - keep success distinct */
+  --accent-success-light: rgba(34, 197, 94, 0.15);
 
   --gradient-start: #fbbf24;
   --gradient-end: #f59e0b;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+  /* Enhanced shadows for layering */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
 
   --toast-bg: #1c1c1e;
   --toast-fg: #f4f4f5;
@@ -484,7 +487,7 @@ input[type="number"] {
   @apply bg-slate-100 text-slate-600 border border-slate-200;
 }
 
-/* Card base styles */
+/* Card base styles with hierarchy */
 .card {
   @apply rounded-2xl p-4;
 }
@@ -495,6 +498,47 @@ input[type="number"] {
 
 .light .card {
   @apply bg-white border border-slate-200 shadow-sm;
+}
+
+/* Card hierarchy variants */
+.card-hero {
+  @apply rounded-2xl p-6;
+  background-color: var(--bg-elevated);
+}
+
+.dark .card-hero {
+  @apply bg-iron-700 border border-iron-600/50;
+  box-shadow: var(--shadow-lg);
+}
+
+.light .card-hero {
+  @apply bg-white border border-slate-200 shadow-lg;
+}
+
+.card-secondary {
+  @apply rounded-2xl p-4;
+  background-color: var(--bg-card);
+}
+
+.dark .card-secondary {
+  @apply bg-iron-800/50 border border-iron-700/30;
+}
+
+.light .card-secondary {
+  @apply bg-slate-50 border border-slate-100;
+}
+
+.card-compact {
+  @apply rounded-xl p-3;
+  background-color: var(--bg-tertiary);
+}
+
+.dark .card-compact {
+  @apply bg-iron-800/30;
+}
+
+.light .card-compact {
+  @apply bg-slate-50;
 }
 
 /* Progress bar */
@@ -520,6 +564,50 @@ input[type="number"] {
 
 .light .progress-bar-fill {
   @apply bg-workout-primary;
+}
+
+/* Typography hierarchy */
+.text-screen-title {
+  @apply text-2xl font-bold tracking-tight;
+  color: var(--text-primary);
+}
+
+.text-section-header {
+  @apply text-xs font-semibold uppercase tracking-wider;
+  color: var(--text-muted);
+}
+
+.text-card-title {
+  @apply text-lg font-semibold;
+  color: var(--text-primary);
+}
+
+.text-card-subtitle {
+  @apply text-sm font-medium;
+  color: var(--text-secondary);
+}
+
+.text-metadata {
+  @apply text-xs;
+  color: var(--text-faint);
+}
+
+.text-body {
+  @apply text-sm;
+  color: var(--text-secondary);
+}
+
+/* Improved spacing utilities */
+.section-spacing {
+  @apply mb-8;
+}
+
+.card-spacing {
+  @apply mb-4;
+}
+
+.compact-spacing {
+  @apply mb-3;
 }
 
 /* iOS specific - prevent viewport resize issues */

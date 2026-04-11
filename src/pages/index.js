@@ -333,14 +333,10 @@ export default function Home() {
         {/* Date Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p
-              className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-            >
+            <p className="text-metadata">
               Today
             </p>
-            <h2
-              className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-            >
+            <h2 className="text-card-title">
               {formatDate(new Date())}
             </h2>
           </div>
@@ -388,7 +384,7 @@ export default function Home() {
         </div>
 
         {/* Today's Workout — new board, logger, and routine CTAs */}
-        <section className="mb-6">
+        <section className="section-spacing">
           <TodayWorkoutSection
             completedTodaySession={
               hasCompletedSession && !hasActiveSession ? todaySession : null
@@ -399,7 +395,7 @@ export default function Home() {
 
         {/* Quick note — collapsed until opened via notes button */}
         {noteLoaded && (
-          <section className="mb-6">
+          <section className="card-spacing">
             <button
               type="button"
               onClick={() => setNoteOpen(o => !o)}
@@ -458,7 +454,7 @@ export default function Home() {
         )}
 
         {/* Goals — widget includes empty state when none saved */}
-        <section className="mb-6">
+        <section className="card-spacing">
           <GoalsWidget
             isDarkMode={isDarkMode}
             workoutHeatmapData={goalsWorkoutData}
@@ -469,13 +465,9 @@ export default function Home() {
         </section>
 
         {/* Today's Habits */}
-        <section className="mt-6">
+        <section className="section-spacing">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <h3
-              className={`text-xs font-medium uppercase tracking-wider flex items-center gap-2 ${
-                isDarkMode ? "text-iron-400" : "text-slate-500"
-              }`}
-            >
+            <h3 className="text-section-header flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
               Habits
             </h3>
@@ -516,11 +508,7 @@ export default function Home() {
         {recentSessions.length > 0 && (
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3
-              className={`text-xs font-medium uppercase tracking-wider flex items-center gap-2 ${
-                isDarkMode ? "text-iron-400" : "text-slate-500"
-              }`}
-            >
+            <h3 className="text-section-header flex items-center gap-2">
               <History className="w-3.5 h-3.5" />
               Workout History
             </h3>
@@ -565,11 +553,7 @@ export default function Home() {
                 return (
                   <ContextMenu key={session.id}>
                     <ContextMenuTrigger asChild>
-                      <div
-                        className={`rounded-2xl overflow-hidden ${
-                          isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
-                        }`}
-                      >
+                      <div className="card overflow-hidden">
                     {/* Session header */}
                     <button
                       onClick={() => setExpandedSession(isExpanded ? null : session.id)}

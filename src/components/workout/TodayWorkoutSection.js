@@ -172,11 +172,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   if (completedTodaySession && !hasSession) {
     return (
       <div className="max-w-lg mx-auto">
-        <div
-          className={`rounded-2xl border overflow-hidden ${
-            isDarkMode ? "border-iron-800 bg-iron-900/50" : "border-slate-200 bg-white shadow-sm"
-          }`}
-        >
+        <div className="card-secondary overflow-hidden">
           <div
             className={`px-4 py-2.5 border-b ${
               isDarkMode ? "border-iron-800" : "border-slate-100"
@@ -222,11 +218,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     const todayDow = new Date().getDay();
     return (
       <div className="max-w-lg mx-auto">
-        <div
-          className={`rounded-3xl p-6 ${
-            isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
-          }`}
-        >
+        <div className="card-hero">
           <div
             className={`flex items-center gap-2 text-sm mb-2 ${
               isDarkMode ? "text-iron-500" : "text-slate-500"
@@ -322,9 +314,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       <motion.p
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-          isDarkMode ? "text-iron-500" : "text-slate-500"
-        }`}
+        className="text-section-header"
       >
         Today&apos;s Workout
       </motion.p>
@@ -332,9 +322,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className={`mt-2 text-2xl font-semibold tracking-tight ${
-          isDarkMode ? "text-iron-50" : "text-slate-900"
-        }`}
+        className="mt-2 text-screen-title"
       >
         {routineTitle}
       </motion.h2>

@@ -1199,6 +1199,88 @@ export function WorkoutProvider({ children }) {
     [user]
   );
 
+  /** Sessions for a single calendar day (Log page, history). */
+  const getWorkoutSessionsForDate = useCallback(
+    async dateStr => {
+      if (!dateStr) return [];
+      return getWorkoutSessions(dateStr, dateStr);
+    },
+    [getWorkoutSessions]
+  );
+
+  /**
+   * Start (or resume) an active workout session for a specific date.
+   * Past dates do not replace `activeSession` for today so Today stays correct.
+   * @param {string} dateStr YYYY-MM-DD
+   * @param {object|null} routine Planned routine row or null for a custom/open workout
+   */
+  const startWorkoutSessionForDate = useCallback(
+    async (dateStr, routine) => {
+      if (!user || !dateStr) return null;
+
+      const { data: existing } = await supabase
+        .from("workout_sessions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", dateStr)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (existing) {
+        const { data: session } = await supabase
+          .from("workout_sessions")
+          .select("*, set_logs (*)")
+          .eq("id", existing.id)
+          .maybeSingle();
+        if (session && dateStr === today) {
+          setActiveSession(session);
+        }
+        queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+        return session;
+      }
+
+      const routineName = routine?.name?.trim() || "Custom workout";
+      const routineId = routine?.id ?? null;
+
+      const { data: newSession, error } = await supabase
+        .from("workout_sessions")
+        .insert({
+          user_id: user.id,
+          routine_id: routineId,
+          routine_name: routineName,
+          date: dateStr,
+          status: "active",
+          current_exercise_index: 0,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating session for date:", error);
+        return null;
+      }
+
+      const { data: completeSession } = await supabase
+        .from("workout_sessions")
+        .select("*, set_logs (*)")
+        .eq("id", newSession.id)
+        .single();
+
+      if (completeSession && dateStr === today) {
+        setActiveSession(completeSession);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+
+      return completeSession;
+    },
+    [user, today, queryClient]
+  );
+
   // Get today's workout session set logs (for quick stats)
   const getTodaySetLogs = useCallback(async () => {
     if (!user) return [];
@@ -1967,6 +2049,8 @@ export function WorkoutProvider({ children }) {
         getTrackingEntries,
         getTodayExerciseLogs,
         getWorkoutSessions,
+        getWorkoutSessionsForDate,
+        startWorkoutSessionForDate,
         getTodaySetLogs,
         deleteExerciseLog,
         createTrackable,

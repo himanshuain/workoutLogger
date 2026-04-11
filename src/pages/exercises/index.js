@@ -504,13 +504,20 @@ export default function ExercisesSearchPage() {
                 );
               }
               
-              // Card view for routine picker
+              // Card view for routine picker (outer div avoids nested <button>)
               return (
-                <button
+                <div
                   key={ex.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleSelect(ex.id)}
-                  className={`${cardClass} text-left transition-all ${selected ? (isDarkMode ? "ring-2 ring-lift-primary" : "ring-2 ring-workout-primary") : ""} ${
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleSelect(ex.id);
+                    }
+                  }}
+                  className={`${cardClass} text-left transition-all cursor-pointer ${selected ? (isDarkMode ? "ring-2 ring-lift-primary" : "ring-2 ring-workout-primary") : ""} ${
                     isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-50"
                   }`}
                 >
@@ -522,7 +529,7 @@ export default function ExercisesSearchPage() {
                     
                     {/* Selection indicator overlay */}
                     {selected && (
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                           isDarkMode ? "bg-lift-primary" : "bg-workout-primary"
                         }`}>
@@ -534,7 +541,7 @@ export default function ExercisesSearchPage() {
                   
                   <div className="p-3">
                     <div className="flex items-center gap-2">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className={`font-semibold text-sm leading-tight ${
                           selected
                             ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
@@ -547,14 +554,13 @@ export default function ExercisesSearchPage() {
                         </p>
                       </div>
                       
-                      {/* Preview button */}
                       <button
                         type="button"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           openPreview(ex.id);
                         }}
-                        className={`p-1.5 rounded-lg transition-colors ${
+                        className={`p-1.5 rounded-lg transition-colors shrink-0 ${
                           isDarkMode 
                             ? "bg-iron-700 hover:bg-iron-600 text-iron-300" 
                             : "bg-slate-200 hover:bg-slate-300 text-slate-600"
@@ -565,7 +571,7 @@ export default function ExercisesSearchPage() {
                       </button>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             }
             

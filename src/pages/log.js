@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useLayoutEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useLayoutEffect, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ListChecks,
-  Settings,
   Dumbbell,
   Play,
 } from "lucide-react";
@@ -76,7 +75,8 @@ export default function LogPage() {
     todayEntries,
     getRoutineForDay,
     getWorkoutSessionsForDate,
-    createWorkoutSession,
+    startWorkoutSessionForDate,
+    routines,
   } = useWorkout();
 
   // Get initial date from URL or default to today
@@ -93,6 +93,17 @@ export default function LogPage() {
   
   const stripScrollRef = useRef(null);
   const stripAnchorRef = useRef(null);
+
+  // Keep selected date in sync with ?date= when using browser back/forward
+  useEffect(() => {
+    if (!router.isReady) return;
+    const d = router.query.date;
+    if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= todayStr) {
+      setPastLogDate(d);
+    } else if (!router.query.date) {
+      setPastLogDate(todayStr);
+    }
+  }, [router.isReady, router.query.date, todayStr]);
 
   // Update URL when date changes
   const updateUrl = useCallback((date) => {
@@ -168,18 +179,16 @@ export default function LogPage() {
     return map;
   }, [trackingForDayRaw, pastLogDate, todayStr, todayEntries]);
 
-  // Auto-scroll to show today on the far right
+  // Auto-scroll so "today" sits toward the right edge of the strip (pick-a-day UX)
   useLayoutEffect(() => {
-    if (stripAnchorRef.current && stripScrollRef.current) {
-      const container = stripScrollRef.current;
-      const anchor = stripAnchorRef.current;
-      const containerRect = container.getBoundingClientRect();
-      const anchorRect = anchor.getBoundingClientRect();
-      // Position today near the right edge instead of center
-      const scrollLeft = anchor.offsetLeft - containerRect.width + anchorRect.width + 16; // 16px padding from right
-      container.scrollTo({ left: Math.max(0, scrollLeft), behavior: "smooth" });
-    }
-  }, [stripScrollAnchorDate]);
+    const container = stripScrollRef.current;
+    const anchor = stripAnchorRef.current;
+    if (!container || !anchor) return;
+    const anchorRight = anchor.offsetLeft + anchor.offsetWidth;
+    const scrollLeft = anchorRight - container.clientWidth + 16;
+    const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+    container.scrollTo({ left: Math.min(maxScroll, Math.max(0, scrollLeft)), behavior: "smooth" });
+  }, [stripScrollAnchorDate, glanceDays, stripOffset]);
 
   const pickDate = useCallback((iso) => {
     if (iso > todayStr) return;
@@ -220,6 +229,30 @@ export default function LogPage() {
     const dayOfWeek = new Date(pastLogDate + "T12:00:00").getDay();
     return getRoutineForDay(dayOfWeek);
   }, [pastLogDate, getRoutineForDay]);
+
+  const navigateToWorkoutSession = useCallback(
+    session => {
+      if (!session?.id) return;
+      const routine =
+        session.routine_id != null
+          ? routines.find(x => x.id === session.routine_id) ?? null
+          : null;
+      if (session.status === "completed") {
+        router.push(`/workout/${session.id}/summary`);
+        return;
+      }
+      const first = routine?.routine_exercises?.[0];
+      if (first?.exercise_name) {
+        const cat = encodeURIComponent(first.category || "other");
+        router.push(
+          `/workout/${session.id}/exercise/${encodeURIComponent(first.exercise_name)}?category=${cat}`
+        );
+        return;
+      }
+      router.push(`/exercises?sessionId=${encodeURIComponent(session.id)}`);
+    },
+    [router, routines]
+  );
 
   const openQuantity = useCallback((item, quantity, targetDate = null) => {
     setQtyTargetDate(targetDate);
@@ -311,30 +344,14 @@ export default function LogPage() {
 
   const handleStartWorkout = async () => {
     if (!pastLogDate) return;
-    
     try {
-      let routineToUse = routineForSelectedDay;
-      
-      // If no routine exists for this day, create a basic one
-      if (!routineToUse) {
-        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const dayOfWeek = new Date(pastLogDate + "T12:00:00").getDay();
-        const dayName = dayNames[dayOfWeek];
-        
-        toast.message("No routine planned", {
-          description: `No routine exists for ${dayName}. You can add exercises manually.`,
-        });
+      const session = await startWorkoutSessionForDate(pastLogDate, routineForSelectedDay);
+      if (!session) {
+        toast.error("Could not start workout");
+        return;
       }
-      
-      const session = await createWorkoutSession({
-        date: pastLogDate,
-        routine_id: routineToUse?.id || null,
-      });
-      
-      if (session) {
-        queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user?.id, pastLogDate] });
-        router.push(`/workout/${session.id}`);
-      }
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user?.id, pastLogDate] });
+      navigateToWorkoutSession(session);
     } catch (error) {
       console.error("Error starting workout:", error);
       toast.error("Could not start workout");
@@ -708,7 +725,17 @@ export default function LogPage() {
               
               {workoutSessions.length > 0 ? (
                 <div className="space-y-2">
-                  {workoutSessions.map(session => (
+                  {workoutSessions.map(session => {
+                    const logs = session?.set_logs || [];
+                    const completedLogs = logs.filter(l => l.is_completed);
+                    const exerciseNames = new Set(completedLogs.map(l => l.exercise_name));
+                    const meta =
+                      session.status === "completed"
+                        ? `Completed · ${exerciseNames.size} exercise${exerciseNames.size !== 1 ? "s" : ""} · ${completedLogs.length} set${completedLogs.length !== 1 ? "s" : ""}`
+                        : exerciseNames.size > 0 || completedLogs.length > 0
+                          ? `In progress · ${exerciseNames.size} exercise${exerciseNames.size !== 1 ? "s" : ""} · ${completedLogs.length} set${completedLogs.length !== 1 ? "s" : ""}`
+                          : "Started — tap to log sets";
+                    return (
                     <div
                       key={session.id}
                       className={`flex items-center gap-3 rounded-xl p-3 ${
@@ -722,22 +749,17 @@ export default function LogPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-card-subtitle">
-                          {session.routine_name || "Custom Workout"}
+                          {session.routine_name || "Custom workout"}
                         </p>
                         <p className="text-metadata">
-                          {session.is_completed 
-                            ? `Completed · ${session.total_exercises || 0} exercises`
-                            : session.total_exercises 
-                              ? `In progress · ${session.completed_exercises || 0}/${session.total_exercises} exercises`
-                              : "Started"
-                          }
+                          {meta}
                         </p>
                       </div>
                       <button
                         type="button"
-                        onClick={() => router.push(`/workout/${session.id}`)}
+                        onClick={() => navigateToWorkoutSession(session)}
                         className={`flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
-                          session.is_completed
+                          session.status === "completed"
                             ? isDarkMode
                               ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
                               : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
@@ -746,10 +768,10 @@ export default function LogPage() {
                               : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
                         }`}
                       >
-                        {session.is_completed ? "Review" : "Continue"}
+                        {session.status === "completed" ? "Review" : "Continue"}
                       </button>
                     </div>
-                  ))}
+                  );})}
                 </div>
               ) : (
                 <div className="text-center py-4">

@@ -20,6 +20,43 @@ import { toast } from "sonner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+// Component to handle exercise thumbnails with proper error fallback
+function ExerciseThumbnail({ exercise, isDarkMode }) {
+  const [imageError, setImageError] = useState(false);
+  const url = exerciseMediaUrl(exercise);
+  
+  // Reset error state when URL changes
+  useEffect(() => {
+    setImageError(false);
+  }, [url]);
+  
+  if (!url || imageError) {
+    return (
+      <div className={`w-full h-full flex items-center justify-center ${
+        isDarkMode ? "bg-iron-800" : "bg-slate-100"
+      }`}>
+        <ExerciseIcon 
+          name={exercise.name} 
+          className="w-12 h-12" 
+          color={isDarkMode ? "#71717a" : "#94a3b8"} 
+        />
+      </div>
+    );
+  }
+  
+  return (
+    <Image
+      src={url}
+      alt={exercise.name || "Exercise"}
+      fill
+      className="object-cover"
+      sizes="(max-width: 768px) 50vw, 33vw"
+      unoptimized={exerciseImageUnoptimized(url)}
+      onError={() => setImageError(true)}
+    />
+  );
+}
+
 export default function ExercisesSearchPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
@@ -32,6 +69,24 @@ export default function ExercisesSearchPage() {
   const [previewId, setPreviewId] = useState(null);
   const [uiHydrated, setUiHydrated] = useState(false);
   const [viewMode, setViewMode] = useState("list"); // "list" or "card"
+
+  // Load view mode preference from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedViewMode = localStorage.getItem("exerciseViewMode");
+      if (savedViewMode === "list" || savedViewMode === "card") {
+        setViewMode(savedViewMode);
+      }
+    }
+  }, []);
+
+  // Save view mode preference to localStorage
+  const handleViewModeChange = useCallback((mode) => {
+    setViewMode(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("exerciseViewMode", mode);
+    }
+  }, []);
 
   const routineDayStr = router.query.routineDay;
   const routineDayNum = typeof routineDayStr === "string" ? parseInt(routineDayStr, 10) : NaN;
@@ -371,7 +426,7 @@ export default function ExercisesSearchPage() {
               isDarkMode ? "bg-iron-800" : "bg-slate-100"
             }`}>
               <button
-                onClick={() => setViewMode("list")}
+                onClick={() => handleViewModeChange("list")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   viewMode === "list"
                     ? isDarkMode
@@ -386,7 +441,7 @@ export default function ExercisesSearchPage() {
                 List
               </button>
               <button
-                onClick={() => setViewMode("card")}
+                onClick={() => handleViewModeChange("card")}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                   viewMode === "card"
                     ? isDarkMode
@@ -427,33 +482,10 @@ export default function ExercisesSearchPage() {
                     }`}
                   >
                     <div className="aspect-square relative mb-3">
-                      {(() => {
-                        const url = exerciseMediaUrl(ex);
-                        if (url) {
-                          return (
-                            <Image
-                              src={url}
-                              alt=""
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 50vw, 33vw"
-                              unoptimized={exerciseImageUnoptimized(url)}
-                            />
-                          );
-                        } else {
-                          return (
-                            <div className={`w-full h-full flex items-center justify-center ${
-                              isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                            }`}>
-                              <ExerciseIcon 
-                                name={ex.name} 
-                                className="w-12 h-12" 
-                                color={isDarkMode ? "#71717a" : "#94a3b8"} 
-                              />
-                            </div>
-                          );
-                        }
-                      })()}
+                      <ExerciseThumbnail 
+                        exercise={ex} 
+                        isDarkMode={isDarkMode}
+                      />
                     </div>
                     <div className="p-3">
                       <p className={`font-semibold text-sm leading-tight ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
@@ -477,39 +509,16 @@ export default function ExercisesSearchPage() {
                 <button
                   key={ex.id}
                   type="button"
-                  onClick={() => toggleSelection(ex.id)}
+                  onClick={() => toggleSelect(ex.id)}
                   className={`${cardClass} text-left transition-all ${selected ? (isDarkMode ? "ring-2 ring-lift-primary" : "ring-2 ring-workout-primary") : ""} ${
                     isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-50"
                   }`}
                 >
                   <div className="aspect-square relative">
-                    {(() => {
-                      const url = exerciseMediaUrl(ex);
-                      if (url) {
-                        return (
-                          <Image
-                            src={url}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            unoptimized={exerciseImageUnoptimized(url)}
-                          />
-                        );
-                      } else {
-                        return (
-                          <div className={`w-full h-full flex items-center justify-center ${
-                            isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                          }`}>
-                            <ExerciseIcon 
-                              name={ex.name} 
-                              className="w-12 h-12" 
-                              color={isDarkMode ? "#71717a" : "#94a3b8"} 
-                            />
-                          </div>
-                        );
-                      }
-                    })()}
+                    <ExerciseThumbnail 
+                      exercise={ex} 
+                      isDarkMode={isDarkMode}
+                    />
                     
                     {/* Selection indicator overlay */}
                     {selected && (

@@ -18,6 +18,8 @@ import {
   ChevronRight,
   ListChecks,
   Settings,
+  Dumbbell,
+  Play,
 } from "lucide-react";
 
 // Helper functions from PastDayLogModal
@@ -72,6 +74,9 @@ export default function LogPage() {
     toggleTrackingEntryForDate,
     getTrackingEntries,
     todayEntries,
+    getRoutineForDay,
+    getWorkoutSessionsForDate,
+    createWorkoutSession,
   } = useWorkout();
 
   // Get initial date from URL or default to today
@@ -111,7 +116,7 @@ export default function LogPage() {
     return result.reverse();
   }, [todayStr, stripOffset]);
 
-  const stripScrollAnchorDate = glanceDays[Math.floor(glanceDays.length / 2)];
+  const stripScrollAnchorDate = todayStr; // Always anchor to today
   const stripRangeLabel = `${formatShortDate(glanceDays[0])} – ${formatShortDate(glanceDays[glanceDays.length - 1])}`;
 
   // Food count query for strip indicators
@@ -163,15 +168,16 @@ export default function LogPage() {
     return map;
   }, [trackingForDayRaw, pastLogDate, todayStr, todayEntries]);
 
-  // Auto-scroll to anchor
+  // Auto-scroll to show today on the far right
   useLayoutEffect(() => {
     if (stripAnchorRef.current && stripScrollRef.current) {
       const container = stripScrollRef.current;
       const anchor = stripAnchorRef.current;
       const containerRect = container.getBoundingClientRect();
       const anchorRect = anchor.getBoundingClientRect();
-      const scrollLeft = anchor.offsetLeft - (containerRect.width / 2) + (anchorRect.width / 2);
-      container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+      // Position today near the right edge instead of center
+      const scrollLeft = anchor.offsetLeft - containerRect.width + anchorRect.width + 16; // 16px padding from right
+      container.scrollTo({ left: Math.max(0, scrollLeft), behavior: "smooth" });
     }
   }, [stripScrollAnchorDate]);
 
@@ -201,6 +207,19 @@ export default function LogPage() {
   const sortedLifeEvents = useMemo(() => {
     return [...eventTypes].sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
   }, [eventTypes]);
+
+  // Workout data for selected date
+  const { data: workoutSessions = [] } = useQuery({
+    queryKey: ["workoutSessionsForDate", user?.id, pastLogDate],
+    queryFn: () => getWorkoutSessionsForDate(pastLogDate),
+    enabled: Boolean(user && pastLogDate),
+  });
+
+  const routineForSelectedDay = useMemo(() => {
+    if (!pastLogDate) return null;
+    const dayOfWeek = new Date(pastLogDate + "T12:00:00").getDay();
+    return getRoutineForDay(dayOfWeek);
+  }, [pastLogDate, getRoutineForDay]);
 
   const openQuantity = useCallback((item, quantity, targetDate = null) => {
     setQtyTargetDate(targetDate);
@@ -287,6 +306,38 @@ export default function LogPage() {
       if (result) {
         toast.success(`Logged ${et.name}`);
       } else toast.error("Could not log");
+    }
+  };
+
+  const handleStartWorkout = async () => {
+    if (!pastLogDate) return;
+    
+    try {
+      let routineToUse = routineForSelectedDay;
+      
+      // If no routine exists for this day, create a basic one
+      if (!routineToUse) {
+        const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const dayOfWeek = new Date(pastLogDate + "T12:00:00").getDay();
+        const dayName = dayNames[dayOfWeek];
+        
+        toast.message("No routine planned", {
+          description: `No routine exists for ${dayName}. You can add exercises manually.`,
+        });
+      }
+      
+      const session = await createWorkoutSession({
+        date: pastLogDate,
+        routine_id: routineToUse?.id || null,
+      });
+      
+      if (session) {
+        queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user?.id, pastLogDate] });
+        router.push(`/workout/${session.id}`);
+      }
+    } catch (error) {
+      console.error("Error starting workout:", error);
+      toast.error("Could not start workout");
     }
   };
 
@@ -561,7 +612,7 @@ export default function LogPage() {
                   return (
                     <div
                       key={d}
-                      ref={d === stripScrollAnchorDate ? stripAnchorRef : undefined}
+                      ref={d === todayStr ? stripAnchorRef : undefined}
                       className="flex flex-col items-center shrink-0"
                     >
                       {showMonthLabel ? (
@@ -642,6 +693,99 @@ export default function LogPage() {
               </button>
             </div>
           </div>
+
+          {/* Workout Section */}
+          {pastLogDate && (
+            <div className={`rounded-2xl border p-3 mb-6 ${
+              isDarkMode ? "border-iron-800 bg-iron-950/40" : "border-slate-200 bg-slate-50/90"
+            }`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Dumbbell className={`h-4 w-4 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                <p className="text-section-header">
+                  Workout · {formatChipLabel(pastLogDate, todayStr)}
+                </p>
+              </div>
+              
+              {workoutSessions.length > 0 ? (
+                <div className="space-y-2">
+                  {workoutSessions.map(session => (
+                    <div
+                      key={session.id}
+                      className={`flex items-center gap-3 rounded-xl p-3 ${
+                        isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
+                      }`}
+                    >
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                        isDarkMode ? "bg-lift-primary/20 text-lift-primary" : "bg-workout-primary/20 text-workout-primary"
+                      }`}>
+                        <Dumbbell className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-card-subtitle">
+                          {session.routine_name || "Custom Workout"}
+                        </p>
+                        <p className="text-metadata">
+                          {session.is_completed 
+                            ? `Completed · ${session.total_exercises || 0} exercises`
+                            : session.total_exercises 
+                              ? `In progress · ${session.completed_exercises || 0}/${session.total_exercises} exercises`
+                              : "Started"
+                          }
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/workout/${session.id}`)}
+                        className={`flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                          session.is_completed
+                            ? isDarkMode
+                              ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
+                              : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            : isDarkMode
+                              ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30"
+                              : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
+                        }`}
+                      >
+                        {session.is_completed ? "Review" : "Continue"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-body mb-3">
+                    No workout logged for this day
+                  </p>
+                  {routineForSelectedDay ? (
+                    <div className="mb-3">
+                      <p className="text-metadata mb-2">
+                        Planned: {routineForSelectedDay.name}
+                      </p>
+                      <p className="text-metadata">
+                        {routineForSelectedDay.routine_exercises?.length || 0} exercises
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-metadata mb-3">
+                      No routine planned for this day
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleStartWorkout}
+                    className={`flex items-center gap-2 mx-auto px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+                      isDarkMode
+                        ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30"
+                        : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
+                    }`}
+                  >
+                    <Play className="h-4 w-4" />
+                    Start Workout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Food Section */}
           {pastLogDate && sortedItems.length > 0 && (

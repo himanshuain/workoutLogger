@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { getSessionExtras } from "@/lib/workoutSessionClient";
+import { getPostWorkoutReturnPath, isSessionToday } from "@/lib/workoutNavigation";
 import { toast } from "sonner";
 
 export default function WorkoutSummaryPage() {
@@ -14,6 +15,7 @@ export default function WorkoutSummaryPage() {
     getWorkoutSession,
     completeWorkoutSession,
     getTodayRoutine,
+    getRoutineForDay,
     updateRoutine,
     routines,
   } = useWorkout();
@@ -54,6 +56,15 @@ export default function WorkoutSummaryPage() {
     };
   }, [session, extras]);
 
+  // Get the routine for the session's date, not today's date
+  const sessionRoutine = useMemo(() => {
+    if (!session?.date) return getTodayRoutine();
+    
+    const sessionDate = new Date(session.date);
+    const dayOfWeek = sessionDate.getDay();
+    return getRoutineForDay(dayOfWeek);
+  }, [session?.date, getTodayRoutine, getRoutineForDay]);
+
   const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine, routines]);
 
   const handleSaveWorkout = async () => {
@@ -62,7 +73,8 @@ export default function WorkoutSummaryPage() {
     try {
       await completeWorkoutSession(sessionId);
       toast.success("Workout saved");
-      router.replace("/");
+      const returnPath = getPostWorkoutReturnPath(session);
+      router.replace(returnPath);
     } catch {
       toast.error("Could not save workout");
     } finally {
@@ -207,15 +219,20 @@ export default function WorkoutSummaryPage() {
               isDarkMode ? "border-iron-700 text-iron-200" : "border-slate-300 text-slate-800"
             }`}
           >
-            Add added-today exercises to routine
+            {isSessionToday(session) 
+              ? "Add added-today exercises to routine"
+              : "Add exercises to routine"}
           </button>
         )}
         <button
           type="button"
-          onClick={() => router.push("/")}
+          onClick={() => {
+            const returnPath = getPostWorkoutReturnPath(session);
+            router.push(returnPath);
+          }}
           className={`w-full py-3 text-sm font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
         >
-          Back to home
+          {isSessionToday(session) ? "Back to home" : "Back to log"}
         </button>
       </div>
     </div>

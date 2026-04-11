@@ -6,6 +6,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useResolvedExerciseMedia } from "@/hooks/useResolvedExerciseMedia";
 import { exerciseImageUnoptimized, getExerciseEquipment } from "@/lib/exerciseMedia";
 import { addSessionExtra } from "@/lib/workoutSessionClient";
+import { getSessionAwareReturnPath, getSessionAwareCopy } from "@/lib/workoutNavigation";
 import { toast } from "sonner";
 
 /**
@@ -14,22 +15,44 @@ import { toast } from "sonner";
  */
 export default function ExercisePreviewPanel({ exercise, isDarkMode, hideHeading = false }) {
   const router = useRouter();
-  const { getRoutineForDay, updateRoutine, createRoutine } = useWorkout();
+  const { getRoutineForDay, updateRoutine, createRoutine, getWorkoutSession } = useWorkout();
   const media = useResolvedExerciseMedia(exercise);
   const equipmentLine = useMemo(() => getExerciseEquipment(exercise), [exercise]);
   const [mediaFailed, setMediaFailed] = useState(false);
+  const [session, setSession] = useState(null);
 
   useEffect(() => {
     setMediaFailed(false);
   }, [exercise?.id, media]);
 
-  const handleAddToToday = () => {
+  // Load session context for session-aware copy and navigation
+  useEffect(() => {
+    async function loadSession() {
+      const sessionId = router.query.sessionId;
+      if (typeof sessionId === "string" && getWorkoutSession) {
+        try {
+          const sessionData = await getWorkoutSession(sessionId);
+          setSession(sessionData);
+        } catch (error) {
+          console.error('Error loading session:', error);
+          setSession(null);
+        }
+      } else {
+        setSession(null);
+      }
+    }
+    loadSession();
+  }, [router.query.sessionId, getWorkoutSession]);
+
+  const handleAddToToday = async () => {
     const sessionId = router.query.sessionId;
     if (typeof sessionId !== "string") {
-      toast.error("Start a workout from Today first");
+      const copy = getSessionAwareCopy(session);
+      toast.error(copy.errorMessage);
       return;
     }
     if (!exercise) return;
+    
     addSessionExtra(sessionId, {
       exercise_id: exercise.id,
       exercise_name: exercise.name,
@@ -37,8 +60,18 @@ export default function ExercisePreviewPanel({ exercise, isDarkMode, hideHeading
       equipment: getExerciseEquipment(exercise),
       image_url: exercise.image_url || exercise.gif_url || null,
     });
-    toast.success("Added to today");
-    router.push("/");
+    
+    const copy = getSessionAwareCopy(session);
+    toast.success(copy.addedMessage);
+    
+    // Navigate back to appropriate context
+    try {
+      const returnPath = await getSessionAwareReturnPath(sessionId, getWorkoutSession);
+      router.push(returnPath);
+    } catch (error) {
+      console.error('Error determining return path:', error);
+      router.push("/");
+    }
   };
 
   const handleAddToRoutine = async () => {
@@ -144,7 +177,7 @@ export default function ExercisePreviewPanel({ exercise, isDarkMode, hideHeading
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           }`}
         >
-          Add to today
+          {getSessionAwareCopy(session).addAction}
         </button>
         <button
           type="button"

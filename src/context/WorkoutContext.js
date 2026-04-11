@@ -552,6 +552,7 @@ export function WorkoutProvider({ children }) {
         queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         queryClient.invalidateQueries({ queryKey: ["historySessions"] });
         queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+        queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate"] });
       }
     },
     [user, exerciseHistory, loadExerciseHistory, queryClient]

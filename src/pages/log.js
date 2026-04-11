@@ -237,25 +237,14 @@ export default function LogPage() {
   const navigateToWorkoutSession = useCallback(
     session => {
       if (!session?.id) return;
-      const routine =
-        session.routine_id != null
-          ? routines.find(x => x.id === session.routine_id) ?? null
-          : null;
       if (session.status === "completed") {
         router.push(`/workout/${session.id}/summary`);
         return;
       }
-      const first = routine?.routine_exercises?.[0];
-      if (first?.exercise_name) {
-        const cat = encodeURIComponent(first.category || "other");
-        router.push(
-          `/workout/${session.id}/exercise/${encodeURIComponent(first.exercise_name)}?category=${cat}`
-        );
-        return;
-      }
-      router.push(`/exercises?sessionId=${encodeURIComponent(session.id)}`);
+      // Route to session overview for active sessions
+      router.push(`/workout/${session.id}`);
     },
-    [router, routines]
+    [router]
   );
 
   const openQuantity = useCallback((item, quantity, targetDate = null) => {

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { addSessionExtra } from "@/lib/workoutSessionClient";
+import { getSessionAwareReturnPath, getSessionAwareCopy } from "@/lib/workoutNavigation";
 import { toast } from "sonner";
 
 const MUSCLES = ["Chest", "Back", "Legs", "Arms", "Shoulders", "Core", "Other"];
@@ -10,10 +11,30 @@ const MUSCLES = ["Chest", "Back", "Legs", "Arms", "Shoulders", "Core", "Other"];
 export default function CustomExercisePage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { user, getRoutineForDay, updateRoutine, createRoutine } = useWorkout();
+  const { user, getRoutineForDay, updateRoutine, createRoutine, getWorkoutSession } = useWorkout();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Chest");
   const [equipment, setEquipment] = useState("");
+  const [session, setSession] = useState(null);
+
+  // Load session context for session-aware copy and navigation
+  useEffect(() => {
+    async function loadSession() {
+      const sessionId = router.query.sessionId;
+      if (typeof sessionId === "string" && getWorkoutSession) {
+        try {
+          const sessionData = await getWorkoutSession(sessionId);
+          setSession(sessionData);
+        } catch (error) {
+          console.error('Error loading session:', error);
+          setSession(null);
+        }
+      } else {
+        setSession(null);
+      }
+    }
+    loadSession();
+  }, [router.query.sessionId, getWorkoutSession]);
 
   const inputClass = `w-full rounded-2xl px-4 py-3.5 text-base outline-none ${
     isDarkMode
@@ -21,21 +42,33 @@ export default function CustomExercisePage() {
       : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400"
   }`;
 
-  const handleAddToToday = () => {
+  const handleAddToToday = async () => {
     const sessionId = router.query.sessionId;
     if (typeof sessionId !== "string") {
-      toast.error("Start a workout from Today first");
+      const copy = getSessionAwareCopy(session);
+      toast.error(copy.errorMessage);
       return;
     }
     if (!name.trim()) return;
+    
     addSessionExtra(sessionId, {
       exercise_id: null,
       exercise_name: name.trim(),
       category: category.toLowerCase(),
       equipment: equipment.trim(),
     });
-    toast.success("Added to today");
-    router.push("/");
+    
+    const copy = getSessionAwareCopy(session);
+    toast.success(copy.addedMessage);
+    
+    // Navigate back to appropriate context
+    try {
+      const returnPath = await getSessionAwareReturnPath(sessionId, getWorkoutSession);
+      router.push(returnPath);
+    } catch (error) {
+      console.error('Error determining return path:', error);
+      router.push("/");
+    }
   };
 
   const handleAddToRoutine = async () => {
@@ -158,7 +191,7 @@ export default function CustomExercisePage() {
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           }`}
         >
-          Add to today
+          {getSessionAwareCopy(session).addAction}
         </button>
         <button
           type="button"

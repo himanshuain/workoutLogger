@@ -4,6 +4,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { WEIGHT_PILLS_KG, REPS_PILLS, nearestPill } from "@/lib/pillConstants";
 import { setExerciseDone } from "@/lib/workoutSessionClient";
+import { isSessionToday } from "@/lib/workoutNavigation";
 import PillRail from "@/components/workout/PillRail";
 import { Trash2, X } from "lucide-react";
 
@@ -140,11 +141,21 @@ export default function ExerciseLoggerPage() {
     if (sessionId && exerciseName) {
       setExerciseDone(sessionId, exerciseName, true);
     }
-    router.push("/");
+    // Return to session overview for past dates, home for today
+    if (isSessionToday(effectiveSession)) {
+      router.push("/");
+    } else {
+      router.push(`/workout/${sessionId}`);
+    }
   };
 
   const handleClose = () => {
-    router.push("/");
+    // Return to session overview for past dates, home for today
+    if (isSessionToday(effectiveSession)) {
+      router.push("/");
+    } else {
+      router.push(`/workout/${sessionId}`);
+    }
   };
 
   if (!router.isReady || loading || !sessionId) {

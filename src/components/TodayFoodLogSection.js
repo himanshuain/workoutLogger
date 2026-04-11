@@ -154,9 +154,7 @@ export default function TodayFoodLogSection({
       <section className="mt-6">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3
-            className={`text-xs font-medium uppercase tracking-wider flex items-center gap-2 ${
-              isDarkMode ? "text-iron-400" : "text-slate-500"
-            }`}
+            className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
           >
             <Utensils className="w-3.5 h-3.5 shrink-0" />
             Food
@@ -164,8 +162,10 @@ export default function TodayFoodLogSection({
           <button
             type="button"
             onClick={() => router.push("/food")}
-            className={`text-xs font-medium flex items-center gap-0.5 ${
-              isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
+            className={`text-xs font-semibold flex items-center gap-0.5 ${
+              isDarkMode
+                ? "text-iron-300 hover:text-iron-200 active:text-iron-200"
+                : "text-slate-500 hover:text-slate-800 active:text-slate-700"
             }`}
           >
             Add items <ChevronRight className="w-3 h-3" />
@@ -188,9 +188,7 @@ export default function TodayFoodLogSection({
     <section className="mt-6">
       <div className="flex items-center justify-between gap-2 mb-3">
         <h3
-          className={`text-xs font-medium uppercase tracking-wider flex items-center gap-2 ${
-            isDarkMode ? "text-iron-400" : "text-slate-500"
-          }`}
+          className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
         >
           <Utensils className="w-3.5 h-3.5 shrink-0" />
           Food
@@ -198,8 +196,10 @@ export default function TodayFoodLogSection({
         <button
           type="button"
           onClick={() => router.push("/food")}
-          className={`text-xs font-medium flex items-center gap-0.5 px-2 py-1 rounded-lg ${
-            isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
+          className={`text-xs font-semibold flex items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
+            isDarkMode
+              ? "text-iron-300 hover:text-iron-200 active:text-iron-200"
+              : "text-slate-500 hover:text-slate-800 active:text-slate-700"
           }`}
         >
           Manage <ChevronRight className="w-3 h-3" />

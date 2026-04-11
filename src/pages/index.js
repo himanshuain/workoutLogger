@@ -1,11 +1,10 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import HabitPills from "@/components/HabitPills";
-import GoalsWidget from "@/components/GoalsWidget";
 import DayPicker from "@/components/DayPicker";
 import {
   Modal,
@@ -45,9 +44,7 @@ import {
   Target,
   Flame,
   CalendarClock,
-  StickyNote,
   Settings,
-  ClipboardList,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import {
@@ -109,7 +106,6 @@ export default function Home() {
     deleteSetLog,
     deleteWorkoutSession,
     updateSetLogData,
-    getTrackingEntries,
     foodItems,
     todayFoodEntries,
     toggleFoodEntry,
@@ -160,60 +156,9 @@ export default function Home() {
     [allRecentSessions],
   );
 
-  const goalsWorkoutData = useMemo(() => {
-    const byDate = {};
-    allRecentSessions.filter((s) => s.status === "completed").forEach((s) => {
-      byDate[s.date] = (byDate[s.date] || 0) + 1;
-    });
-    return Object.entries(byDate).map(([date, count]) => ({ date, count }));
-  }, [allRecentSessions]);
-
-  const { data: goalsHabitData = [] } = useQuery({
-    queryKey: ["goalsHabitData", user?.id, recentStart, today],
-    queryFn: async () => {
-      const entries = await getTrackingEntries(recentStart, today);
-      const byDate = {};
-      entries.forEach((e) => {
-        if (e.is_completed) {
-          byDate[e.date] = (byDate[e.date] || 0) + 1;
-        }
-      });
-      return Object.entries(byDate).map(([date, count]) => ({ date, count }));
-    },
-    enabled: !!user,
-  });
-
-  const habitTrackables = useMemo(
-    () => trackables.filter((t) => t.name !== "Body Weight"),
-    [trackables],
-  );
-
   const [expandedSession, setExpandedSession] = useState(null);
   const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: "set"|"session", id, label }
-
-  // Sticky note
-  const NOTE_KEY = "workout-logger-note";
-  const [note, setNote] = useState("");
-  const [noteLoaded, setNoteLoaded] = useState(false);
-  const [noteOpen, setNoteOpen] = useState(false);
-  const saveTimerRef = useRef(null);
-
-  useEffect(() => {
-    try {
-      setNote(localStorage.getItem(NOTE_KEY) || "");
-    } catch {}
-    setNoteLoaded(true);
-  }, []);
-
-  const handleNoteChange = useCallback((e) => {
-    const val = e.target.value;
-    setNote(val);
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      try { localStorage.setItem(NOTE_KEY, val); } catch {}
-    }, 300);
-  }, []);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("en-US", {
@@ -228,7 +173,6 @@ export default function Home() {
     setIsRefreshing(true);
     try {
       await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      await queryClient.invalidateQueries({ queryKey: ["goalsHabitData"] });
       toast.success("Updated");
     } finally {
       if (window.navigator?.vibrate) {
@@ -347,10 +291,10 @@ export default function Home() {
         {/* Date Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-metadata">
+            <p className={`text-metadata tracking-wide ${isDarkMode ? "text-iron-400" : ""}`}>
               Today
             </p>
-            <h2 className="text-card-title">
+            <h2 className="text-screen-title">
               {formatDate(new Date())}
             </h2>
           </div>
@@ -405,109 +349,22 @@ export default function Home() {
             }
             onChooseRoutine={() => setShowRoutineSelector(true)}
           />
-          
-          {/* Quick Checklist Access */}
-          <div className="mt-4 max-w-lg mx-auto">
-            <button
-              type="button"
-              onClick={() => router.push("/checklists")}
-              className={`w-full py-2.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors ${
-                isDarkMode
-                  ? "bg-iron-800/40 text-iron-400 hover:bg-iron-800/60 active:text-iron-300 border border-iron-700/30"
-                  : "bg-slate-100/70 text-slate-500 hover:bg-slate-100 active:text-slate-600 border border-slate-200"
-              }`}
-            >
-              <ClipboardList className="w-4 h-4" />
-              Quick Checklists
-            </button>
-          </div>
-        </section>
-
-        {/* Quick note — collapsed until opened via notes button */}
-        {noteLoaded && (
-          <section className="card-spacing">
-            <button
-              type="button"
-              onClick={() => setNoteOpen(o => !o)}
-              aria-expanded={noteOpen}
-              aria-controls="home-quick-note"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors active:scale-[0.99] ${
-                isDarkMode
-                  ? "bg-iron-800/30 hover:bg-iron-800/50 text-iron-300 border border-iron-700/20"
-                  : "border border-amber-200/30 bg-amber-50/50 hover:bg-amber-50 text-slate-700"
-              }`}
-            >
-              <span className="relative shrink-0">
-                <StickyNote
-                  className={`h-5 w-5 ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`}
-                  strokeWidth={2}
-                  aria-hidden
-                />
-                {note.trim() ? (
-                  <span
-                    className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lift-primary ring-2 ${
-                      isDarkMode ? "ring-iron-900" : "ring-amber-50"
-                    }`}
-                    aria-hidden
-                  />
-                ) : null}
-              </span>
-              <span className="min-w-0 flex-1 text-sm font-normal">Jot something down</span>
-              <ChevronDown
-                className={`h-4 w-4 shrink-0 opacity-70 transition-transform duration-200 ${
-                  noteOpen ? "rotate-180" : ""
-                }`}
-                aria-hidden
-              />
-            </button>
-            {noteOpen ? (
-              <div
-                id="home-quick-note"
-                className={`mt-2 rounded-xl p-3 ${
-                  isDarkMode ? "bg-iron-800/30 border border-iron-700/20" : "border border-amber-200/30 bg-amber-50/50"
-                }`}
-              >
-                <textarea
-                  value={note}
-                  onChange={handleNoteChange}
-                  placeholder="Type a quick note…"
-                  rows={4}
-                  className={`w-full resize-y bg-transparent text-sm leading-relaxed outline-none placeholder-opacity-40 ${
-                    isDarkMode
-                      ? "min-h-[5rem] text-iron-200 placeholder-iron-600"
-                      : "min-h-[5rem] text-slate-700 placeholder-slate-400"
-                  }`}
-                />
-              </div>
-            ) : null}
-          </section>
-        )}
-
-        {/* Goals — widget includes empty state when none saved */}
-        <section className="card-spacing">
-          <GoalsWidget
-            isDarkMode={isDarkMode}
-            workoutHeatmapData={goalsWorkoutData}
-            habitHeatmapData={goalsHabitData}
-            trackables={habitTrackables}
-            todayEntries={todayEntries}
-          />
         </section>
 
         {/* Today's Habits */}
         <section className="section-spacing">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <h3 className="text-section-header flex items-center gap-2">
+            <h3 className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}>
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
               Habits
             </h3>
             <button
               type="button"
               onClick={() => router.push("/lifelog")}
-              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
+              className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
                 isDarkMode
-                  ? "text-iron-500 bg-iron-800/40 hover:bg-iron-800/60 active:text-iron-400"
-                  : "text-slate-500 bg-slate-100/70 hover:bg-slate-100 active:text-slate-600"
+                  ? "text-iron-300 hover:text-iron-200 bg-iron-800/40 hover:bg-iron-800/60 active:text-iron-200"
+                  : "text-slate-500 bg-slate-100/70 hover:bg-slate-100 hover:text-slate-900 active:text-slate-700"
               }`}
               aria-label="Manage habits"
             >
@@ -538,15 +395,17 @@ export default function Home() {
         {recentSessions.length > 0 && (
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-section-header flex items-center gap-2">
+            <h3 className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}>
               <History className="w-3.5 h-3.5" />
               Workout History
             </h3>
             <button
               type="button"
               onClick={() => router.push("/history")}
-              className={`text-xs flex items-center gap-0.5 ${
-                isDarkMode ? "text-iron-500 active:text-iron-300" : "text-slate-400 active:text-slate-600"
+              className={`text-xs font-semibold flex items-center gap-0.5 ${
+                isDarkMode
+                  ? "text-iron-300 hover:text-iron-200 active:text-iron-200"
+                  : "text-slate-500 hover:text-slate-800 active:text-slate-700"
               }`}
             >
               View All <ChevronRight className="w-3 h-3" />

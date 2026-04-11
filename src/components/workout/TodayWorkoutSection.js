@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Edit3,
   ClipboardList,
-  ListChecks,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
@@ -316,236 +316,235 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     );
   }
 
+  const routineActionButton =
+    routines.length > 0 ? (
+      <button
+        type="button"
+        onClick={() => onChooseRoutine?.()}
+        className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${
+          isDarkMode
+            ? "text-iron-300 hover:text-iron-200 hover:bg-iron-800/80"
+            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+        }`}
+        aria-label={hasSession ? "Switch routine" : "Choose another routine"}
+      >
+        <RefreshCw className="w-3.5 h-3.5 shrink-0" aria-hidden />
+        {hasSession ? "Switch" : "Choose"}
+      </button>
+    ) : null;
+
   return (
     <SpringIn className="max-w-lg mx-auto">
-      <motion.p
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-section-header"
-      >
-        Today&apos;s Workout
-      </motion.p>
-      <motion.h2
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="mt-2 text-screen-title"
-      >
-        {routineTitle}
-      </motion.h2>
+      <div className="card-hero overflow-hidden">
+        <div className="p-4 sm:p-5">
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`text-section-header ${isDarkMode ? "text-iron-200" : ""}`}
+          >
+            Today&apos;s Workout
+          </motion.p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {[
-          { label: "Planned", value: stats.planned },
-          { label: "Done", value: stats.completed },
-          { label: "Added today", value: stats.addedToday },
-        ].map(chip => (
-          <div
-            key={chip.label}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              isDarkMode
-                ? "bg-iron-800/80 text-iron-200 border border-iron-700/80"
-                : "bg-white text-slate-700 border border-slate-200 shadow-sm"
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <motion.h2
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="text-screen-title min-w-0 flex-1 leading-tight"
+            >
+              {routineTitle}
+            </motion.h2>
+            {routineActionButton}
+          </div>
+
+          <p
+            className={`mt-3 text-sm leading-relaxed ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
             }`}
           >
-            {chip.label}: {chip.value}
-          </div>
-        ))}
-      </div>
+            {stats.planned} planned · {stats.completed} done · {stats.addedToday} added today
+          </p>
 
-      {!hasSession ? (
-        <div className="mt-8 space-y-3">
-          <button
-            type="button"
-            onClick={handleStartOrResume}
-            disabled={starting || !todayRoutine}
-            className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            } disabled:opacity-50 disabled:pointer-events-none`}
-          >
-            {starting ? (
-              <span className="animate-pulse">Starting…</span>
-            ) : (
-              <>
-                <Play className="w-4 h-4" fill="currentColor" />
-                Start workout
-              </>
-            )}
-          </button>
-          {routines.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onChooseRoutine?.()}
-              className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border ${
-                isDarkMode
-                  ? "border-iron-600 text-iron-200 hover:bg-iron-800/80"
-                  : "border-slate-300 text-slate-800 hover:bg-slate-50"
-              }`}
-            >
-              <ListChecks className="w-4 h-4" />
-              Choose another routine
-            </button>
+          {!hasSession ? (
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleStartOrResume}
+                disabled={starting || !todayRoutine}
+                className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${
+                  isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                } disabled:opacity-50 disabled:pointer-events-none`}
+              >
+                {starting ? (
+                  <span className="animate-pulse">Starting…</span>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" fill="currentColor" />
+                    Start workout
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div
+                className={`mt-5 pt-5 border-t ${
+                  isDarkMode ? "border-iron-800/80" : "border-slate-100"
+                }`}
+              >
+                <div
+                  className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl pr-1 -mr-0.5 ${
+                    isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
+                  }`}
+                >
+                  <StaggerContainer className="space-y-3 pb-1">
+                    {plannedExercises.map(ex => {
+                      const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
+                      const media = resolveExerciseMedia(ex.exercise_name);
+                      const showPlaceholder = !media || thumbFailed[ex.exercise_name];
+                      return (
+                        <StaggerItem key={ex.exercise_name}>
+                          <PressableScale>
+                            <button
+                              type="button"
+                              onClick={() => openExercise(ex.exercise_name, ex.category)}
+                              className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors ${
+                                isDarkMode
+                                  ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
+                                  : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
+                              }`}
+                            >
+                              <div
+                                className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
+                                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                                }`}
+                              >
+                                {!showPlaceholder ? (
+                                  <Image
+                                    src={media}
+                                    alt=""
+                                    fill
+                                    className="object-cover"
+                                    sizes="64px"
+                                    unoptimized={exerciseImageUnoptimized(media)}
+                                    onError={() =>
+                                      setThumbFailed(prev => ({
+                                        ...prev,
+                                        [ex.exercise_name]: true,
+                                      }))
+                                    }
+                                  />
+                                ) : (
+                                  <>
+                                    <ExerciseIcon
+                                      name={ex.exercise_name}
+                                      className="w-7 h-7"
+                                      color={isDarkMode ? "#71717a" : "#94a3b8"}
+                                    />
+                                    <span
+                                      className={`mt-0.5 text-[9px] font-medium leading-none ${
+                                        isDarkMode ? "text-iron-500" : "text-slate-400"
+                                      }`}
+                                    >
+                                      No image
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className={`font-semibold leading-snug ${
+                                    isDarkMode ? "text-iron-100" : "text-slate-900"
+                                  }`}
+                                >
+                                  {ex.exercise_name}
+                                </p>
+                                <p
+                                  className={`text-xs mt-0.5 capitalize ${
+                                    isDarkMode ? "text-iron-500" : "text-slate-500"
+                                  }`}
+                                >
+                                  {ex.category && ex.category !== "other"
+                                    ? ex.category
+                                    : "General"}
+                                </p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`inline-flex items-center gap-1 text-xs font-medium ${
+                                      st === "completed"
+                                        ? isDarkMode
+                                          ? "text-emerald-400"
+                                          : "text-emerald-600"
+                                        : st === "in_progress"
+                                          ? isDarkMode
+                                            ? "text-lift-primary"
+                                            : "text-workout-primary"
+                                          : isDarkMode
+                                            ? "text-iron-500"
+                                            : "text-slate-500"
+                                    }`}
+                                  >
+                                    {st === "completed" ? (
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <Circle className="w-3.5 h-3.5" />
+                                    )}
+                                    {statusLabel(st)}
+                                  </span>
+                                  {ex.added_today && (
+                                    <span
+                                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                        isDarkMode
+                                          ? "bg-violet-500/15 text-violet-300"
+                                          : "bg-violet-100 text-violet-700"
+                                      }`}
+                                    >
+                                      Added today
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          </PressableScale>
+                        </StaggerItem>
+                      );
+                    })}
+                  </StaggerContainer>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
+                    )
+                  }
+                  className={`w-full py-3.5 rounded-xl font-semibold border border-dashed flex items-center justify-center gap-2 ${
+                    isDarkMode
+                      ? "border-iron-700 text-iron-100"
+                      : "border-slate-300 text-slate-800"
+                  }`}
+                >
+                  <Plus className="w-5 h-5" />
+                  Add exercise for today
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm ${
+                    isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+                  }`}
+                >
+                  Finish workout
+                </button>
+              </div>
+            </>
           )}
         </div>
-      ) : (
-        <>
-          {routines.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onChooseRoutine?.()}
-              className={`mt-4 w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border ${
-                isDarkMode
-                  ? "border-iron-700 text-iron-300 hover:bg-iron-800/60"
-                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <ListChecks className="w-4 h-4" />
-              Switch routine
-            </button>
-          )}
-          <div
-            className={`mt-4 max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl pr-1 -mr-0.5 ${
-              isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
-            }`}
-          >
-          <StaggerContainer className="space-y-3 pb-1">
-            {plannedExercises.map(ex => {
-              const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
-              const media = resolveExerciseMedia(ex.exercise_name);
-              const showPlaceholder = !media || thumbFailed[ex.exercise_name];
-              return (
-                <StaggerItem key={ex.exercise_name}>
-                  <PressableScale>
-                    <button
-                      type="button"
-                      onClick={() => openExercise(ex.exercise_name, ex.category)}
-                      className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors ${
-                        isDarkMode
-                          ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
-                          : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
-                      }`}
-                    >
-                  <div
-                    className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
-                      isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                    }`}
-                  >
-                    {!showPlaceholder ? (
-                      <Image
-                        src={media}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="64px"
-                        unoptimized={exerciseImageUnoptimized(media)}
-                        onError={() =>
-                          setThumbFailed(prev => ({ ...prev, [ex.exercise_name]: true }))
-                        }
-                      />
-                    ) : (
-                      <>
-                        <ExerciseIcon
-                          name={ex.exercise_name}
-                          className="w-7 h-7"
-                          color={isDarkMode ? "#71717a" : "#94a3b8"}
-                        />
-                        <span
-                          className={`mt-0.5 text-[9px] font-medium leading-none ${
-                            isDarkMode ? "text-iron-500" : "text-slate-400"
-                          }`}
-                        >
-                          No image
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={`font-semibold leading-snug ${
-                        isDarkMode ? "text-iron-100" : "text-slate-900"
-                      }`}
-                    >
-                      {ex.exercise_name}
-                    </p>
-                    <p
-                      className={`text-xs mt-0.5 capitalize ${
-                        isDarkMode ? "text-iron-500" : "text-slate-500"
-                      }`}
-                    >
-                      {ex.category && ex.category !== "other" ? ex.category : "General"}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 text-xs font-medium ${
-                          st === "completed"
-                            ? isDarkMode
-                              ? "text-emerald-400"
-                              : "text-emerald-600"
-                            : st === "in_progress"
-                              ? isDarkMode
-                                ? "text-lift-primary"
-                                : "text-workout-primary"
-                              : isDarkMode
-                                ? "text-iron-500"
-                                : "text-slate-500"
-                        }`}
-                      >
-                        {st === "completed" ? (
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        ) : (
-                          <Circle className="w-3.5 h-3.5" />
-                        )}
-                        {statusLabel(st)}
-                      </span>
-                      {ex.added_today && (
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                            isDarkMode
-                              ? "bg-violet-500/15 text-violet-300"
-                              : "bg-violet-100 text-violet-700"
-                          }`}
-                        >
-                          Added today
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                    </button>
-                  </PressableScale>
-                </StaggerItem>
-              );
-            })}
-          </StaggerContainer>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              router.push(
-                `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
-              )
-            }
-            className={`mt-4 w-full py-3.5 rounded-xl font-semibold border flex items-center justify-center gap-2 ${
-              isDarkMode
-                ? "border-iron-700 text-iron-100 border-dashed"
-                : "border-slate-300 text-slate-800 border-dashed"
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            Add exercise for today
-          </button>
-
-          <button
-            type="button"
-            onClick={handleFinish}
-            className={`mt-3 w-full py-3.5 rounded-xl font-bold text-sm ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
-          >
-            Finish workout
-          </button>
-        </>
-      )}
+      </div>
     </SpringIn>
   );
 }

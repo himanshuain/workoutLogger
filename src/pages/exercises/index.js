@@ -15,7 +15,7 @@ import {
   getSubcategoriesForParent,
   exerciseMatchesSubFilter,
 } from "@/lib/exerciseSubcategories";
-import { Plus, Grid3X3, List, LayoutGrid, ArrowLeft, Check, Eye } from "lucide-react";
+import { Plus, List, LayoutGrid, ArrowLeft, Check, Eye, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -32,14 +32,23 @@ function ExerciseThumbnail({ exercise, isDarkMode }) {
   
   if (!url || imageError) {
     return (
-      <div className={`w-full h-full flex items-center justify-center ${
-        isDarkMode ? "bg-iron-800" : "bg-slate-100"
-      }`}>
-        <ExerciseIcon 
-          name={exercise.name} 
-          className="w-12 h-12" 
-          color={isDarkMode ? "#71717a" : "#94a3b8"} 
+      <div
+        className={`w-full h-full flex flex-col items-center justify-center gap-1 px-2 ${
+          isDarkMode ? "bg-iron-800" : "bg-slate-100"
+        }`}
+      >
+        <ExerciseIcon
+          name={exercise.name}
+          className="w-10 h-10"
+          color={isDarkMode ? "#71717a" : "#94a3b8"}
         />
+        <span
+          className={`text-[10px] font-semibold uppercase tracking-wide ${
+            isDarkMode ? "text-iron-500" : "text-slate-400"
+          }`}
+        >
+          No image
+        </span>
       </div>
     );
   }
@@ -189,6 +198,17 @@ export default function ExercisesSearchPage() {
     });
   };
 
+  const handleBack = useCallback(() => {
+    if (isRoutinePicker) {
+      setSelectedIds(new Set());
+    }
+    router.back();
+  }, [isRoutinePicker, router]);
+
+  const clearRoutineSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
   const filtered = useMemo(() => {
     let list = exercises || [];
     const term = q.trim().toLowerCase();
@@ -298,7 +318,8 @@ export default function ExercisesSearchPage() {
       >
         <div className="flex items-center gap-3 mb-2">
           <button
-            onClick={() => router.back()}
+            type="button"
+            onClick={handleBack}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
               isDarkMode
                 ? "bg-iron-800 text-iron-300 hover:bg-iron-700"
@@ -308,9 +329,23 @@ export default function ExercisesSearchPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-screen-title flex-1">
+          <h1 className="text-screen-title flex-1 min-w-0">
             Search exercise
           </h1>
+          {isRoutinePicker && selectedIds.size > 0 ? (
+            <button
+              type="button"
+              onClick={clearRoutineSelection}
+              className={`shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl ${
+                isDarkMode
+                  ? "bg-iron-800 text-iron-200 hover:bg-iron-700"
+                  : "bg-slate-200 text-slate-800 hover:bg-slate-300"
+              }`}
+            >
+              <XCircle className="w-4 h-4" />
+              Clear ({selectedIds.size})
+            </button>
+          ) : null}
         </div>
         {isRoutinePicker && (
           <p className={`mt-2 text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>

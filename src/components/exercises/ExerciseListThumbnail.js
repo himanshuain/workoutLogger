@@ -20,9 +20,16 @@ export default function ExerciseListThumbnail({ exercise, isDarkMode }) {
   if (!url || failed) {
     return (
       <div
-        className={`relative w-14 h-14 rounded-xl overflow-hidden shrink-0 flex items-center justify-center ${bg} ${iconClass}`}
+        className={`relative w-14 h-14 rounded-xl overflow-hidden shrink-0 flex flex-col items-center justify-center gap-0.5 px-0.5 ${bg} ${iconClass}`}
       >
-        <ExerciseIcon name={exercise?.name} className="w-10 h-10" color="currentColor" />
+        <ExerciseIcon name={exercise?.name} className="w-8 h-8" color="currentColor" />
+        <span
+          className={`text-[8px] font-semibold uppercase leading-none ${
+            isDarkMode ? "text-iron-500" : "text-slate-400"
+          }`}
+        >
+          No image
+        </span>
       </div>
     );
   }

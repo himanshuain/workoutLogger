@@ -238,12 +238,25 @@ export default function Home() {
     }
   };
 
-  // Start workout
+  // Start workout (replaces an in-progress session for today if user picks another routine)
   const handleStartWorkout = async (routine) => {
     setIsStartingWorkout(true);
     setShowRoutineSelector(false);
 
     try {
+      if (activeSession && activeSession.status === "active") {
+        const ok =
+          typeof window !== "undefined" &&
+          window.confirm(
+            "Replace your current in-progress workout with this routine? Progress on the current session will be lost."
+          );
+        if (!ok) {
+          setIsStartingWorkout(false);
+          return;
+        }
+        await deleteWorkoutSession(activeSession.id);
+        await loadActiveSession();
+      }
       const session = await startWorkoutSession(routine);
       if (session) {
         await loadActiveSession();

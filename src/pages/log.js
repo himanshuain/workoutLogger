@@ -5,6 +5,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import { FadeIn } from "@/components/ui/fade-in";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
@@ -76,6 +77,7 @@ export default function LogPage() {
     getRoutineForDay,
     getWorkoutSessionsForDate,
     startWorkoutSessionForDate,
+    deleteWorkoutSession,
     routines,
   } = useWorkout();
 
@@ -90,7 +92,9 @@ export default function LogPage() {
   const [qtyItem, setQtyItem] = useState(null);
   const [tempQty, setTempQty] = useState(1);
   const [qtyTargetDate, setQtyTargetDate] = useState(null);
-  
+  const [showRoutinePicker, setShowRoutinePicker] = useState(false);
+  const [startingRoutine, setStartingRoutine] = useState(false);
+
   const stripScrollRef = useRef(null);
   const stripAnchorRef = useRef(null);
 
@@ -355,6 +359,45 @@ export default function LogPage() {
     } catch (error) {
       console.error("Error starting workout:", error);
       toast.error("Could not start workout");
+    }
+  };
+
+  const handleStartWithPickedRoutine = async routine => {
+    if (!pastLogDate || !routine) return;
+    setStartingRoutine(true);
+    setShowRoutinePicker(false);
+    try {
+      const activeForDay = workoutSessions.find(s => s.status === "active");
+      if (activeForDay) {
+        const ok =
+          typeof window !== "undefined" &&
+          window.confirm(
+            "Replace the in-progress workout for this day with the selected routine? Unsaved progress on the current session will be removed."
+          );
+        if (!ok) {
+          setStartingRoutine(false);
+          return;
+        }
+        await deleteWorkoutSession(activeForDay.id);
+        await queryClient.invalidateQueries({
+          queryKey: ["workoutSessionsForDate", user?.id, pastLogDate],
+        });
+      }
+      const session = await startWorkoutSessionForDate(pastLogDate, routine);
+      if (!session) {
+        toast.error("Could not start workout");
+        return;
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["workoutSessionsForDate", user?.id, pastLogDate],
+      });
+      navigateToWorkoutSession(session);
+      toast.success("Workout started");
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not start workout");
+    } finally {
+      setStartingRoutine(false);
     }
   };
 
@@ -716,11 +759,27 @@ export default function LogPage() {
             <div className={`rounded-2xl border p-3 mb-6 ${
               isDarkMode ? "border-iron-800 bg-iron-950/40" : "border-slate-200 bg-slate-50/90"
             }`}>
-              <div className="flex items-center gap-2 mb-3">
-                <Dumbbell className={`h-4 w-4 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
-                <p className="text-section-header">
-                  Workout · {formatChipLabel(pastLogDate, todayStr)}
-                </p>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Dumbbell className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                  <p className="text-section-header truncate">
+                    Workout · {formatChipLabel(pastLogDate, todayStr)}
+                  </p>
+                </div>
+                {routines.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowRoutinePicker(true)}
+                    disabled={startingRoutine}
+                    className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg ${
+                      isDarkMode
+                        ? "bg-iron-800 text-lift-primary hover:bg-iron-700"
+                        : "bg-slate-200 text-workout-primary hover:bg-slate-300"
+                    } disabled:opacity-50`}
+                  >
+                    Pick routine
+                  </button>
+                ) : null}
               </div>
               
               {workoutSessions.length > 0 ? (
@@ -792,18 +851,35 @@ export default function LogPage() {
                       No routine planned for this day
                     </p>
                   )}
-                  <button
-                    type="button"
-                    onClick={handleStartWorkout}
-                    className={`flex items-center gap-2 mx-auto px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
-                      isDarkMode
-                        ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30"
-                        : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
-                    }`}
-                  >
-                    <Play className="h-4 w-4" />
-                    Start Workout
-                  </button>
+                  <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                    <button
+                      type="button"
+                      onClick={handleStartWorkout}
+                      disabled={startingRoutine}
+                      className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                        isDarkMode
+                          ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30"
+                          : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
+                      } disabled:opacity-50`}
+                    >
+                      <Play className="h-4 w-4" />
+                      {routineForSelectedDay ? "Start with planned day" : "Start workout"}
+                    </button>
+                    {routines.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowRoutinePicker(true)}
+                        disabled={startingRoutine}
+                        className={`py-2.5 rounded-xl text-sm font-semibold border ${
+                          isDarkMode
+                            ? "border-iron-600 text-iron-200 hover:bg-iron-800/80"
+                            : "border-slate-300 text-slate-800 hover:bg-slate-50"
+                        } disabled:opacity-50`}
+                      >
+                        Choose another routine
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -964,6 +1040,49 @@ export default function LogPage() {
           </div>
         </div>
       </FadeIn>
+
+      <Modal open={showRoutinePicker} onOpenChange={setShowRoutinePicker}>
+        <ModalContent
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+        >
+          <ModalHeader>
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Choose routine for {formatChipLabel(pastLogDate || todayStr, todayStr)}
+            </ModalTitle>
+          </ModalHeader>
+          <ModalBody className="space-y-2 max-h-[min(60vh,24rem)] overflow-y-auto">
+            {routines.map(routine => (
+              <button
+                key={routine.id}
+                type="button"
+                disabled={startingRoutine}
+                onClick={() => handleStartWithPickedRoutine(routine)}
+                className={`w-full p-4 rounded-2xl text-left transition-all disabled:opacity-50 ${
+                  isDarkMode ? "bg-iron-800 hover:bg-iron-700" : "bg-slate-100 hover:bg-slate-200"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: `${routine.color}20` }}
+                  >
+                    <Dumbbell className="w-6 h-6" style={{ color: routine.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-bold truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                      {routine.name}
+                    </p>
+                    <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                      {routine.routine_exercises?.length || 0} exercises
+                    </p>
+                  </div>
+                  <ChevronRight className={`w-5 h-5 shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
+                </div>
+              </button>
+            ))}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Food Quantity Modal */}
       <FoodQuantityModal

@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Edit3,
   ClipboardList,
+  ListChecks,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
@@ -71,6 +72,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
 
   const [starting, setStarting] = useState(false);
   const [extrasVersion, setExtrasVersion] = useState(0);
+  const [thumbFailed, setThumbFailed] = useState({});
 
   const bumpExtras = useCallback(() => setExtrasVersion(v => v + 1), []);
 
@@ -81,6 +83,10 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   useEffect(() => {
     bumpExtras();
   }, [router.asPath, bumpExtras]);
+
+  useEffect(() => {
+    setThumbFailed({});
+  }, [activeSession?.id, plannedExercises.length]);
 
   const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine, routines]);
 
@@ -348,31 +354,65 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       </div>
 
       {!hasSession ? (
-        <div className="mt-8">
+        <div className="mt-8 space-y-3">
           <button
             type="button"
             onClick={handleStartOrResume}
-            disabled={starting}
+            disabled={starting || !todayRoutine}
             className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${
               isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
+            } disabled:opacity-50 disabled:pointer-events-none`}
           >
             {starting ? (
               <span className="animate-pulse">Starting…</span>
             ) : (
               <>
                 <Play className="w-4 h-4" fill="currentColor" />
-                Start / Resume Workout
+                Start workout
               </>
             )}
           </button>
+          {routines.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChooseRoutine?.()}
+              className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border ${
+                isDarkMode
+                  ? "border-iron-600 text-iron-200 hover:bg-iron-800/80"
+                  : "border-slate-300 text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              <ListChecks className="w-4 h-4" />
+              Choose another routine
+            </button>
+          )}
         </div>
       ) : (
         <>
-          <StaggerContainer className="mt-6 space-y-3">
+          {routines.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChooseRoutine?.()}
+              className={`mt-4 w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border ${
+                isDarkMode
+                  ? "border-iron-700 text-iron-300 hover:bg-iron-800/60"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <ListChecks className="w-4 h-4" />
+              Switch routine
+            </button>
+          )}
+          <div
+            className={`mt-4 max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl pr-1 -mr-0.5 ${
+              isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
+            }`}
+          >
+          <StaggerContainer className="space-y-3 pb-1">
             {plannedExercises.map(ex => {
               const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
               const media = resolveExerciseMedia(ex.exercise_name);
+              const showPlaceholder = !media || thumbFailed[ex.exercise_name];
               return (
                 <StaggerItem key={ex.exercise_name}>
                   <PressableScale>
@@ -386,11 +426,11 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       }`}
                     >
                   <div
-                    className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 ${
+                    className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                       isDarkMode ? "bg-iron-800" : "bg-slate-100"
                     }`}
                   >
-                    {media ? (
+                    {!showPlaceholder ? (
                       <Image
                         src={media}
                         alt=""
@@ -398,15 +438,25 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                         className="object-cover"
                         sizes="64px"
                         unoptimized={exerciseImageUnoptimized(media)}
+                        onError={() =>
+                          setThumbFailed(prev => ({ ...prev, [ex.exercise_name]: true }))
+                        }
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <>
                         <ExerciseIcon
                           name={ex.exercise_name}
-                          className="w-8 h-8"
+                          className="w-7 h-7"
                           color={isDarkMode ? "#71717a" : "#94a3b8"}
                         />
-                      </div>
+                        <span
+                          className={`mt-0.5 text-[9px] font-medium leading-none ${
+                            isDarkMode ? "text-iron-500" : "text-slate-400"
+                          }`}
+                        >
+                          No image
+                        </span>
+                      </>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -466,6 +516,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
               );
             })}
           </StaggerContainer>
+          </div>
 
           <button
             type="button"

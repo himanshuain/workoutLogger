@@ -15,7 +15,7 @@ import {
   getSubcategoriesForParent,
   exerciseMatchesSubFilter,
 } from "@/lib/exerciseSubcategories";
-import { Plus, Grid3X3, List, LayoutGrid, ArrowLeft } from "lucide-react";
+import { Plus, Grid3X3, List, LayoutGrid, ArrowLeft, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -474,65 +474,89 @@ export default function ExercisesSearchPage() {
               
               // Card view for routine picker
               return (
-                <div key={ex.id} className={cardClass}>
-                  <button
-                    type="button"
-                    onClick={() => openPreview(ex.id)}
-                    className="w-full"
-                  >
-                    <div className="aspect-square relative">
-                      {(() => {
-                        const url = exerciseMediaUrl(ex);
-                        if (url) {
-                          return (
-                            <Image
-                              src={url}
-                              alt=""
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 50vw, 33vw"
-                              unoptimized={exerciseImageUnoptimized(url)}
+                <button
+                  key={ex.id}
+                  type="button"
+                  onClick={() => toggleSelection(ex.id)}
+                  className={`${cardClass} text-left transition-all ${selected ? (isDarkMode ? "ring-2 ring-lift-primary" : "ring-2 ring-workout-primary") : ""} ${
+                    isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="aspect-square relative">
+                    {(() => {
+                      const url = exerciseMediaUrl(ex);
+                      if (url) {
+                        return (
+                          <Image
+                            src={url}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 33vw"
+                            unoptimized={exerciseImageUnoptimized(url)}
+                          />
+                        );
+                      } else {
+                        return (
+                          <div className={`w-full h-full flex items-center justify-center ${
+                            isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                          }`}>
+                            <ExerciseIcon 
+                              name={ex.name} 
+                              className="w-12 h-12" 
+                              color={isDarkMode ? "#71717a" : "#94a3b8"} 
                             />
-                          );
-                        } else {
-                          return (
-                            <div className={`w-full h-full flex items-center justify-center ${
-                              isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                            }`}>
-                              <ExerciseIcon 
-                                name={ex.name} 
-                                className="w-12 h-12" 
-                                color={isDarkMode ? "#71717a" : "#94a3b8"} 
-                              />
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  </button>
-                  <div className="p-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleSelection(ex.id)}
-                      className={`w-full text-left transition-colors ${
-                        selected
-                          ? isDarkMode
-                            ? "text-lift-primary"
-                            : "text-workout-primary"
-                          : isDarkMode
-                            ? "text-iron-100 hover:text-iron-50"
-                            : "text-slate-900 hover:text-slate-800"
-                      }`}
-                    >
-                      <p className="font-semibold text-sm leading-tight">
-                        {ex.name}
-                      </p>
-                      <p className={`text-xs mt-1 capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                        {ex.category || "General"}
-                      </p>
-                    </button>
+                          </div>
+                        );
+                      }
+                    })()}
+                    
+                    {/* Selection indicator overlay */}
+                    {selected && (
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          isDarkMode ? "bg-lift-primary" : "bg-workout-primary"
+                        }`}>
+                          <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                  
+                  <div className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <p className={`font-semibold text-sm leading-tight ${
+                          selected
+                            ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                            : isDarkMode ? "text-iron-100" : "text-slate-900"
+                        }`}>
+                          {ex.name}
+                        </p>
+                        <p className={`text-xs mt-1 capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                          {ex.category || "General"}
+                        </p>
+                      </div>
+                      
+                      {/* Preview button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPreview(ex.id);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          isDarkMode 
+                            ? "bg-iron-700 hover:bg-iron-600 text-iron-300" 
+                            : "bg-slate-200 hover:bg-slate-300 text-slate-600"
+                        }`}
+                        aria-label={`Preview ${ex.name}`}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </button>
               );
             }
             

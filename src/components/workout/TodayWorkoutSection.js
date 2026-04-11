@@ -18,6 +18,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 
 function mergePlannedExercises(todayRoutine, extras) {
   const map = new Map();
@@ -310,7 +311,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <SpringIn className="max-w-lg mx-auto">
       <motion.p
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -368,21 +369,22 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
         </div>
       ) : (
         <>
-          <div className="mt-6 space-y-3">
+          <StaggerContainer className="mt-6 space-y-3">
             {plannedExercises.map(ex => {
               const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
               const media = resolveExerciseMedia(ex.exercise_name);
               return (
-                <button
-                  key={ex.exercise_name}
-                  type="button"
-                  onClick={() => openExercise(ex.exercise_name, ex.category)}
-                  className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors active:scale-[0.99] ${
-                    isDarkMode
-                      ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
-                      : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
-                  }`}
-                >
+                <StaggerItem key={ex.exercise_name}>
+                  <PressableScale>
+                    <button
+                      type="button"
+                      onClick={() => openExercise(ex.exercise_name, ex.category)}
+                      className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors ${
+                        isDarkMode
+                          ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
+                          : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
+                      }`}
+                    >
                   <div
                     className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 ${
                       isDarkMode ? "bg-iron-800" : "bg-slate-100"
@@ -458,10 +460,12 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       )}
                     </div>
                   </div>
-                </button>
+                    </button>
+                  </PressableScale>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerContainer>
 
           <button
             type="button"
@@ -491,6 +495,6 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
           </button>
         </>
       )}
-    </div>
+    </SpringIn>
   );
 }

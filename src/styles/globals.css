@@ -321,14 +321,25 @@ input[type="number"] {
   animation-delay: 350ms;
 }
 
-/* Pill animations */
-@keyframes bounce-once {
-  0%,
-  100% {
+/* Enhanced completion animations */
+@keyframes success-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes completion-pulse {
+  0% { 
     transform: scale(1);
+    box-shadow: 0 0 0 0 var(--accent-success);
   }
-  50% {
-    transform: scale(1.1);
+  50% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
@@ -346,13 +357,33 @@ input[type="number"] {
   }
 }
 
-.animate-bounce-once {
-  animation: bounce-once 300ms ease-out;
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-success-bounce {
+  animation: success-bounce 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-completion-pulse {
+  animation: completion-pulse 600ms ease-out;
 }
 
 .animate-scale-in {
   animation: scale-in 300ms ease-out;
 }
+
+.animate-gentle-bounce {
+  animation: gentle-bounce 500ms ease-in-out;
+}
+
+/* Stagger delay utilities for manual control */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
 
 /* Hide scrollbar for category pills */
 .scrollbar-hide {
@@ -462,29 +493,57 @@ input[type="number"] {
   @apply bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-workout-primary/50 border border-slate-200;
 }
 
-/* Button styles */
+/* Button styles with enhanced feedback */
 .btn-primary {
-  @apply py-3 px-6 rounded-xl font-bold transition-all active:scale-95;
+  @apply py-3 px-6 rounded-xl font-bold transition-all duration-150;
+  transform-origin: center;
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
 }
 
 .dark .btn-primary {
   @apply bg-lift-primary text-iron-950;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+}
+
+.dark .btn-primary:hover {
+  box-shadow: 0 6px 16px rgba(251, 191, 36, 0.3);
 }
 
 .light .btn-primary {
   @apply bg-workout-primary text-white;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.light .btn-primary:hover {
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.3);
 }
 
 .btn-secondary {
-  @apply py-3 px-6 rounded-xl font-medium transition-all active:scale-95;
+  @apply py-3 px-6 rounded-xl font-medium transition-all duration-150;
+  transform-origin: center;
+}
+
+.btn-secondary:active {
+  transform: scale(0.96);
 }
 
 .dark .btn-secondary {
-  @apply bg-iron-800 text-iron-400;
+  @apply bg-iron-800 text-iron-400 border border-iron-700;
+}
+
+.dark .btn-secondary:hover {
+  @apply bg-iron-700 text-iron-300;
 }
 
 .light .btn-secondary {
   @apply bg-slate-100 text-slate-600 border border-slate-200;
+}
+
+.light .btn-secondary:hover {
+  @apply bg-slate-200 text-slate-700;
 }
 
 /* Card base styles with hierarchy */

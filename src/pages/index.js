@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/context-menu";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { FadeIn } from "@/components/ui/fade-in";
+import { FadeIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
 import PastDayLogModal from "@/components/PastDayLogModal";
 import TodayWorkoutSection from "@/components/workout/TodayWorkoutSection";
@@ -532,7 +532,7 @@ export default function Home() {
           )}
 
           {(
-            <div className="space-y-2">
+            <StaggerContainer className="space-y-2">
               {recentSessions.map((session) => {
                 const completedSets = (session.set_logs || []).filter((s) => s.is_completed);
                 const totalVolume = completedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
@@ -551,9 +551,11 @@ export default function Home() {
                     : dateObj.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
                 return (
-                  <ContextMenu key={session.id}>
-                    <ContextMenuTrigger asChild>
-                      <div className="card overflow-hidden">
+                  <StaggerItem key={session.id}>
+                    <ContextMenu>
+                      <ContextMenuTrigger asChild>
+                        <PressableScale>
+                          <div className="card overflow-hidden">
                     {/* Session header */}
                     <button
                       onClick={() => setExpandedSession(isExpanded ? null : session.id)}
@@ -722,8 +724,9 @@ export default function Home() {
 
                       </div>
                     )}
-                      </div>
-                    </ContextMenuTrigger>
+                          </div>
+                        </PressableScale>
+                      </ContextMenuTrigger>
                     <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
                       <ContextMenuItem
                         destructive
@@ -736,11 +739,12 @@ export default function Home() {
                         <Trash2 className="w-4 h-4" />
                         Delete Workout
                       </ContextMenuItem>
-                    </ContextMenuContent>
-                  </ContextMenu>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerContainer>
           )}
         </section>
         )}

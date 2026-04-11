@@ -46,6 +46,7 @@ import {
   Flame,
   CalendarClock,
   StickyNote,
+  Settings,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import {
@@ -371,6 +372,18 @@ export default function Home() {
                 aria-hidden
               />
             </button>
+            <button
+              type="button"
+              onClick={() => router.push("/settings")}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                isDarkMode
+                  ? "bg-iron-800 active:bg-iron-700 text-iron-400"
+                  : "bg-slate-100 active:bg-slate-200 text-slate-500"
+              }`}
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
@@ -468,7 +481,7 @@ export default function Home() {
             </h3>
             <button
               type="button"
-              onClick={() => router.push("/lifelog?tab=habits")}
+              onClick={() => router.push("/log?tab=habits")}
               className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
                 isDarkMode
                   ? "text-iron-400 bg-iron-900/80 hover:bg-iron-800 active:text-iron-200"

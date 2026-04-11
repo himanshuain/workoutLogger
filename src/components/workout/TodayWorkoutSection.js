@@ -254,7 +254,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             </button>
             <button
               type="button"
-              onClick={() => router.push(`/routine?day=${todayDow}`)}
+              onClick={() => router.push(`/plan?day=${todayDow}`)}
               className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 border ${
                 isDarkMode
                   ? "border-iron-700 text-iron-200 hover:bg-iron-800/80"
@@ -275,7 +275,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       <div className="max-w-lg mx-auto">
         <button
           type="button"
-          onClick={() => router.push("/routine")}
+          onClick={() => router.push("/plan")}
           className={`
                 w-full p-6 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3
                 ${

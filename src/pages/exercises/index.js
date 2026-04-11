@@ -13,7 +13,7 @@ import {
   getSubcategoriesForParent,
   exerciseMatchesSubFilter,
 } from "@/lib/exerciseSubcategories";
-import { Plus } from "lucide-react";
+import { Plus, Grid3X3, List, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -29,6 +29,7 @@ export default function ExercisesSearchPage() {
   const [addingBatch, setAddingBatch] = useState(false);
   const [previewId, setPreviewId] = useState(null);
   const [uiHydrated, setUiHydrated] = useState(false);
+  const [viewMode, setViewMode] = useState("list"); // "list" or "card"
 
   const routineDayStr = router.query.routineDay;
   const routineDayNum = typeof routineDayStr === "string" ? parseInt(routineDayStr, 10) : NaN;
@@ -349,11 +350,130 @@ export default function ExercisesSearchPage() {
               </div>
             </div>
           ) : null}
+          
+          {/* View Toggle */}
+          <div className="mt-4 flex items-center justify-between">
+            <p className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+              {filtered.length} exercise{filtered.length !== 1 ? "s" : ""}
+            </p>
+            <div className={`flex rounded-lg p-1 ${
+              isDarkMode ? "bg-iron-800" : "bg-slate-100"
+            }`}>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === "list"
+                    ? isDarkMode
+                      ? "bg-iron-700 text-iron-100"
+                      : "bg-white text-slate-900 shadow-sm"
+                    : isDarkMode
+                      ? "text-iron-400 hover:text-iron-300"
+                      : "text-slate-500 hover:text-slate-600"
+                }`}
+              >
+                <List className="w-4 h-4" />
+                List
+              </button>
+              <button
+                onClick={() => setViewMode("card")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  viewMode === "card"
+                    ? isDarkMode
+                      ? "bg-iron-700 text-iron-100"
+                      : "bg-white text-slate-900 shadow-sm"
+                    : isDarkMode
+                      ? "text-iron-400 hover:text-iron-300"
+                      : "text-slate-500 hover:text-slate-600"
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Cards
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-6 space-y-2">
+        <div className={`mt-6 ${viewMode === "card" ? "grid grid-cols-2 gap-3" : "space-y-2"}`}>
           {filtered.map(ex => {
             const selected = selectedIds.has(ex.id);
+            
+            if (viewMode === "card") {
+              // Card view layout
+              const cardClass = `w-full rounded-2xl overflow-hidden transition-colors ${
+                isDarkMode
+                  ? "bg-iron-900/50 border border-iron-800"
+                  : "bg-white border border-slate-200 shadow-sm"
+              }`;
+              
+              if (!isRoutinePicker) {
+                return (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => openPreview(ex.id)}
+                    className={`${cardClass} p-3 text-left ${
+                      isDarkMode ? "hover:bg-iron-900" : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="aspect-square mb-3">
+                      <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} className="w-full h-full" />
+                    </div>
+                    <div>
+                      <p className={`font-semibold text-sm leading-tight ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
+                        {ex.name}
+                      </p>
+                      <p className={`text-xs mt-1 capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                        {ex.category || "General"}
+                      </p>
+                      {getExerciseEquipment(ex) && (
+                        <p className={`text-[11px] mt-0.5 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                          {getExerciseEquipment(ex)}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              }
+              
+              // Card view for routine picker
+              return (
+                <div key={ex.id} className={cardClass}>
+                  <button
+                    type="button"
+                    onClick={() => openPreview(ex.id)}
+                    className="w-full p-3 text-left"
+                  >
+                    <div className="aspect-square mb-3">
+                      <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} className="w-full h-full" />
+                    </div>
+                  </button>
+                  <div className="px-3 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSelection(ex.id)}
+                      className={`w-full text-left transition-colors ${
+                        selected
+                          ? isDarkMode
+                            ? "text-lift-primary"
+                            : "text-workout-primary"
+                          : isDarkMode
+                            ? "text-iron-100 hover:text-iron-50"
+                            : "text-slate-900 hover:text-slate-800"
+                      }`}
+                    >
+                      <p className="font-semibold text-sm leading-tight">
+                        {ex.name}
+                      </p>
+                      <p className={`text-xs mt-1 capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                        {ex.category || "General"}
+                      </p>
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            
+            // List view layout (existing)
             const baseCard = `w-full flex gap-3 items-stretch rounded-2xl overflow-hidden ${
               isDarkMode
                 ? "bg-iron-900/50 border border-iron-800"

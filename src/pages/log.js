@@ -108,8 +108,17 @@ function DatePicker({ selectedDate, onDateChange, isDarkMode }) {
   );
 }
 
-// Workout logging placeholder
+// Workout logging section
 function WorkoutLogSection({ selectedDate, isDarkMode }) {
+  const router = useRouter();
+  
+  const handleAddWorkout = () => {
+    // Navigate to plan page to create/edit routine for this date
+    const date = new Date(selectedDate);
+    const dayOfWeek = date.getDay();
+    router.push(`/plan?day=${dayOfWeek}&date=${selectedDate}`);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="card-secondary">
@@ -132,7 +141,14 @@ function WorkoutLogSection({ selectedDate, isDarkMode }) {
         }`}>
           <Dumbbell className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No workout logged for this date</p>
-          <button className="mt-3 px-4 py-2 rounded-lg text-sm font-medium bg-lift-primary text-iron-950">
+          <button 
+            onClick={handleAddWorkout}
+            className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isDarkMode 
+                ? "bg-lift-primary text-iron-950 hover:bg-lift-secondary" 
+                : "bg-workout-primary text-white hover:bg-workout-secondary"
+            }`}
+          >
             Add Workout
           </button>
         </div>
@@ -141,8 +157,15 @@ function WorkoutLogSection({ selectedDate, isDarkMode }) {
   );
 }
 
-// Food logging placeholder  
+// Food logging section  
 function FoodLogSection({ selectedDate, isDarkMode }) {
+  const router = useRouter();
+  
+  const handleAddFood = () => {
+    // Navigate to food page - we'll keep the existing food functionality
+    router.push("/food");
+  };
+  
   return (
     <div className="space-y-4">
       <div className="card-secondary">
@@ -165,7 +188,14 @@ function FoodLogSection({ selectedDate, isDarkMode }) {
         }`}>
           <Utensils className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No food logged for this date</p>
-          <button className="mt-3 px-4 py-2 rounded-lg text-sm font-medium bg-lift-primary text-iron-950">
+          <button 
+            onClick={handleAddFood}
+            className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isDarkMode 
+                ? "bg-lift-primary text-iron-950 hover:bg-lift-secondary" 
+                : "bg-workout-primary text-white hover:bg-workout-secondary"
+            }`}
+          >
             Add Food
           </button>
         </div>
@@ -174,8 +204,15 @@ function FoodLogSection({ selectedDate, isDarkMode }) {
   );
 }
 
-// Habits logging placeholder
+// Habits logging section
 function HabitsLogSection({ selectedDate, isDarkMode }) {
+  const { trackables, createTrackable } = useWorkout();
+  const [showAddHabit, setShowAddHabit] = useState(false);
+  
+  const handleAddHabits = () => {
+    setShowAddHabit(true);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="card-secondary">
@@ -191,24 +228,62 @@ function HabitsLogSection({ selectedDate, isDarkMode }) {
           </div>
         </div>
         
-        <div className={`text-center py-8 rounded-xl border-2 border-dashed ${
-          isDarkMode
-            ? "border-iron-700 text-iron-500"
-            : "border-slate-300 text-slate-400"
-        }`}>
-          <Heart className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No habits logged for this date</p>
-          <button className="mt-3 px-4 py-2 rounded-lg text-sm font-medium bg-lift-primary text-iron-950">
-            Add Habits
-          </button>
-        </div>
+        {trackables.length > 0 ? (
+          <div className="space-y-3">
+            {trackables.filter(t => t.name !== "Body Weight").map(trackable => (
+              <div key={trackable.id} className={`p-3 rounded-xl flex items-center gap-3 ${
+                isDarkMode ? "bg-iron-800/40" : "bg-slate-100"
+              }`}>
+                <span className="text-lg">{trackable.icon}</span>
+                <div className="flex-1">
+                  <p className="font-medium">{trackable.name}</p>
+                  {trackable.value_unit && (
+                    <p className="text-xs text-metadata">Unit: {trackable.value_unit}</p>
+                  )}
+                </div>
+                <button className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+                  isDarkMode 
+                    ? "bg-iron-700 text-iron-300 hover:bg-iron-600" 
+                    : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                }`}>
+                  Log
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={`text-center py-8 rounded-xl border-2 border-dashed ${
+            isDarkMode
+              ? "border-iron-700 text-iron-500"
+              : "border-slate-300 text-slate-400"
+          }`}>
+            <Heart className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No habits configured yet</p>
+            <button 
+              onClick={handleAddHabits}
+              className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDarkMode 
+                  ? "bg-lift-primary text-iron-950 hover:bg-lift-secondary" 
+                  : "bg-workout-primary text-white hover:bg-workout-secondary"
+              }`}
+            >
+              Add Habits
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-// Events logging placeholder
+// Events logging section
 function EventsLogSection({ selectedDate, isDarkMode }) {
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  
+  const handleAddEvent = () => {
+    setShowAddEvent(true);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="card-secondary">
@@ -231,7 +306,14 @@ function EventsLogSection({ selectedDate, isDarkMode }) {
         }`}>
           <CalendarDays className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No events logged for this date</p>
-          <button className="mt-3 px-4 py-2 rounded-lg text-sm font-medium bg-lift-primary text-iron-950">
+          <button 
+            onClick={handleAddEvent}
+            className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              isDarkMode 
+                ? "bg-lift-primary text-iron-950 hover:bg-lift-secondary" 
+                : "bg-workout-primary text-white hover:bg-workout-secondary"
+            }`}
+          >
             Add Event
           </button>
         </div>
@@ -243,7 +325,7 @@ function EventsLogSection({ selectedDate, isDarkMode }) {
 export default function LogPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { user } = useWorkout();
+  const { user, trackables, createTrackable } = useWorkout();
   
   // Get initial tab from URL or default to workout
   const initialTab = router.query.tab || "workout";

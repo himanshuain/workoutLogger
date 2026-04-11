@@ -8,7 +8,7 @@ const TabsList = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-12 items-center justify-center rounded-xl bg-iron-900/80 p-1 text-iron-400",
+      "inline-flex h-12 items-center justify-center rounded-xl p-1 dark:bg-iron-900/80 dark:text-iron-400 bg-slate-100 text-slate-500",
       className,
     )}
     {...props}
@@ -20,7 +20,7 @@ const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium ring-offset-iron-950 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lift-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-lift-primary data-[state=active]:text-iron-950 data-[state=active]:shadow-sm",
+      "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-iron-950 dark:focus-visible:ring-lift-primary dark:data-[state=active]:bg-lift-primary dark:data-[state=active]:text-iron-950 ring-offset-slate-50 focus-visible:ring-workout-primary data-[state=active]:bg-workout-primary data-[state=active]:text-white data-[state=active]:shadow-sm",
       className,
     )}
     {...props}
@@ -32,7 +32,7 @@ const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "mt-4 ring-offset-iron-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lift-primary focus-visible:ring-offset-2",
+      "mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:ring-offset-iron-950 dark:focus-visible:ring-lift-primary ring-offset-slate-50 focus-visible:ring-workout-primary",
       className,
     )}
     {...props}

@@ -332,20 +332,6 @@ export default function ExercisesSearchPage() {
           <h1 className="text-screen-title flex-1 min-w-0">
             Search exercise
           </h1>
-          {isRoutinePicker && selectedIds.size > 0 ? (
-            <button
-              type="button"
-              onClick={clearRoutineSelection}
-              className={`shrink-0 flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl ${
-                isDarkMode
-                  ? "bg-iron-800 text-iron-200 hover:bg-iron-700"
-                  : "bg-slate-200 text-slate-800 hover:bg-slate-300"
-              }`}
-            >
-              <XCircle className="w-4 h-4" />
-              Clear ({selectedIds.size})
-            </button>
-          ) : null}
         </div>
         {isRoutinePicker && (
           <p className={`mt-2 text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
@@ -737,16 +723,30 @@ export default function ExercisesSearchPage() {
             bottom: "calc(4.75rem + env(safe-area-inset-bottom, 0px))",
           }}
         >
-          <button
-            type="button"
-            disabled={addingBatch}
-            onClick={handleBatchAddToRoutine}
-            className={`w-full my-3 py-3.5 rounded-2xl font-semibold text-center disabled:opacity-50 ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
-          >
-            {addingBatch ? "Adding…" : `Add ${selectedIds.size} to routine`}
-          </button>
+          <div className="my-3 flex items-stretch gap-2">
+            <button
+              type="button"
+              onClick={clearRoutineSelection}
+              className={`shrink-0 flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-2xl font-semibold text-sm ${
+                isDarkMode
+                  ? "border border-iron-600 text-iron-200 hover:bg-iron-800"
+                  : "border border-slate-300 text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              <XCircle className="w-4 h-4 shrink-0" />
+              Clear
+            </button>
+            <button
+              type="button"
+              disabled={addingBatch}
+              onClick={handleBatchAddToRoutine}
+              className={`flex-1 min-w-0 py-3.5 rounded-2xl font-semibold text-center disabled:opacity-50 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              {addingBatch ? "Adding…" : `Add ${selectedIds.size} to routine`}
+            </button>
+          </div>
         </div>
       ) : null}
 

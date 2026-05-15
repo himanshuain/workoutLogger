@@ -65,7 +65,6 @@ import LogDayWorkoutPanel from "@/components/logging/LogDayWorkoutPanel";
 import {
   addDaysStr,
   formatChipLabel,
-  formatShortDate,
   STRIP_INITIAL_DAYS,
   STRIP_LOAD_MORE_DAYS,
   STRIP_MAX_PAST_DAYS,
@@ -227,8 +226,6 @@ export default function Home() {
   }, []);
 
   const stripScrollAnchorDate = today;
-  const stripRangeLabel =
-    glanceDays.length > 0 ? `${formatShortDate(glanceDays[0])} – ${formatShortDate(glanceDays[glanceDays.length - 1])}` : "";
 
   const { data: foodCountByDate = {} } = useQuery({
     queryKey: ["pastModalFoodStrip", user?.id, glanceDays[0], glanceDays[glanceDays.length - 1]],
@@ -580,7 +577,6 @@ export default function Home() {
             selectedDate={viewingDate}
             todayStr={today}
             foodCountByDate={foodCountByDate}
-            stripRangeLabel={stripRangeLabel}
             onPickDate={pickViewingDate}
             stripScrollAnchorDate={stripScrollAnchorDate}
             onNearPastEdge={loadMoreStripPast}

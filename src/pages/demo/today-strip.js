@@ -10,7 +10,6 @@ import HorizontalDateStrip from "@/components/logging/HorizontalDateStrip";
 import {
   localDateStr,
   addDaysStr,
-  formatShortDate,
   STRIP_INITIAL_DAYS,
   STRIP_LOAD_MORE_DAYS,
   STRIP_MAX_PAST_DAYS,
@@ -52,11 +51,6 @@ export default function TodayStripDemoPage() {
     return m;
   }, [glanceDays, todayStr]);
 
-  const stripRangeLabel =
-    glanceDays.length > 0
-      ? `${formatShortDate(glanceDays[0])} – ${formatShortDate(glanceDays[glanceDays.length - 1])}`
-      : "";
-
   return (
     <>
       <Head>
@@ -82,7 +76,6 @@ export default function TodayStripDemoPage() {
             selectedDate={selected}
             todayStr={todayStr}
             foodCountByDate={mockFood}
-            stripRangeLabel={stripRangeLabel}
             onPickDate={iso => {
               if (iso <= todayStr) setSelected(iso);
             }}

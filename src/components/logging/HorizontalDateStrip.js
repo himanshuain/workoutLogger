@@ -1,18 +1,17 @@
 import { useRef, useLayoutEffect, useCallback } from "react";
-import { Utensils } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SCROLL_LOAD_EDGE_PX = 72;
 
 /**
- * Horizontal scrollable day picker (Log / Today). Infinite-style: load more past days when scrolled to the oldest edge.
+ * Horizontal scrollable day picker (Today). Infinite-style: load more past days when scrolled to the oldest edge.
  * @param {{
  *   isDarkMode: boolean;
  *   glanceDays: string[];
  *   selectedDate: string;
  *   todayStr: string;
  *   foodCountByDate: Record<string, number>;
- *   stripRangeLabel: string;
  *   onPickDate: (iso: string) => void;
  *   stripScrollAnchorDate?: string;
  *   onNearPastEdge?: () => void;
@@ -26,7 +25,6 @@ export default function HorizontalDateStrip({
   selectedDate,
   todayStr,
   foodCountByDate,
-  stripRangeLabel,
   onPickDate,
   stripScrollAnchorDate,
   onNearPastEdge,
@@ -97,76 +95,35 @@ export default function HorizontalDateStrip({
       : "border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/70 to-blue-50/90 shadow-sm";
 
   return (
-    <div className={cn("rounded-2xl border p-4 mb-6 transition-colors duration-300", shellGradient, className)}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-              isViewingToday
-                ? isDarkMode
-                  ? "bg-emerald-500/15 text-emerald-400"
-                  : "bg-emerald-100 text-emerald-800"
-                : isDarkMode
-                  ? "bg-sky-500/15 text-sky-300"
-                  : "bg-sky-100 text-sky-700"
-            }`}
-          >
-            <Utensils className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-card-subtitle">Pick a day</p>
-            <p className="text-metadata">{stripRangeLabel}</p>
-          </div>
-        </div>
+    <div className={cn("rounded-2xl border p-3 mb-6 transition-colors duration-300", shellGradient, className)}>
+      <div className="relative w-full min-w-0">
         {!isViewingToday && todayStr ? (
-          <button
-            type="button"
-            onClick={goToToday}
-            className={`shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition-all active:scale-[0.97] ${
-              isDarkMode
-                ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-400/30 hover:bg-sky-500/30"
-                : "bg-sky-600 text-white shadow-sm hover:bg-sky-700"
-            }`}
-          >
-            Go to today
-          </button>
+          <div className="pointer-events-none absolute right-0 top-0 z-30 flex h-6 items-center pr-0.5">
+            <button
+              type="button"
+              onClick={goToToday}
+              aria-label="Go to today"
+              className={cn(
+                "pointer-events-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all active:scale-[0.97]",
+                isDarkMode
+                  ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-400/30 hover:bg-sky-500/30"
+                  : "bg-sky-600 text-white shadow-sm hover:bg-sky-700",
+              )}
+            >
+              <Calendar className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+          </div>
         ) : null}
-      </div>
 
-      <div
-        className={`mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] ${
-          isDarkMode ? "text-iron-500" : "text-slate-500"
-        }`}
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className={cn(
-              "inline-block h-2 w-2 rounded-full",
-              isViewingToday
-                ? isDarkMode
-                  ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.45)]"
-                  : "bg-emerald-500"
-                : isDarkMode
-                  ? "bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.45)]"
-                  : "bg-sky-500",
-            )}
-          />
-          Food logged
-        </span>
-        <span className="inline-flex items-center gap-1.5 opacity-70">
-          <span className={`inline-block h-2 w-2 rounded-full ${isDarkMode ? "bg-iron-600" : "bg-slate-300"}`} />
-          None yet
-        </span>
-        <span className="opacity-80">Swipe · scroll left for older days (loads more automatically)</span>
-      </div>
-
-      <div
-        ref={stripScrollRef}
-        onScroll={handleStripScroll}
-        className={`flex min-h-[7.75rem] w-full min-w-0 items-stretch gap-2 overflow-x-auto scrollbar-hide ${
-          isDarkMode ? "[mask-image:linear-gradient(90deg,transparent,black_8px,black_calc(100%-8px),transparent)]" : ""
-        }`}
-      >
+        <div
+          ref={stripScrollRef}
+          onScroll={handleStripScroll}
+          className={cn(
+            "flex min-h-[7.75rem] w-full min-w-0 items-stretch gap-2 overflow-x-auto scrollbar-hide",
+            isDarkMode && "[mask-image:linear-gradient(90deg,transparent,black_8px,black_calc(100%-8px),transparent)]",
+            !isViewingToday && todayStr && "pr-7",
+          )}
+        >
         {glanceDays.map((d, i) => {
           const c = foodCountByDate[d] || 0;
           const active = selectedDate === d;
@@ -298,6 +255,7 @@ export default function HorizontalDateStrip({
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

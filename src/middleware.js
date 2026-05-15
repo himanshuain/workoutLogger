@@ -13,7 +13,13 @@ export function middleware(request) {
     "/routine": "/plan",
     "/steps": "/checklists",
   };
-  
+
+  if (pathname === "/log") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
   if (routeRedirects[pathname]) {
     const url = request.nextUrl.clone();
     url.pathname = routeRedirects[pathname];
@@ -33,5 +39,5 @@ export function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/", "/routine", "/steps"],
+  matcher: ["/", "/routine", "/steps", "/log"],
 };

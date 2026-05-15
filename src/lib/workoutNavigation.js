@@ -14,9 +14,8 @@ export function getPostWorkoutReturnPath(session) {
   const today = new Date().toISOString().split('T')[0];
   if (session.date === today) {
     return "/";
-  } else {
-    return `/log?date=${session.date}`;
   }
+  return `/?date=${session.date}`;
 }
 
 /**

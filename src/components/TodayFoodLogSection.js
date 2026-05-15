@@ -1,8 +1,11 @@
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/router";
-import { Utensils, ChevronRight, Check } from "lucide-react";
+import { Utensils, Check } from "lucide-react";
+import SectionManageButton from "@/components/SectionManageButton";
+import SectionSurface from "@/components/SectionSurface";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
+import { formatChipLabel } from "@/lib/dateLogUtils";
 
 export default function TodayFoodLogSection({
   isDarkMode,
@@ -11,23 +14,51 @@ export default function TodayFoodLogSection({
   toggleFoodEntry,
   updateFoodEntryQuantity,
   queryClient,
+  logForDate = null,
+  foodEntriesMap = null,
+  calendarToday = null,
+  userId = null,
 }) {
   const router = useRouter();
   const [qtyItem, setQtyItem] = useState(null);
   const [tempQty, setTempQty] = useState(1);
+  const [qtyTargetDate, setQtyTargetDate] = useState(null);
+
+  const isPastDayMode = Boolean(logForDate && foodEntriesMap != null);
+  const entryMap = isPastDayMode ? foodEntriesMap : todayFoodEntries;
 
   const sortedItems = useMemo(
     () => [...foodItems].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
     [foodItems],
   );
 
-  const openQuantity = useCallback((item, quantity) => {
+  const openQuantity = useCallback((item, quantity, targetDate = null) => {
     setQtyItem(item);
     setTempQty(quantity);
+    setQtyTargetDate(targetDate);
   }, []);
 
   const handleToggleToday = async item => {
-    const consumed = !!todayFoodEntries[item.id];
+    const consumed = !!entryMap[item.id];
+    if (isPastDayMode) {
+      if (!logForDate) return;
+      if (consumed) {
+        await toggleFoodEntry(item.id, { date: logForDate });
+        queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+        if (userId) {
+          queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, logForDate] });
+          queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
+        }
+      } else {
+        const def = item.default_quantity ?? 1;
+        const initial = item.quantity_whole_numbers
+          ? Math.max(1, Math.round(Number(def)))
+          : Number(def) || 1;
+        openQuantity(item, initial, logForDate);
+      }
+      if (window.navigator?.vibrate) window.navigator.vibrate(10);
+      return;
+    }
     if (consumed) {
       await toggleFoodEntry(item.id);
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
@@ -42,20 +73,32 @@ export default function TodayFoodLogSection({
   };
 
   const handleChangeAmountToday = item => {
-    const q = todayFoodEntries[item.id]?.quantity ?? item.default_quantity ?? 1;
-    openQuantity(item, q);
+    const q = entryMap[item.id]?.quantity ?? item.default_quantity ?? 1;
+    if (isPastDayMode && logForDate) openQuantity(item, q, logForDate);
+    else openQuantity(item, q);
   };
 
   const handleQuantityConfirm = async () => {
     if (!qtyItem) return;
     const q = normalizeFoodQuantity(tempQty, qtyItem);
-    await updateFoodEntryQuantity(qtyItem.id, q);
-    queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+    const target = qtyTargetDate ?? logForDate;
+    if (isPastDayMode && target) {
+      await updateFoodEntryQuantity(qtyItem.id, q, target);
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+      if (userId) {
+        queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, target] });
+        queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
+      }
+    } else {
+      await updateFoodEntryQuantity(qtyItem.id, q);
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+    }
     setQtyItem(null);
+    setQtyTargetDate(null);
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
   };
 
-  const isAdjustingQuantity = qtyItem && !!todayFoodEntries[qtyItem.id];
+  const isAdjustingQuantity = qtyItem && !!entryMap[qtyItem.id];
 
   const renderFoodBox = (item, consumed, quantity, onToggle, onChangeAmount, compact) => {
     const displayQty = item.quantity_whole_numbers ? Math.round(Number(quantity)) : quantity;
@@ -151,68 +194,75 @@ export default function TodayFoodLogSection({
 
   if (foodItems.length === 0) {
     return (
-      <section className="mt-6">
+      <section className="section-spacing mt-6">
+        <SectionSurface isDarkMode={isDarkMode}>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <h3
+              className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
+            >
+              <Utensils className="w-3.5 h-3.5 shrink-0" />
+              Food
+            </h3>
+            <SectionManageButton
+              isDarkMode={isDarkMode}
+              onClick={() => router.push("/food")}
+              ariaLabel="Add or manage food items"
+              variant="add"
+            >
+              Add items
+            </SectionManageButton>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/food")}
+            className={`w-full rounded-2xl px-4 py-3 text-left text-sm ${
+              isDarkMode ? "bg-iron-900/50 text-iron-400 hover:bg-iron-900" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            Add food items to log them here{isPastDayMode ? "." : " for today."}
+          </button>
+        </SectionSurface>
+      </section>
+    );
+  }
+
+  return (
+    <section className="section-spacing mt-6">
+      <SectionSurface isDarkMode={isDarkMode}>
         <div className="flex items-center justify-between gap-2 mb-3">
           <h3
             className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
           >
             <Utensils className="w-3.5 h-3.5 shrink-0" />
             Food
+            {isPastDayMode && calendarToday && logForDate ? (
+              <span className={`text-xs font-normal normal-case ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                · {formatChipLabel(logForDate, calendarToday)}
+              </span>
+            ) : null}
           </h3>
-          <button
-            type="button"
+          <SectionManageButton
+            isDarkMode={isDarkMode}
             onClick={() => router.push("/food")}
-            className={`text-xs font-semibold flex items-center gap-0.5 ${
-              isDarkMode
-                ? "text-iron-300 hover:text-iron-200 active:text-iron-200"
-                : "text-slate-500 hover:text-slate-800 active:text-slate-700"
-            }`}
-          >
-            Add items <ChevronRight className="w-3 h-3" />
-          </button>
+            ariaLabel="Manage food items"
+          />
         </div>
-        <button
-          type="button"
-          onClick={() => router.push("/food")}
-          className={`w-full rounded-2xl px-4 py-3 text-left text-sm ${
-            isDarkMode ? "bg-iron-900/50 text-iron-400 hover:bg-iron-900" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          Add food items to log them here for today.
-        </button>
-      </section>
-    );
-  }
 
-  return (
-    <section className="mt-6">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h3
-          className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
-        >
-          <Utensils className="w-3.5 h-3.5 shrink-0" />
-          Food
-        </h3>
-        <button
-          type="button"
-          onClick={() => router.push("/food")}
-          className={`text-xs font-semibold flex items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
-            isDarkMode
-              ? "text-iron-300 hover:text-iron-200 active:text-iron-200"
-              : "text-slate-500 hover:text-slate-800 active:text-slate-700"
-          }`}
-        >
-          Manage <ChevronRight className="w-3 h-3" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {sortedItems.map(item => {
-          const consumed = !!todayFoodEntries[item.id];
-          const quantity = todayFoodEntries[item.id]?.quantity ?? item.default_quantity ?? 1;
-          return renderFoodBox(item, consumed, quantity, handleToggleToday, handleChangeAmountToday, false);
-        })}
-      </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {sortedItems.map(item => {
+            const consumed = !!entryMap[item.id];
+            const quantity = entryMap[item.id]?.quantity ?? item.default_quantity ?? 1;
+            return renderFoodBox(
+              item,
+              consumed,
+              quantity,
+              handleToggleToday,
+              handleChangeAmountToday,
+              isPastDayMode,
+            );
+          })}
+        </div>
+      </SectionSurface>
 
       <FoodQuantityModal
         open={!!qtyItem}
@@ -220,7 +270,10 @@ export default function TodayFoodLogSection({
         tempQuantity={tempQty}
         onTempQuantityChange={setTempQty}
         onConfirm={handleQuantityConfirm}
-        onClose={() => setQtyItem(null)}
+        onClose={() => {
+          setQtyItem(null);
+          setQtyTargetDate(null);
+        }}
         isDarkMode={isDarkMode}
         isAdjusting={isAdjustingQuantity}
       />

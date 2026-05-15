@@ -2,12 +2,11 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useTheme } from "@/context/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, CalendarClock, ClipboardList } from "lucide-react";
+import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, ClipboardList } from "lucide-react";
 import InstallPrompt from "@/components/InstallPrompt";
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
-  { id: "log", href: "/log", icon: CalendarClock, label: "Log" },
   { id: "plan", href: "/plan", icon: ListChecks, label: "Plan" },
   { id: "checklists", href: "/checklists", icon: ClipboardList, label: "Checklists" },
   { id: "progress", href: "/progress", icon: TrendingUp, label: "Progress" },

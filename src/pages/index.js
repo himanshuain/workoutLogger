@@ -70,6 +70,10 @@ import {
   STRIP_LOAD_MORE_DAYS,
   STRIP_MAX_PAST_DAYS,
 } from "@/lib/dateLogUtils";
+import {
+  mergeEventTypesWithLifelogSettings,
+  LIFELOG_EVENT_SETTINGS_CHANGED,
+} from "@/lib/lifelogEventSettings";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -180,6 +184,20 @@ export default function Home() {
   const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: "set"|"session", id, label }
 
+  /** Life log on Home: sheet when selected day’s event needs value/notes (same as /lifelog). */
+  const [viewingLifeLogSheet, setViewingLifeLogSheet] = useState(null);
+  const [lifeSheetValue, setLifeSheetValue] = useState("");
+  const [lifeSheetNotes, setLifeSheetNotes] = useState("");
+
+  const [lifeLogSettingsNonce, setLifeLogSettingsNonce] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bump = () => setLifeLogSettingsNonce(n => n + 1);
+    window.addEventListener(LIFELOG_EVENT_SETTINGS_CHANGED, bump);
+    return () => window.removeEventListener(LIFELOG_EVENT_SETTINGS_CHANGED, bump);
+  }, []);
+
   const isViewingToday = viewingDate === today;
 
   useEffect(() => {
@@ -287,9 +305,14 @@ export default function Home() {
       .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
   }, [trackables, viewingDate]);
 
+  const mergedLifeEventTypes = useMemo(
+    () => mergeEventTypesWithLifelogSettings(eventTypes || []),
+    [eventTypes, lifeLogSettingsNonce],
+  );
+
   const sortedLifeEvents = useMemo(
-    () => [...(eventTypes || [])].sort((a, b) => (a.order_index || 0) - (b.order_index || 0)),
-    [eventTypes],
+    () => [...mergedLifeEventTypes].sort((a, b) => (a.order_index || 0) - (b.order_index || 0)),
+    [mergedLifeEventTypes],
   );
 
   const { data: workoutSessionsForViewing = [] } = useQuery({
@@ -308,18 +331,74 @@ export default function Home() {
 
   const getLifeLogForDay = useCallback((et, dateStr) => (et.event_logs || []).find(l => l.date === dateStr) || null, []);
 
-  const handleQuickLifeLog = async et => {
-    if (!viewingDate || !logEvent) return;
-    const existing = getLifeLogForDay(et, viewingDate);
-    if (existing) {
-      await deleteEventLog(existing.id);
-      toast.success(`Removed ${et.name}`);
-    } else {
+  const closeViewingLifeLogSheet = useCallback(() => {
+    setViewingLifeLogSheet(null);
+    setLifeSheetValue("");
+    setLifeSheetNotes("");
+  }, []);
+
+  const submitViewingLifeLogSheet = useCallback(async () => {
+    const et = viewingLifeLogSheet;
+    if (!et || !viewingDate || !logEvent) return;
+    if (getLifeLogForDay(et, viewingDate)) {
+      closeViewingLifeLogSheet();
+      return;
+    }
+    let cost = null;
+    if (et.need_value) {
+      const n = parseFloat(lifeSheetValue);
+      if (!Number.isFinite(n)) {
+        toast.error("Enter a numeric value");
+        return;
+      }
+      cost = n;
+    }
+    let notes = null;
+    if (et.need_notes) {
+      const trimmed = lifeSheetNotes.trim();
+      if (!trimmed) {
+        toast.error("Notes are required for this event");
+        return;
+      }
+      notes = trimmed;
+    }
+    const result = await logEvent(et.id, { date: viewingDate, cost, notes });
+    if (result) {
+      toast.success(`Logged ${et.name}`);
+      closeViewingLifeLogSheet();
+    } else toast.error("Could not log");
+  }, [
+    viewingLifeLogSheet,
+    viewingDate,
+    logEvent,
+    lifeSheetValue,
+    lifeSheetNotes,
+    getLifeLogForDay,
+    closeViewingLifeLogSheet,
+  ]);
+
+  const handleQuickLifeLog = useCallback(
+    async et => {
+      if (!viewingDate || !logEvent || !deleteEventLog) return;
+      const existing = getLifeLogForDay(et, viewingDate);
+      if (existing) {
+        const ok = await deleteEventLog(existing.id, et.id);
+        if (ok) toast.success(`Removed ${et.name}`);
+        else toast.error("Could not remove log");
+        return;
+      }
+      if (et.need_notes || et.need_value) {
+        setViewingLifeLogSheet(et);
+        setLifeSheetValue("");
+        setLifeSheetNotes("");
+        return;
+      }
       const result = await logEvent(et.id, { date: viewingDate });
       if (result) toast.success(`Logged ${et.name}`);
       else toast.error("Could not log");
-    }
-  };
+    },
+    [viewingDate, logEvent, deleteEventLog, getLifeLogForDay],
+  );
 
   const handleHabitToggleList = async t => {
     if (!viewingDate) return;
@@ -1153,6 +1232,108 @@ export default function Home() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Life log — detail sheet for events that require value / notes (Today & past days). */}
+      <Modal
+        open={Boolean(viewingLifeLogSheet)}
+        onOpenChange={next => {
+          if (!next) closeViewingLifeLogSheet();
+        }}
+      >
+        <ModalContent
+          className={`flex max-h-[92vh] min-h-0 flex-col ${
+            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+          }`}
+          showCloseButton
+        >
+          <ModalHeader className="shrink-0">
+            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              {viewingLifeLogSheet ? (
+                <>
+                  <span className="mr-2">{viewingLifeLogSheet.icon || "📌"}</span>
+                  Log {viewingLifeLogSheet.name}
+                </>
+              ) : (
+                "Log event"
+              )}
+            </ModalTitle>
+            {viewingLifeLogSheet && viewingDate ? (
+              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                {formatChipLabel(viewingDate, today)}
+              </p>
+            ) : null}
+          </ModalHeader>
+          <ModalBody className="min-h-0 shrink space-y-4 overflow-y-auto pb-2">
+            {viewingLifeLogSheet?.need_value ? (
+              <div>
+                <label
+                  className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${
+                    isDarkMode ? "text-iron-400" : "text-slate-600"
+                  }`}
+                >
+                  Value <span className="text-red-400 normal-case">*</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  autoFocus
+                  value={lifeSheetValue}
+                  onChange={e => setLifeSheetValue(e.target.value)}
+                  placeholder="e.g. 12.5"
+                  className={`w-full rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "border-iron-700 bg-iron-900 text-iron-100 focus:ring-lift-primary/40"
+                      : "border-slate-200 bg-white focus:ring-workout-primary/40"
+                  }`}
+                />
+              </div>
+            ) : null}
+            {viewingLifeLogSheet?.need_notes ? (
+              <div>
+                <label
+                  className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${
+                    isDarkMode ? "text-iron-400" : "text-slate-600"
+                  }`}
+                >
+                  Notes <span className="text-red-400 normal-case">*</span>
+                </label>
+                <textarea
+                  value={lifeSheetNotes}
+                  onChange={e => setLifeSheetNotes(e.target.value)}
+                  placeholder="What happened? Add any details…"
+                  rows={4}
+                  className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "border-iron-700 bg-iron-900 text-iron-100 placeholder:text-iron-600 focus:ring-lift-primary/40"
+                      : "border-slate-200 bg-white placeholder:text-slate-400 focus:ring-workout-primary/40"
+                  }`}
+                  autoFocus={!viewingLifeLogSheet?.need_value}
+                />
+              </div>
+            ) : null}
+          </ModalBody>
+          <ModalFooter className="shrink-0">
+            <button
+              type="button"
+              onClick={closeViewingLifeLogSheet}
+              className={`flex-1 rounded-xl py-3 text-sm font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void submitViewingLifeLogSheet()}
+              className={`flex-1 rounded-xl py-3 text-sm font-bold ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              Save log
+            </button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Layout>
   );
 }

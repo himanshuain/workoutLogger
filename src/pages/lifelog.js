@@ -66,6 +66,12 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import {
+  notifyLifelogEventSettingsChanged,
+  readLifelogEventSettings,
+  mergeEventTypesWithLifelogSettings,
+  LIFEBOOK_EVENT_SETTINGS_KEY,
+} from "@/lib/lifelogEventSettings";
 
 const EVENT_ICONS = [
   "💇",
@@ -276,27 +282,22 @@ function LifeLogGapPill({ gapDays, newerDateStr, olderDateStr, isDarkMode, kind 
   );
 }
 
-const EVENT_SETTINGS_KEY = "logbook_event_settings";
-
 function getEventSettings() {
-  if (typeof window === "undefined") return {};
-  try {
-    return JSON.parse(localStorage.getItem(EVENT_SETTINGS_KEY) || "{}");
-  } catch {
-    return {};
-  }
+  return readLifelogEventSettings();
 }
 
 function setEventSetting(eventTypeId, settings) {
   const all = getEventSettings();
   all[eventTypeId] = { ...(all[eventTypeId] || {}), ...settings };
-  localStorage.setItem(EVENT_SETTINGS_KEY, JSON.stringify(all));
+  localStorage.setItem(LIFEBOOK_EVENT_SETTINGS_KEY, JSON.stringify(all));
+  notifyLifelogEventSettingsChanged();
 }
 
 function removeEventSetting(eventTypeId) {
   const all = getEventSettings();
   delete all[eventTypeId];
-  localStorage.setItem(EVENT_SETTINGS_KEY, JSON.stringify(all));
+  localStorage.setItem(LIFEBOOK_EVENT_SETTINGS_KEY, JSON.stringify(all));
+  notifyLifelogEventSettingsChanged();
 }
 
 export default function LifeLog() {
@@ -324,15 +325,7 @@ export default function LifeLog() {
   } = useWorkout();
 
   // Merge localStorage settings into event types
-  const eventTypes = useMemo(() => {
-    const settings = getEventSettings();
-    return rawEventTypes.map(et => ({
-      ...et,
-      track_graph: settings[et.id]?.track_graph || false,
-      need_value: settings[et.id]?.need_value || false,
-      need_notes: settings[et.id]?.need_notes || false,
-    }));
-  }, [rawEventTypes]);
+  const eventTypes = useMemo(() => mergeEventTypesWithLifelogSettings(rawEventTypes), [rawEventTypes]);
 
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);

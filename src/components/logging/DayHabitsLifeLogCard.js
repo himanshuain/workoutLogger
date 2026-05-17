@@ -138,7 +138,7 @@ export default function DayHabitsLifeLogCard({
                           <p className="text-card-subtitle truncate">{et.name}</p>
                           {done ? (
                             <p className={`text-xs ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>
-                              Logged · tap Undo to remove
+                              Logged · tap icon to remove
                             </p>
                           ) : et.need_value && et.need_notes ? (
                             <p className="text-metadata">Value & notes required</p>
@@ -158,28 +158,22 @@ export default function DayHabitsLifeLogCard({
                                 : `Quick log ${et.name}`
                           }
                           onClick={() => onQuickLifeLog(et)}
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-colors active:scale-95 ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90 ${
                             done
                               ? isDarkMode
-                                ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
-                                : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                ? "bg-lift-primary text-iron-950 shadow-inner"
+                                : "bg-workout-primary text-white shadow-sm"
                               : isDarkMode
-                                ? "bg-violet-500/20 text-violet-200 ring-1 ring-violet-500/35 hover:bg-violet-500/30"
-                                : "bg-violet-100 text-violet-900 ring-1 ring-violet-200/90 hover:bg-violet-200"
+                                ? "bg-iron-800/85 text-lift-primary ring-1 ring-iron-600 shadow-inner shadow-black/10"
+                                : "bg-white text-workout-primary ring-1 ring-slate-300 shadow-sm"
                           }`}
                         >
-                          {done ? (
-                            "Undo"
-                          ) : (
-                            <LifeLogEventQuickGlyph
-                              isLoggedToday={false}
-                              needValue={Boolean(et.need_value)}
-                              needNotes={Boolean(et.need_notes)}
-                              mutedIconClass={
-                                isDarkMode ? "text-violet-200" : "text-violet-900"
-                              }
-                            />
-                          )}
+                          <LifeLogEventQuickGlyph
+                            isLoggedToday={done}
+                            needValue={Boolean(et.need_value)}
+                            needNotes={Boolean(et.need_notes)}
+                            loggedIconClass={isDarkMode ? "text-iron-950" : "text-white"}
+                          />
                         </button>
                       </li>
                     );

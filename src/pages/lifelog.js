@@ -159,6 +159,123 @@ function formatDate(dateStr) {
   });
 }
 
+/** Rough month chunks for compound display (~30-day months). */
+const GAP_MONTH_DAYS = 30;
+const GAP_WEEK_DAYS = 7;
+
+function buildGapTierOrder(gapDays) {
+  const order = ["d"];
+  if (gapDays >= GAP_WEEK_DAYS) order.push("w");
+  if (gapDays >= GAP_MONTH_DAYS) order.push("m");
+  return order;
+}
+
+function nextTierAriaHint(tiers, idx) {
+  if (tiers.length < 2) return "";
+  const next = tiers[(idx + 1) % tiers.length];
+  if (next === "d") return " Tap again for days.";
+  if (next === "w") return " Tap again for weeks.";
+  return " Tap again for months.";
+}
+
+/** e.g. 9 → "1w 2d"; 14 → "2w" */
+function formatGapCompoundWeeks(totalDays) {
+  if (totalDays <= 0) return "";
+  const w = Math.floor(totalDays / 7);
+  const d = totalDays % 7;
+  const parts = [];
+  if (w > 0) parts.push(`${w}w`);
+  if (d > 0) parts.push(`${d}d`);
+  return parts.length ? parts.join(" ") : "0d";
+}
+
+/** e.g. 93 → "3 months 3d"; 68 → "2 months 1w 1d" */
+function formatGapCompoundMonths(totalDays) {
+  if (totalDays <= 0) return "";
+  let rem = Math.max(0, Math.floor(totalDays));
+  const months = Math.floor(rem / GAP_MONTH_DAYS);
+  rem -= months * GAP_MONTH_DAYS;
+  const weeks = Math.floor(rem / 7);
+  rem -= weeks * 7;
+  const days = rem;
+
+  const parts = [];
+  if (months > 0) parts.push(months === 1 ? `1 month` : `${months} months`);
+  if (weeks > 0) parts.push(`${weeks}w`);
+  if (days > 0) parts.push(`${days}d`);
+  if (parts.length === 0 && totalDays > 0) parts.push(`${Math.floor(totalDays)}d`);
+
+  return parts.join(" ");
+}
+
+/** Tap cycles through applicable units only: weeks if ≥7d, months if ≥30d. */
+function LifeLogGapPill({ gapDays, newerDateStr, olderDateStr, isDarkMode, kind = "completions" }) {
+  const tiers = useMemo(() => buildGapTierOrder(gapDays), [gapDays]);
+  const [tierIdx, setTierIdx] = useState(0);
+
+  useEffect(() => {
+    setTierIdx(0);
+  }, [gapDays]);
+
+  const tier = tiers[Math.min(tierIdx, tiers.length - 1)];
+
+  const pillBodyClass = `text-[9px] font-medium max-w-[min(100%,16rem)] px-2 py-px rounded-full select-none text-center whitespace-normal leading-tight border ${
+    isDarkMode
+      ? "bg-iron-800/80 text-iron-600 border-iron-700/50"
+      : "bg-slate-100 text-slate-400 border-slate-200"
+  }`;
+
+  const { text, ariaLabel, titleHint } = useMemo(() => {
+    const base =
+      kind === "logs"
+        ? `${gapDays} day span between consecutive logs`
+        : `${gapDays} day span between completed days`;
+    const between =
+      newerDateStr && olderDateStr ? ` From ${formatDate(newerDateStr)} to ${formatDate(olderDateStr)}.` : "";
+
+    let display;
+    if (tier === "d") display = `${gapDays}d gap`;
+    else if (tier === "w") display = `${formatGapCompoundWeeks(gapDays)} gap`;
+    else display = `${formatGapCompoundMonths(gapDays)} gap`;
+
+    const hint = nextTierAriaHint(tiers, tierIdx);
+    const titleHint =
+      tiers.length < 2
+        ? undefined
+        : `Tap to switch: ${tiers.map(t => (t === "d" ? "days" : t === "w" ? "weeks" : "months")).join(" · ")}`;
+
+    return {
+      text: display,
+      ariaLabel: `${display} ${gapDays} calendar days (${base}).${between}${hint}`,
+      titleHint,
+    };
+  }, [gapDays, newerDateStr, olderDateStr, kind, tier, tiers, tierIdx]);
+
+  if (tiers.length < 2) {
+    return (
+      <span className={`${pillBodyClass} cursor-default`} aria-label={ariaLabel}>
+        {text}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTierIdx(i => (i + 1) % tiers.length)}
+      aria-label={ariaLabel}
+      title={titleHint}
+      className={`${pillBodyClass} cursor-pointer transition-colors active:scale-95 touch-manipulation ${
+        isDarkMode
+          ? "active:bg-iron-800 hover:text-iron-400 hover:border-iron-600/60"
+          : "active:bg-slate-100 hover:text-slate-600 hover:border-slate-300"
+      }`}
+    >
+      {text}
+    </button>
+  );
+}
+
 const EVENT_SETTINGS_KEY = "logbook_event_settings";
 
 function getEventSettings() {
@@ -1259,17 +1376,16 @@ export default function LifeLog() {
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ duration: 0.2, delay: staggerDelay }}
                                 >
-                                  {gap !== null && gap > 0 && (
+                                  {gap !== null && gap > 0 && idx > 0 && (
                                     <div className="flex justify-center py-0.5">
-                                      <span
-                                        className={`text-[9px] font-medium px-1.5 py-px rounded-full ${
-                                          isDarkMode
-                                            ? "bg-iron-800/80 text-iron-600 border border-iron-700/50"
-                                            : "bg-slate-100 text-slate-400 border border-slate-200"
-                                        }`}
-                                      >
-                                        {gap}d gap
-                                      </span>
+                                      <LifeLogGapPill
+                                        key={`${expandedEventLogs[idx - 1].date}-${log.date}-gap`}
+                                        gapDays={gap}
+                                        newerDateStr={expandedEventLogs[idx - 1].date}
+                                        olderDateStr={log.date}
+                                        kind="logs"
+                                        isDarkMode={isDarkMode}
+                                      />
                                     </div>
                                   )}
                                   <ContextMenu>
@@ -1572,11 +1688,10 @@ export default function LifeLog() {
                                   />
                                 }
                                 logsChildren={(() => {
-                                      const habitLogRows = (
-                                        habitHeatmapData[trackable.id] || []
-                                      )
+                                      const habitLogRows = (habitHeatmapData[trackable.id] || [])
                                         .filter(d => d.count > 0)
-                                        .slice(-40);
+                                        .sort((a, b) => b.date.localeCompare(a.date))
+                                        .slice(0, 40);
                                       if (!habitLogRows.length) {
                                         return (
                                           <div
@@ -1586,7 +1701,7 @@ export default function LifeLog() {
                                           </div>
                                         );
                                       }
-                                      const newestIdx = habitLogRows.length - 1;
+                                      const accentIdx = 0;
                                       return (
                                         <>
                                           <p
@@ -1608,27 +1723,28 @@ export default function LifeLog() {
                                               const gapDays =
                                                 prevRow != null
                                                   ? Math.floor(
-                                                      (dateRow.getTime() -
+                                                      (new Date(
+                                                        prevRow.date + "T12:00:00"
+                                                      ).getTime() -
                                                         new Date(
-                                                          prevRow.date + "T12:00:00"
+                                                          row.date + "T12:00:00"
                                                         ).getTime()) /
                                                         (1000 * 60 * 60 * 24)
                                                     )
                                                   : null;
-                                              const isAccentRow = idx === newestIdx;
+                                              const isAccentRow = idx === accentIdx;
                                               return (
                                                 <div key={row.date}>
-                                                  {gapDays != null && gapDays > 0 && (
+                                                  {gapDays != null && gapDays > 0 && prevRow != null && (
                                                     <div className="flex justify-center py-0.5">
-                                                      <span
-                                                        className={`text-[9px] font-medium px-1.5 py-px rounded-full ${
-                                                          isDarkMode
-                                                            ? "bg-iron-800/80 text-iron-600 border border-iron-700/50"
-                                                            : "bg-slate-100 text-slate-400 border border-slate-200"
-                                                        }`}
-                                                      >
-                                                        {gapDays}d gap
-                                                      </span>
+                                                      <LifeLogGapPill
+                                                        key={`${prevRow.date}-${row.date}-gap`}
+                                                        gapDays={gapDays}
+                                                        newerDateStr={prevRow.date}
+                                                        olderDateStr={row.date}
+                                                        kind="completions"
+                                                        isDarkMode={isDarkMode}
+                                                      />
                                                     </div>
                                                   )}
                                                   <div
@@ -1682,7 +1798,7 @@ export default function LifeLog() {
                                               <p
                                                 className={`text-center text-xs pt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
                                               >
-                                                Showing last 40 days with activity
+                                                Showing 40 most recent completions
                                               </p>
                                             )}
                                           </div>

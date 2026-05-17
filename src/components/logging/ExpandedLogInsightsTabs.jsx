@@ -5,9 +5,7 @@ import { cn } from "@/lib/utils";
 function normalizeWheelDy(ev) {
   if (ev.deltaMode === 1) return ev.deltaY * 16;
   if (ev.deltaMode === 2)
-    return (
-      ev.deltaY * (typeof window !== "undefined" ? window.innerHeight * 0.9 : 400)
-    );
+    return ev.deltaY * (typeof window !== "undefined" ? window.innerHeight * 0.9 : 400);
   return ev.deltaY;
 }
 
@@ -29,10 +27,7 @@ function ancestorVerticalScrollSink(fromEl) {
   let node = fromEl.parentElement;
   while (node) {
     const { overflowY } = window.getComputedStyle(node);
-    const scrollable =
-      overflowY === "auto" ||
-      overflowY === "scroll" ||
-      overflowY === "overlay";
+    const scrollable = overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay";
     if (scrollable && node.scrollHeight > node.clientHeight + 2) {
       return node;
     }
@@ -50,6 +45,8 @@ function subscribeExpandedPanelScrollForward(panelEl) {
   }
 
   let touchLastY = null;
+  let touchStartX = null;
+  let touchStartY = null;
 
   const wheel = ev => {
     const delta = normalizeWheelDy(ev);
@@ -67,19 +64,34 @@ function subscribeExpandedPanelScrollForward(panelEl) {
   const onTouchStart = ev => {
     if (ev.touches?.length !== 1) {
       touchLastY = null;
+      touchStartX = null;
+      touchStartY = null;
       return;
     }
     touchLastY = ev.touches[0].clientY;
+    touchStartX = ev.touches[0].clientX;
+    touchStartY = ev.touches[0].clientY;
   };
 
   const onTouchEnd = () => {
     touchLastY = null;
+    touchStartX = null;
+    touchStartY = null;
   };
 
   const onTouchMove = ev => {
     if (touchLastY === null || ev.touches?.length !== 1) return;
 
+    const x = ev.touches[0].clientX;
     const y = ev.touches[0].clientY;
+
+    /** Horizontal gestures belong to the outer snap pager, not vertical scroll chaining. */
+    if (touchStartX != null && touchStartY != null) {
+      const totalDx = Math.abs(x - touchStartX);
+      const totalDy = Math.abs(y - touchStartY);
+      if (totalDx > totalDy + 6) return;
+    }
+
     const deltaDown = touchLastY - y;
     touchLastY = y;
 
@@ -177,7 +189,9 @@ export default function ExpandedLogInsightsTabs({
     : "text-slate-600 hover:bg-slate-50";
 
   return (
-    <div className={`space-y-3 border-t pt-3 ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+    <div
+      className={`space-y-3 border-t pt-3 ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}
+    >
       <div>{primaryAction}</div>
 
       <div
@@ -192,7 +206,7 @@ export default function ExpandedLogInsightsTabs({
           onClick={() => go(0)}
           className={cn(
             "min-h-[44px] flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap",
-            active === 0 ? tabActive : tabInactive,
+            active === 0 ? tabActive : tabInactive
           )}
         >
           {insightsLabel}
@@ -204,7 +218,7 @@ export default function ExpandedLogInsightsTabs({
           onClick={() => go(1)}
           className={cn(
             "min-h-[44px] flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap",
-            active === 1 ? tabActive : tabInactive,
+            active === 1 ? tabActive : tabInactive
           )}
         >
           {logsLabel}
@@ -218,7 +232,7 @@ export default function ExpandedLogInsightsTabs({
           className={cn(
             "flex touch-pan-x snap-x snap-mandatory overflow-x-auto scroll-smooth overscroll-x-contain",
             "[scrollbar-width:none] [-ms-overflow-style:none]",
-            "[&::-webkit-scrollbar]:hidden",
+            "[&::-webkit-scrollbar]:hidden"
           )}
         >
           <section
@@ -226,12 +240,12 @@ export default function ExpandedLogInsightsTabs({
             className={cn(
               "shrink-0 snap-start snap-always pb-2 pr-1",
               "max-h-[min(58vh,30rem)] overflow-y-auto overflow-x-hidden overscroll-y-auto",
-              "touch-pan-y [scrollbar-width:thin]",
+              "[scrollbar-width:thin]",
               "[-webkit-overflow-scrolling:touch]",
               isDarkMode
                 ? "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-iron-700 [&::-webkit-scrollbar]:w-1.5"
                 : "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-1.5",
-              viewportW <= 0 && "min-w-full",
+              viewportW <= 0 && "min-w-full"
             )}
             style={
               viewportW > 0
@@ -240,8 +254,9 @@ export default function ExpandedLogInsightsTabs({
                     width: viewportW,
                     minWidth: viewportW,
                     maxWidth: viewportW,
+                    touchAction: "pan-x pan-y",
                   }
-                : {}
+                : { touchAction: "pan-x pan-y" }
             }
             aria-hidden={active !== 0}
           >
@@ -253,12 +268,12 @@ export default function ExpandedLogInsightsTabs({
             className={cn(
               "shrink-0 snap-start snap-always pb-2 pr-1",
               "max-h-[min(58vh,30rem)] overflow-y-auto overflow-x-hidden overscroll-y-auto",
-              "touch-pan-y [scrollbar-width:thin]",
+              "[scrollbar-width:thin]",
               "[-webkit-overflow-scrolling:touch]",
               isDarkMode
                 ? "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-iron-700 [&::-webkit-scrollbar]:w-1.5"
                 : "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-1.5",
-              viewportW <= 0 && "min-w-full",
+              viewportW <= 0 && "min-w-full"
             )}
             style={
               viewportW > 0
@@ -267,8 +282,9 @@ export default function ExpandedLogInsightsTabs({
                     width: viewportW,
                     minWidth: viewportW,
                     maxWidth: viewportW,
+                    touchAction: "pan-x pan-y",
                   }
-                : {}
+                : { touchAction: "pan-x pan-y" }
             }
             aria-hidden={active !== 1}
           >

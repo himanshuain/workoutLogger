@@ -2,22 +2,37 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
+import RoutineDayPickerDialog from "@/components/exercises/RoutineDayPickerDialog";
 import { addSessionExtra } from "@/lib/workoutSessionClient";
-import { getSessionAwareReturnPath, getSessionAwareCopy } from "@/lib/workoutNavigation";
+import {
+  getRoutinePlannerReturnHref,
+  getSessionAwareCopy,
+  getPostAddExerciseNavigatePath,
+  getQueryParamString,
+} from "@/lib/workoutNavigation";
 import { toast } from "sonner";
+import { ArrowLeft, CirclePlus, ListChecks } from "lucide-react";
 
 const MUSCLES = ["Chest", "Back", "Legs", "Arms", "Shoulders", "Core", "Other"];
 
 export default function CustomExercisePage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { user, getRoutineForDay, updateRoutine, createRoutine, getWorkoutSession } = useWorkout();
+  const {
+    user,
+    getRoutineForDay,
+    updateRoutine,
+    createRoutine,
+    getWorkoutSession,
+    seedCompletedExerciseSetsForSession,
+  } = useWorkout();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Chest");
   const [equipment, setEquipment] = useState("");
   const [session, setSession] = useState(null);
+  const [routinePickerOpen, setRoutinePickerOpen] = useState(false);
 
-  // Load session context for session-aware copy and navigation
+  // Load session context for session-aware button copy
   useEffect(() => {
     async function loadSession() {
       const sessionId = router.query.sessionId;
@@ -50,46 +65,55 @@ export default function CustomExercisePage() {
       return;
     }
     if (!name.trim()) return;
-    
+
+    const trimmed = name.trim();
+    const lowered = category.toLowerCase();
+
+    const addReturn = getQueryParamString(router.query, "addReturn").trim().toLowerCase();
+    if (addReturn === "summary") {
+      const seeded = await seedCompletedExerciseSetsForSession({
+        sessionId,
+        exercise: {
+          id: null,
+          name: trimmed,
+          category: lowered,
+          equipment: equipment.trim(),
+        },
+        targetSets: 3,
+        markAddedToday: false,
+      });
+      if (!seeded) {
+        toast.error("Could not add — already logged in this workout.");
+        return;
+      }
+    }
+
     addSessionExtra(sessionId, {
       exercise_id: null,
-      exercise_name: name.trim(),
-      category: category.toLowerCase(),
+      exercise_name: trimmed,
+      category: lowered,
       equipment: equipment.trim(),
     });
-    
+
     const copy = getSessionAwareCopy(session);
     toast.success(copy.addedMessage);
-    
-    // Navigate back to appropriate context
-    try {
-      const returnPath = await getSessionAwareReturnPath(sessionId, getWorkoutSession);
-      router.push(returnPath);
-    } catch (error) {
-      console.error('Error determining return path:', error);
-      router.push("/");
-    }
+    await router.replace(getPostAddExerciseNavigatePath(sessionId, router.query));
   };
 
-  const handleAddToRoutine = async () => {
-    const day = router.query.routineDay;
-    if (typeof day !== "string") {
-      toast.error("Pick a day in Routine planner first");
-      router.push("/plan");
-      return;
-    }
-    const dayNum = parseInt(day, 10);
-    if (Number.isNaN(dayNum) || !name.trim()) return;
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  const addCustomExerciseToRoutineDay = async dayNum => {
+    if (Number.isNaN(dayNum) || !name.trim()) return false;
+    const trimmed = name.trim();
     const row = {
       exercise_id: null,
-      exercise_name: name.trim(),
+      exercise_name: trimmed,
       category: category.toLowerCase(),
       target_sets: 3,
     };
 
     const routine = getRoutineForDay(dayNum);
     if (!routine) {
-      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       await createRoutine({
         name: `${dayNames[dayNum] ?? "Day"} workout`,
         day_of_week: dayNum,
@@ -97,19 +121,18 @@ export default function CustomExercisePage() {
         exercises: [row],
       });
       toast.success("Routine created with exercise");
-      router.push("/plan");
-      return;
+      return true;
     }
 
-    const existing = (routine.routine_exercises || []).map((ex) => ({
+    const existing = (routine.routine_exercises || []).map(ex => ({
       exercise_id: ex.exercise_id,
       exercise_name: ex.exercise_name,
       category: ex.category || "other",
       target_sets: ex.target_sets || 3,
     }));
-    if (existing.some((e) => e.exercise_name === name.trim())) {
+    if (existing.some(e => e.exercise_name === trimmed)) {
       toast.message("Already in routine");
-      return;
+      return false;
     }
     existing.push(row);
     await updateRoutine(routine.id, {
@@ -119,7 +142,22 @@ export default function CustomExercisePage() {
       exercises: existing,
     });
     toast.success("Added to routine");
-    router.push("/plan");
+    return true;
+  };
+
+  const handleAddToRoutine = async () => {
+    if (!name.trim()) return;
+    const day = router.query.routineDay;
+    if (typeof day !== "string") {
+      setRoutinePickerOpen(true);
+      return;
+    }
+    const dayNum = parseInt(day, 10);
+    if (Number.isNaN(dayNum)) return;
+    const ok = await addCustomExerciseToRoutineDay(dayNum);
+    if (!ok) return;
+    const href = getRoutinePlannerReturnHref(router.query);
+    if (href) await router.replace(href);
   };
 
   if (!user) {
@@ -134,9 +172,10 @@ export default function CustomExercisePage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className={`text-sm font-medium mb-6 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+        className={`text-sm font-medium mb-6 inline-flex items-center gap-2 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
       >
-        ← Back
+        <ArrowLeft className="w-4 h-4 shrink-0" aria-hidden />
+        Back
       </button>
 
       <h1 className={`text-2xl font-semibold ${isDarkMode ? "text-iron-50" : "text-slate-900"}`}>
@@ -187,23 +226,41 @@ export default function CustomExercisePage() {
           type="button"
           onClick={handleAddToToday}
           disabled={!name.trim()}
-          className={`w-full py-4 rounded-2xl font-semibold disabled:opacity-50 ${
+          className={`w-full py-4 rounded-2xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           }`}
         >
+          <CirclePlus className="w-5 h-5 shrink-0" aria-hidden />
           {getSessionAwareCopy(session).addAction}
         </button>
         <button
           type="button"
           onClick={handleAddToRoutine}
           disabled={!name.trim()}
-          className={`w-full py-4 rounded-2xl font-semibold border disabled:opacity-50 ${
+          className={`w-full py-4 rounded-2xl font-semibold border disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
             isDarkMode ? "border-iron-700 text-iron-100" : "border-slate-300 text-slate-800"
           }`}
         >
+          <ListChecks className="w-5 h-5 shrink-0" aria-hidden />
           Add to routine
         </button>
       </div>
+
+      <RoutineDayPickerDialog
+        open={routinePickerOpen}
+        onOpenChange={setRoutinePickerOpen}
+        isDarkMode={isDarkMode}
+        getRoutineForDay={getRoutineForDay}
+        onConfirm={async pickedDay => {
+          const ok = await addCustomExerciseToRoutineDay(pickedDay);
+          if (ok) {
+            const href = getRoutinePlannerReturnHref(router.query, pickedDay);
+            if (href) await router.replace(href);
+          }
+          return ok;
+        }}
+        disabled={!name.trim()}
+      />
     </div>
   );
 }

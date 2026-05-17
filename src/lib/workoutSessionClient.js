@@ -44,6 +44,46 @@ export function addSessionExtra(sessionId, exercise) {
   return next;
 }
 
+/** Remove one "added today" extra by name; clears its done flag. */
+export function removeSessionExtra(sessionId, exerciseName) {
+  if (typeof window === "undefined" || !sessionId || !exerciseName) return [];
+  const list = getSessionExtras(sessionId);
+  const next = list.filter((e) => e.exercise_name !== exerciseName);
+  setSessionExtras(sessionId, next);
+  setExerciseDone(sessionId, exerciseName, false);
+  return next;
+}
+
+/** When server-side set_logs are renamed; keep extras + done map in sync. */
+export function renameSessionExerciseClient(sessionId, oldName, newName) {
+  if (
+    typeof window === "undefined" ||
+    typeof sessionId !== "string" ||
+    typeof oldName !== "string" ||
+    typeof newName !== "string" ||
+    !oldName.trim() ||
+    !newName.trim() ||
+    oldName === newName
+  ) {
+    return;
+  }
+  const list = getSessionExtras(sessionId).map(e =>
+    e.exercise_name === oldName ? { ...e, exercise_name: newName } : e,
+  );
+  setSessionExtras(sessionId, list);
+  const dm = getExerciseDoneMap(sessionId);
+  if (dm[oldName]) {
+    const next = { ...dm };
+    delete next[oldName];
+    next[newName] = true;
+    try {
+      localStorage.setItem(doneKey(sessionId), JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 export function getExerciseDoneMap(sessionId) {
   if (typeof window === "undefined" || !sessionId) return {};
   try {

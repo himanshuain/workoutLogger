@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
-import { getSessionExtras, getExerciseDoneMap } from "@/lib/workoutSessionClient";
+import { getSessionExtras, getExerciseDoneMap, removeSessionExtra } from "@/lib/workoutSessionClient";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 import { getPostWorkoutReturnPath, isSessionToday } from "@/lib/workoutNavigation";
 import ExerciseIcon from "@/components/ExerciseIcon";
@@ -18,6 +18,11 @@ import {
   Target,
   Flame,
   Dumbbell,
+  Trash2,
+  RotateCw,
+  CircleCheck,
+  House,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
@@ -65,6 +70,8 @@ export default function WorkoutSessionPage() {
     exercises,
     getWorkoutSession,
     completeWorkoutSession,
+    deleteWorkoutSession,
+    loadActiveSession,
   } = useWorkout();
 
   const [session, setSession] = useState(null);
@@ -72,6 +79,7 @@ export default function WorkoutSessionPage() {
   const [extrasVersion, setExtrasVersion] = useState(0);
   const [thumbFailed, setThumbFailed] = useState({});
   const [completing, setCompleting] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const bumpExtras = useCallback(() => setExtrasVersion(v => v + 1), []);
 
@@ -154,6 +162,16 @@ export default function WorkoutSessionPage() {
     );
   };
 
+  const handleRemoveAddedToday = useCallback(
+    exerciseName => {
+      if (!sessionId || typeof sessionId !== "string") return;
+      removeSessionExtra(sessionId, exerciseName);
+      bumpExtras();
+      toast.success("Removed from today");
+    },
+    [sessionId, bumpExtras]
+  );
+
   const handleAddExercise = () => {
     router.push(`/exercises?sessionId=${encodeURIComponent(sessionId)}`);
   };
@@ -177,6 +195,29 @@ export default function WorkoutSessionPage() {
   const handleBack = () => {
     const returnPath = getPostWorkoutReturnPath(session);
     router.push(returnPath);
+  };
+
+  const handleResetInProgress = async () => {
+    if (!sessionId || typeof sessionId !== "string" || session?.status !== "active") return;
+    const ok =
+      typeof window !== "undefined" &&
+      window.confirm(
+        "Discard this in-progress workout? All logged sets and today-only extras will be permanently removed.",
+      );
+    if (!ok) return;
+    setResetting(true);
+    try {
+      const success = await deleteWorkoutSession(sessionId);
+      if (success) {
+        toast.success("Workout reset");
+        await loadActiveSession?.();
+        router.push(getPostWorkoutReturnPath(session));
+      } else {
+        toast.error("Could not reset workout");
+      }
+    } finally {
+      setResetting(false);
+    }
   };
 
   const resolveExerciseMedia = exerciseName => {
@@ -218,11 +259,13 @@ export default function WorkoutSessionPage() {
             Workout session not found
           </p>
           <button
+            type="button"
             onClick={() => router.push("/")}
-            className={`mt-4 px-6 py-2 rounded-xl font-medium ${
+            className={`mt-4 px-6 py-2 rounded-xl font-medium inline-flex items-center justify-center gap-2 ${
               isDarkMode ? "bg-iron-800 text-iron-200" : "bg-slate-100 text-slate-700"
             }`}
           >
+            <House className="w-4 h-4 shrink-0" aria-hidden />
             Go Home
           </button>
         </div>
@@ -245,18 +288,36 @@ export default function WorkoutSessionPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1 min-w-0">
-            {!isSessionToday(session) && (
-              <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-iron-500" />
-                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {formatSessionDate(session.date)}
-                </p>
-              </div>
-            )}
-            <h1 className="text-screen-title">
-              {session.routine_name || "Workout"}
-            </h1>
+          <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              {!isSessionToday(session) && (
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-iron-500" />
+                  <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    {formatSessionDate(session.date)}
+                  </p>
+                </div>
+              )}
+              <h1 className="text-screen-title">
+                {session.routine_name || "Workout"}
+              </h1>
+            </div>
+            {session.status === "active" ? (
+              <button
+                type="button"
+                onClick={handleResetInProgress}
+                disabled={resetting}
+                aria-label="Reset in-progress workout"
+                className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                  isDarkMode
+                    ? "text-iron-400 hover:text-red-400 hover:bg-iron-800/80"
+                    : "text-slate-500 hover:text-red-600 hover:bg-slate-100"
+                }`}
+              >
+                <RotateCw className={`w-3.5 h-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`} aria-hidden />
+                {resetting ? "Resetting…" : "Reset"}
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -283,16 +344,21 @@ export default function WorkoutSessionPage() {
                 const showPlaceholder = !media || thumbFailed[ex.exercise_name];
                 return (
                   <StaggerItem key={ex.exercise_name}>
-                    <PressableScale>
-                      <button
-                        type="button"
-                        onClick={() => openExercise(ex.exercise_name, ex.category)}
-                        className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors ${
-                          isDarkMode
-                            ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
-                            : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
-                        }`}
-                      >
+                    <div
+                      className={`relative w-full rounded-2xl transition-colors ${
+                        isDarkMode
+                          ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
+                          : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
+                      }`}
+                    >
+                      <PressableScale className="w-full block">
+                        <button
+                          type="button"
+                          onClick={() => openExercise(ex.exercise_name, ex.category)}
+                          className={`w-full text-left rounded-2xl p-4 flex gap-4 ${
+                            ex.added_today ? "pr-14" : ""
+                          }`}
+                        >
                         <div
                           className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                             isDarkMode ? "bg-iron-800" : "bg-slate-100"
@@ -384,7 +450,26 @@ export default function WorkoutSessionPage() {
                           </div>
                         </div>
                       </button>
-                    </PressableScale>
+                      </PressableScale>
+                      {ex.added_today ? (
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            handleRemoveAddedToday(ex.exercise_name);
+                          }}
+                          className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-colors touch-manipulation ${
+                            isDarkMode
+                              ? "border-iron-700/80 bg-iron-900/70 text-iron-400 hover:bg-iron-800 hover:text-red-400"
+                              : "border-slate-200/90 bg-white/90 text-slate-400 hover:bg-slate-50 hover:text-red-600"
+                          }`}
+                          aria-label={`Remove ${ex.exercise_name} from today`}
+                        >
+                          <Trash2 className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
+                        </button>
+                      ) : null}
+                    </div>
                   </StaggerItem>
                 );
               })}
@@ -417,10 +502,15 @@ export default function WorkoutSessionPage() {
               type="button"
               onClick={handleComplete}
               disabled={completing}
-              className={`w-full py-3.5 rounded-xl font-bold text-sm ${
+              className={`w-full py-3.5 rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               } disabled:opacity-50`}
             >
+              {completing ? (
+                <Loader2 className="w-5 h-5 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <CircleCheck className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
+              )}
               {completing ? "Completing..." : "Complete workout"}
             </button>
           )}

@@ -5,7 +5,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
-import { getSessionExtras, getExerciseDoneMap } from "@/lib/workoutSessionClient";
+import { getSessionExtras, getExerciseDoneMap, removeSessionExtra } from "@/lib/workoutSessionClient";
 import {
   Plus,
   CheckCircle2,
@@ -17,7 +17,11 @@ import {
   Edit3,
   ClipboardList,
   RefreshCw,
+  RotateCw,
+  Trash2,
+  CircleCheck,
 } from "lucide-react";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 
@@ -68,9 +72,11 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     startWorkoutSession,
     exercises,
     loadActiveSession,
+    deleteWorkoutSession,
   } = useWorkout();
 
   const [starting, setStarting] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [extrasVersion, setExtrasVersion] = useState(0);
   const [thumbFailed, setThumbFailed] = useState({});
 
@@ -159,6 +165,37 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   const handleFinish = () => {
     if (!activeSession?.id) return;
     router.push(`/workout/${activeSession.id}/summary`);
+  };
+
+  const handleResetInProgress = async () => {
+    const id = activeSession?.id;
+    if (!id || activeSession.status !== "active") return;
+    const ok =
+      typeof window !== "undefined" &&
+      window.confirm(
+        "Discard this in-progress workout? All logged sets and today-only extras will be permanently removed.",
+      );
+    if (!ok) return;
+    setResetting(true);
+    try {
+      const success = await deleteWorkoutSession(id);
+      if (success) {
+        bumpExtras();
+        await loadActiveSession();
+        toast.success("Workout reset");
+      } else {
+        toast.error("Could not reset workout");
+      }
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleRemoveAddedToday = exerciseName => {
+    if (!activeSession?.id) return;
+    removeSessionExtra(activeSession.id, exerciseName);
+    bumpExtras();
+    toast.success("Removed from today");
   };
 
   const resolveExerciseMedia = exerciseName => {
@@ -333,6 +370,24 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       </button>
     ) : null;
 
+  const resetInProgressButton =
+    hasSession ? (
+      <button
+        type="button"
+        onClick={handleResetInProgress}
+        disabled={resetting}
+        aria-label="Reset in-progress workout"
+        className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+          isDarkMode
+            ? "text-iron-400 hover:text-red-400 hover:bg-iron-800/80"
+            : "text-slate-500 hover:text-red-600 hover:bg-slate-100"
+        }`}
+      >
+        <RotateCw className={`w-3.5 h-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`} aria-hidden />
+        {resetting ? "Resetting…" : "Reset"}
+      </button>
+    ) : null;
+
   return (
     <SpringIn className="max-w-lg mx-auto">
       <div className="card-hero overflow-hidden">
@@ -354,7 +409,10 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             >
               {routineTitle}
             </motion.h2>
-            {routineActionButton}
+            <div className="shrink-0 flex flex-wrap items-center gap-1 justify-end">
+              {resetInProgressButton}
+              {routineActionButton}
+            </div>
           </div>
 
           <p
@@ -404,16 +462,21 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       const showPlaceholder = !media || thumbFailed[ex.exercise_name];
                       return (
                         <StaggerItem key={ex.exercise_name}>
-                          <PressableScale>
-                            <button
-                              type="button"
-                              onClick={() => openExercise(ex.exercise_name, ex.category)}
-                              className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors ${
-                                isDarkMode
-                                  ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
-                                  : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
-                              }`}
-                            >
+                          <div
+                            className={`relative w-full rounded-2xl transition-colors ${
+                              isDarkMode
+                                ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
+                                : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
+                            }`}
+                          >
+                            <PressableScale className="w-full block">
+                              <button
+                                type="button"
+                                onClick={() => openExercise(ex.exercise_name, ex.category)}
+                                className={`w-full text-left rounded-2xl p-4 flex gap-4 ${
+                                  ex.added_today ? "pr-14" : ""
+                                }`}
+                              >
                               <div
                                 className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
@@ -505,7 +568,26 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                 </div>
                               </div>
                             </button>
-                          </PressableScale>
+                            </PressableScale>
+                            {ex.added_today ? (
+                              <button
+                                type="button"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  handleRemoveAddedToday(ex.exercise_name);
+                                }}
+                                className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-colors touch-manipulation ${
+                                  isDarkMode
+                                    ? "border-iron-700/80 bg-iron-900/70 text-iron-400 hover:bg-iron-800 hover:text-red-400"
+                                    : "border-slate-200/90 bg-white/90 text-slate-400 hover:bg-slate-50 hover:text-red-600"
+                                }`}
+                                aria-label={`Remove ${ex.exercise_name} from today`}
+                              >
+                                <Trash2 className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
+                              </button>
+                            ) : null}
+                          </div>
                         </StaggerItem>
                       );
                     })}
@@ -534,10 +616,11 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className={`w-full py-3.5 rounded-xl font-bold text-sm ${
+                  className={`w-full py-3.5 rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 ${
                     isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
                   }`}
                 >
+                  <CircleCheck className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
                   Finish workout
                 </button>
               </div>

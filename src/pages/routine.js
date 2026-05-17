@@ -8,11 +8,21 @@ import DragReorderList from "@/components/DragReorderList";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 import { toast } from "sonner";
 import {
+  PLANNER_DAYS,
+  loadRestMap,
+  sortRoutinesForList,
+  routineDayLabel,
+  saveRestMap,
+} from "@/lib/routinePlanner";
+import RoutinePlannerWeekStrip from "@/components/planner/RoutinePlannerWeekStrip";
+import {
   Plus,
   Trash2,
   Save,
   Moon,
   ListChecks,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -24,53 +34,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-const PLANNER_DAYS = [
-  { value: 1, label: "Monday", short: "Mon" },
-  { value: 2, label: "Tuesday", short: "Tue" },
-  { value: 3, label: "Wednesday", short: "Wed" },
-  { value: 4, label: "Thursday", short: "Thu" },
-  { value: 5, label: "Friday", short: "Fri" },
-  { value: 6, label: "Saturday", short: "Sat" },
-  { value: 0, label: "Sunday", short: "Sun" },
-];
-
-const REST_KEY = (userId) => `wl_routine_rest_${userId}`;
-
-function loadRestMap(userId) {
-  if (typeof window === "undefined" || !userId) return {};
-  try {
-    const raw = localStorage.getItem(REST_KEY(userId));
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveRestMap(userId, map) {
-  if (typeof window === "undefined" || !userId) return;
-  localStorage.setItem(REST_KEY(userId), JSON.stringify(map));
-}
-
-/** Mon–Sun order (0 = Sunday last in week), then templates with no day last. */
-function sortRoutinesForList(routines) {
-  const rank = (d) => {
-    if (d === null || d === undefined) return 999;
-    if (d === 0) return 7;
-    return d;
-  };
-  return [...routines].sort((a, b) => {
-    const ra = rank(a.day_of_week);
-    const rb = rank(b.day_of_week);
-    if (ra !== rb) return ra - rb;
-    return (a.name || "").localeCompare(b.name || "");
-  });
-}
-
-function routineDayLabel(dayOfWeek) {
-  if (dayOfWeek === null || dayOfWeek === undefined) return "Any day";
-  return PLANNER_DAYS.find((d) => d.value === dayOfWeek)?.label ?? "Day";
-}
 
 export default function RoutinePlannerPage() {
   const router = useRouter();
@@ -88,10 +51,11 @@ export default function RoutinePlannerPage() {
   const [selectedDay, setSelectedDay] = useState(1);
   const [title, setTitle] = useState("");
   const [list, setList] = useState([]);
-  const [restDay, setRestDay] = useState(false);
+  const [restByDay, setRestByDay] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const routinesSorted = useMemo(() => sortRoutinesForList(routines), [routines]);
+  const restDay = !!restByDay[selectedDay];
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -105,10 +69,18 @@ export default function RoutinePlannerPage() {
   const routine = useMemo(() => getRoutineForDay(selectedDay), [getRoutineForDay, selectedDay, routines]);
 
   useEffect(() => {
-    if (!user) return;
-    const map = loadRestMap(user.id);
-    setRestDay(!!map[selectedDay]);
-  }, [user, selectedDay]);
+    if (!user?.id) return;
+    setRestByDay(loadRestMap(user.id));
+  }, [user?.id]);
+
+  const handleRestMapCommit = useCallback(patch => {
+    if (!user?.id) return;
+    setRestByDay(prev => {
+      const next = typeof patch === "function" ? patch(prev) : patch;
+      saveRestMap(user.id, next);
+      return next;
+    });
+  }, [user?.id]);
 
   useEffect(() => {
     const r = getRoutineForDay(selectedDay);
@@ -129,13 +101,13 @@ export default function RoutinePlannerPage() {
     }
   }, [selectedDay, getRoutineForDay, routines]);
 
-  const setRestForDay = (val) => {
-    setRestDay(val);
-    if (!user) return;
+  const setRestForDay = val => {
+    if (!user?.id) return;
     const map = loadRestMap(user.id);
     if (val) map[selectedDay] = true;
     else delete map[selectedDay];
     saveRestMap(user.id, map);
+    setRestByDay(map);
   };
 
   const thumb = (name) => {
@@ -227,29 +199,15 @@ export default function RoutinePlannerPage() {
           Routine planner
         </h1>
 
-        <div className="mt-6 flex gap-1.5 overflow-x-auto pb-2 scrollbar-thin">
-          {PLANNER_DAYS.map((d) => {
-            const active = selectedDay === d.value;
-            return (
-              <button
-                key={d.value}
-                type="button"
-                onClick={() => setSelectedDay(d.value)}
-                className={`shrink-0 min-w-[2.75rem] py-2 rounded-xl text-xs font-semibold ${
-                  active
-                    ? isDarkMode
-                      ? "bg-lift-primary text-iron-950"
-                      : "bg-workout-primary text-white"
-                    : isDarkMode
-                      ? "bg-iron-800 text-iron-400"
-                      : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                {d.short}
-              </button>
-            );
-          })}
-        </div>
+        <RoutinePlannerWeekStrip
+          selectedDay={selectedDay}
+          onDaySelect={setSelectedDay}
+          isDarkMode={isDarkMode}
+          getRoutineForDay={getRoutineForDay}
+          updateRoutine={updateRoutine}
+          restMap={restByDay}
+          onRestMapChange={handleRestMapCommit}
+        />
 
         <div className="mt-6 space-y-2">
           <p className={`text-sm font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
@@ -330,7 +288,11 @@ export default function RoutinePlannerPage() {
 
             <button
               type="button"
-              onClick={() => router.push(`/exercises?routineDay=${selectedDay}`)}
+              onClick={() =>
+                router.push(
+                  `/exercises?routineDay=${selectedDay}&returnTo=routine&day=${selectedDay}`
+                )
+              }
               className={`mt-4 w-full py-3.5 rounded-2xl font-semibold flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-100 text-slate-800"
               }`}
@@ -342,8 +304,9 @@ export default function RoutinePlannerPage() {
             <button
               type="button"
               onClick={handleClear}
-              className={`mt-2 w-full py-3 text-sm font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+              className={`mt-2 w-full py-3 text-sm font-medium inline-flex items-center justify-center gap-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
             >
+              <RotateCcw className="w-4 h-4 shrink-0" aria-hidden />
               Clear day
             </button>
           </>
@@ -430,8 +393,9 @@ export default function RoutinePlannerPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
-              className={isDarkMode ? "border-iron-700 bg-iron-800 text-iron-200" : ""}
+              className={`inline-flex items-center justify-center gap-2 ${isDarkMode ? "border-iron-700 bg-iron-800 text-iron-200" : ""}`}
             >
+              <X className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -439,8 +403,9 @@ export default function RoutinePlannerPage() {
                 e.preventDefault();
                 void handleConfirmDeleteRoutine();
               }}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white"
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white inline-flex items-center justify-center gap-2"
             >
+              <Trash2 className="w-4 h-4 shrink-0" aria-hidden />
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

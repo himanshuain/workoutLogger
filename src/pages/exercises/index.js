@@ -5,18 +5,25 @@ import Layout from "@/components/Layout";
 import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import ExerciseIcon from "@/components/ExerciseIcon";
-import { Modal, ModalContent, ModalBody, ModalHeader, ModalTitle } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getExerciseEquipment, exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
+import { getExerciseEquipment, exerciseMediaUrl, exerciseImageUnoptimized, googleImagesSearchUrl } from "@/lib/exerciseMedia";
 import {
   PARENT_CHIPS,
   getSubcategoriesForParent,
   exerciseMatchesSubFilter,
 } from "@/lib/exerciseSubcategories";
-import { Plus, List, LayoutGrid, ArrowLeft, Check, Eye, XCircle } from "lucide-react";
+import {
+  EQUIPMENT_FILTER_ROW,
+  exerciseMatchesEquipmentFilter,
+} from "@/lib/exerciseEquipmentFilter";
+import { Plus, List, LayoutGrid, ArrowLeft, Check, Eye, XCircle, ListChecks } from "lucide-react";
 import { toast } from "sonner";
+import { getRoutinePlannerReturnHref, getQueryParamString } from "@/lib/workoutNavigation";
+
+const EQUIPMENT_KEYS = new Set(EQUIPMENT_FILTER_ROW.map(({ key }) => key));
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -31,6 +38,39 @@ function ExerciseThumbnail({ exercise, isDarkMode }) {
   }, [url]);
   
   if (!url || imageError) {
+    const imagesUrl = googleImagesSearchUrl(typeof exercise?.name === "string" ? exercise.name : "");
+    if (imagesUrl) {
+      return (
+        <a
+          href={imagesUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className={`flex h-full w-full flex-col items-center justify-center gap-2 px-3 py-4 text-center outline-none transition-colors ring-1 ring-inset focus-visible:ring-2 focus-visible:ring-offset-2 ${
+            isDarkMode
+              ? "bg-iron-800 text-iron-200 ring-white/10 hover:bg-iron-700/90 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-900"
+              : "bg-slate-100 text-slate-700 ring-black/10 hover:bg-slate-200/90 focus-visible:ring-workout-primary focus-visible:ring-offset-white"
+          }`}
+          aria-label={`Search Google Images for ${exercise.name ?? "this exercise"}`}
+        >
+          <ExerciseIcon
+            name={exercise.name}
+            className="h-12 w-12 sm:h-14 sm:w-14"
+            color={isDarkMode ? "#d4d4d8" : "#64748b"}
+          />
+          <span className={`text-[11px] font-medium leading-snug ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+            No image in catalog
+          </span>
+          <span
+            className={`text-xs font-semibold underline decoration-2 underline-offset-2 ${
+              isDarkMode ? "text-lift-primary decoration-lift-primary/40" : "text-workout-primary decoration-workout-primary/40"
+            }`}
+          >
+            Search photos →
+          </span>
+        </a>
+      );
+    }
     return (
       <div
         className={`w-full h-full flex flex-col items-center justify-center gap-1 px-2 ${
@@ -78,6 +118,7 @@ export default function ExercisesSearchPage() {
   const [previewId, setPreviewId] = useState(null);
   const [uiHydrated, setUiHydrated] = useState(false);
   const [viewMode, setViewMode] = useState("list"); // "list" or "card"
+  const [equipmentFilter, setEquipmentFilter] = useState(null);
 
   // Load view mode preference from localStorage
   useEffect(() => {
@@ -118,6 +159,7 @@ export default function ExercisesSearchPage() {
         setChip(null);
         setSubChip(null);
         setQ("");
+        setEquipmentFilter(null);
         if (isRoutinePicker) setSelectedIds(new Set());
         setUiHydrated(true);
         return;
@@ -132,6 +174,9 @@ export default function ExercisesSearchPage() {
         else setSubChip(null);
       } else setSubChip(null);
       setQ(typeof o.q === "string" ? o.q : "");
+      if (typeof o.equipmentFilter === "string" && EQUIPMENT_KEYS.has(o.equipmentFilter)) {
+        setEquipmentFilter(o.equipmentFilter);
+      } else setEquipmentFilter(null);
       if (isRoutinePicker && Array.isArray(o.selected)) {
         setSelectedIds(new Set(o.selected.filter(Boolean)));
       } else if (!isRoutinePicker) {
@@ -141,6 +186,7 @@ export default function ExercisesSearchPage() {
       setChip(null);
       setSubChip(null);
       setQ("");
+      setEquipmentFilter(null);
       setSelectedIds(new Set());
     }
     setUiHydrated(true);
@@ -155,13 +201,14 @@ export default function ExercisesSearchPage() {
           chip,
           subChip,
           q,
+          equipmentFilter,
           selected: isRoutinePicker ? Array.from(selectedIds) : [],
         })
       );
     } catch {
       /* ignore quota */
     }
-  }, [uiHydrated, uiStorageKey, chip, subChip, q, selectedIds, isRoutinePicker]);
+  }, [uiHydrated, uiStorageKey, chip, subChip, q, equipmentFilter, selectedIds, isRoutinePicker]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -213,9 +260,19 @@ export default function ExercisesSearchPage() {
     let list = exercises || [];
     const term = q.trim().toLowerCase();
     if (term) {
-      list = list.filter(
-        e => e.name?.toLowerCase().includes(term) || e.category?.toLowerCase().includes(term)
-      );
+      list = list.filter(e => {
+        if (e.name?.toLowerCase().includes(term) || e.category?.toLowerCase().includes(term))
+          return true;
+        const edb = e.metadata?.exercisedb;
+        const muscleBlob = [
+          ...(edb?.targetMuscles ?? []),
+          ...(edb?.secondaryMuscles ?? []),
+          ...(edb?.bodyParts ?? []),
+        ]
+          .join(" ")
+          .toLowerCase();
+        return muscleBlob.includes(term);
+      });
     }
     if (chip && chip !== "Full Body") {
       list = list.filter(
@@ -227,8 +284,11 @@ export default function ExercisesSearchPage() {
     if (subChip && chip && chip !== "Full Body") {
       list = list.filter(e => exerciseMatchesSubFilter(e, chip, subChip));
     }
+    if (equipmentFilter) {
+      list = list.filter(e => exerciseMatchesEquipmentFilter(e, equipmentFilter));
+    }
     return list.slice(0, 80);
-  }, [exercises, q, chip, subChip]);
+  }, [exercises, q, chip, subChip, equipmentFilter]);
 
   const subcategories = useMemo(() => getSubcategoriesForParent(chip), [chip]);
 
@@ -266,7 +326,8 @@ export default function ExercisesSearchPage() {
           exercises: rows,
         });
         toast.success(`Routine created with ${rows.length} exercise(s)`);
-        router.push("/plan");
+        const href = getRoutinePlannerReturnHref(router.query);
+        if (href) await router.replace(href);
         return;
       }
 
@@ -295,7 +356,8 @@ export default function ExercisesSearchPage() {
         exercises: existing,
       });
       toast.success(`Added ${added} exercise(s) to routine`);
-      router.push("/plan");
+      const href = getRoutinePlannerReturnHref(router.query);
+      if (href) await router.replace(href);
     } finally {
       setAddingBatch(false);
     }
@@ -437,7 +499,55 @@ export default function ExercisesSearchPage() {
               </div>
             </div>
           ) : null}
-          
+
+          <div className="mt-4">
+            <p
+              className={`text-[11px] font-medium uppercase tracking-wide mb-2 ${
+                isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
+            >
+              Equipment
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setEquipmentFilter(null)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  equipmentFilter == null
+                    ? isDarkMode
+                      ? "bg-iron-700 text-iron-100 ring-1 ring-iron-500"
+                      : "bg-slate-200 text-slate-900 ring-1 ring-slate-400"
+                    : isDarkMode
+                      ? "bg-iron-800/80 text-iron-400"
+                      : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                All
+              </button>
+              {EQUIPMENT_FILTER_ROW.map(row => {
+                const active = equipmentFilter === row.key;
+                return (
+                  <button
+                    key={row.key}
+                    type="button"
+                    onClick={() => setEquipmentFilter(active ? null : row.key)}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      active
+                        ? isDarkMode
+                          ? "bg-iron-700 text-iron-100 ring-1 ring-lift-primary/80"
+                          : "bg-slate-200 text-slate-900 ring-1 ring-workout-primary/70"
+                        : isDarkMode
+                          ? "bg-iron-800/80 text-iron-400"
+                          : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {row.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* View Toggle */}
           <div className="mt-4 flex items-center justify-between">
             <p className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
@@ -494,12 +604,21 @@ export default function ExercisesSearchPage() {
               
               if (!isRoutinePicker) {
                 return (
-                  <button
+                  <div
                     key={ex.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => openPreview(ex.id)}
-                    className={`${cardClass} overflow-hidden text-left ${
-                      isDarkMode ? "hover:bg-iron-900" : "hover:bg-slate-50"
+                    onKeyDown={e => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openPreview(ex.id);
+                      }
+                    }}
+                    className={`${cardClass} cursor-pointer overflow-hidden text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                      isDarkMode
+                        ? "hover:bg-iron-900 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-950"
+                        : "hover:bg-slate-50 focus-visible:ring-workout-primary focus-visible:ring-offset-slate-50"
                     }`}
                   >
                     <div className="aspect-square relative mb-3">
@@ -521,7 +640,7 @@ export default function ExercisesSearchPage() {
                         </p>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               }
               
@@ -605,12 +724,21 @@ export default function ExercisesSearchPage() {
 
             if (!isRoutinePicker) {
               return (
-                <button
+                <div
                   key={ex.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openPreview(ex.id)}
-                  className={`${baseCard} p-3 text-left transition-colors ${
-                    isDarkMode ? "hover:bg-iron-900" : "hover:bg-slate-50"
+                  onKeyDown={e => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openPreview(ex.id);
+                    }
+                  }}
+                  className={`${baseCard} cursor-pointer p-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    isDarkMode
+                      ? "hover:bg-iron-900 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-950"
+                      : "hover:bg-slate-50 focus-visible:ring-workout-primary focus-visible:ring-offset-slate-50"
                   }`}
                 >
                   <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
@@ -633,7 +761,7 @@ export default function ExercisesSearchPage() {
                       </p>
                     )}
                   </div>
-                </button>
+                </div>
               );
             }
 
@@ -648,18 +776,24 @@ export default function ExercisesSearchPage() {
                     : ""
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => openPreview(ex.id)}
-                  className={`shrink-0 m-3 rounded-xl overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                    isDarkMode
-                      ? "focus-visible:ring-lift-primary ring-offset-iron-950"
-                      : "focus-visible:ring-workout-primary ring-offset-white"
-                  }`}
-                  aria-label={`Open preview: ${ex.name}`}
-                >
-                  <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
-                </button>
+                {exerciseMediaUrl(ex) ? (
+                  <button
+                    type="button"
+                    onClick={() => openPreview(ex.id)}
+                    className={`shrink-0 m-3 rounded-xl overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                      isDarkMode
+                        ? "focus-visible:ring-lift-primary ring-offset-iron-950"
+                        : "focus-visible:ring-workout-primary ring-offset-white"
+                    }`}
+                    aria-label={`Open preview: ${ex.name}`}
+                  >
+                    <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
+                  </button>
+                ) : (
+                  <div className="m-3 flex shrink-0 items-center justify-center rounded-xl">
+                    <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => toggleSelect(ex.id)}
@@ -699,8 +833,12 @@ export default function ExercisesSearchPage() {
           onClick={() => {
             const p = new URLSearchParams();
             if (router.query.return) p.set("return", String(router.query.return));
+            if (router.query.returnTo) p.set("returnTo", String(router.query.returnTo));
+            if (router.query.day) p.set("day", String(router.query.day));
             if (router.query.sessionId) p.set("sessionId", String(router.query.sessionId));
             if (router.query.routineDay) p.set("routineDay", String(router.query.routineDay));
+            const addReturn = getQueryParamString(router.query, "addReturn");
+            if (addReturn) p.set("addReturn", addReturn);
             router.push(`/exercises/custom?${p.toString()}`);
           }}
           className={`w-full py-4 rounded-2xl font-semibold border border-dashed flex items-center justify-center gap-2 ${
@@ -740,10 +878,11 @@ export default function ExercisesSearchPage() {
               type="button"
               disabled={addingBatch}
               onClick={handleBatchAddToRoutine}
-              className={`flex-1 min-w-0 py-3.5 rounded-2xl font-semibold text-center disabled:opacity-50 ${
+              className={`flex-1 min-w-0 py-3.5 rounded-2xl font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
+              <ListChecks className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
               {addingBatch ? "Adding…" : `Add ${selectedIds.size} to routine`}
             </button>
           </div>
@@ -758,25 +897,26 @@ export default function ExercisesSearchPage() {
           showCloseButton
           className={cn(
             isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200",
-            "max-h-[90vh]"
+            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden",
           )}
         >
-          <ModalHeader className="pb-0">
+          <ModalHeader className="shrink-0 pb-2">
             <ModalTitle
               className={cn("pr-10 line-clamp-2", isDarkMode ? "!text-iron-50" : "!text-slate-900")}
             >
               {previewExercise?.name ?? "Exercise"}
             </ModalTitle>
           </ModalHeader>
-          <ModalBody className="pt-2">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-1">
             {previewExercise ? (
               <ExercisePreviewPanel
                 exercise={previewExercise}
                 isDarkMode={isDarkMode}
                 hideHeading
+                variant="sheet"
               />
             ) : null}
-          </ModalBody>
+          </div>
         </ModalContent>
       </Modal>
     </Layout>

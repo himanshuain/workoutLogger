@@ -26,6 +26,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import LongPressContextHint from "@/components/LongPressContextHint";
 import { Target, Plus, Trash2, Trophy, ChevronRight, ChevronDown, Minus, Check, Pencil } from "lucide-react";
 
 const GOAL_TYPES = [
@@ -308,6 +309,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
       {/* Goals List */}
       {expanded && goalProgress.length > 0 && (
         <div className={`px-4 pb-4 space-y-2`}>
+          <LongPressContextHint isDarkMode={isDarkMode} className="-mb-1" />
           {goalProgress.map((goal) => (
             <ContextMenu key={goal.id}>
               <ContextMenuTrigger asChild>

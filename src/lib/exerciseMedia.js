@@ -34,6 +34,14 @@ export function getExerciseEquipment(exercise) {
   return "";
 }
 
+/** Google Images SERP URL for reference photos (embedding google.com in iframes is blocked). */
+export function googleImagesSearchUrl(query) {
+  if (typeof query !== "string") return null;
+  const q = query.trim();
+  if (!q) return null;
+  return `https://www.google.com/search?tbm=isch&hl=en&q=${encodeURIComponent(q)}`;
+}
+
 /** Next/Image: skip optimizer for GIFs and known external hosts. */
 export function exerciseImageUnoptimized(url) {
   if (!url) return false;
@@ -42,4 +50,72 @@ export function exerciseImageUnoptimized(url) {
     url.includes("exercisedb.dev") ||
     /\.gif(\?|#|$)/i.test(url)
   );
+}
+
+export function normalizeComparableMediaUrl(url) {
+  if (typeof url !== "string") return "";
+  const t = url.trim();
+  if (!t) return "";
+  try {
+    const u = new URL(t);
+    let path = u.pathname.replace(/\/+$/, "") || "/";
+    return `${u.origin.toLowerCase()}${path.toLowerCase()}${u.search}`;
+  } catch {
+    return t.toLowerCase().replace(/\/+$/, "");
+  }
+}
+
+/** Distinct gif/image URLs stored on one exercise row. */
+export function collectUrlsFromExerciseRow(exercise) {
+  if (!exercise) return [];
+  /** @type {string[]} */
+  const out = [];
+  const push = url => {
+    if (typeof url !== "string" || !url.trim()) return;
+    out.push(url.trim());
+  };
+  push(exercise.gif_url);
+  push(exercise.image_url);
+  /** @type {Set<string>} */
+  const seen = new Set();
+  return out.filter(u => {
+    const k = normalizeComparableMediaUrl(u);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function normalizeExerciseNameForMerge(name) {
+  return String(name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * All unique media URLs for an exercise: this row plus other library rows with the same normalized name.
+ * Uses only real columns (`gif_url`, `image_url`).
+ */
+export function collectExerciseMediaUrls(exercise, allExercises) {
+  if (!exercise) return [];
+  const list = [];
+  list.push(...collectUrlsFromExerciseRow(exercise));
+
+  const key = normalizeExerciseNameForMerge(exercise.name);
+  if (Array.isArray(allExercises) && key) {
+    for (const e of allExercises) {
+      if (!e || e.id === exercise.id) continue;
+      if (normalizeExerciseNameForMerge(e.name) !== key) continue;
+      list.push(...collectUrlsFromExerciseRow(e));
+    }
+  }
+
+  const seen = new Set();
+  return list.filter(u => {
+    const k = normalizeComparableMediaUrl(u);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }

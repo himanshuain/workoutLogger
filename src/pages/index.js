@@ -61,6 +61,7 @@ import SectionSurface from "@/components/SectionSurface";
 import TodayWorkoutSection from "@/components/workout/TodayWorkoutSection";
 import HorizontalDateStrip from "@/components/logging/HorizontalDateStrip";
 import DayHabitsLifeLogCard from "@/components/logging/DayHabitsLifeLogCard";
+import LongPressContextHint from "@/components/LongPressContextHint";
 import LogDayWorkoutPanel from "@/components/logging/LogDayWorkoutPanel";
 import {
   addDaysStr,
@@ -707,6 +708,10 @@ export default function Home() {
             </button>
           </div>
 
+          {recentSessions.length > 0 && (
+            <LongPressContextHint variant="deleteOnly" isDarkMode={isDarkMode} className="mb-2" />
+          )}
+
           {!todaySession && isViewingToday && (
             <p
               className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}
@@ -788,6 +793,7 @@ export default function Home() {
                     {isExpanded && (
                       <div className={`px-3.5 pb-3 space-y-2 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
                         <div className="pt-2.5">
+                          <LongPressContextHint isDarkMode={isDarkMode} className="mb-2" />
                           {(() => {
                             const byExercise = {};
                             completedSets.forEach((s) => {

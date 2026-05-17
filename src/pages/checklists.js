@@ -28,6 +28,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
+import LongPressContextHint from "@/components/LongPressContextHint";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import {
@@ -453,6 +454,7 @@ export default function Steps() {
         ) : viewMode === "list" ? (
           /* ======================== LIST VIEW ======================== */
           <div className="space-y-3 mt-2">
+            <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-px" />
             {stepCards.map((card) => {
               const isExpanded = expandedCard === card.id;
               const items = card.step_items || [];
@@ -536,6 +538,9 @@ export default function Steps() {
                                   Reset
                                 </button>
                               )}
+                              {items.length > 0 ? (
+                                <LongPressContextHint isDarkMode={isDarkMode} className="mt-2 mb-1" />
+                              ) : null}
                               <div className="mt-2 space-y-0.5">
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => handleDragEnd(event, card.id)}>
                                   <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>
@@ -578,6 +583,7 @@ export default function Steps() {
         ) : (
           /* ======================== CARD VIEW ======================== */
           <StaggerContainer className="grid grid-cols-2 gap-3 mt-2">
+            <LongPressContextHint isDarkMode={isDarkMode} className="col-span-2 -mt-1 mb-0.5" />
             {stepCards.map((card) => {
               const items = card.step_items || [];
               const checked = getCheckedCount(card);
@@ -744,6 +750,7 @@ export default function Steps() {
                       Reset
                     </button>
                   )}
+                  {items.length > 0 ? <LongPressContextHint isDarkMode={isDarkMode} className="mb-2" /> : null}
                   <div className="space-y-0.5">
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => handleDragEnd(event, card.id)}>
                       <SortableContext items={items.map(i => i.id)} strategy={verticalListSortingStrategy}>

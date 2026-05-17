@@ -5,6 +5,9 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import LongPressContextHint from "@/components/LongPressContextHint";
+import ExpandedLogInsightsTabs from "@/components/logging/ExpandedLogInsightsTabs";
+import EventExpandedInsightsGraph from "@/components/logging/EventExpandedInsightsGraph";
 import DayPicker from "@/components/DayPicker";
 import {
   Modal,
@@ -1009,7 +1012,9 @@ export default function LifeLog() {
                 </button>
               </div>
             ) : (
-              sortedEvents.map(eventType => {
+              <>
+                <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-1" />
+                {sortedEvents.map(eventType => {
                 const isOverdue =
                   eventType.reminder_days &&
                   eventType.days_since !== null &&
@@ -1136,56 +1141,74 @@ export default function LifeLog() {
                         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                         className="overflow-hidden"
                       >
-                      <div
-                        className={`px-3.5 pb-3.5 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}
-                      >
-                        <div className="pt-3 pb-2">
-                          <ActivityHeatmap
-                            data={eventHeatmapData[eventType.id] || []}
-                            type="habit"
-                            label=""
-                            color={eventType.color}
-                            compact
-                            mini
-                            isDarkMode={isDarkMode}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => openLogDrawer(eventType)}
-                          className={`mt-3 w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 ${
-                            isDarkMode
-                              ? "bg-iron-800 text-iron-300 active:bg-iron-700"
-                              : "bg-slate-100 text-slate-600 active:bg-slate-200"
-                          }`}
-                        >
-                          <CalendarPlus className="w-3.5 h-3.5" />
-                          Log with Details
-                        </button>
-                        {isLoadingExpandedLogs ? (
-                          <div
-                            className={`py-5 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                          >
-                            Loading...
-                          </div>
-                        ) : (
-                          <>
-                            <p
-                              className={`pt-3 text-[10px] font-semibold uppercase tracking-wider ${
-                                isDarkMode ? "text-iron-500" : "text-slate-500"
+                      <div className="px-3.5 pb-3.5">
+                        <ExpandedLogInsightsTabs
+                          isDarkMode={isDarkMode}
+                          primaryAction={
+                            <button
+                              type="button"
+                              onClick={() => openLogDrawer(eventType)}
+                              className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
+                                isDarkMode
+                                  ? "bg-iron-800 text-iron-200 ring-1 ring-iron-700 active:bg-iron-700"
+                                  : "bg-slate-100 text-slate-800 ring-1 ring-slate-200/80 active:bg-slate-200"
                               }`}
                             >
-                              Recent logs
-                            </p>
-                            {expandedEventLogs.length === 0 ? (
-                              <div
-                                className={`py-4 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                              >
-                                No history yet
+                              <CalendarPlus className="w-4 h-4" />
+                              Log with Details
+                            </button>
+                          }
+                          insightsChildren={
+                            <>
+                              <div className="pb-1">
+                                <ActivityHeatmap
+                                  data={eventHeatmapData[eventType.id] || []}
+                                  type="habit"
+                                  label=""
+                                  color={eventType.color}
+                                  compact
+                                  mini
+                                  isDarkMode={isDarkMode}
+                                />
                               </div>
-                            ) : (
-                              <>
-                                <div className="pt-1 space-y-1.5">
+                              <EventExpandedInsightsGraph
+                                eventType={eventType}
+                                expandedEventLogs={expandedEventLogs}
+                                isDarkMode={isDarkMode}
+                                graphTooltip={graphTooltip}
+                                setGraphTooltip={setGraphTooltip}
+                              />
+                            </>
+                          }
+                          logsChildren={
+                            <>
+                              {isLoadingExpandedLogs ? (
+                                <div
+                                  className={`py-5 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                                >
+                                  Loading...
+                                </div>
+                              ) : (
+                                <>
+                                  <p
+                                    className={`text-[10px] font-semibold uppercase tracking-wider ${
+                                      isDarkMode ? "text-iron-500" : "text-slate-500"
+                                    }`}
+                                  >
+                                    Recent logs
+                                  </p>
+                                  {expandedEventLogs.length > 0 ? (
+                                    <LongPressContextHint isDarkMode={isDarkMode} className="-mt-0.5 mb-1" />
+                                  ) : null}
+                                  {expandedEventLogs.length === 0 ? (
+                                    <div
+                                      className={`py-4 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                                    >
+                                      No history yet
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="pt-1 space-y-1.5">
                             {expandedEventLogs.slice(0, 10).map((log, idx) => {
                               const logDate = new Date(log.date);
                               const todayDate = new Date();
@@ -1332,204 +1355,21 @@ export default function LifeLog() {
                               </button>
                             )}
                           </div>
-                                {/* Graph */}
-                                {eventType.track_graph &&
-                                  expandedEventLogs.length >= 2 &&
-                                  (() => {
-                                    const getLogValue = (l) => {
-                                      if (l.cost != null) return parseFloat(l.cost);
-                                      if (l.notes && !isNaN(parseFloat(l.notes)) && isFinite(l.notes.trim())) return parseFloat(l.notes);
-                                      return null;
-                                    };
-                                    const hasValues = expandedEventLogs.some(l => getLogValue(l) != null);
-                                    const sortedLogs = [...expandedEventLogs].reverse();
-                                    const graphH = 80;
-                                    const graphW = 280;
-
-                                    if (hasValues) {
-                                      const graphLogs = sortedLogs
-                                        .filter(l => getLogValue(l) != null)
-                                        .slice(-15);
-                                      if (graphLogs.length < 2) return null;
-                                      const values = graphLogs.map(l => getLogValue(l));
-                                      const maxVal = Math.max(...values);
-                                      const minVal = Math.min(...values);
-                                      const range = maxVal - minVal || 1;
-                                      const step = graphW / (values.length - 1);
-                                      const points = values.map((v, i) => ({
-                                        x: i * step,
-                                        y: graphH - ((v - minVal) / range) * (graphH - 10) - 5,
-                                        val: v,
-                                        date: graphLogs[i].date,
-                                      }));
-                                      const linePath = points
-                                        .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-                                        .join(" ");
-                                      const areaPath = `${linePath} L ${points[points.length - 1].x} ${graphH} L 0 ${graphH} Z`;
-
-                                      const activeIdx = graphTooltip?.type === "value" && graphTooltip?.eventId === eventType.id ? graphTooltip.index : null;
-
-                                      return (
-                                        <div className={`mt-3 mb-3 p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
-                                          <div className="flex items-center justify-between mb-2">
-                                            <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
-                                              {activeIdx != null
-                                                ? new Date(points[activeIdx].date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                                : "Value Trend"}
-                                            </span>
-                                            <span className="text-xs font-bold" style={{ color: eventType.color }}>
-                                              {activeIdx != null ? points[activeIdx].val : values[values.length - 1]}
-                                            </span>
-                                          </div>
-                                          <svg
-                                            viewBox={`0 0 ${graphW} ${graphH}`}
-                                            className="w-full"
-                                            style={{ height: 80 }}
-                                            onMouseLeave={() => setGraphTooltip(null)}
-                                          >
-                                            <defs>
-                                              <linearGradient id={`grad-${eventType.id}`} x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor={eventType.color} stopOpacity="0.3" />
-                                                <stop offset="100%" stopColor={eventType.color} stopOpacity="0.02" />
-                                              </linearGradient>
-                                            </defs>
-                                            <path d={areaPath} fill={`url(#grad-${eventType.id})`} />
-                                            <path d={linePath} fill="none" stroke={eventType.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                            {activeIdx != null && (
-                                              <line x1={points[activeIdx].x} x2={points[activeIdx].x} y1={0} y2={graphH}
-                                                stroke={isDarkMode ? "#555" : "#ccc"} strokeWidth="1" strokeDasharray="3 2" />
-                                            )}
-                                            {points.map((p, i) => (
-                                              <g key={i}>
-                                                <circle cx={p.x} cy={p.y}
-                                                  r={activeIdx === i ? 5 : i === points.length - 1 ? 4 : 2.5}
-                                                  fill={eventType.color}
-                                                  stroke={isDarkMode ? "#1c1c1e" : "#fff"}
-                                                  strokeWidth={activeIdx === i || i === points.length - 1 ? 2 : 0}
-                                                />
-                                                <circle cx={p.x} cy={p.y} r={14} fill="transparent"
-                                                  onMouseEnter={() => setGraphTooltip({ type: "value", eventId: eventType.id, index: i })}
-                                                  onTouchStart={(e) => { e.stopPropagation(); setGraphTooltip(prev => prev?.index === i && prev?.eventId === eventType.id ? null : { type: "value", eventId: eventType.id, index: i }); }}
-                                                  style={{ cursor: "pointer" }}
-                                                />
-                                              </g>
-                                            ))}
-                                          </svg>
-                                          <div className="flex justify-between mt-1">
-                                            <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                              {new Date(graphLogs[0].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                            </span>
-                                            <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                              {new Date(graphLogs[graphLogs.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-
-                                    // Frequency line graph: days between occurrences
-                                    const recentLogs = sortedLogs.slice(-15);
-                                    const gaps = [];
-                                    for (let i = 1; i < recentLogs.length; i++) {
-                                      const d1 = new Date(recentLogs[i - 1].date);
-                                      const d2 = new Date(recentLogs[i].date);
-                                      gaps.push({
-                                        days: Math.round((d2 - d1) / (1000 * 60 * 60 * 24)),
-                                        date: recentLogs[i].date,
-                                      });
-                                    }
-                                    if (gaps.length < 1) return null;
-                                    const gapValues = gaps.map(g => g.days);
-                                    const maxGap = Math.max(...gapValues);
-                                    const minGap = Math.min(...gapValues);
-                                    const gapRange = maxGap - minGap || 1;
-                                    const avgGap = Math.round(gapValues.reduce((s, v) => s + v, 0) / gapValues.length);
-                                    const step = gaps.length > 1 ? graphW / (gaps.length - 1) : graphW / 2;
-                                    const points = gapValues.map((v, i) => ({
-                                      x: gaps.length > 1 ? i * step : graphW / 2,
-                                      y: graphH - ((v - minGap) / gapRange) * (graphH - 10) - 5,
-                                      val: v,
-                                    }));
-                                    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-                                    const areaPath = gaps.length > 1
-                                      ? `${linePath} L ${points[points.length - 1].x} ${graphH} L 0 ${graphH} Z`
-                                      : null;
-
-                                    const activeIdx = graphTooltip?.type === "freq" && graphTooltip?.eventId === eventType.id ? graphTooltip.index : null;
-
-                                    return (
-                                      <div className={`mb-3 p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                          <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
-                                            {activeIdx != null
-                                              ? new Date(gaps[activeIdx].date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                                              : "Frequency (days between)"}
-                                          </span>
-                                          <span className="text-xs font-bold" style={{ color: eventType.color }}>
-                                            {activeIdx != null ? `${gaps[activeIdx].days}d` : `avg ${avgGap}d`}
-                                          </span>
-                                        </div>
-                                        <svg viewBox={`0 0 ${graphW} ${graphH}`} className="w-full" style={{ height: 80 }}
-                                          onMouseLeave={() => setGraphTooltip(null)}
-                                        >
-                                          <defs>
-                                            <linearGradient id={`freq-grad-${eventType.id}`} x1="0" y1="0" x2="0" y2="1">
-                                              <stop offset="0%" stopColor={eventType.color} stopOpacity="0.3" />
-                                              <stop offset="100%" stopColor={eventType.color} stopOpacity="0.02" />
-                                            </linearGradient>
-                                          </defs>
-                                          {eventType.reminder_days && (() => {
-                                            const clampedY = graphH - ((eventType.reminder_days - minGap) / gapRange) * (graphH - 10) - 5;
-                                            return (
-                                              <line x1="0" x2={graphW} y1={clampedY} y2={clampedY}
-                                                stroke={isDarkMode ? "#ef4444" : "#f87171"} strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
-                                            );
-                                          })()}
-                                          {areaPath && <path d={areaPath} fill={`url(#freq-grad-${eventType.id})`} />}
-                                          <path d={linePath} fill="none" stroke={eventType.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                          {activeIdx != null && (
-                                            <line x1={points[activeIdx].x} x2={points[activeIdx].x} y1={0} y2={graphH}
-                                              stroke={isDarkMode ? "#555" : "#ccc"} strokeWidth="1" strokeDasharray="3 2" />
-                                          )}
-                                          {points.map((p, i) => (
-                                            <g key={i}>
-                                              <circle cx={p.x} cy={p.y}
-                                                r={activeIdx === i ? 5 : i === points.length - 1 ? 4 : 2.5}
-                                                fill={eventType.color}
-                                                stroke={isDarkMode ? "#1c1c1e" : "#fff"}
-                                                strokeWidth={activeIdx === i || i === points.length - 1 ? 2 : 0}
-                                              />
-                                              <circle cx={p.x} cy={p.y} r={14} fill="transparent"
-                                                onMouseEnter={() => setGraphTooltip({ type: "freq", eventId: eventType.id, index: i })}
-                                                onTouchStart={(e) => { e.stopPropagation(); setGraphTooltip(prev => prev?.index === i && prev?.eventId === eventType.id ? null : { type: "freq", eventId: eventType.id, index: i }); }}
-                                                style={{ cursor: "pointer" }}
-                                              />
-                                            </g>
-                                          ))}
-                                        </svg>
-                                        <div className="flex justify-between mt-1">
-                                          <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                            {new Date(recentLogs[0].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                          </span>
-                                          <span className={`text-[9px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                                            {new Date(recentLogs[recentLogs.length - 1].date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    );
-
-                                  })()}
-                              </>
-                            )}
-                          </>
-                        )}
+                                </>
+                              )}
+                            </>
+                          )}
+                        </>
+                      }
+                    />
                       </div>
                       </motion.div>
                     )}
                     </AnimatePresence>
                   </div>
                 );
-              })
+              })}
+              </>
             )}
           </motion.div>
         )}
@@ -1573,7 +1413,9 @@ export default function LifeLog() {
                 </button>
               </div>
             ) : (
-              trackables
+              <>
+              <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-1" />
+              {trackables
                 .filter(t => t.name !== "Body Weight")
                 .map(trackable => {
                   const isExpanded = expandedHabit === trackable.id;
@@ -1676,27 +1518,147 @@ export default function LifeLog() {
                               transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                               className="overflow-hidden"
                             >
-                            <div className="px-3 pb-3">
-                              <ActivityHeatmap
-                                data={habitHeatmapData[trackable.id] || []}
-                                type="habit"
-                                label=""
-                                color={trackable.color}
-                                compact={true}
-                                mini
+                            <div className="px-3.5 pb-3">
+                              <ExpandedLogInsightsTabs
                                 isDarkMode={isDarkMode}
+                                primaryAction={
+                                  <button
+                                    type="button"
+                                    onClick={() => openPastEntryDrawer(trackable)}
+                                    className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
+                                      isDarkMode
+                                        ? "bg-iron-800 text-iron-200 ring-1 ring-iron-700 active:bg-iron-700"
+                                        : "bg-slate-100 text-slate-800 ring-1 ring-slate-200/80 active:bg-slate-200"
+                                    }`}
+                                  >
+                                    <CalendarPlus className="w-4 h-4" />
+                                    Add Past Entries
+                                  </button>
+                                }
+                                insightsChildren={
+                                  <ActivityHeatmap
+                                    data={habitHeatmapData[trackable.id] || []}
+                                    type="habit"
+                                    label=""
+                                    color={trackable.color}
+                                    compact={true}
+                                    mini
+                                    isDarkMode={isDarkMode}
+                                  />
+                                }
+                                logsChildren={(() => {
+                                      const habitLogRows = (
+                                        habitHeatmapData[trackable.id] || []
+                                      )
+                                        .filter(d => d.count > 0)
+                                        .sort((a, b) => b.date.localeCompare(a.date));
+                                      if (!habitLogRows.length) {
+                                        return (
+                                          <div
+                                            className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
+                                          >
+                                            No completed days in your history window yet.
+                                          </div>
+                                        );
+                                      }
+                                      return (
+                                        <>
+                                          <p
+                                            className={`text-[10px] font-semibold uppercase tracking-wider ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                                          >
+                                            Completed days
+                                          </p>
+                                          <div className="space-y-1.5 pt-1">
+                                            {habitLogRows.slice(0, 40).map((row, idx) => {
+                                              const dateRow = new Date(row.date + "T12:00:00");
+                                              const todayDate = new Date();
+                                              todayDate.setHours(0, 0, 0, 0);
+                                              dateRow.setHours(0, 0, 0, 0);
+                                              const daysSince = Math.floor(
+                                                (todayDate - dateRow) / (1000 * 60 * 60 * 24)
+                                              );
+                                              const gapDays =
+                                                idx > 0
+                                                  ? Math.floor(
+                                                      (new Date(habitLogRows[idx - 1].date + "T12:00:00") -
+                                                        dateRow) /
+                                                        (1000 * 60 * 60 * 24)
+                                                    )
+                                                  : null;
+                                              return (
+                                                <div key={row.date}>
+                                                  {gapDays != null && gapDays > 0 && (
+                                                    <div className="flex justify-center py-0.5">
+                                                      <span
+                                                        className={`text-[9px] font-medium px-1.5 py-px rounded-full ${
+                                                          isDarkMode
+                                                            ? "bg-iron-800/80 text-iron-600 border border-iron-700/50"
+                                                            : "bg-slate-100 text-slate-400 border border-slate-200"
+                                                        }`}
+                                                      >
+                                                        {gapDays}d gap
+                                                      </span>
+                                                    </div>
+                                                  )}
+                                                  <div
+                                                    className={`flex items-start justify-between gap-3 p-2.5 rounded-xl border transition-colors ${
+                                                      idx === 0
+                                                        ? isDarkMode
+                                                          ? "border-iron-700/70 bg-iron-800/40"
+                                                          : "border-slate-200 bg-slate-50"
+                                                        : isDarkMode
+                                                          ? "border-iron-800/50 bg-transparent"
+                                                          : "border-slate-100 bg-transparent"
+                                                    }`}
+                                                  >
+                                                    <div className="flex items-start gap-3 min-w-0">
+                                                      <div
+                                                        className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
+                                                        style={{
+                                                          backgroundColor:
+                                                            idx === 0
+                                                              ? trackable.color
+                                                              : isDarkMode
+                                                                ? "#3f3f46"
+                                                                : "#cbd5e1",
+                                                        }}
+                                                      />
+                                                      <div className="min-w-0">
+                                                        <p
+                                                          className={`text-sm font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}
+                                                        >
+                                                          {formatDate(row.date)}
+                                                        </p>
+                                                        {row.count > 1 && (
+                                                          <p
+                                                            className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                                                          >
+                                                            {row.count}× logged
+                                                          </p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                    <span
+                                                      className={`text-[10px] flex-shrink-0 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+                                                    >
+                                                      {formatDaysSince(daysSince)}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                            {habitLogRows.length > 40 && (
+                                              <p
+                                                className={`text-center text-xs pt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                                              >
+                                                Showing last 40 days with activity
+                                              </p>
+                                            )}
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
                               />
-                              <button
-                                onClick={() => openPastEntryDrawer(trackable)}
-                                className={`mt-3 w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
-                                  isDarkMode
-                                    ? "bg-iron-800 text-iron-300 active:bg-iron-700"
-                                    : "bg-slate-100 text-slate-600 active:bg-slate-200"
-                                }`}
-                              >
-                                <CalendarPlus className="w-4 h-4" />
-                                Add Past Entries
-                              </button>
                             </div>
                             </motion.div>
                           )}
@@ -1723,7 +1685,8 @@ export default function LifeLog() {
                       </ContextMenuContent>
                     </ContextMenu>
                   );
-                })
+                })}
+              </>
             )}
           </motion.div>
         )}
@@ -2213,6 +2176,7 @@ export default function LifeLog() {
               </div>
             ) : (
               <div className="space-y-2">
+                <LongPressContextHint isDarkMode={isDarkMode} className="pb-1" />
                 {eventLogs.map((log, index) => {
                   const logDate = new Date(log.date);
                   const todayDate = new Date();

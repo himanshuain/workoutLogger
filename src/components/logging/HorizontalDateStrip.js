@@ -64,7 +64,7 @@ export default function HorizontalDateStrip({
     const anchor = stripAnchorRef.current;
     if (!anchor) return;
     const anchorRight = anchor.offsetLeft + anchor.offsetWidth;
-    const nextLeft = anchorRight - container.clientWidth + 16;
+    const nextLeft = anchorRight - container.clientWidth + 24;
     const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
     container.scrollLeft = Math.min(maxScroll, Math.max(0, nextLeft));
   }, [anchorDate, glanceDays]);
@@ -119,9 +119,9 @@ export default function HorizontalDateStrip({
           ref={stripScrollRef}
           onScroll={handleStripScroll}
           className={cn(
-            "flex min-h-[7.75rem] w-full min-w-0 items-stretch gap-2 overflow-x-auto scrollbar-hide",
-            isDarkMode && "[mask-image:linear-gradient(90deg,transparent,black_8px,black_calc(100%-8px),transparent)]",
-            !isViewingToday && todayStr && "pr-7",
+            "flex min-h-[7.75rem] w-full min-w-0 items-stretch gap-2 overflow-x-auto px-4 scrollbar-hide",
+            isDarkMode && "[mask-image:linear-gradient(90deg,transparent,black_14px,black_calc(100%-14px),transparent)]",
+            !isViewingToday && todayStr && "pr-[2.75rem]",
           )}
         >
         {glanceDays.map((d, i) => {

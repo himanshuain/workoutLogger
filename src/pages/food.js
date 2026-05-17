@@ -45,6 +45,7 @@ import {
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import LongPressContextHint from "@/components/LongPressContextHint";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
@@ -646,6 +647,9 @@ export default function Food() {
 
           {/* Food Items */}
           <div className="space-y-3">
+            {foodItems.length > 0 && (
+              <LongPressContextHint isDarkMode={isDarkMode} className="-mb-1" />
+            )}
             {foodItems.map((item) => {
               const isConsumed = !!todayFoodEntries[item.id];
               const quantity =

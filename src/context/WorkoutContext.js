@@ -3,7 +3,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
-import { clearSessionClientState } from "@/lib/workoutSessionClient";
+import {
+  addSessionExtra,
+  clearSessionClientState,
+  removeSessionExtra,
+  renameSessionExerciseClient,
+} from "@/lib/workoutSessionClient";
 
 const WorkoutContext = createContext();
 
@@ -602,6 +607,169 @@ export function WorkoutProvider({ children }) {
     [user, activeSession, queryClient]
   );
 
+  /** Remove every set_log row for one exercise name in a session (+ local "added today" extras). */
+  const deleteSessionExerciseByName = useCallback(
+    async (sessionId, exerciseName) => {
+      if (!user || !sessionId || !exerciseName) return false;
+      const { error } = await supabase
+        .from("set_logs")
+        .delete()
+        .eq("session_id", sessionId)
+        .eq("exercise_name", exerciseName);
+
+      if (error) {
+        console.error("deleteSessionExerciseByName:", error);
+        return false;
+      }
+
+      removeSessionExtra(sessionId, exerciseName);
+
+      if (activeSession?.id === sessionId) {
+        setActiveSession(prev => ({
+          ...prev,
+          set_logs: (prev.set_logs || []).filter(log => log.exercise_name !== exerciseName),
+        }));
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+      return true;
+    },
+    [user, activeSession, queryClient]
+  );
+
+  /** Rename all set_log rows (+ client extras map) from oldName → newName for a session. */
+  const renameSessionExerciseByName = useCallback(
+    async (sessionId, oldName, newName, category) => {
+      if (!user || !sessionId || !oldName?.trim() || !newName?.trim() || oldName.trim() === newName.trim())
+        return false;
+
+      const trimmedNew = newName.trim();
+      const updates = {
+        exercise_name: trimmedNew,
+        updated_at: new Date().toISOString(),
+      };
+      if (category != null && String(category).length) updates.category = category;
+
+      const { error } = await supabase
+        .from("set_logs")
+        .update(updates)
+        .eq("session_id", sessionId)
+        .eq("exercise_name", oldName.trim());
+
+      if (error) {
+        console.error("renameSessionExerciseByName:", error);
+        return false;
+      }
+
+      renameSessionExerciseClient(sessionId, oldName.trim(), trimmedNew);
+
+      if (activeSession?.id === sessionId) {
+        setActiveSession(prev => ({
+          ...prev,
+          set_logs: (prev.set_logs || []).map(log =>
+            log.exercise_name === oldName.trim() ? { ...log, ...updates } : log
+          ),
+        }));
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+      return true;
+    },
+    [user, activeSession, queryClient]
+  );
+
+  /**
+   * Add a new exercise to an in-progress session with completed placeholder sets (review/summary fixes).
+   * Inserts rows + optional localStorage "added today" marker.
+   */
+  const seedCompletedExerciseSetsForSession = useCallback(
+    async ({
+      sessionId,
+      exercise,
+      targetSets = 3,
+      markAddedToday = true,
+    }) => {
+      if (!user || !sessionId || !exercise?.name?.trim()) return false;
+      const name = exercise.name.trim();
+      const category = exercise.category || "other";
+
+      const { data: clash, error: clashErr } = await supabase
+        .from("set_logs")
+        .select("id")
+        .eq("session_id", sessionId)
+        .eq("exercise_name", name)
+        .limit(1);
+
+      if (clashErr) {
+        console.error("seedCompletedExerciseSetsForSession clash check:", clashErr);
+        return false;
+      }
+      if (clash?.length) return false;
+
+      const hist = exerciseHistory[name];
+      const weight = Number(hist?.last_weight ?? 0);
+      const reps = Number(hist?.last_reps ?? 10);
+      const rows = [];
+      for (let i = 1; i <= targetSets; i++) {
+        rows.push({
+          session_id: sessionId,
+          user_id: user.id,
+          exercise_name: name,
+          category,
+          set_number: i,
+          weight,
+          reps,
+          is_completed: true,
+          previous_weight: weight,
+          previous_reps: reps,
+        });
+      }
+
+      const { data: inserted, error } = await supabase.from("set_logs").insert(rows).select();
+
+      if (error) {
+        console.error("seedCompletedExerciseSetsForSession insert:", error);
+        return false;
+      }
+
+      if (markAddedToday) {
+        addSessionExtra(sessionId, {
+          exercise_id: exercise.id ?? null,
+          exercise_name: name,
+          category,
+          equipment: typeof exercise.equipment === "string" ? exercise.equipment : "",
+          image_url: exercise.gif_url ?? exercise.image_url ?? null,
+        });
+      }
+
+      if (activeSession?.id === sessionId) {
+        setActiveSession(prev => ({
+          ...prev,
+          set_logs: [...(prev.set_logs || []), ...(inserted || [])],
+        }));
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+      return true;
+    },
+    [user, exerciseHistory, activeSession, queryClient]
+  );
+
   /** Append one set row for an exercise in an active session */
   const addSetLog = useCallback(
     async ({ sessionId, exerciseName, category }) => {
@@ -667,17 +835,21 @@ export function WorkoutProvider({ children }) {
     [user, exerciseHistory, activeSession, queryClient]
   );
 
-  // Delete a full workout session and its set logs
+  // Delete a full workout session and its set logs (abandon in-progress or remove from history)
   const deleteWorkoutSession = useCallback(
     async (sessionId) => {
       if (!user) return false;
       await supabase.from("set_logs").delete().eq("session_id", sessionId);
       const { error } = await supabase.from("workout_sessions").delete().eq("id", sessionId);
       if (!error) {
+        clearSessionClientState(sessionId);
+        setActiveSession(prev => (prev?.id === sessionId ? null : prev));
         queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
         queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
         queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+        queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+        queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
         return true;
       }
       return false;
@@ -2084,6 +2256,9 @@ export function WorkoutProvider({ children }) {
         getTodaySession,
         updateSessionExerciseIndex,
         deleteSetLog,
+        deleteSessionExerciseByName,
+        renameSessionExerciseByName,
+        seedCompletedExerciseSetsForSession,
         addSetLog,
         deleteWorkoutSession,
         updateSetLogData,

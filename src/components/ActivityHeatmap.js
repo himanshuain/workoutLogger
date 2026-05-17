@@ -354,14 +354,15 @@ export default function ActivityHeatmap({
   const monthTitleClass = mini ? "text-sm" : "text-lg";
   const navBtnPad = mini ? "p-1.5" : "p-2";
   const navIconClass = mini ? "w-4 h-4" : "w-5 h-5";
-  const calMaxW = mini
-    ? "max-w-[15.25rem]"
-    : "md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem]";
+  /** Mini: use full container width so 7-column grid spreads evenly (avoid right-side dead space). */
+  const calendarInnerClass = mini
+    ? "w-full max-w-full"
+    : "w-full md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto";
   const dayHeaderGap = mini ? "gap-0.5" : "gap-1";
   const dayHeaderCell = mini
     ? "text-center text-[9px] font-semibold py-1"
     : "text-center text-[11px] font-semibold py-2";
-  const gridGap = mini ? "gap-1" : "gap-1.5";
+  const gridGap = "gap-1.5";
 
   return (
     <div
@@ -495,7 +496,7 @@ export default function ActivityHeatmap({
 
       {/* Calendar */}
       <div className={`${calendarPad}`}>
-        <div className={`w-full ${calMaxW} md:mx-auto`}>
+        <div className={calendarInnerClass}>
         {/* Day Headers */}
         <div className={`grid grid-cols-7 ${dayHeaderGap} mb-2`}>
           {DAY_NAMES.map((day, i) => (

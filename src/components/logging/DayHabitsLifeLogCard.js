@@ -1,6 +1,7 @@
-import { ListChecks, Check, Plus } from "lucide-react";
+import { ListChecks, Check } from "lucide-react";
 import SectionManageButton from "@/components/SectionManageButton";
 import { sectionSurfaceClass } from "@/components/SectionSurface";
+import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
 
 /**
  * Habits list + Life log quick actions (shared by Log page and Today).
@@ -149,24 +150,35 @@ export default function DayHabitsLifeLogCard({
                         </div>
                         <button
                           type="button"
+                          aria-label={
+                            done
+                              ? `Remove log for ${et.name}`
+                              : et.need_notes || et.need_value
+                                ? `Log ${et.name} with details`
+                                : `Quick log ${et.name}`
+                          }
                           onClick={() => onQuickLifeLog(et)}
-                          className={`flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-colors active:scale-95 ${
                             done
                               ? isDarkMode
                                 ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
                                 : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                               : isDarkMode
-                                ? "bg-violet-500/20 text-violet-300 hover:bg-violet-500/30"
-                                : "bg-violet-100 text-violet-800 hover:bg-violet-200"
+                                ? "bg-violet-500/20 text-violet-200 ring-1 ring-violet-500/35 hover:bg-violet-500/30"
+                                : "bg-violet-100 text-violet-900 ring-1 ring-violet-200/90 hover:bg-violet-200"
                           }`}
                         >
                           {done ? (
-                            <>Undo</>
+                            "Undo"
                           ) : (
-                            <>
-                              <Plus className="h-3.5 w-3.5" />
-                              Log
-                            </>
+                            <LifeLogEventQuickGlyph
+                              isLoggedToday={false}
+                              needValue={Boolean(et.need_value)}
+                              needNotes={Boolean(et.need_notes)}
+                              mutedIconClass={
+                                isDarkMode ? "text-violet-200" : "text-violet-900"
+                              }
+                            />
                           )}
                         </button>
                       </li>

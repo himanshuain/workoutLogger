@@ -8,6 +8,7 @@ import ActivityHeatmap from "@/components/ActivityHeatmap";
 import LongPressContextHint from "@/components/LongPressContextHint";
 import ExpandedLogInsightsTabs from "@/components/logging/ExpandedLogInsightsTabs";
 import EventExpandedInsightsGraph from "@/components/logging/EventExpandedInsightsGraph";
+import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
 import DayPicker from "@/components/DayPicker";
 import {
   Modal,
@@ -239,9 +240,6 @@ export default function LifeLog() {
     need_notes: false,
   });
 
-  /** Nested sheet for value and/or notes required (stacked on Log Event modal) */
-  const [logDrawerNestedOpen, setLogDrawerNestedOpen] = useState(false);
-
   const [logDetails, setLogDetails] = useState({
     date: new Date().toISOString().split("T")[0],
     notes: "",
@@ -370,24 +368,6 @@ export default function LifeLog() {
     },
     [getEventLogs]
   );
-
-  // Sort events: those needing attention first, then by days since
-  const sortedEvents = useMemo(() => {
-    return [...eventTypes].sort((a, b) => {
-      // Items with reminder_days that are overdue come first
-      const aOverdue = a.reminder_days && a.days_since !== null && a.days_since >= a.reminder_days;
-      const bOverdue = b.reminder_days && b.days_since !== null && b.days_since >= b.reminder_days;
-
-      if (aOverdue && !bOverdue) return -1;
-      if (!aOverdue && bOverdue) return 1;
-
-      // Then sort by days_since (null = never logged = comes last)
-      if (a.days_since === null && b.days_since === null) return 0;
-      if (a.days_since === null) return 1;
-      if (b.days_since === null) return -1;
-      return b.days_since - a.days_since; // Oldest first
-    });
-  }, [eventTypes]);
 
   /** GitHub-style calendar: one cell per day with a log (count = logs that day). */
   const eventHeatmapData = useMemo(() => {
@@ -667,7 +647,6 @@ export default function LifeLog() {
 
       toast.success("Event logged");
       setShowLogDrawer(false);
-      setLogDrawerNestedOpen(false);
       setSelectedEvent(null);
       setLogDetails({
         date: new Date().toISOString().split("T")[0],
@@ -732,7 +711,6 @@ export default function LifeLog() {
       notes: "",
       cost: "",
     });
-    setLogDrawerNestedOpen(Boolean(eventType.need_value || eventType.need_notes));
     setShowLogDrawer(true);
   };
 
@@ -779,7 +757,6 @@ export default function LifeLog() {
           cost: pendingLogAction.cost,
         });
         setShowLogDrawer(false);
-        setLogDrawerNestedOpen(false);
         setSelectedEvent(null);
         setLogDetails({
           date: new Date().toISOString().split("T")[0],
@@ -805,6 +782,36 @@ export default function LifeLog() {
   const handleCancelDuplicateLog = () => {
     setShowDuplicateConfirm(false);
     setPendingLogAction(null);
+  };
+
+  /** Remove the existing entry for this date from the duplicate dialog */
+  const handleRemoveExistingDuplicateLog = async () => {
+    if (!pendingLogAction?.existingEntry?.id || !pendingLogAction.eventType?.id) return;
+    const { existingEntry, eventType } = pendingLogAction;
+    try {
+      const ok = await deleteEventLog(existingEntry.id, eventType.id);
+      if (!ok) {
+        toast.error("Couldn't remove entry");
+        return;
+      }
+      toast.success("Log removed");
+      setShowDuplicateConfirm(false);
+      setPendingLogAction(null);
+      if (expandedEvent === eventType.id) {
+        const logs = await getEventLogs(eventType.id);
+        setExpandedEventLogs(logs);
+      }
+      if (selectedEvent?.id === eventType.id) {
+        const logs = await getEventLogs(eventType.id);
+        setEventLogs(logs);
+      }
+      if (window.navigator?.vibrate) {
+        window.navigator.vibrate(8);
+      }
+    } catch (error) {
+      console.error("Error removing duplicate log:", error);
+      toast.error("Something went wrong");
+    }
   };
 
   const handleDeleteLog = (logId, eventTypeId) => {
@@ -992,7 +999,7 @@ export default function LifeLog() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="mt-4 space-y-3"
           >
-            {sortedEvents.length === 0 ? (
+            {eventTypes.length === 0 ? (
               <div
                 className={`text-center py-12 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
               >
@@ -1014,13 +1021,15 @@ export default function LifeLog() {
             ) : (
               <>
                 <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-1" />
-                {sortedEvents.map(eventType => {
+                {eventTypes.map(eventType => {
                 const isOverdue =
                   eventType.reminder_days &&
                   eventType.days_since !== null &&
                   eventType.days_since >= eventType.reminder_days;
 
                 const isExpanded = expandedEvent === eventType.id;
+                const isLoggedToday =
+                  eventType.days_since !== null && eventType.days_since === 0;
 
                 return (
                   <div
@@ -1092,18 +1101,34 @@ export default function LifeLog() {
                             />
                           </button>
                           <button
+                            type="button"
+                            aria-pressed={isLoggedToday}
+                            aria-label={
+                              isLoggedToday
+                                ? `${eventType.name} logged today`
+                                : eventType.need_notes || eventType.need_value
+                                  ? `Log ${eventType.name} with details`
+                                  : `Quick log ${eventType.name}`
+                            }
                             onClick={() => handleQuickLog(eventType)}
                             className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90 relative ${
-                              isDarkMode
-                                ? "bg-lift-primary text-iron-950"
-                                : "bg-workout-primary text-white"
+                              isLoggedToday
+                                ? isDarkMode
+                                  ? "bg-lift-primary text-iron-950 shadow-inner"
+                                  : "bg-workout-primary text-white shadow-sm"
+                                : isDarkMode
+                                  ? "bg-iron-800/85 text-lift-primary ring-1 ring-iron-600 shadow-inner shadow-black/10"
+                                  : "bg-white text-workout-primary ring-1 ring-slate-300 shadow-sm"
                             }`}
                           >
-                            {eventType.need_value ? (
-                              <Hash className="w-4 h-4" strokeWidth={3} />
-                            ) : (
-                              <Check className="w-4 h-4" strokeWidth={3} />
-                            )}
+                            <LifeLogEventQuickGlyph
+                              isLoggedToday={isLoggedToday}
+                              needValue={Boolean(eventType.need_value)}
+                              needNotes={Boolean(eventType.need_notes)}
+                              loggedIconClass={
+                                isDarkMode ? "text-iron-950" : "text-white"
+                              }
+                            />
                           </button>
                         </div>
                       </ContextMenuTrigger>
@@ -1551,7 +1576,7 @@ export default function LifeLog() {
                                         habitHeatmapData[trackable.id] || []
                                       )
                                         .filter(d => d.count > 0)
-                                        .sort((a, b) => b.date.localeCompare(a.date));
+                                        .slice(-40);
                                       if (!habitLogRows.length) {
                                         return (
                                           <div
@@ -1561,6 +1586,7 @@ export default function LifeLog() {
                                           </div>
                                         );
                                       }
+                                      const newestIdx = habitLogRows.length - 1;
                                       return (
                                         <>
                                           <p
@@ -1569,7 +1595,7 @@ export default function LifeLog() {
                                             Completed days
                                           </p>
                                           <div className="space-y-1.5 pt-1">
-                                            {habitLogRows.slice(0, 40).map((row, idx) => {
+                                            {habitLogRows.map((row, idx) => {
                                               const dateRow = new Date(row.date + "T12:00:00");
                                               const todayDate = new Date();
                                               todayDate.setHours(0, 0, 0, 0);
@@ -1577,14 +1603,19 @@ export default function LifeLog() {
                                               const daysSince = Math.floor(
                                                 (todayDate - dateRow) / (1000 * 60 * 60 * 24)
                                               );
+                                              const prevRow =
+                                                idx > 0 ? habitLogRows[idx - 1] : null;
                                               const gapDays =
-                                                idx > 0
+                                                prevRow != null
                                                   ? Math.floor(
-                                                      (new Date(habitLogRows[idx - 1].date + "T12:00:00") -
-                                                        dateRow) /
+                                                      (dateRow.getTime() -
+                                                        new Date(
+                                                          prevRow.date + "T12:00:00"
+                                                        ).getTime()) /
                                                         (1000 * 60 * 60 * 24)
                                                     )
                                                   : null;
+                                              const isAccentRow = idx === newestIdx;
                                               return (
                                                 <div key={row.date}>
                                                   {gapDays != null && gapDays > 0 && (
@@ -1602,7 +1633,7 @@ export default function LifeLog() {
                                                   )}
                                                   <div
                                                     className={`flex items-start justify-between gap-3 p-2.5 rounded-xl border transition-colors ${
-                                                      idx === 0
+                                                      isAccentRow
                                                         ? isDarkMode
                                                           ? "border-iron-700/70 bg-iron-800/40"
                                                           : "border-slate-200 bg-slate-50"
@@ -1615,12 +1646,11 @@ export default function LifeLog() {
                                                       <div
                                                         className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
                                                         style={{
-                                                          backgroundColor:
-                                                            idx === 0
-                                                              ? trackable.color
-                                                              : isDarkMode
-                                                                ? "#3f3f46"
-                                                                : "#cbd5e1",
+                                                          backgroundColor: isAccentRow
+                                                            ? trackable.color
+                                                            : isDarkMode
+                                                              ? "#3f3f46"
+                                                              : "#cbd5e1",
                                                         }}
                                                       />
                                                       <div className="min-w-0">
@@ -1647,7 +1677,8 @@ export default function LifeLog() {
                                                 </div>
                                               );
                                             })}
-                                            {habitLogRows.length > 40 && (
+                                            {(habitHeatmapData[trackable.id] || []).filter(d => d.count > 0)
+                                              .length > 40 && (
                                               <p
                                                 className={`text-center text-xs pt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
                                               >
@@ -1941,17 +1972,12 @@ export default function LifeLog() {
       </Modal>
 
       {/* Log Event Modal */}
-      <Modal
-        open={showLogDrawer}
-        onOpenChange={open => {
-          setShowLogDrawer(open);
-          if (!open) setLogDrawerNestedOpen(false);
-        }}
-      >
+      <Modal open={showLogDrawer} onOpenChange={setShowLogDrawer}>
         <ModalContent
           className={`flex max-h-[92vh] min-h-0 flex-col ${
             isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
           }`}
+          showCloseButton
         >
           <ModalHeader className="shrink-0">
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -1959,13 +1985,7 @@ export default function LifeLog() {
               Log {selectedEvent?.name}
             </ModalTitle>
           </ModalHeader>
-          <ModalBody
-            className={`space-y-4 ${
-              selectedEvent?.need_value || selectedEvent?.need_notes
-                ? "shrink-0 !max-h-none overflow-visible"
-                : ""
-            }`}
-          >
+          <ModalBody className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-1">
             <div>
               <label
                 className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
@@ -1981,6 +2001,51 @@ export default function LifeLog() {
                 }`}
               />
             </div>
+
+            {selectedEvent?.need_value && (
+              <div>
+                <label
+                  className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+                >
+                  Value<span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  autoFocus
+                  value={logDetails.cost}
+                  onChange={e => setLogDetails({ ...logDetails, cost: e.target.value })}
+                  placeholder="Enter a numeric value"
+                  className={`input-field py-3 text-base ${
+                    isDarkMode
+                      ? "bg-iron-800 text-iron-100 placeholder-iron-600"
+                      : "bg-slate-100 text-slate-800 placeholder-slate-400"
+                  }`}
+                />
+              </div>
+            )}
+
+            {selectedEvent?.need_notes && (
+              <div>
+                <label
+                  className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+                >
+                  Notes<span className="text-red-400">*</span>
+                </label>
+                <textarea
+                  autoFocus={!selectedEvent?.need_value}
+                  value={logDetails.notes}
+                  onChange={e => setLogDetails({ ...logDetails, notes: e.target.value })}
+                  placeholder="What happened? Add any details…"
+                  rows={4}
+                  className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                    isDarkMode
+                      ? "border-iron-700 bg-iron-800 text-iron-100 placeholder:text-iron-600 focus:ring-lift-primary/40"
+                      : "border-slate-200 bg-slate-100 text-slate-800 placeholder:text-slate-400 focus:ring-amber-500/40"
+                  }`}
+                />
+              </div>
+            )}
 
             {!(selectedEvent?.need_value || selectedEvent?.need_notes) && (
               <div>
@@ -2002,146 +2067,28 @@ export default function LifeLog() {
                 />
               </div>
             )}
-
-            {(selectedEvent?.need_value || selectedEvent?.need_notes) && !logDrawerNestedOpen && (
-              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                Tap &ldquo;Add details&rdquo; to enter the required value or notes for this event.
-              </p>
-            )}
           </ModalBody>
-          {!(selectedEvent?.need_value || selectedEvent?.need_notes) ? (
-            <ModalFooter className="shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowLogDrawer(false)}
-                className={`flex-1 py-3 rounded-xl font-medium ${
-                  isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLogEvent()}
-                className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
-                  isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                }`}
-              >
-                <Check className="w-4 h-4" />
-                Log Event
-              </button>
-            </ModalFooter>
-          ) : !logDrawerNestedOpen ? (
-            <ModalFooter className="shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowLogDrawer(false)}
-                className={`flex-1 py-3 rounded-xl font-medium ${
-                  isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setLogDrawerNestedOpen(true)}
-                className={`flex-1 py-3 rounded-xl font-bold ${
-                  isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                }`}
-              >
-                Add details
-              </button>
-            </ModalFooter>
-          ) : null}
-
-          <NestedModal
-            open={
-              Boolean(showLogDrawer && logDrawerNestedOpen && selectedEvent) &&
-              Boolean(selectedEvent?.need_value || selectedEvent?.need_notes)
-            }
-            onOpenChange={setLogDrawerNestedOpen}
-          >
-            <ModalContent
-              className={`flex max-h-[85vh] min-h-0 flex-col ${
-                isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+          <ModalFooter className="shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowLogDrawer(false)}
+              className={`flex-1 py-3 rounded-xl font-medium ${
+                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
-              showCloseButton
             >
-              <ModalHeader className="shrink-0">
-                <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
-                  Details for {selectedEvent?.name}
-                </ModalTitle>
-                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  {logDetails.date}
-                </p>
-              </ModalHeader>
-              <ModalBody className="shrink-0 space-y-4 !max-h-none overflow-visible pb-2">
-                {selectedEvent?.need_value && (
-                  <div>
-                    <label
-                      className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-                    >
-                      Value <span className="text-red-400 normal-case">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      autoFocus
-                      value={logDetails.cost}
-                      onChange={e => setLogDetails({ ...logDetails, cost: e.target.value })}
-                      placeholder="Enter a numeric value"
-                      className={`input-field py-3 text-base ${
-                        isDarkMode
-                          ? "bg-iron-800 text-iron-100 placeholder-iron-600"
-                          : "bg-slate-100 text-slate-800 placeholder-slate-400"
-                      }`}
-                    />
-                  </div>
-                )}
-                {selectedEvent?.need_notes && (
-                  <div>
-                    <label
-                      className={`mb-1.5 block text-xs font-medium uppercase tracking-wide ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-                    >
-                      Notes <span className="text-red-400 normal-case">*</span>
-                    </label>
-                    <textarea
-                      value={logDetails.notes}
-                      onChange={e => setLogDetails({ ...logDetails, notes: e.target.value })}
-                      placeholder="What happened? Add any details…"
-                      rows={4}
-                      className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
-                        isDarkMode
-                          ? "border-iron-700 bg-iron-800 text-iron-100 placeholder:text-iron-600 focus:ring-lift-primary/40"
-                          : "border-slate-200 bg-slate-100 text-slate-800 placeholder:text-slate-400 focus:ring-amber-500/40"
-                      }`}
-                    />
-                  </div>
-                )}
-              </ModalBody>
-              <ModalFooter className="shrink-0 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setLogDrawerNestedOpen(false)}
-                  className={`flex-1 py-3 rounded-xl font-medium ${
-                    isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLogEvent()}
-                  className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
-                    isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                  }`}
-                >
-                  <Check className="w-4 h-4" />
-                  Log Event
-                </button>
-              </ModalFooter>
-            </ModalContent>
-          </NestedModal>
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleLogEvent()}
+              className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              Log Event
+            </button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 
@@ -2419,26 +2366,39 @@ export default function LifeLog() {
                       ("{pendingLogAction.existingEntry.notes}")
                     </span>
                   )}
-                  . Do you want to add another entry for the same date?
+                  . You can add another entry, undo (remove) the existing log, or cancel.
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:justify-stretch sm:gap-2">
             <AlertDialogCancel
               onClick={handleCancelDuplicateLog}
               className={
-                isDarkMode ? "bg-iron-800 text-iron-300 border-iron-700 hover:bg-iron-700" : ""
+                isDarkMode
+                  ? "sm:col-span-1 bg-iron-800 text-iron-300 border-iron-700 hover:bg-iron-700 mt-0"
+                  : "sm:col-span-1 mt-0"
               }
             >
               Cancel
             </AlertDialogCancel>
+            <button
+              type="button"
+              onClick={handleRemoveExistingDuplicateLog}
+              className={
+                isDarkMode
+                  ? "inline-flex h-10 items-center justify-center rounded-xl border border-red-500/50 bg-transparent px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                  : "inline-flex h-10 items-center justify-center rounded-xl border border-red-300 bg-transparent px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              }
+            >
+              Undo entry
+            </button>
             <AlertDialogAction
               onClick={handleConfirmDuplicateLog}
-              className={`${
+              className={`sm:col-span-1 mt-0 ${
                 isDarkMode
-                  ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90"
-                  : "bg-workout-primary text-white hover:bg-workout-primary/90"
+                  ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90 border-0"
+                  : "bg-workout-primary text-white hover:bg-workout-primary/90 border-0"
               }`}
             >
               Add Anyway

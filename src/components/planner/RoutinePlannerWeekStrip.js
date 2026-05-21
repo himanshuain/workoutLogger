@@ -156,8 +156,8 @@ export default function RoutinePlannerWeekStrip({
             "flex flex-col gap-2 rounded-card border px-3 py-3 outline-none cursor-pointer transition-[color,background-color,border-color,box-shadow] " +
             (isDarkMode
               ? active
-                ? "border-lift-primary/45 bg-lift-primary/15 text-iron-100 ring-2 ring-inset ring-lift-primary/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lift-primary/70 "
-                : "border-iron-800 bg-iron-900/60 text-iron-300 ring-0 ring-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iron-500 "
+                ? "border-lift-primary/45 bg-surface-selected text-iron-100 ring-2 ring-inset ring-lift-primary/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lift-primary/70 "
+                : "border-surface-subtle bg-surface-section text-iron-300 ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iron-500 "
               : active
                 ? "border-workout-primary/40 bg-workout-primary/10 ring-2 ring-inset ring-workout-primary/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-workout-primary/55 "
                 : "border-slate-200 bg-slate-50/90 ring-0 ring-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400 ");

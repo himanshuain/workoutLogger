@@ -180,7 +180,7 @@ export default function Layout({ children }) {
   return (
     <div
       vaul-drawer-wrapper=""
-      className={`flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
+      className={`flex flex-col ${isDarkMode ? "bg-surface-page" : "bg-slate-50"}`}
       style={{
         height: "100dvh",
         paddingTop: "env(safe-area-inset-top)",
@@ -203,7 +203,7 @@ export default function Layout({ children }) {
         onTouchMove={handleNavTouchMove}
         onTouchEnd={handleNavTouchEnd}
         className={`flex-shrink-0 border-t z-40 ${
-          isDarkMode ? "bg-iron-950 border-iron-800/50" : "bg-slate-50 border-slate-200"
+          isDarkMode ? "bg-surface-section border-surface-subtle" : "bg-slate-50 border-slate-200"
         } ${isKeyboardVisible ? "hidden" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >

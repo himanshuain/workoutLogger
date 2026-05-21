@@ -67,6 +67,20 @@ module.exports = {
           black: '#0a0a0b',
           gray: '#1c1c1e',
         },
+        /** Elevation tokens — map to CSS vars (page → section → interactive → pressed) */
+        surface: {
+          page: 'var(--surface-page)',
+          section: 'var(--surface-section)',
+          interactive: 'var(--surface-interactive)',
+          pressed: 'var(--surface-pressed)',
+          selected: 'var(--surface-selected)',
+        },
+      },
+      borderColor: {
+        surface: {
+          DEFAULT: 'var(--surface-border)',
+          subtle: 'var(--surface-border-subtle)',
+        },
       },
       fontFamily: {
         display: ['var(--font-outfit)', 'system-ui', 'sans-serif'],

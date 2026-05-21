@@ -38,16 +38,33 @@
   --toast-bg: #ffffff;
   --toast-fg: #1e293b;
   --toast-border: #e2e8f0;
+
+  /* Elevation: page → section → interactive → pressed/selected */
+  --surface-page: #f8fafc;
+  --surface-section: #ffffff;
+  --surface-interactive: #f1f5f9;
+  --surface-pressed: #e2e8f0;
+  --surface-selected: #e2e8f0;
+  --surface-border-subtle: #e2e8f0;
+  --surface-border: #cbd5e1;
 }
 
 .dark {
-  /* Dark Theme - Layered surfaces with gold accents */
-  --bg-primary: #0a0a0b; /* iron-950 - deepest background */
-  --bg-secondary: #1c1c1e; /* iron-900 - standard surface */
-  --bg-tertiary: #27272a; /* iron-800 - elevated surface */
-  --bg-card: #1c1c1e; /* iron-900 - standard cards */
-  --bg-card-hover: #27272a; /* iron-800 - hover state */
-  --bg-elevated: #3f3f46; /* iron-700 - hero/elevated cards */
+  /* Dark Theme - stepped surfaces (iron scale) */
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #1c1c1e;
+  --bg-tertiary: #27272a;
+  --bg-card: #1c1c1e;
+  --bg-card-hover: #27272a;
+  --bg-elevated: #27272a;
+
+  --surface-page: #0a0a0b;
+  --surface-section: #1c1c1e;
+  --surface-interactive: #27272a;
+  --surface-pressed: #3f3f46;
+  --surface-selected: #3f3f46;
+  --surface-border-subtle: #27272a;
+  --surface-border: #3f3f46;
 
   --text-primary: #f4f4f5; /* iron-100 - primary text */
   --text-secondary: #a1a1aa; /* iron-400 - secondary text */
@@ -100,7 +117,7 @@ html {
 
 /* Dark theme body */
 .dark body {
-  @apply bg-iron-950 text-iron-100;
+  @apply bg-surface-page text-iron-100;
 }
 
 /* Light theme body */
@@ -488,7 +505,7 @@ input[type="number"] {
 }
 
 .dark .input-field {
-  @apply bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50;
+  @apply bg-surface-interactive text-iron-100 placeholder-iron-600 border border-surface-subtle focus:ring-lift-primary/50;
 }
 
 .light .input-field {
@@ -533,11 +550,11 @@ input[type="number"] {
 }
 
 .dark .btn-secondary {
-  @apply bg-iron-800 text-iron-400 border border-iron-700;
+  @apply bg-surface-interactive text-iron-300 border border-surface-subtle;
 }
 
 .dark .btn-secondary:hover {
-  @apply bg-iron-700 text-iron-300;
+  @apply bg-surface-pressed text-iron-200;
 }
 
 .light .btn-secondary {
@@ -571,7 +588,7 @@ input[type="number"] {
 }
 
 .dark .card {
-  @apply bg-iron-900;
+  @apply bg-surface-section border border-surface-subtle;
 }
 
 .light .card {
@@ -581,12 +598,10 @@ input[type="number"] {
 /* Card hierarchy variants */
 .card-hero {
   @apply rounded-card p-6;
-  background-color: var(--bg-elevated);
 }
 
 .dark .card-hero {
-  @apply bg-iron-700 border border-iron-600/50;
-  box-shadow: var(--shadow-lg);
+  @apply bg-surface-interactive border border-surface shadow-md;
 }
 
 .light .card-hero {
@@ -595,11 +610,10 @@ input[type="number"] {
 
 .card-secondary {
   @apply rounded-card p-4;
-  background-color: var(--bg-card);
 }
 
 .dark .card-secondary {
-  @apply bg-iron-800/50 border border-iron-700/30;
+  @apply bg-surface-interactive border border-surface-subtle;
 }
 
 .light .card-secondary {
@@ -608,11 +622,10 @@ input[type="number"] {
 
 .card-compact {
   @apply rounded-card p-3;
-  background-color: var(--bg-tertiary);
 }
 
 .dark .card-compact {
-  @apply bg-iron-800/30;
+  @apply bg-surface-interactive;
 }
 
 .light .card-compact {

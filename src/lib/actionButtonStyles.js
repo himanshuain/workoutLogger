@@ -14,7 +14,7 @@ export function actionPrimary(isDarkMode, className) {
 export function actionSecondary(isDarkMode, className) {
   return cn(
     isDarkMode
-      ? "border border-iron-700 bg-iron-800 text-iron-300 hover:bg-iron-700 hover:text-iron-200"
+      ? "border border-surface-subtle bg-surface-interactive text-iron-300 hover:bg-surface-pressed hover:text-iron-200"
       : "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-800",
     className,
   );
@@ -24,7 +24,7 @@ export function actionSecondary(isDarkMode, className) {
 export function actionSecondaryCompact(isDarkMode, className) {
   return cn(
     isDarkMode
-      ? "bg-iron-800 text-iron-400 ring-1 ring-iron-700 hover:bg-iron-700 hover:text-iron-300"
+      ? "bg-surface-interactive text-iron-400 ring-1 ring-surface-subtle hover:bg-surface-pressed hover:text-iron-300"
       : "border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-800",
     className,
   );
@@ -34,7 +34,7 @@ export function actionSecondaryCompact(isDarkMode, className) {
 export function actionGhost(isDarkMode, className) {
   return cn(
     isDarkMode
-      ? "text-iron-400 hover:text-iron-200 hover:bg-iron-800/80"
+      ? "text-iron-400 hover:bg-surface-interactive hover:text-iron-200"
       : "text-slate-500 hover:text-slate-800 hover:bg-slate-100",
     className,
   );
@@ -74,7 +74,7 @@ export function actionSuccess(isDarkMode, className) {
 export function actionNeutralIcon(isDarkMode, className) {
   return cn(
     isDarkMode
-      ? "bg-iron-800 text-iron-400 ring-1 ring-iron-700 hover:bg-iron-700 hover:text-iron-300"
+      ? "bg-surface-interactive text-iron-400 ring-1 ring-surface-subtle hover:bg-surface-pressed hover:text-iron-300"
       : "bg-slate-100 text-slate-500 ring-1 ring-slate-200 hover:bg-slate-200 hover:text-slate-700",
     className,
   );
@@ -84,7 +84,7 @@ export function actionNeutralIcon(isDarkMode, className) {
 export function segmentSelected(isDarkMode, className) {
   return cn(
     isDarkMode
-      ? "bg-iron-700 text-iron-100 ring-1 ring-inset ring-iron-600"
+      ? "bg-surface-pressed text-iron-100 ring-1 ring-inset ring-surface"
       : "bg-white text-slate-800 shadow-sm ring-1 ring-inset ring-slate-200",
     className,
   );

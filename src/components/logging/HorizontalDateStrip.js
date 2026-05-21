@@ -183,7 +183,7 @@ export default function HorizontalDateStrip({
                         ? "border-sky-400/50 bg-gradient-to-b from-sky-500/20 via-sky-600/12 to-transparent text-sky-50 shadow-[0_0_0_1px_rgba(56,189,248,0.25),0_8px_24px_-4px_rgba(0,0,0,0.45)]"
                         : "border-sky-500 bg-gradient-to-b from-sky-100 to-white text-sky-950 shadow-md shadow-sky-200/50"
                     : isDarkMode
-                      ? "border-iron-700/70 bg-iron-900/40 text-iron-400 hover:border-iron-600 hover:bg-iron-800/40 hover:text-iron-200"
+                      ? "border-surface-subtle bg-surface-interactive text-iron-400 hover:border-surface hover:bg-surface-pressed hover:text-iron-200"
                       : "border-slate-200/90 bg-white text-slate-600 hover:border-slate-300 hover:shadow-sm",
                 )}
               >

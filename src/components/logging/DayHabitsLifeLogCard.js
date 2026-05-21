@@ -3,6 +3,7 @@ import SectionManageButton from "@/components/SectionManageButton";
 import SectionHeader from "@/components/SectionHeader";
 import { sectionSurfaceClass } from "@/components/SectionSurface";
 import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
+import { surfaceInteractive } from "@/lib/surfaceStyles";
 import {
   actionSuccess,
   actionNeutralIcon,
@@ -116,9 +117,7 @@ export default function DayHabitsLifeLogCard({
                     return (
                       <li
                         key={t.id}
-                        className={`flex items-center gap-3 rounded-card px-2 py-2 ${
-                          isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
-                        }`}
+                        className={`flex items-center gap-3 rounded-card px-2 py-2 ${surfaceInteractive(isDarkMode)}`}
                       >
                         <button
                           type="button"
@@ -187,9 +186,7 @@ export default function DayHabitsLifeLogCard({
                     return (
                       <li
                         key={et.id}
-                        className={`flex items-center gap-3 rounded-card px-2 py-2 ${
-                          isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
-                        }`}
+                        className={`flex items-center gap-3 rounded-card px-2 py-2 ${surfaceInteractive(isDarkMode)}`}
                       >
                         <span
                           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg"

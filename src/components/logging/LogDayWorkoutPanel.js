@@ -6,6 +6,7 @@ import {
   actionSecondary,
   actionSecondaryCompact,
 } from "@/lib/actionButtonStyles";
+import { surfaceSection, surfaceInteractive } from "@/lib/surfaceStyles";
 
 export default function LogDayWorkoutPanel({
   isDarkMode,
@@ -31,11 +32,7 @@ export default function LogDayWorkoutPanel({
       : formatChipLabel(pastLogDate, todayStr);
 
   return (
-    <div
-      className={`rounded-card border p-4 mb-section ${
-        isDarkMode ? "border-iron-800 bg-iron-950/40" : "border-slate-200 bg-slate-50/90"
-      }`}
-    >
+    <div className={`rounded-card border p-4 mb-section ${surfaceSection(isDarkMode)}`}>
       <SectionHeader
         icon={Dumbbell}
         label="Workout"
@@ -69,9 +66,7 @@ export default function LogDayWorkoutPanel({
             return (
               <div
                 key={session.id}
-                className={`flex items-center gap-3 rounded-card p-3 ${
-                  isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
-                }`}
+                className={`flex items-center gap-3 rounded-card p-3 ${surfaceInteractive(isDarkMode)}`}
               >
                 <div
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card ${

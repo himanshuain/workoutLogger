@@ -41,6 +41,7 @@ import {
   actionDestructiveGhost,
   actionGhost,
 } from "@/lib/actionButtonStyles";
+import { surfaceInteractive } from "@/lib/surfaceStyles";
 
 export default function RoutinePlannerPage() {
   const router = useRouter();
@@ -227,9 +228,9 @@ export default function RoutinePlannerPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Routine / focus title"
-            className={`w-full text-xl font-semibold tracking-tight rounded-card px-4 py-3 outline-none ${
+            className={`w-full text-xl font-semibold tracking-tight rounded-card border px-4 py-3 outline-none ${
               isDarkMode
-                ? "bg-iron-900/80 border border-iron-800 text-iron-50 placeholder:text-iron-600"
+                ? "border-surface-subtle bg-surface-interactive text-iron-50 placeholder:text-iron-600"
                 : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
             }`}
           />
@@ -368,9 +369,7 @@ export default function RoutinePlannerPage() {
               {routinesSorted.map((r) => (
                 <li
                   key={r.id}
-                  className={`flex items-center gap-3 rounded-card px-3 py-3 ${
-                    isDarkMode ? "bg-iron-900/70 border border-iron-800" : "bg-slate-50 border border-slate-200"
-                  }`}
+                  className={`flex items-center gap-3 rounded-card px-3 py-3 ${surfaceInteractive(isDarkMode)}`}
                 >
                   <div
                     className="w-9 h-9 rounded-card shrink-0"

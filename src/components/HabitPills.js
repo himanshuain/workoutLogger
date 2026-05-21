@@ -3,6 +3,8 @@ import { Check } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { hapticLight, touchPress } from "@/lib/touchFeedback";
+import { cn } from "@/lib/utils";
 
 export default function HabitPills({
   trackables = [],
@@ -24,9 +26,7 @@ export default function HabitPills({
   }, [entries, optimisticState]);
 
   const handlePillClick = async (trackable) => {
-    if (window.navigator?.vibrate) {
-      window.navigator.vibrate(10);
-    }
+    hapticLight();
 
     const entry = entries[trackable.id];
     const isCompleted = entry?.is_completed;
@@ -79,21 +79,19 @@ export default function HabitPills({
               aria-pressed={isCompleted}
               aria-label={`${trackable.name}${isCompleted ? ", completed" : ", not completed"}`}
               onClick={() => handlePillClick(trackable)}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.97, opacity: 0.92 }}
               animate={isCompleted ? { scale: [1, 1.05, 1] } : {}}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className={`
-                relative min-h-[44px] px-4 py-2.5 rounded-pill font-medium text-sm
-                transition-all duration-200 ease-out
-                flex items-center gap-2
-                ${
-                  isCompleted
-                    ? "text-iron-950 shadow-md"
-                    : isDarkMode
-                      ? "bg-iron-800/40 text-iron-400 active:bg-iron-700/50 border border-iron-700/30"
-                      : "bg-white text-[color:var(--text-secondary)] active:bg-surface-interactive border border-surface-subtle shadow-sm"
-                }
-              `}
+              className={cn(
+                "relative min-h-[44px] px-4 py-2.5 rounded-pill font-medium text-sm",
+                touchPress,
+                "flex items-center gap-2",
+                isCompleted
+                  ? "text-iron-950 shadow-md"
+                  : isDarkMode
+                    ? "bg-iron-800/40 text-iron-400 border border-iron-700/30 active:bg-iron-700/50"
+                    : "bg-white text-[color:var(--text-secondary)] border border-surface-subtle shadow-sm active:bg-surface-pressed",
+              )}
               style={{
                 backgroundColor: isCompleted ? trackable.color : undefined,
                 boxShadow: isCompleted
@@ -137,16 +135,19 @@ export default function HabitPills({
 
         {onAddNew && (
           <button
-            onClick={onAddNew}
-            className={`
-              min-h-[44px] px-4 py-2.5 rounded-pill font-medium text-sm
-              border border-dashed transition-colors flex items-center gap-2 active:scale-95
-              ${
-                isDarkMode
-                  ? "border-iron-700/50 text-iron-600 active:border-iron-600 active:text-iron-500"
-                  : "border-slate-300 text-slate-400 active:border-slate-400 active:text-slate-500"
-              }
-            `}
+            type="button"
+            onClick={() => {
+              hapticLight();
+              onAddNew();
+            }}
+            className={cn(
+              "min-h-[44px] px-4 py-2.5 rounded-pill font-medium text-sm",
+              touchPress,
+              "border border-dashed flex items-center gap-2",
+              isDarkMode
+                ? "border-iron-700/50 text-iron-600 active:border-iron-600 active:text-iron-500"
+                : "border-slate-300 text-slate-400 active:border-slate-400 active:text-slate-500",
+            )}
           >
             <svg
               className="w-5 h-5"

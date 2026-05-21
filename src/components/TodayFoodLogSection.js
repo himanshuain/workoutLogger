@@ -8,6 +8,8 @@ import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 import { formatChipLabel } from "@/lib/dateLogUtils";
 import EmptyState from "@/components/EmptyState";
+import { hapticLight, touchPressCard } from "@/lib/touchFeedback";
+import { cn } from "@/lib/utils";
 
 export default function TodayFoodLogSection({
   isDarkMode,
@@ -68,7 +70,7 @@ export default function TodayFoodLogSection({
           : Number(def) || 1;
         openQuantity(item, initial, logForDate);
       }
-      if (window.navigator?.vibrate) window.navigator.vibrate(10);
+      hapticLight();
       return;
     }
     if (consumed) {
@@ -81,7 +83,7 @@ export default function TodayFoodLogSection({
         : Number(def) || 1;
       openQuantity(item, initial);
     }
-    if (window.navigator?.vibrate) window.navigator.vibrate(10);
+    hapticLight();
   };
 
   const handleChangeAmountToday = item => {
@@ -107,7 +109,7 @@ export default function TodayFoodLogSection({
     }
     setQtyItem(null);
     setQtyTargetDate(null);
-    if (window.navigator?.vibrate) window.navigator.vibrate(10);
+    hapticLight();
   };
 
   const isAdjustingQuantity = qtyItem && !!entryMap[qtyItem.id];
@@ -125,17 +127,18 @@ export default function TodayFoodLogSection({
             : `${item.name} — tap to log`
         }
         onClick={() => onToggle(item)}
-        className={`flex flex-col items-stretch rounded-card border text-left transition-all active:scale-[0.98] ${
-          compact ? "p-2.5" : "p-3"
-        } ${
+        className={cn(
+          touchPressCard,
+          "flex flex-col items-stretch rounded-card border text-left",
+          compact ? "p-2.5" : "p-3",
           isDarkMode
             ? consumed
-              ? "border-iron-700 bg-iron-900/90"
-              : "border-iron-800 bg-iron-900/60"
+              ? "border-iron-700 bg-iron-900/90 active:bg-iron-800/90"
+              : "border-iron-800 bg-iron-900/60 active:bg-iron-800/70"
             : consumed
-              ? "border-slate-200 bg-white shadow-sm"
-              : "border-slate-200/80 bg-slate-50/80"
-        }`}
+              ? "border-slate-200 bg-white shadow-sm active:bg-surface-interactive"
+              : "border-slate-200/80 bg-slate-50/80 active:bg-surface-interactive",
+        )}
       >
         <div className="flex items-start gap-2">
           <span

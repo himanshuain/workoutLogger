@@ -6,6 +6,8 @@ import {
   formatGapCompoundWeeks,
   nextTierAriaHint,
 } from "@/lib/lifelogUtils";
+import { hapticLight, touchPress } from "@/lib/touchFeedback";
+import { cn } from "@/lib/utils";
 
 /** Tap cycles through applicable units only: weeks if ≥7d, months if ≥30d. */
 export default function LifeLogGapPill({
@@ -69,14 +71,20 @@ export default function LifeLogGapPill({
   return (
     <button
       type="button"
-      onClick={() => setTierIdx(i => (i + 1) % tiers.length)}
+      onClick={() => {
+        hapticLight();
+        setTierIdx(i => (i + 1) % tiers.length);
+      }}
       aria-label={ariaLabel}
       title={titleHint}
-      className={`${pillBodyClass} cursor-pointer transition-colors active:scale-95 touch-manipulation ${
+      className={cn(
+        pillBodyClass,
+        touchPress,
+        "cursor-pointer",
         isDarkMode
-          ? "active:bg-iron-800 hover:text-iron-400 hover:border-iron-600/60"
-          : "active:bg-slate-100 hover:text-slate-600 hover:border-slate-300"
-      }`}
+          ? "hover:border-iron-600/60 hover:text-iron-400 active:bg-iron-800"
+          : "hover:border-slate-300 hover:text-slate-600 active:bg-slate-100",
+      )}
     >
       {text}
     </button>

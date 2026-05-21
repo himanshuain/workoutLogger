@@ -208,7 +208,7 @@ input[type="number"] {
 
 /* Stepper button active states */
 .stepper-btn {
-  @apply transition-all duration-75 active:scale-90;
+  @apply touch-press touch-manipulation;
 }
 
 .dark .stepper-btn {
@@ -221,13 +221,39 @@ input[type="number"] {
 
 /* Card hover/active states */
 .card-interactive {
-  @apply transition-all duration-150 active:scale-[0.98];
+  @apply touch-press-card touch-manipulation select-none;
+}
+
+/* Consistent touch press feedback */
+.touch-press,
+.touch-press-card,
+.touch-press-nav {
+  transform-origin: center;
+  transition:
+    transform 100ms ease-out,
+    opacity 100ms ease-out,
+    background-color 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.touch-press:active:not(:disabled) {
+  transform: scale(0.97);
+  opacity: 0.92;
+}
+
+.touch-press-card:active:not(:disabled) {
+  transform: scale(0.985);
+  opacity: 0.96;
+}
+
+.touch-press-nav:active:not(:disabled) {
+  transform: scale(0.94);
+  opacity: 0.9;
 }
 
 /* Floating action button */
 .fab {
-  @apply fixed w-14 h-14 rounded-full flex items-center justify-center shadow-lg
-         active:scale-90 transition-all duration-150;
+  @apply fixed w-14 h-14 rounded-full flex items-center justify-center shadow-lg touch-press touch-manipulation;
   right: 1.5rem;
   bottom: calc(5.5rem + env(safe-area-inset-bottom));
   z-index: 40;
@@ -497,7 +523,7 @@ input[type="number"] {
 
 /* Stepper buttons for workout */
 .workout-stepper-btn {
-  @apply w-12 h-12 rounded-card flex items-center justify-center transition-all duration-150 active:scale-95;
+  @apply w-12 h-12 rounded-card flex items-center justify-center touch-press touch-manipulation;
 }
 
 .dark .workout-stepper-btn {
@@ -532,12 +558,20 @@ input[type="number"] {
 
 /* Button styles with enhanced feedback */
 .btn-primary {
-  @apply py-3 px-6 rounded-card font-bold transition-all duration-150;
+  @apply py-3 px-6 rounded-card font-bold touch-press touch-manipulation;
   transform-origin: center;
 }
 
-.btn-primary:active {
-  transform: scale(0.96);
+.btn-primary:active:not(:disabled) {
+  opacity: 0.94;
+}
+
+.dark .btn-primary:active:not(:disabled) {
+  @apply bg-lift-primary/90;
+}
+
+.light .btn-primary:active:not(:disabled) {
+  @apply bg-workout-secondary;
 }
 
 .dark .btn-primary {
@@ -559,12 +593,12 @@ input[type="number"] {
 }
 
 .btn-secondary {
-  @apply py-3 px-6 rounded-card font-medium transition-all duration-150;
+  @apply py-3 px-6 rounded-card font-medium touch-press touch-manipulation;
   transform-origin: center;
 }
 
-.btn-secondary:active {
-  transform: scale(0.96);
+.btn-secondary:active:not(:disabled) {
+  opacity: 0.94;
 }
 
 .dark .btn-secondary {

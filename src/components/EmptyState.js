@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { actionPrimary, actionSecondary } from "@/lib/actionButtonStyles";
+import { hapticLight, hapticMedium } from "@/lib/touchFeedback";
 
 /**
  * Compact, action-oriented empty state — no large illustrations.
@@ -36,9 +37,13 @@ export default function EmptyState({
       {actionLabel && onAction ? (
         <button
           type="button"
-          onClick={onAction}
+          onClick={() => {
+            if (actionVariant === "primary") hapticMedium();
+            else hapticLight();
+            onAction();
+          }}
           className={cn(
-            "mt-3 w-full rounded-card py-2.5 text-sm font-semibold transition-colors",
+            "mt-3 w-full rounded-card py-2.5 text-sm font-semibold",
             actionVariant === "primary"
               ? actionPrimary(isDarkMode)
               : actionSecondary(isDarkMode),

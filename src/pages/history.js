@@ -212,7 +212,7 @@ export default function History() {
                     {/* Collapsed header */}
                     <button
                       onClick={() => toggleDate(date)}
-                      className="w-full p-4 text-left active:scale-[0.99] transition-transform"
+                      className="card-interactive w-full p-4 text-left"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">

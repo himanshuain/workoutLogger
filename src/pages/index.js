@@ -840,7 +840,7 @@ export default function Home() {
                     {/* Session header */}
                     <button
                       onClick={() => setExpandedSession(isExpanded ? null : session.id)}
-                      className="w-full p-3.5 text-left active:scale-[0.99] transition-transform"
+                      className="card-interactive w-full p-3.5 text-left"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">

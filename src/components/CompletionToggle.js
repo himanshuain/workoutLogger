@@ -1,5 +1,7 @@
 import { Check, Circle } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { hapticLight, touchPress } from "@/lib/touchFeedback";
+import { cn } from "@/lib/utils";
 
 const SIZE = {
   sm: {
@@ -57,16 +59,19 @@ export default function CompletionToggle({
     <button
       type={type}
       disabled={disabled}
-      onClick={onClick}
+      onClick={e => {
+        hapticLight();
+        onClick?.(e);
+      }}
       aria-pressed={completed}
       aria-label={completed ? ariaLabelIncomplete : ariaLabelComplete}
-      className={`
-        inline-flex shrink-0 items-center justify-center rounded-pill transition-colors active:scale-95
-        disabled:opacity-50 disabled:pointer-events-none
-        ${s.btn}
-        ${completed ? completeShell : incompleteShell}
-        ${className}
-      `}
+      className={cn(
+        touchPress,
+        "inline-flex shrink-0 items-center justify-center rounded-pill disabled:pointer-events-none disabled:opacity-50",
+        s.btn,
+        completed ? completeShell : incompleteShell,
+        className,
+      )}
     >
       {completed ? (
         <Check className={s.check} strokeWidth={2.5} aria-hidden />

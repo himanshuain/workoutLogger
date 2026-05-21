@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, ClipboardList } from "lucide-react";
 import InstallPrompt from "@/components/InstallPrompt";
 import { cacheLocalNavConfig, readLocalNavConfig } from "@/lib/userPrefsMigration";
+import { hapticLight, hapticSelect, touchPressNav } from "@/lib/touchFeedback";
+import { cn } from "@/lib/utils";
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
@@ -34,8 +36,8 @@ export function saveNavConfig(config, updateSettings) {
 export { DEFAULT_TABS };
 
 const navItemVariants = {
-  tap: { scale: 0.88, transition: { type: "spring", stiffness: 500, damping: 15 } },
-  hover: { scale: 1.05 },
+  tap: { scale: 0.94, opacity: 0.9, transition: { duration: 0.1 } },
+  hover: { scale: 1.02 },
 };
 
 export default function Layout({ children }) {
@@ -151,7 +153,7 @@ export default function Layout({ children }) {
     const tabId = getNavTabFromTouch(touch.clientX, touch.clientY);
     if (tabId && tabId !== hoveredNavTab) {
       setHoveredNavTab(tabId);
-      if (window.navigator?.vibrate) window.navigator.vibrate(3);
+      hapticSelect();
     }
   }, [hoveredNavTab, getNavTabFromTouch]);
 
@@ -161,7 +163,7 @@ export default function Layout({ children }) {
       if (tab && tab.id !== activeTab) {
         setActiveTab(tab.id);
         router.push(tab.href, undefined, { scroll: false });
-        if (window.navigator?.vibrate) window.navigator.vibrate(5);
+        hapticLight();
       }
     }
     navTouchActiveRef.current = false;
@@ -172,7 +174,7 @@ export default function Layout({ children }) {
     tab => {
       setActiveTab(tab.id);
       router.push(tab.href, undefined, { scroll: false });
-      if (window.navigator?.vibrate) window.navigator.vibrate(5);
+      hapticLight();
     },
     [router]
   );
@@ -224,7 +226,7 @@ export default function Layout({ children }) {
                 aria-current={isNavActive ? "page" : undefined}
                 role="tab"
                 aria-selected={isNavActive}
-                className="relative flex flex-col items-center justify-center py-2 px-3 rounded-card min-w-[3.5rem] touch-none"
+                className={cn("relative flex flex-col items-center justify-center py-2 px-3 rounded-card min-w-[3.5rem] touch-none", touchPressNav)}
               >
                 {isHighlighted && (
                   <motion.div

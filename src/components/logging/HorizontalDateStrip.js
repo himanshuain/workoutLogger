@@ -1,6 +1,7 @@
 import { useRef, useLayoutEffect, useCallback } from "react";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hapticLight, touchPress, touchPressCard } from "@/lib/touchFeedback";
 
 const SCROLL_LOAD_EDGE_PX = 72;
 
@@ -101,10 +102,14 @@ export default function HorizontalDateStrip({
           <div className="pointer-events-none absolute right-0 top-0 z-30 flex h-6 items-center pr-0.5">
             <button
               type="button"
-              onClick={goToToday}
+              onClick={() => {
+                hapticLight();
+                goToToday();
+              }}
               aria-label="Go to today"
               className={cn(
-                "pointer-events-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-all active:scale-[0.97]",
+                touchPress,
+                "pointer-events-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
                 isDarkMode
                   ? "bg-sky-500/20 text-sky-100 ring-1 ring-sky-400/30 hover:bg-sky-500/30"
                   : "bg-sky-600 text-white shadow-sm hover:bg-sky-700",
@@ -171,9 +176,15 @@ export default function HorizontalDateStrip({
               <button
                 type="button"
                 disabled={d > todayStr}
-                onClick={() => d <= todayStr && onPickDate(d)}
+                onClick={() => {
+                  if (d <= todayStr) {
+                    hapticLight();
+                    onPickDate(d);
+                  }
+                }}
                 className={cn(
-                  "grid h-[4.5rem] min-w-[3.25rem] grid-rows-[1fr_auto_1fr] grid-cols-1 justify-items-center rounded-card border px-2.5 transition-all duration-200 active:scale-[0.96] disabled:opacity-40",
+                  touchPressCard,
+                  "grid h-[4.5rem] min-w-[3.25rem] grid-rows-[1fr_auto_1fr] grid-cols-1 justify-items-center rounded-card border px-2.5 disabled:opacity-40",
                   active
                     ? isViewingToday
                       ? isDarkMode

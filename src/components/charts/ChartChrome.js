@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { surfaceSection, surfaceSelected } from "@/lib/surfaceStyles";
 import { segmentSelected, segmentUnselected } from "@/lib/actionButtonStyles";
+import { touchPress, touchPressCard } from "@/lib/touchFeedback";
 import SectionHeader from "@/components/SectionHeader";
 
 /** Outer chart card — matches SectionSurface elevation. */
@@ -51,7 +52,8 @@ export function ChartCollapsibleHeader({
       type="button"
       onClick={onToggle}
       className={cn(
-        "flex w-full items-center justify-between gap-2 px-3 pt-3 pb-2 text-left transition-colors",
+        touchPressCard,
+        "flex w-full items-center justify-between gap-2 px-3 pt-3 pb-2 text-left",
         isDarkMode ? "hover:bg-surface-interactive/60" : "hover:bg-surface-interactive/80",
         className,
       )}

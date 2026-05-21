@@ -1,5 +1,7 @@
 import { useRef, useEffect } from "react";
 import { actionAccentSoft } from "@/lib/actionButtonStyles";
+import { hapticLight, touchPress } from "@/lib/touchFeedback";
+import { cn } from "@/lib/utils";
 
 /**
  * Single horizontal row of pills (no wrap). Scrollable on overflow.
@@ -51,16 +53,21 @@ export default function PillRail({
               key={v}
               type="button"
               ref={active ? selectedRef : null}
-              onClick={() => onSelect(v)}
-              className={`shrink-0 min-h-[44px] min-w-[44px] px-4 rounded-pill text-sm font-semibold transition-all active:scale-[0.97] ${
+              onClick={() => {
+                hapticLight();
+                onSelect(v);
+              }}
+              className={cn(
+                "shrink-0 min-h-[44px] min-w-[44px] px-4 rounded-pill text-sm font-semibold",
+                touchPress,
                 active
                   ? isDarkMode
                     ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/25"
                     : actionAccentSoft(false)
                   : isDarkMode
                     ? "bg-iron-800/90 text-iron-200 border border-iron-700/80"
-                    : "bg-white text-[color:var(--text-secondary)] border border-surface-subtle shadow-sm"
-              }`}
+                    : "bg-white text-[color:var(--text-secondary)] border border-surface-subtle shadow-sm active:bg-surface-pressed",
+              )}
             >
               {format(v)}
             </button>

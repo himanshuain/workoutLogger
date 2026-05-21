@@ -159,8 +159,8 @@ export default function RoutinePlannerWeekStrip({
                 ? "border-lift-primary/45 bg-surface-selected text-iron-100 ring-2 ring-inset ring-lift-primary/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lift-primary/70 "
                 : "border-surface-subtle bg-surface-section text-iron-300 ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iron-500 "
               : active
-                ? "border-workout-primary/40 bg-workout-primary/10 ring-2 ring-inset ring-workout-primary/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-workout-primary/55 "
-                : "border-slate-200 bg-slate-50/90 ring-0 ring-transparent focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400 ");
+                ? "accent-soft-surface border border-red-100 shadow-sm focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-200/80 "
+                : "border-surface-subtle bg-surface-section shadow-sm ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300/60 ");
 
           const dayBadgeCls =
             `text-[10px] font-semibold tracking-wide [font-variant:small-caps] ` +
@@ -169,8 +169,8 @@ export default function RoutinePlannerWeekStrip({
                 ? "text-iron-200"
                 : "text-iron-400"
               : active
-                ? "text-slate-700"
-                : "text-slate-500");
+                ? "text-red-800"
+                : "text-[color:var(--text-secondary)]");
 
           const columnInner = (
             <div className="min-w-[5.25rem] max-w-[6rem] shrink-0 snap-start md:min-w-[5.5rem] md:max-w-[6.25rem]">

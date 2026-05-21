@@ -591,11 +591,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
                     )
                   }
-                  className={`w-full rounded-card py-3.5 font-semibold border border-dashed flex items-center justify-center gap-2 ${
-                    isDarkMode
-                      ? "border-iron-700 bg-transparent text-iron-300 hover:bg-iron-800/50"
-                      : "border-slate-300 bg-transparent text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`w-full rounded-card py-3.5 font-semibold border border-dashed flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
                 >
                   <Plus className="w-5 h-5" />
                   Add exercise for today

@@ -1082,7 +1082,7 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent
                         className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+                          isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
                         }
                       >
                         <ContextMenuItem
@@ -1645,7 +1645,7 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent
                         className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+                          isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
                         }
                       >
                         <ContextMenuItem
@@ -1681,7 +1681,7 @@ export default function LifeLog() {
         }}
       >
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -1900,7 +1900,7 @@ export default function LifeLog() {
       <Modal open={showLogDrawer} onOpenChange={setShowLogDrawer}>
         <ModalContent
           className={`flex max-h-[92vh] min-h-0 flex-col ${
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+            isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
           }`}
           showCloseButton
         >
@@ -2016,7 +2016,7 @@ export default function LifeLog() {
       {/* History Modal */}
       <Modal open={showHistoryDrawer} onOpenChange={setShowHistoryDrawer}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2099,7 +2099,7 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent
                         className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+                          isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
                         }
                       >
                         <ContextMenuItem
@@ -2127,7 +2127,7 @@ export default function LifeLog() {
       {/* Edit Log Modal */}
       <NestedModal open={!!editingLog} onOpenChange={open => !open && setEditingLog(null)}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2219,7 +2219,7 @@ export default function LifeLog() {
         onOpenChange={open => !open && setDeleteConfirm({ type: null, data: null })}
       >
         <AlertDialogContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
         >
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2323,7 +2323,7 @@ export default function LifeLog() {
       {/* Add/Edit Habit Modal */}
       <Modal open={showAddHabitModal} onOpenChange={setShowAddHabitModal}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2460,7 +2460,7 @@ export default function LifeLog() {
         onOpenChange={open => !open && setPastEntryTrackable(null)}
       >
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
         >
           <ModalHeader>
             <ModalTitle

@@ -35,8 +35,8 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
       dragControls={dragControls}
       className={`flex items-center gap-2 p-3 rounded-card transition-colors ${
         hidden
-          ? isDarkMode ? "bg-iron-900/50 opacity-50" : "bg-slate-50 opacity-50"
-          : isDarkMode ? "bg-iron-800/80" : "bg-slate-100"
+          ? isDarkMode ? "bg-iron-900/50 opacity-50" : "bg-surface-interactive opacity-50"
+          : isDarkMode ? "bg-iron-800/80" : "bg-surface-interactive"
       }`}
       whileDrag={{
         scale: 1.03,
@@ -59,12 +59,12 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
       {/* Icon */}
       <div
         className={`w-9 h-9 rounded-card flex items-center justify-center flex-shrink-0 ${
-          isDarkMode ? "bg-iron-700" : "bg-white"
+          isDarkMode ? "bg-iron-700" : "bg-surface-section"
         }`}
       >
         <Icon
           className={`w-4.5 h-4.5 ${
-            isDarkMode ? "text-lift-primary" : "text-workout-primary"
+            isDarkMode ? "text-lift-primary" : "text-[color:var(--text-secondary)]"
           }`}
         />
       </div>
@@ -86,7 +86,7 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
               className={`flex-1 px-2 py-1 rounded-lg text-sm font-medium outline-none ${
                 isDarkMode
                   ? "bg-iron-700 text-iron-100 focus:ring-1 focus:ring-lift-primary"
-                  : "bg-white text-slate-800 focus:ring-1 focus:ring-workout-primary"
+                  : "bg-surface-section text-slate-800 focus:ring-1 focus:ring-slate-400/50"
               }`}
             />
             <button
@@ -310,7 +310,7 @@ export default function Settings() {
         {/* Header - Sticky */}
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
-            isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
+            isDarkMode ? "bg-iron-950/95" : "bg-surface-page/95"
           }`}
         >
           <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
@@ -336,16 +336,16 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-12 h-12 rounded-card flex items-center justify-center ${
-                      isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                      isDarkMode ? "bg-iron-800" : "bg-surface-interactive"
                     }`}
                   >
                     {isDarkMode ? (
                       <Moon
-                        className={`w-6 h-6 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                        className={`w-6 h-6 ${isDarkMode ? "text-lift-primary" : "text-[color:var(--text-secondary)]"}`}
                       />
                     ) : (
                       <Sun
-                        className={`w-6 h-6 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                        className={`w-6 h-6 ${isDarkMode ? "text-lift-primary" : "text-[color:var(--text-secondary)]"}`}
                       />
                     )}
                   </div>
@@ -362,7 +362,7 @@ export default function Settings() {
                   onClick={handleToggleTheme}
                   className={`
                     relative w-14 h-8 rounded-full transition-colors duration-300
-                    ${isDarkMode ? "bg-lift-primary" : "bg-workout-primary"}
+                    ${isDarkMode ? "bg-lift-primary" : "bg-slate-600"}
                   `}
                 >
                   <div
@@ -420,12 +420,12 @@ export default function Settings() {
                 </div>
                 <div
                   className={`w-12 h-12 rounded-card flex items-center justify-center ${
-                    isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+                    isDarkMode ? "bg-lift-primary/20" : "bg-surface-interactive"
                   }`}
                 >
                   <span
                     className={`font-bold text-lg ${
-                      isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                      isDarkMode ? "text-lift-primary" : "text-[color:var(--text-secondary)]"
                     }`}
                   >
                     {user.email?.[0]?.toUpperCase()}

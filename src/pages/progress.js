@@ -554,7 +554,7 @@ export default function Progress() {
         {/* Header - Sticky */}
         <div
           className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
-            isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
+            isDarkMode ? "bg-iron-950/95" : "bg-surface-page/95"
           }`}
         >
           <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
@@ -574,21 +574,21 @@ export default function Progress() {
                 className={`flex-shrink-0 rounded-card px-5 py-3 border flex items-center gap-3 ${
                   isDarkMode
                     ? "bg-gradient-to-r from-lift-primary/20 to-lift-primary/5 border-lift-primary/30"
-                    : "bg-gradient-to-r from-workout-primary/10 to-workout-primary/5 border-workout-primary/30"
+                    : "chart-panel border-l-2 border-l-amber-500"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-card flex items-center justify-center ${
-                    isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+                    isDarkMode ? "bg-lift-primary/20" : "bg-amber-50"
                   }`}
                 >
                   <Flame
-                    className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                    className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-amber-600"}`}
                   />
                 </div>
                 <div>
                   <p
-                    className={`text-2xl font-bold ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}
+                    className={`text-2xl font-bold ${isDarkMode ? "text-lift-primary" : "text-slate-800"}`}
                   >
                     {stats.currentStreak}
                   </p>
@@ -601,12 +601,12 @@ export default function Progress() {
               {/* This Month */}
               <div
                 className={`flex-shrink-0 rounded-card px-5 py-3 flex items-center gap-3 ${
-                  isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
+                  isDarkMode ? "bg-iron-900/50" : "chart-panel"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-card flex items-center justify-center ${
-                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                    isDarkMode ? "bg-iron-800" : "chart-panel-inner"
                   }`}
                 >
                   <Calendar
@@ -628,12 +628,12 @@ export default function Progress() {
               {/* Last Month */}
               <div
                 className={`flex-shrink-0 rounded-card px-5 py-3 flex items-center gap-3 ${
-                  isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
+                  isDarkMode ? "bg-iron-900/50" : "chart-panel"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-card flex items-center justify-center ${
-                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                    isDarkMode ? "bg-iron-800" : "chart-panel-inner"
                   }`}
                 >
                   <TrendingUp
@@ -655,12 +655,12 @@ export default function Progress() {
               {/* Total Workouts */}
               <div
                 className={`flex-shrink-0 rounded-card px-5 py-3 flex items-center gap-3 ${
-                  isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
+                  isDarkMode ? "bg-iron-900/50" : "chart-panel"
                 }`}
               >
                 <div
                   className={`w-10 h-10 rounded-card flex items-center justify-center ${
-                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
+                    isDarkMode ? "bg-iron-800" : "chart-panel-inner"
                   }`}
                 >
                   <Target
@@ -788,7 +788,7 @@ export default function Progress() {
         }}
       >
         <ModalContent
-          className={`max-w-[95vw] w-full max-h-[85vh] overflow-hidden ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}`}
+          className={`max-w-[95vw] w-full max-h-[85vh] overflow-hidden ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle shadow-[var(--shadow-elevation-section)]"}`}
         >
           <ModalHeader className="pb-3 border-b border-iron-800/50">
             <div className="flex flex-col gap-3 w-full pr-8">
@@ -802,7 +802,7 @@ export default function Progress() {
 
                 {/* View Toggle - Compact Pills */}
                 <div
-                  className={`flex rounded-full p-0.5 ${isDarkMode ? "bg-iron-800/80" : "bg-slate-100"}`}
+                  className={`flex rounded-full p-0.5 ${isDarkMode ? "bg-iron-800/80" : "bg-surface-interactive border border-surface-subtle"}`}
                 >
                   <button
                     onClick={() => {
@@ -813,10 +813,10 @@ export default function Progress() {
                       historyViewMode === "monthly"
                         ? isDarkMode
                           ? "bg-lift-primary text-iron-950 shadow-sm"
-                          : "bg-workout-primary text-white shadow-sm"
+                          : "accent-soft-surface shadow-sm"
                         : isDarkMode
                           ? "text-iron-500 hover:text-iron-300"
-                          : "text-slate-500 hover:text-slate-700"
+                          : "text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]"
                     }`}
                   >
                     Monthly
@@ -832,10 +832,10 @@ export default function Progress() {
                       historyViewMode === "daily"
                         ? isDarkMode
                           ? "bg-lift-primary text-iron-950 shadow-sm"
-                          : "bg-workout-primary text-white shadow-sm"
+                          : "accent-soft-surface shadow-sm"
                         : isDarkMode
                           ? "text-iron-500 hover:text-iron-300"
-                          : "text-slate-500 hover:text-slate-700"
+                          : "text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]"
                     }`}
                   >
                     Daily

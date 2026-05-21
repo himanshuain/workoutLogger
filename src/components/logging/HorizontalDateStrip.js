@@ -160,7 +160,7 @@ export default function HorizontalDateStrip({
                 {isToday ? (
                   <span
                     className={`text-[8px] font-bold uppercase tracking-[0.12em] ${
-                      isDarkMode ? "text-red-400" : "text-red-600"
+                      isDarkMode ? "text-red-400" : "text-emerald-700"
                     }`}
                   >
                     Today
@@ -201,7 +201,7 @@ export default function HorizontalDateStrip({
                       : isToday
                         ? isDarkMode
                           ? "text-red-300/80"
-                          : "text-red-600/80"
+                          : "text-emerald-700/90"
                         : isDarkMode
                           ? "text-iron-500"
                           : "text-slate-400",
@@ -224,7 +224,7 @@ export default function HorizontalDateStrip({
                       : isToday
                         ? isDarkMode
                           ? "text-red-200"
-                          : "text-red-700"
+                          : "text-emerald-800"
                         : isDarkMode
                           ? "text-iron-300"
                           : "text-slate-700",

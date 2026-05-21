@@ -226,7 +226,7 @@ export default function TodayFoodLogSection({
             type="button"
             onClick={() => router.push("/food")}
             className={`w-full rounded-card px-4 py-3 text-left text-sm ${
-              isDarkMode ? "bg-iron-900/50 text-iron-400 hover:bg-iron-900" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              isDarkMode ? "bg-iron-900/50 text-iron-400 hover:bg-iron-900" : "bg-surface-interactive text-[color:var(--text-secondary)] hover:bg-surface-pressed border border-surface-subtle"
             }`}
           >
             Add food items to log them here{isPastDayMode ? "." : " for today."}

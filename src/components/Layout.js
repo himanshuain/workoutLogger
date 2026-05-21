@@ -180,7 +180,7 @@ export default function Layout({ children }) {
   return (
     <div
       vaul-drawer-wrapper=""
-      className={`flex flex-col ${isDarkMode ? "bg-surface-page" : "bg-slate-50"}`}
+      className={`flex flex-col ${isDarkMode ? "bg-surface-page" : "bg-surface-page"}`}
       style={{
         height: "100dvh",
         paddingTop: "env(safe-area-inset-top)",
@@ -202,9 +202,7 @@ export default function Layout({ children }) {
         onTouchStart={handleNavTouchStart}
         onTouchMove={handleNavTouchMove}
         onTouchEnd={handleNavTouchEnd}
-        className={`flex-shrink-0 border-t z-40 ${
-          isDarkMode ? "bg-surface-section border-surface-subtle" : "bg-slate-50 border-slate-200"
-        } ${isKeyboardVisible ? "hidden" : ""}`}
+        className={`flex-shrink-0 border-t z-40 bg-surface-section border-surface-subtle shadow-[0_-1px_0_rgba(15,23,42,0.04)] ${isKeyboardVisible ? "hidden" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-center justify-around py-2 px-1" role="tablist" aria-label="Main navigation">
@@ -232,7 +230,9 @@ export default function Layout({ children }) {
                   <motion.div
                     layoutId="navActiveIndicator"
                     className={`absolute inset-0 rounded-card ${
-                      isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/10"
+                      isDarkMode
+                        ? "bg-lift-primary/20"
+                        : "accent-soft-surface shadow-sm"
                     }`}
                     transition={{ type: "spring", stiffness: 400, damping: 22, mass: 0.8 }}
                   />
@@ -248,8 +248,8 @@ export default function Layout({ children }) {
                   <NavIcon
                     className={`w-6 h-6 mb-1 ${
                       isHighlighted
-                        ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
-                        : isDarkMode ? "text-iron-500" : "text-slate-400"
+                        ? isDarkMode ? "text-lift-primary" : "text-red-700"
+                        : isDarkMode ? "text-iron-500" : "text-[color:var(--text-secondary)]"
                     }`}
                   />
                 </motion.div>
@@ -257,8 +257,8 @@ export default function Layout({ children }) {
                   animate={{ fontWeight: isHighlighted ? 600 : 500 }}
                   className={`relative z-10 text-[10px] ${
                     isHighlighted
-                      ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
-                      : isDarkMode ? "text-iron-500" : "text-slate-400"
+                      ? isDarkMode ? "text-lift-primary" : "text-slate-800 font-semibold"
+                      : isDarkMode ? "text-iron-500" : "text-[color:var(--text-secondary)]"
                   }`}
                 >
                   {navTab.label}

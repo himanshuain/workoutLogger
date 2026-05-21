@@ -91,7 +91,7 @@ export default function HabitPills({
                     ? "text-iron-950 shadow-md"
                     : isDarkMode
                       ? "bg-iron-800/40 text-iron-400 active:bg-iron-700/50 border border-iron-700/30"
-                      : "bg-slate-100 text-slate-500 active:bg-slate-200 border border-slate-200"
+                      : "bg-white text-[color:var(--text-secondary)] active:bg-surface-interactive border border-surface-subtle shadow-sm"
                 }
               `}
               style={{

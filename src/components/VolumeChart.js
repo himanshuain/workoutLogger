@@ -118,7 +118,7 @@ export default function VolumeChart({
       className={`rounded-card overflow-hidden ${
         isDarkMode
           ? "bg-iron-900/50"
-          : "bg-white border border-slate-200 shadow-sm"
+          : "chart-panel"
       }`}
     >
       <div
@@ -128,26 +128,26 @@ export default function VolumeChart({
         <div className="flex items-center gap-3">
           <div
             className={`w-10 h-10 rounded-card flex items-center justify-center ${
-              isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
+              isDarkMode ? "bg-lift-primary/20" : "chart-panel-inner"
             }`}
           >
             <BarChart3
               className={`w-5 h-5 ${
-                isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                isDarkMode ? "text-lift-primary" : "text-[color:var(--text-secondary)]"
               }`}
             />
           </div>
           <div>
             <h3
               className={`font-semibold ${
-                isDarkMode ? "text-iron-100" : "text-slate-800"
+                isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"
               }`}
             >
               Training Volume
             </h3>
             <div className="flex items-center gap-2">
               <p className={`text-sm font-bold ${
-                isDarkMode ? "text-lift-primary" : "text-workout-primary"
+                isDarkMode ? "text-lift-primary" : "text-[color:var(--text-primary)]"
               }`}>
                 {formatVolume(thisWeekVolume)} kg this week
               </p>
@@ -157,7 +157,7 @@ export default function VolumeChart({
                     ? "bg-green-500/15 text-green-500"
                     : changeDirection === "down"
                     ? "bg-orange-500/15 text-orange-400"
-                    : isDarkMode ? "bg-iron-800 text-iron-500" : "bg-slate-100 text-slate-500"
+                    : isDarkMode ? "bg-iron-800 text-iron-500" : "chart-panel-inner text-[color:var(--text-muted)]"
                 }`}>
                   <ChangeIcon className="w-2.5 h-2.5" />
                   {weeklyChange !== 0 ? `${Math.abs(weeklyChange)}%` : "Same"}
@@ -174,7 +174,7 @@ export default function VolumeChart({
       </div>
 
       {isExpanded && (
-        <div className={`px-4 pb-4 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
+        <div className={`px-4 pb-4 border-t ${isDarkMode ? "border-iron-800/50" : "border-surface-subtle"}`}>
 
           {/* What is training volume? */}
           <button
@@ -188,7 +188,7 @@ export default function VolumeChart({
           </button>
           {showInfo && (
             <div className={`rounded-card p-3 mb-3 text-xs leading-relaxed ${
-              isDarkMode ? "bg-iron-800/60 text-iron-400" : "bg-slate-50 text-slate-600"
+              isDarkMode ? "bg-iron-800/60 text-iron-400" : "chart-panel-inner text-[color:var(--text-secondary)]"
             }`}>
               <p className="font-semibold mb-1">Volume = Weight × Reps (per set)</p>
               <p>
@@ -222,7 +222,7 @@ export default function VolumeChart({
                     }`}>
                       {w.volume > 0 ? formatVolume(w.volume) : "—"}
                     </span>
-                    <div className={`w-full rounded-lg ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`} style={{ height: "60px" }}>
+                    <div className={`w-full rounded-lg ${isDarkMode ? "bg-iron-800" : "chart-panel-inner"}`} style={{ height: "60px" }}>
                       <div
                         className="w-full rounded-lg transition-all duration-500"
                         style={{
@@ -237,7 +237,7 @@ export default function VolumeChart({
                     </div>
                     <span className={`text-[10px] ${
                       isThisWeek
-                        ? isDarkMode ? "text-lift-primary font-semibold" : "text-workout-primary font-semibold"
+                        ? isDarkMode ? "text-lift-primary font-semibold" : "text-slate-800 font-semibold"
                         : isDarkMode ? "text-iron-600" : "text-slate-400"
                     }`}>
                       {w.label}
@@ -249,17 +249,17 @@ export default function VolumeChart({
           </div>
 
           {/* Summary stats */}
-          <div className={`flex gap-2 mt-4 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+          <div className={`flex gap-2 mt-4 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-surface-subtle"}`}>
+            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
               <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>This Week</p>
               <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(thisWeekVolume)}</p>
             </div>
-            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
-              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Last Week</p>
+            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
+              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>Last Week</p>
               <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(lastWeekVolume)}</p>
             </div>
-            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
-              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>All Time</p>
+            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
+              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>All Time</p>
               <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(totalVolume)}</p>
             </div>
           </div>
@@ -279,9 +279,9 @@ export default function VolumeChart({
                   return (
                     <div key={cat} className="flex items-center gap-2">
                       <span className={`text-xs w-20 truncate ${isDarkMode ? "text-iron-300" : "text-slate-700"}`}>{cat}</span>
-                      <div className={`flex-1 h-5 rounded-lg overflow-hidden ${isDarkMode ? "bg-iron-800" : "bg-slate-200"}`}>
+                      <div className={`flex-1 h-5 rounded-lg overflow-hidden ${isDarkMode ? "bg-iron-800" : "chart-panel-inner"}`}>
                         <div
-                          className={`h-full rounded-lg transition-all duration-500 ${isDarkMode ? "bg-lift-primary" : "bg-workout-primary"}`}
+                          className={`h-full rounded-lg transition-all duration-500 ${isDarkMode ? "bg-lift-primary" : "bg-workout-blue"}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>

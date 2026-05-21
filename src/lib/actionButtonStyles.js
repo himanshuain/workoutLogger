@@ -5,7 +5,7 @@ export function actionPrimary(isDarkMode, className) {
   return cn(
     isDarkMode
       ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90"
-      : "bg-workout-primary text-white hover:bg-workout-secondary",
+      : "bg-workout-primary text-white hover:bg-workout-secondary shadow-[0_2px_8px_rgba(220,38,38,0.14)] hover:shadow-[0_4px_12px_rgba(220,38,38,0.18)]",
     className,
   );
 }
@@ -15,7 +15,7 @@ export function actionSecondary(isDarkMode, className) {
   return cn(
     isDarkMode
       ? "border border-surface-subtle bg-surface-interactive text-iron-300 hover:bg-surface-pressed hover:text-iron-200"
-      : "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-800",
+      : "border border-surface-subtle bg-white text-[color:var(--text-secondary)] hover:bg-surface-interactive hover:text-[color:var(--text-primary)] shadow-sm",
     className,
   );
 }
@@ -25,7 +25,7 @@ export function actionSecondaryCompact(isDarkMode, className) {
   return cn(
     isDarkMode
       ? "bg-surface-interactive text-iron-400 ring-1 ring-surface-subtle hover:bg-surface-pressed hover:text-iron-300"
-      : "border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-800",
+      : "bg-white text-[color:var(--text-secondary)] ring-1 ring-surface-subtle hover:bg-surface-interactive hover:text-[color:var(--text-primary)] shadow-sm",
     className,
   );
 }
@@ -35,7 +35,7 @@ export function actionGhost(isDarkMode, className) {
   return cn(
     isDarkMode
       ? "text-iron-400 hover:bg-surface-interactive hover:text-iron-200"
-      : "text-slate-500 hover:text-slate-800 hover:bg-slate-100",
+      : "text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)] hover:bg-surface-interactive",
     className,
   );
 }
@@ -75,24 +75,29 @@ export function actionNeutralIcon(isDarkMode, className) {
   return cn(
     isDarkMode
       ? "bg-surface-interactive text-iron-400 ring-1 ring-surface-subtle hover:bg-surface-pressed hover:text-iron-300"
-      : "bg-slate-100 text-slate-500 ring-1 ring-slate-200 hover:bg-slate-200 hover:text-slate-700",
+      : "bg-surface-interactive text-[color:var(--text-secondary)] ring-1 ring-surface-subtle hover:bg-surface-pressed hover:text-[color:var(--text-primary)]",
+    className,
+  );
+}
+
+/** Pale red selected — pills, tabs, nav (not a filled primary CTA). */
+export function actionAccentSoft(isDarkMode, className) {
+  return cn(
+    isDarkMode
+      ? "bg-surface-selected text-iron-100 ring-1 ring-inset ring-surface"
+      : "accent-soft-surface shadow-sm",
     className,
   );
 }
 
 /** Segmented control — selected option (not a screen primary). */
 export function segmentSelected(isDarkMode, className) {
-  return cn(
-    isDarkMode
-      ? "bg-surface-pressed text-iron-100 ring-1 ring-inset ring-surface"
-      : "bg-white text-slate-800 shadow-sm ring-1 ring-inset ring-slate-200",
-    className,
-  );
+  return actionAccentSoft(isDarkMode, cn("font-semibold", className));
 }
 
 export function segmentUnselected(isDarkMode, className) {
   return cn(
-    isDarkMode ? "bg-transparent text-iron-500" : "bg-transparent text-slate-500",
+    isDarkMode ? "bg-transparent text-iron-500" : "bg-transparent text-[color:var(--text-secondary)]",
     className,
   );
 }

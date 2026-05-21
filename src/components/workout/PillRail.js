@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { actionAccentSoft } from "@/lib/actionButtonStyles";
 
 /**
  * Single horizontal row of pills (no wrap). Scrollable on overflow.
@@ -55,10 +56,10 @@ export default function PillRail({
                 active
                   ? isDarkMode
                     ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/25"
-                    : "bg-workout-primary text-white shadow-md"
+                    : actionAccentSoft(false)
                   : isDarkMode
                     ? "bg-iron-800/90 text-iron-200 border border-iron-700/80"
-                    : "bg-white text-slate-700 border border-slate-200 shadow-sm"
+                    : "bg-white text-[color:var(--text-secondary)] border border-surface-subtle shadow-sm"
               }`}
             >
               {format(v)}

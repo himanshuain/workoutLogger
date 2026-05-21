@@ -30,7 +30,7 @@ const ModalOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <Drawer.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+      "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
       className,
     )}
     {...props}
@@ -46,12 +46,12 @@ const ModalContent = React.forwardRef(
         <Drawer.Content
           ref={ref}
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[96vh] min-h-0 flex-col rounded-t-card border-t",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[96vh] min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
             className,
           )}
           {...props}
         >
-          <div className="mx-auto mt-3 mb-1 h-1.5 w-12 flex-shrink-0 rounded-full bg-iron-600/40" />
+          <div className="mx-auto mt-3 mb-1 h-1.5 w-12 flex-shrink-0 rounded-full bg-surface-pressed" />
           {children}
           {showCloseButton && (
             <Drawer.Close className="absolute right-3 top-3 glass-close-btn">
@@ -81,7 +81,7 @@ const ModalTitle = React.forwardRef(({ className, ...props }, ref) => (
   <Drawer.Title
     ref={ref}
     className={cn(
-      "text-lg font-semibold leading-none tracking-tight text-iron-100",
+      "text-lg font-semibold leading-none tracking-tight text-[color:var(--text-primary)]",
       className,
     )}
     {...props}
@@ -92,7 +92,7 @@ ModalTitle.displayName = "ModalTitle";
 const ModalDescription = React.forwardRef(({ className, ...props }, ref) => (
   <Drawer.Description
     ref={ref}
-    className={cn("text-sm text-iron-500", className)}
+    className={cn("text-sm text-[color:var(--text-muted)]", className)}
     {...props}
   />
 ));

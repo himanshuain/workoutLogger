@@ -189,12 +189,12 @@ export default function BodyWeightTracker({ isDarkMode }) {
   if (!weightTrackable) {
     return (
       <div
-        className={`rounded-2xl p-4 border-2 border-dashed ${
+        className={`rounded-card p-4 border-2 border-dashed ${
           isDarkMode ? "border-iron-700 bg-iron-900/30" : "border-slate-300 bg-slate-50"
         }`}
       >
         <div className="flex items-center gap-3 mb-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
+          <div className={`w-10 h-10 rounded-card flex items-center justify-center ${isDarkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
             <Scale className={`w-5 h-5 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
           </div>
           <div>
@@ -204,7 +204,7 @@ export default function BodyWeightTracker({ isDarkMode }) {
         </div>
         <button
           onClick={handleCreateWeightTrackable}
-          className={`w-full py-2.5 rounded-xl text-sm font-medium ${
+          className={`w-full py-2.5 rounded-card text-sm font-medium ${
             isDarkMode
               ? "bg-purple-500/20 text-purple-300 active:bg-purple-500/30"
               : "bg-purple-100 text-purple-700 active:bg-purple-200"
@@ -219,14 +219,14 @@ export default function BodyWeightTracker({ isDarkMode }) {
   const chartData = weightHistory.slice(-30);
 
   return (
-    <div className={`rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
+    <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
       {/* Header */}
       <div
         className={`p-4 flex items-center justify-between cursor-pointer`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
+          <div className={`w-10 h-10 rounded-card flex items-center justify-center ${isDarkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
             <Scale className={`w-5 h-5 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
           </div>
           <div>
@@ -258,7 +258,7 @@ export default function BodyWeightTracker({ isDarkMode }) {
               setLogDate(today);
               setShowLogModal(true);
             }}
-            className={`p-2 rounded-xl ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
+            className={`p-2 rounded-card ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -290,15 +290,15 @@ export default function BodyWeightTracker({ isDarkMode }) {
           {/* Stats Row */}
           {stats && (
             <div className={`flex gap-3 mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-              <div className={`flex-1 rounded-xl p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Start</p>
                 <p className={`font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{stats.oldest.value}</p>
               </div>
-              <div className={`flex-1 rounded-xl p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Current</p>
                 <p className={`font-bold ${isDarkMode ? "text-purple-400" : "text-purple-600"}`}>{stats.latest.value}</p>
               </div>
-              <div className={`flex-1 rounded-xl p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Change</p>
                 <p className={`font-bold ${
                   parseFloat(stats.totalChange) < 0 ? "text-green-400" : parseFloat(stats.totalChange) > 0 ? "text-red-400" : isDarkMode ? "text-iron-200" : "text-slate-700"
@@ -377,14 +377,14 @@ export default function BodyWeightTracker({ isDarkMode }) {
           <ModalFooter>
             <button
               onClick={() => setShowLogModal(false)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
+              className={`px-4 py-2.5 rounded-card text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
             >
               Cancel
             </button>
             <button
               onClick={handleLogWeight}
               disabled={!logWeight}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold ${
+              className={`px-6 py-2.5 rounded-card text-sm font-bold ${
                 isDarkMode
                   ? "bg-purple-500 text-white disabled:opacity-40"
                   : "bg-purple-600 text-white disabled:opacity-40"

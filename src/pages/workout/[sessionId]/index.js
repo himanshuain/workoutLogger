@@ -255,7 +255,7 @@ export default function WorkoutSessionPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className={`mt-4 px-6 py-2 rounded-xl font-medium inline-flex items-center justify-center gap-2 ${
+            className={`mt-4 px-6 py-2 rounded-card font-medium inline-flex items-center justify-center gap-2 ${
               isDarkMode ? "bg-iron-800 text-iron-200" : "bg-slate-100 text-slate-700"
             }`}
           >
@@ -274,7 +274,7 @@ export default function WorkoutSessionPage() {
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={handleBack}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            className={`w-10 h-10 rounded-card flex items-center justify-center transition-colors ${
               isDarkMode
                 ? "bg-iron-800 text-iron-400 active:bg-iron-700"
                 : "bg-slate-100 text-slate-500 active:bg-slate-200"
@@ -327,7 +327,7 @@ export default function WorkoutSessionPage() {
         {/* Exercise List */}
         {plannedExercises.length > 0 ? (
           <div
-            className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl pr-1 -mr-0.5 mb-6 ${
+            className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-card pr-1 -mr-0.5 mb-6 ${
               isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
             }`}
           >
@@ -339,7 +339,7 @@ export default function WorkoutSessionPage() {
                 return (
                   <StaggerItem key={ex.exercise_name}>
                     <div
-                      className={`relative w-full rounded-2xl transition-colors ${
+                      className={`relative w-full rounded-card transition-colors ${
                         isDarkMode
                           ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
                           : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
@@ -349,12 +349,12 @@ export default function WorkoutSessionPage() {
                         <button
                           type="button"
                           onClick={() => openExercise(ex.exercise_name, ex.category)}
-                          className={`w-full text-left rounded-2xl p-4 flex gap-4 ${
+                          className={`w-full text-left rounded-card p-4 flex gap-4 ${
                             ex.added_today ? "pr-14" : ""
                           }`}
                         >
                         <div
-                          className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
+                          className={`relative w-16 h-16 rounded-card overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                             isDarkMode ? "bg-iron-800" : "bg-slate-100"
                           }`}
                         >
@@ -449,7 +449,7 @@ export default function WorkoutSessionPage() {
                             e.preventDefault();
                             handleRemoveAddedToday(ex.exercise_name);
                           }}
-                          className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-colors touch-manipulation ${
+                          className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-card flex items-center justify-center border transition-colors touch-manipulation ${
                             isDarkMode
                               ? "border-iron-700/80 bg-iron-900/70 text-iron-400 hover:bg-iron-800 hover:text-red-400"
                               : "border-slate-200/90 bg-white/90 text-slate-400 hover:bg-slate-50 hover:text-red-600"
@@ -477,7 +477,7 @@ export default function WorkoutSessionPage() {
           <button
             type="button"
             onClick={handleAddExercise}
-            className={`w-full py-3.5 rounded-xl font-semibold border border-dashed flex items-center justify-center gap-2 ${
+            className={`w-full py-3.5 rounded-card font-semibold border border-dashed flex items-center justify-center gap-2 ${
               isDarkMode
                 ? "border-iron-700 text-iron-100"
                 : "border-slate-300 text-slate-800"
@@ -492,7 +492,7 @@ export default function WorkoutSessionPage() {
               type="button"
               onClick={handleComplete}
               disabled={completing}
-              className={`w-full py-3.5 rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 ${
+              className={`w-full py-3.5 rounded-card font-bold text-sm inline-flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               } disabled:opacity-50`}
             >

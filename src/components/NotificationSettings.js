@@ -117,7 +117,7 @@ export default function NotificationSettings({ trackable, onClose }) {
 
         <ModalBody className="space-y-5">
           {permissionStatus !== "granted" && (
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div className="p-4 rounded-card bg-amber-500/10 border border-amber-500/30">
               <div className="flex items-start gap-3">
                 <BellOff className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
@@ -144,10 +144,10 @@ export default function NotificationSettings({ trackable, onClose }) {
             </div>
           )}
 
-          <div className="flex items-center justify-between p-4 rounded-xl bg-iron-800">
+          <div className="flex items-center justify-between p-4 rounded-card bg-iron-800">
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                className="w-10 h-10 rounded-card flex items-center justify-center text-lg"
                 style={{ backgroundColor: `${trackable.color}30` }}
               >
                 {trackable.icon}
@@ -183,7 +183,7 @@ export default function NotificationSettings({ trackable, onClose }) {
                   type="time"
                   value={schedule.time}
                   onChange={e => setSchedule(prev => ({ ...prev, time: e.target.value }))}
-                  className="w-full h-14 px-4 rounded-xl bg-iron-800 text-iron-100 text-lg
+                  className="w-full h-14 px-4 rounded-card bg-iron-800 text-iron-100 text-lg
                            outline-none focus:ring-2 focus:ring-lift-primary/50"
                 />
                 <p className="text-iron-500 text-xs mt-2">
@@ -214,7 +214,7 @@ export default function NotificationSettings({ trackable, onClose }) {
                     <button
                       key={day.id}
                       onClick={() => toggleDay(day.id)}
-                      className={`flex-1 h-11 rounded-xl font-medium text-sm transition-colors ${
+                      className={`flex-1 h-11 rounded-card font-medium text-sm transition-colors ${
                         schedule.days.includes(day.id)
                           ? "bg-lift-primary text-iron-950"
                           : "bg-iron-800 text-iron-400"
@@ -233,10 +233,10 @@ export default function NotificationSettings({ trackable, onClose }) {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-iron-800/50">
+              <div className="p-4 rounded-card bg-iron-800/50">
                 <p className="text-iron-500 text-xs mb-2">Preview</p>
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-lift-primary/20 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-card bg-lift-primary/20 flex items-center justify-center">
                     <Bell className="w-5 h-5 text-lift-primary" />
                   </div>
                   <div>
@@ -256,14 +256,14 @@ export default function NotificationSettings({ trackable, onClose }) {
         <ModalFooter>
           <button
             onClick={handleClose}
-            className="flex-1 py-3 rounded-xl bg-iron-800 text-iron-400 font-medium"
+            className="flex-1 py-3 rounded-card bg-iron-800 text-iron-400 font-medium"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={schedule.enabled && schedule.days.length === 0}
-            className="flex-1 py-3 rounded-xl bg-lift-primary text-iron-950 font-bold
+            className="flex-1 py-3 rounded-card bg-lift-primary text-iron-950 font-bold
                      disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <Check className="w-4 h-4" />

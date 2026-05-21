@@ -51,7 +51,7 @@ export default function CustomExercisePage() {
     loadSession();
   }, [router.query.sessionId, getWorkoutSession]);
 
-  const inputClass = `w-full rounded-2xl px-4 py-3.5 text-base outline-none ${
+  const inputClass = `w-full rounded-card px-4 py-3.5 text-base outline-none ${
     isDarkMode
       ? "bg-iron-900 border border-iron-800 text-iron-100 placeholder:text-iron-600"
       : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400"
@@ -226,7 +226,7 @@ export default function CustomExercisePage() {
           type="button"
           onClick={handleAddToToday}
           disabled={!name.trim()}
-          className={`w-full py-4 rounded-2xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
+          className={`w-full py-4 rounded-card font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           }`}
         >
@@ -237,7 +237,7 @@ export default function CustomExercisePage() {
           type="button"
           onClick={handleAddToRoutine}
           disabled={!name.trim()}
-          className={`w-full py-4 rounded-2xl font-semibold border disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
+          className={`w-full py-4 rounded-card font-semibold border disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
             isDarkMode ? "border-iron-700 text-iron-100" : "border-slate-300 text-slate-800"
           }`}
         >

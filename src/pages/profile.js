@@ -13,7 +13,7 @@ export default function ProfilePage() {
       <div className="px-5 pt-10 pb-28 max-w-lg mx-auto">
         <div className="flex items-center gap-4">
           <div
-            className={`w-16 h-16 rounded-3xl flex items-center justify-center ${
+            className={`w-16 h-16 rounded-card flex items-center justify-center ${
               isDarkMode ? "bg-iron-800" : "bg-slate-100"
             }`}
           >
@@ -32,7 +32,7 @@ export default function ProfilePage() {
         <nav className="mt-10 space-y-2">
           <Link
             href="/settings"
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl ${
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
               isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
             }`}
           >
@@ -41,7 +41,7 @@ export default function ProfilePage() {
           </Link>
           <Link
             href="/food"
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl ${
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
               isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
             }`}
           >
@@ -50,7 +50,7 @@ export default function ProfilePage() {
           </Link>
           <Link
             href="/progress"
-            className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl ${
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
               isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
             }`}
           >
@@ -62,7 +62,7 @@ export default function ProfilePage() {
         <button
           type="button"
           onClick={() => signOut()}
-          className={`mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-medium border ${
+          className={`mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-card font-medium border ${
             isDarkMode ? "border-iron-800 text-iron-400" : "border-slate-200 text-slate-600"
           }`}
         >

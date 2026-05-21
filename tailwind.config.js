@@ -77,6 +77,16 @@ module.exports = {
       spacing: {
         'safe-bottom': 'env(safe-area-inset-bottom)',
         'safe-top': 'env(safe-area-inset-top)',
+        /** 20px — gap between major page sections */
+        section: '1.25rem',
+        /** 16px — gap within a section (rows, form fields) */
+        'section-inner': '1rem',
+      },
+      borderRadius: {
+        /** 12px — cards, panels, dialogs, buttons, inputs */
+        card: '12px',
+        /** Capsule — filter/habit pills and toggle tracks only */
+        pill: '9999px',
       },
       minHeight: {
         'touch': '44px',

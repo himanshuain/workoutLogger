@@ -79,7 +79,7 @@ export default function OnboardingFlow({ userId, isDarkMode, onComplete }) {
               </p>
               <button
                 onClick={() => setStep(1)}
-                className={`${accentBtn} py-3 px-8 rounded-xl font-bold text-lg active:scale-95 transition-transform`}
+                className={`${accentBtn} py-3 px-8 rounded-card font-bold text-lg active:scale-95 transition-transform`}
               >
                 Get Started
               </button>
@@ -107,7 +107,7 @@ export default function OnboardingFlow({ userId, isDarkMode, onComplete }) {
                   <button
                     key={id}
                     onClick={() => toggleHabit(id)}
-                    className={`flex items-center justify-between py-3 px-4 rounded-xl border-2 transition-all ${
+                    className={`flex items-center justify-between py-3 px-4 rounded-card border-2 transition-all ${
                       habits[id]
                         ? isDarkMode
                           ? "border-lift-primary bg-lift-primary/10"
@@ -136,7 +136,7 @@ export default function OnboardingFlow({ userId, isDarkMode, onComplete }) {
               </div>
               <button
                 onClick={() => setStep(2)}
-                className={`${accentBtn} py-3 px-8 rounded-xl font-bold text-lg active:scale-95 transition-transform`}
+                className={`${accentBtn} py-3 px-8 rounded-card font-bold text-lg active:scale-95 transition-transform`}
               >
                 Next
               </button>
@@ -161,7 +161,7 @@ export default function OnboardingFlow({ userId, isDarkMode, onComplete }) {
               </p>
               <button
                 onClick={handleComplete}
-                className={`${accentBtn} py-3 px-8 rounded-xl font-bold text-lg active:scale-95 transition-transform`}
+                className={`${accentBtn} py-3 px-8 rounded-card font-bold text-lg active:scale-95 transition-transform`}
               >
                 Let&apos;s Go
               </button>

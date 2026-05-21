@@ -33,7 +33,7 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
       value={tab.id}
       dragListener={false}
       dragControls={dragControls}
-      className={`flex items-center gap-2 p-3 rounded-2xl transition-colors ${
+      className={`flex items-center gap-2 p-3 rounded-card transition-colors ${
         hidden
           ? isDarkMode ? "bg-iron-900/50 opacity-50" : "bg-slate-50 opacity-50"
           : isDarkMode ? "bg-iron-800/80" : "bg-slate-100"
@@ -58,7 +58,7 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
 
       {/* Icon */}
       <div
-        className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+        className={`w-9 h-9 rounded-card flex items-center justify-center flex-shrink-0 ${
           isDarkMode ? "bg-iron-700" : "bg-white"
         }`}
       >
@@ -126,7 +126,7 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
       <button
         onClick={() => toggleVisibility(tab.id)}
         disabled={isSettings}
-        className={`p-2 rounded-xl transition-colors ${
+        className={`p-2 rounded-card transition-colors ${
           isSettings
             ? "opacity-30 cursor-not-allowed"
             : isDarkMode ? "active:bg-iron-700" : "active:bg-slate-200"
@@ -257,7 +257,7 @@ function NavCustomizer({ isDarkMode }) {
       {/* Reset button */}
       <button
         onClick={resetAll}
-        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium mt-3 transition-colors ${
+        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-card text-sm font-medium mt-3 transition-colors ${
           isDarkMode
             ? "bg-iron-800/50 text-iron-400 active:bg-iron-800"
             : "bg-slate-100 text-slate-500 active:bg-slate-200"
@@ -293,7 +293,7 @@ export default function Settings() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
+            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
               isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
             }`}
           >
@@ -318,7 +318,7 @@ export default function Settings() {
           </h2>
         </div>
 
-        <div className="space-y-6 mt-4">
+        <div className="space-y-section mt-4">
           {/* Theme Toggle */}
           <section>
             <h3
@@ -335,7 +335,7 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    className={`w-12 h-12 rounded-card flex items-center justify-center ${
                       isDarkMode ? "bg-iron-800" : "bg-slate-100"
                     }`}
                   >
@@ -419,7 +419,7 @@ export default function Settings() {
                   </p>
                 </div>
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  className={`w-12 h-12 rounded-card flex items-center justify-center ${
                     isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
                   }`}
                 >
@@ -437,7 +437,7 @@ export default function Settings() {
                   await signOut();
                   router.push("/auth");
                 }}
-                className={`w-full py-3 rounded-xl text-sm font-medium transition-colors ${
+                className={`w-full py-3 rounded-card text-sm font-medium transition-colors ${
                   isDarkMode
                     ? "bg-iron-800 text-iron-400 active:bg-iron-700"
                     : "bg-slate-100 text-slate-600 active:bg-slate-200"
@@ -451,7 +451,7 @@ export default function Settings() {
           {/* About */}
           <section className="text-center py-8">
             <div
-              className="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+              className="w-16 h-16 mx-auto mb-3 rounded-card flex items-center justify-center"
               style={{
                 background: isDarkMode
                   ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"

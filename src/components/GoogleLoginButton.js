@@ -61,7 +61,7 @@ export default function GoogleLoginButton() {
       onClick={handleClick}
       disabled={loading}
       className={`
-        w-full h-12 rounded-xl font-semibold transition-colors flex items-center justify-center gap-3 border disabled:opacity-50
+        w-full h-12 rounded-card font-semibold transition-colors flex items-center justify-center gap-3 border disabled:opacity-50
         ${
           isDarkMode
             ? "bg-iron-900 text-iron-100 border-iron-700 active:bg-iron-800"

@@ -207,7 +207,7 @@ export default function ExercisePreviewPanel({
         <button
           type="button"
           onClick={handleAddToToday}
-          className={`w-full rounded-2xl font-semibold inline-flex items-center justify-center gap-2 ${
+          className={`w-full rounded-card font-semibold inline-flex items-center justify-center gap-2 ${
             isSheet ? "py-3 text-[15px]" : "py-3.5"
           } ${isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"}`}
         >
@@ -217,7 +217,7 @@ export default function ExercisePreviewPanel({
         <button
           type="button"
           onClick={handleAddToRoutine}
-          className={`w-full rounded-2xl font-semibold border inline-flex items-center justify-center gap-2 ${
+          className={`w-full rounded-card font-semibold border inline-flex items-center justify-center gap-2 ${
             isSheet ? "py-3 text-[15px]" : "py-3.5"
           } ${
             isDarkMode ? "border-iron-700 text-iron-100" : "border-slate-300 text-slate-800"

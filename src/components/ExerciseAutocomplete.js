@@ -180,7 +180,7 @@ export default function ExerciseAutocomplete({
         {/* Empty State */}
         {filteredExercises.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${
+            <div className={`w-14 h-14 rounded-card flex items-center justify-center mb-3 ${
               isDarkMode ? "bg-iron-800" : "bg-slate-100"
             }`}>
               <Search className={`w-7 h-7 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`} />
@@ -200,7 +200,7 @@ export default function ExerciseAutocomplete({
         }`}
         style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
       >
-        <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl ${
+        <div className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-card ${
           isDarkMode ? "bg-iron-800" : "bg-slate-100"
         }`}>
           <Search className={`w-4 h-4 flex-shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
@@ -224,7 +224,7 @@ export default function ExerciseAutocomplete({
         </div>
         <button
           onClick={handleDone}
-          className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-card text-sm font-bold flex items-center gap-1.5 ${
             isDarkMode
               ? "bg-iron-100 text-iron-900"
               : "bg-slate-900 text-white"
@@ -251,12 +251,12 @@ function ExerciseRow({ exercise, isDarkMode, isLogged, isSelected, onSelect }) {
   return (
     <button
       onClick={onSelect}
-      className={`w-full flex items-center gap-3.5 px-2 py-3 rounded-xl transition-colors ${
+      className={`w-full flex items-center gap-3.5 px-2 py-3 rounded-card transition-colors ${
         isDarkMode ? "active:bg-iron-800/70" : "active:bg-slate-50"
       }`}
     >
       <div
-        className={`relative isolate h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-2xl border ${
+        className={`relative isolate h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-card border ${
           isDarkMode
             ? "border-iron-700/80 bg-iron-900"
             : "border-slate-200/90 bg-white"

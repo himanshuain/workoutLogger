@@ -49,16 +49,16 @@ export default function LogCard({
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl transition-all duration-200 ${isDeleting ? "opacity-0 scale-95" : ""}`}
+      className={`relative overflow-hidden rounded-card transition-all duration-200 ${isDeleting ? "opacity-0 scale-95" : ""}`}
     >
       {/* Card content */}
       <div
-        className="relative bg-iron-900 p-4 rounded-2xl"
+        className="relative bg-iron-900 p-4 rounded-card"
         onClick={handleCardClick}
       >
         <div className="flex items-center gap-3">
           {/* Exercise Icon */}
-          <div className="w-14 h-14 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
+          <div className="w-14 h-14 rounded-card bg-iron-800 flex items-center justify-center flex-shrink-0">
             <ExerciseIcon
               name={exerciseName}
               className="w-10 h-10"
@@ -83,13 +83,13 @@ export default function LogCard({
               <>
                 <button
                   onClick={handleEdit}
-                  className="w-10 h-10 rounded-xl bg-iron-800 flex items-center justify-center active:bg-iron-700"
+                  className="w-10 h-10 rounded-card bg-iron-800 flex items-center justify-center active:bg-iron-700"
                 >
                   <Pencil className="w-4 h-4 text-iron-400" />
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center active:bg-red-500/30"
+                  className="w-10 h-10 rounded-card bg-red-500/20 flex items-center justify-center active:bg-red-500/30"
                 >
                   <Trash2 className="w-4 h-4 text-red-400" />
                 </button>

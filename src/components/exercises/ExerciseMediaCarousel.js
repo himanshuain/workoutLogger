@@ -57,7 +57,7 @@ export default function ExerciseMediaCarousel({
   }, [updateIndexFromScroll]);
 
   const ring = cn(
-    "relative w-full rounded-2xl overflow-hidden flex items-center justify-center",
+    "relative w-full rounded-card overflow-hidden flex items-center justify-center",
     frameAspect,
     isDarkMode ? "bg-iron-900 text-iron-500" : "bg-slate-200 text-slate-400",
     "[&::-webkit-scrollbar]:hidden"
@@ -75,7 +75,7 @@ export default function ExerciseMediaCarousel({
             aria-label={alt ? `Search Google Images for ${alt}` : "Search Google Images"}
             className={cn(
               "flex h-full w-full flex-col items-center justify-center gap-2 px-3 py-4 text-center",
-              "rounded-2xl outline-none ring-1 ring-inset transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
+              "rounded-card outline-none ring-1 ring-inset transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
               isDarkMode
                 ? "bg-iron-900 text-iron-200 ring-white/15 hover:bg-iron-800 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-900"
                 : "bg-slate-100 text-slate-800 ring-black/10 hover:bg-slate-200/90 focus-visible:ring-workout-primary focus-visible:ring-offset-white",
@@ -111,7 +111,7 @@ export default function ExerciseMediaCarousel({
     return (
       <div
         className={cn(
-          `relative w-full rounded-2xl overflow-hidden`,
+          `relative w-full rounded-card overflow-hidden`,
           frameAspect,
           isDarkMode ? "bg-iron-900" : "bg-slate-200",
           className
@@ -131,7 +131,7 @@ export default function ExerciseMediaCarousel({
 
   return (
     <div className={cn("relative w-full", className)}>
-      <div className={`relative rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900" : "bg-slate-200"} ${frameAspect}`}>
+      <div className={`relative rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900" : "bg-slate-200"} ${frameAspect}`}>
         <div className="absolute inset-y-0 right-3 z-10 flex flex-col justify-center gap-1 pointer-events-none">
           <span className="sr-only" aria-live="polite">{`Slide ${slideIndex + 1} of ${list.length}`}</span>
           {list.map((_, i) => (

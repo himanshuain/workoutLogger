@@ -13,7 +13,7 @@ export default function CollapsibleSection({
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden ${
+      className={`rounded-card overflow-hidden ${
         isDarkMode
           ? "bg-iron-900/50"
           : "bg-white border border-slate-200 shadow-sm"
@@ -29,7 +29,7 @@ export default function CollapsibleSection({
         <div className="flex items-center gap-3">
           {Icon && (
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              className={`w-10 h-10 rounded-card flex items-center justify-center ${
                 isDarkMode ? "bg-iron-800" : "bg-slate-100"
               }`}
             >
@@ -61,7 +61,7 @@ export default function CollapsibleSection({
         </div>
         <div
           className={`
-          w-10 h-10 rounded-xl flex items-center justify-center transition-colors
+          w-10 h-10 rounded-card flex items-center justify-center transition-colors
           ${
             isOpen
               ? isDarkMode

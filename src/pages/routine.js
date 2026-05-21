@@ -224,7 +224,7 @@ export default function RoutinePlannerPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Routine / focus title"
-            className={`w-full text-xl font-semibold tracking-tight rounded-2xl px-4 py-3 outline-none ${
+            className={`w-full text-xl font-semibold tracking-tight rounded-card px-4 py-3 outline-none ${
               isDarkMode
                 ? "bg-iron-900/80 border border-iron-800 text-iron-50 placeholder:text-iron-600"
                 : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
@@ -256,7 +256,7 @@ export default function RoutinePlannerPage() {
                 isDarkMode={isDarkMode}
                 renderItem={(item) => (
                   <div
-                    className={`flex items-center gap-3 p-3 rounded-2xl ${
+                    className={`flex items-center gap-3 p-3 rounded-card ${
                       isDarkMode ? "bg-iron-900/60 border border-iron-800" : "bg-white border border-slate-200 shadow-sm"
                     }`}
                   >
@@ -299,7 +299,7 @@ export default function RoutinePlannerPage() {
                     <button
                       type="button"
                       onClick={() => setList((prev) => prev.filter((x) => x.key !== item.key))}
-                      className={`p-2 rounded-xl ${isDarkMode ? "text-iron-500 hover:bg-iron-800" : "text-slate-400 hover:bg-slate-100"}`}
+                      className={`p-2 rounded-card ${isDarkMode ? "text-iron-500 hover:bg-iron-800" : "text-slate-400 hover:bg-slate-100"}`}
                       aria-label="Remove"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -316,7 +316,7 @@ export default function RoutinePlannerPage() {
                   `/exercises?routineDay=${selectedDay}&returnTo=routine&day=${selectedDay}`
                 )
               }
-              className={`mt-4 w-full py-3.5 rounded-2xl font-semibold flex items-center justify-center gap-2 ${
+              className={`mt-4 w-full py-3.5 rounded-card font-semibold flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-100 text-slate-800"
               }`}
             >
@@ -338,7 +338,7 @@ export default function RoutinePlannerPage() {
         <button
           type="button"
           onClick={handleSave}
-          className={`mt-8 w-full py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 ${
+          className={`mt-8 w-full py-4 rounded-card font-semibold flex items-center justify-center gap-2 ${
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           }`}
         >
@@ -369,12 +369,12 @@ export default function RoutinePlannerPage() {
               {routinesSorted.map((r) => (
                 <li
                   key={r.id}
-                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 ${
+                  className={`flex items-center gap-3 rounded-card px-3 py-3 ${
                     isDarkMode ? "bg-iron-900/70 border border-iron-800" : "bg-slate-50 border border-slate-200"
                   }`}
                 >
                   <div
-                    className="w-9 h-9 rounded-xl shrink-0"
+                    className="w-9 h-9 rounded-card shrink-0"
                     style={{ backgroundColor: `${r.color || "#3b82f6"}25` }}
                   />
                   <div className="min-w-0 flex-1">
@@ -388,7 +388,7 @@ export default function RoutinePlannerPage() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget({ id: r.id, name: r.name || "Untitled" })}
-                    className={`shrink-0 p-2.5 rounded-xl ${
+                    className={`shrink-0 p-2.5 rounded-card ${
                       isDarkMode
                         ? "text-red-400 hover:bg-red-950/50"
                         : "text-red-600 hover:bg-red-50"

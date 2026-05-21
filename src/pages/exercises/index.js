@@ -507,7 +507,7 @@ export default function ExercisesSearchPage() {
           <button
             type="button"
             onClick={handleBack}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            className={`w-10 h-10 rounded-card flex items-center justify-center transition-colors ${
               isDarkMode
                 ? "bg-iron-800 text-iron-300 hover:bg-iron-700"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -536,7 +536,7 @@ export default function ExercisesSearchPage() {
         >
           {isRoutinePicker && savedRoutineExercises.length > 0 ? (
             <div
-              className={`mt-2 rounded-xl border ${
+              className={`mt-2 rounded-card border ${
                 isDarkMode ? "border-iron-700/80 bg-iron-900/50" : "border-slate-200 bg-white"
               }`}
             >
@@ -569,7 +569,7 @@ export default function ExercisesSearchPage() {
               </button>
               {pinnedSavedOpen ? (
                 <div
-                  className={`border-t rounded-b-xl overflow-hidden ${
+                  className={`border-t rounded-b-card overflow-hidden ${
                     isDarkMode ? "border-iron-800" : "border-slate-100"
                   }`}
                 >
@@ -583,7 +583,7 @@ export default function ExercisesSearchPage() {
                             key={ex.id || ex.exercise_name}
                             type="button"
                             onClick={() => scrollToSavedExercise(ex.exercise_name)}
-                            className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap pl-2.5 pr-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium transition-colors ${
+                            className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap pl-2.5 pr-2.5 py-1.5 rounded-pill text-left text-[11px] font-medium transition-colors ${
                               isDarkMode
                                 ? "bg-iron-800/80 text-iron-200 border border-iron-700 hover:bg-iron-700"
                                 : "bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200"
@@ -620,7 +620,7 @@ export default function ExercisesSearchPage() {
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search exercise…"
-            className={`w-full rounded-xl px-3.5 py-2.5 text-sm outline-none ${
+            className={`w-full rounded-card px-3.5 py-2.5 text-sm outline-none ${
               isDarkMode
                 ? "bg-iron-900 border border-iron-800 text-iron-100 placeholder:text-iron-600"
                 : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400"
@@ -751,7 +751,7 @@ export default function ExercisesSearchPage() {
             <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               {filtered.length} exercise{filtered.length !== 1 ? "s" : ""}
             </p>
-            <div className={`flex rounded-lg p-0.5 ${
+            <div className={`flex rounded-pill p-0.5 ${
               isDarkMode ? "bg-iron-800" : "bg-slate-100"
             }`}>
               <button
@@ -797,7 +797,7 @@ export default function ExercisesSearchPage() {
             
             if (viewMode === "card") {
               // Card view layout
-              const cardClass = `w-full rounded-2xl overflow-hidden transition-colors ${
+              const cardClass = `w-full rounded-card overflow-hidden transition-colors ${
                 isDarkMode
                   ? "bg-iron-900/50 border border-iron-800"
                   : "bg-white border border-slate-200 shadow-sm"
@@ -948,7 +948,7 @@ export default function ExercisesSearchPage() {
             }
             
             // List view layout (existing)
-            const baseCard = `w-full flex gap-3 items-stretch rounded-2xl overflow-hidden ${
+            const baseCard = `w-full flex gap-3 items-stretch rounded-card overflow-hidden ${
               isDarkMode
                 ? "bg-iron-900/50 border border-iron-800"
                 : "bg-white border border-slate-200 shadow-sm"
@@ -1021,7 +1021,7 @@ export default function ExercisesSearchPage() {
                   <button
                     type="button"
                     onClick={() => openPreview(ex.id)}
-                    className={`shrink-0 m-3 rounded-xl overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    className={`shrink-0 m-3 rounded-card overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
                       isDarkMode
                         ? "focus-visible:ring-lift-primary ring-offset-iron-950"
                         : "focus-visible:ring-workout-primary ring-offset-white"
@@ -1031,14 +1031,14 @@ export default function ExercisesSearchPage() {
                     <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
                   </button>
                 ) : (
-                  <div className="m-3 flex shrink-0 items-center justify-center rounded-xl">
+                  <div className="m-3 flex shrink-0 items-center justify-center rounded-card">
                     <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
                   </div>
                 )}
                 <button
                   type="button"
                   onClick={() => toggleSelect(ex.id)}
-                  className="flex-1 py-3 pr-3 pl-0 text-left min-w-0 rounded-r-2xl flex items-start gap-2"
+                  className="flex-1 py-3 pr-3 pl-0 text-left min-w-0 rounded-r-card flex items-start gap-2"
                   aria-pressed={pendingAdd}
                   aria-label={
                     inRoutine
@@ -1120,7 +1120,7 @@ export default function ExercisesSearchPage() {
             if (addReturn) p.set("addReturn", addReturn);
             router.push(`/exercises/custom?${p.toString()}`);
           }}
-          className={`w-full py-4 rounded-2xl font-semibold border border-dashed flex items-center justify-center gap-2 ${
+          className={`w-full py-4 rounded-card font-semibold border border-dashed flex items-center justify-center gap-2 ${
             isDarkMode ? "border-iron-700 text-iron-200" : "border-slate-300 text-slate-800"
           }`}
         >
@@ -1144,7 +1144,7 @@ export default function ExercisesSearchPage() {
             <button
               type="button"
               onClick={clearRoutineSelection}
-              className={`shrink-0 flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-2xl font-semibold text-sm ${
+              className={`shrink-0 flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-card font-semibold text-sm ${
                 isDarkMode
                   ? "border border-iron-600 text-iron-200 hover:bg-iron-800"
                   : "border border-slate-300 text-slate-800 hover:bg-slate-50"
@@ -1157,7 +1157,7 @@ export default function ExercisesSearchPage() {
               type="button"
               disabled={addingBatch}
               onClick={handleBatchAddToRoutine}
-              className={`flex-1 min-w-0 py-3.5 rounded-2xl font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 ${
+              className={`flex-1 min-w-0 py-3.5 rounded-card font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >

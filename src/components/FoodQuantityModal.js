@@ -132,7 +132,7 @@ export default function FoodQuantityModal({
                   onTempQuantityChange(parseFloat(v) || min);
                 }
               }}
-              className={`w-full text-center text-3xl font-bold tabular-nums py-3 rounded-xl border ${
+              className={`w-full text-center text-3xl font-bold tabular-nums py-3 rounded-card border ${
                 isDarkMode
                   ? "bg-iron-800 border-iron-700 text-iron-100"
                   : "bg-slate-50 border-slate-200 text-slate-800"
@@ -170,7 +170,7 @@ export default function FoodQuantityModal({
             <button
               type="button"
               onClick={dec}
-              className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+              className={`w-14 h-14 rounded-card flex items-center justify-center ${
                 isDarkMode ? "bg-iron-800" : "bg-slate-100"
               }`}
             >
@@ -179,7 +179,7 @@ export default function FoodQuantityModal({
             <button
               type="button"
               onClick={inc}
-              className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+              className={`w-14 h-14 rounded-card flex items-center justify-center ${
                 isDarkMode ? "bg-iron-800" : "bg-slate-100"
               }`}
             >
@@ -191,7 +191,7 @@ export default function FoodQuantityModal({
           <button
             type="button"
             onClick={onConfirm}
-            className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 ${
+            className={`w-full py-4 rounded-card font-bold flex items-center justify-center gap-2 ${
               isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
             }`}
           >
@@ -201,7 +201,7 @@ export default function FoodQuantityModal({
           <button
             type="button"
             onClick={onClose}
-            className={`w-full py-3 rounded-xl font-medium ${
+            className={`w-full py-3 rounded-card font-medium ${
               isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
             }`}
           >

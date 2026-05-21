@@ -14,7 +14,7 @@ export default function QuickStats({
       <div className="flex gap-3">
         <div
           className={`
-          flex-1 rounded-xl p-3 flex items-center gap-3 transition-colors
+          flex-1 rounded-card p-3 flex items-center gap-3 transition-colors
           ${
             isDarkMode
               ? "bg-iron-900/50 active:bg-iron-800/50"
@@ -54,7 +54,7 @@ export default function QuickStats({
 
         <div
           className={`
-          flex-1 rounded-xl p-3 flex items-center gap-3 transition-colors
+          flex-1 rounded-card p-3 flex items-center gap-3 transition-colors
           ${
             isDarkMode
               ? "bg-iron-900/50 active:bg-iron-800/50"

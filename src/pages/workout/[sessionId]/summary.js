@@ -311,7 +311,7 @@ export default function WorkoutSummaryPage() {
         ].map(row => (
           <div
             key={row.label}
-            className={`flex justify-between items-center py-3 px-4 rounded-2xl ${
+            className={`flex justify-between items-center py-3 px-4 rounded-card ${
               isDarkMode ? "bg-iron-900/70 border border-iron-800" : "bg-white border border-slate-200 shadow-sm"
             }`}
           >
@@ -341,7 +341,7 @@ export default function WorkoutSummaryPage() {
             }}
             disabled={Boolean(mutatingKey)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors shrink-0",
+              "inline-flex items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold transition-colors shrink-0",
               isDarkMode
                 ? "bg-iron-800 text-lift-primary hover:bg-iron-700 disabled:opacity-50"
                 : "bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50",
@@ -358,7 +358,7 @@ export default function WorkoutSummaryPage() {
             return (
               <div
                 key={name}
-                className={`flex items-center gap-2 py-2.5 px-4 rounded-xl ${
+                className={`flex items-center gap-2 py-2.5 px-4 rounded-card ${
                   isDarkMode ? "bg-iron-900/50 border border-iron-800/80" : "bg-slate-100 border border-slate-200/80"
                 }`}
               >
@@ -426,7 +426,7 @@ export default function WorkoutSummaryPage() {
           type="button"
           onClick={handleSaveWorkout}
           disabled={saving || stats.exerciseNames.length === 0 || Boolean(mutatingKey)}
-          className={`w-full py-4 rounded-2xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
+          className={`w-full py-4 rounded-card font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           }`}
         >
@@ -438,7 +438,7 @@ export default function WorkoutSummaryPage() {
             type="button"
             onClick={handleAddExtrasToRoutine}
             disabled={Boolean(mutatingKey)}
-            className={`w-full py-4 rounded-2xl font-semibold border inline-flex items-center justify-center gap-2 disabled:opacity-50 ${
+            className={`w-full py-4 rounded-card font-semibold border inline-flex items-center justify-center gap-2 disabled:opacity-50 ${
               isDarkMode ? "border-iron-700 text-iron-200" : "border-slate-300 text-slate-800"
             }`}
           >
@@ -522,7 +522,7 @@ export default function WorkoutSummaryPage() {
                 <div
                   key={s.id}
                   className={cn(
-                    "flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2.5",
+                    "flex flex-wrap items-center gap-2 rounded-card border px-3 py-2.5",
                     isDarkMode ? "border-iron-800 bg-iron-900/80" : "border-slate-200 bg-white",
                   )}
                 >
@@ -676,7 +676,7 @@ export default function WorkoutSummaryPage() {
               type="button"
               onClick={() => setEditOpen(false)}
               className={cn(
-                "w-full rounded-xl py-3 text-sm font-semibold disabled:opacity-45",
+                "w-full rounded-card py-3 text-sm font-semibold disabled:opacity-45",
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white",
               )}
             >

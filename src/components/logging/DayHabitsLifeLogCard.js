@@ -62,7 +62,7 @@ export default function DayHabitsLifeLogCard({
                     return (
                       <li
                         key={t.id}
-                        className={`flex items-center gap-3 rounded-xl px-2 py-2 ${
+                        className={`flex items-center gap-3 rounded-card px-2 py-2 ${
                           isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
                         }`}
                       >
@@ -71,7 +71,7 @@ export default function DayHabitsLifeLogCard({
                           aria-pressed={done}
                           aria-label={done ? `Mark ${t.name} not done for this day` : `Mark ${t.name} done for this day`}
                           onClick={() => onHabitToggle(t)}
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition-all ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card text-lg transition-all ${
                             done
                               ? "shadow-md"
                               : isDarkMode
@@ -124,7 +124,7 @@ export default function DayHabitsLifeLogCard({
                     return (
                       <li
                         key={et.id}
-                        className={`flex items-center gap-3 rounded-xl px-2 py-2 ${
+                        className={`flex items-center gap-3 rounded-card px-2 py-2 ${
                           isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
                         }`}
                       >
@@ -158,7 +158,7 @@ export default function DayHabitsLifeLogCard({
                                 : `Quick log ${et.name}`
                           }
                           onClick={() => onQuickLifeLog(et)}
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90 ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card transition-all active:scale-90 ${
                             done
                               ? isDarkMode
                                 ? "bg-lift-primary text-iron-950 shadow-inner"

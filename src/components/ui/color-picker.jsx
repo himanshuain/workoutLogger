@@ -45,7 +45,7 @@ export function ColorPicker({ value, onChange, presets = [], isDarkMode = true }
           <button
             type="button"
             onClick={() => nativeRef.current?.click()}
-            className="w-10 h-10 rounded-xl border-2 overflow-hidden cursor-pointer relative"
+            className="w-10 h-10 rounded-card border-2 overflow-hidden cursor-pointer relative"
             style={{
               backgroundColor: value,
               borderColor: isDarkMode ? "#3f3f46" : "#cbd5e1",
@@ -77,7 +77,7 @@ export function ColorPicker({ value, onChange, presets = [], isDarkMode = true }
             }`}
           />
           <div
-            className="w-10 h-10 rounded-xl border-2"
+            className="w-10 h-10 rounded-card border-2"
             style={{
               backgroundColor: value,
               borderColor: isDarkMode ? "#3f3f46" : "#cbd5e1",

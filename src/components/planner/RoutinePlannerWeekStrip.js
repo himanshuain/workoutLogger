@@ -152,7 +152,7 @@ export default function RoutinePlannerWeekStrip({
           const canMove = !!r;
 
           const pillBase =
-            "flex flex-col gap-2 rounded-2xl border px-3 py-3 outline-none cursor-pointer transition-[color,background-color,border-color,box-shadow] " +
+            "flex flex-col gap-2 rounded-card border px-3 py-3 outline-none cursor-pointer transition-[color,background-color,border-color,box-shadow] " +
             (isDarkMode
               ? active
                 ? "border-lift-primary/45 bg-lift-primary/15 text-iron-100 ring-2 ring-inset ring-lift-primary/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lift-primary/70 "
@@ -243,7 +243,7 @@ export default function RoutinePlannerWeekStrip({
           </DialogHeader>
           {moveSourceBanner ? (
             <div
-              className={`rounded-xl border px-4 py-3 text-sm ${
+              className={`rounded-card border px-4 py-3 text-sm ${
                 isDarkMode
                   ? "border-iron-700 bg-iron-950/70 text-iron-50"
                   : "border-slate-200 bg-slate-50 text-slate-900"
@@ -264,7 +264,7 @@ export default function RoutinePlannerWeekStrip({
               <button
                 key={d.value}
                 type="button"
-                className={`py-2.5 rounded-xl text-xs font-semibold ${
+                className={`py-2.5 rounded-card text-xs font-semibold ${
                   isDarkMode ? "bg-iron-800 text-iron-200 hover:bg-iron-700" : "bg-slate-100 text-slate-800 hover:bg-slate-200"
                 }`}
                 onClick={() => handlePickTargetDay(d.value)}

@@ -54,7 +54,7 @@ export default function EventExpandedInsightsGraph({
 
     return (
       <div
-        className={`p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}
+        className={`p-3 rounded-card ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}
       >
         <div className="flex items-center justify-between mb-2">
           <span
@@ -187,7 +187,7 @@ export default function EventExpandedInsightsGraph({
       : null;
 
   return (
-    <div className={`p-3 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+    <div className={`p-3 rounded-card ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
       <div className="flex items-center justify-between mb-2">
         <span className={`text-xs font-medium ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
           {activeIdx != null

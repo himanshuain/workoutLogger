@@ -238,7 +238,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             <button
               type="button"
               onClick={() => router.push("/history")}
-              className={`w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 border ${
+              className={`w-full py-3 rounded-card font-semibold text-sm flex items-center justify-center gap-2 border ${
                 isDarkMode
                   ? "border-iron-700 text-iron-200 active:bg-iron-800"
                   : "border-slate-200 text-slate-700 active:bg-slate-50"
@@ -276,7 +276,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             <button
               type="button"
               onClick={() => onChooseRoutine?.()}
-              className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+              className={`w-full py-3 rounded-card font-bold flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -286,7 +286,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             <button
               type="button"
               onClick={() => router.push(`/plan?day=${todayDow}`)}
-              className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 border ${
+              className={`w-full py-3 rounded-card font-semibold flex items-center justify-center gap-2 border ${
                 isDarkMode
                   ? "border-iron-700 text-iron-200 hover:bg-iron-800/80"
                   : "border-slate-200 text-slate-800 hover:bg-slate-50"
@@ -308,7 +308,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
           type="button"
           onClick={() => router.push("/plan")}
           className={`
-                w-full p-6 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center gap-3
+                w-full p-6 rounded-card border-2 border-dashed flex flex-col items-center justify-center gap-3
                 ${
                   isDarkMode
                     ? "border-iron-800 hover:border-iron-700"
@@ -317,7 +317,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
               `}
         >
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            className="w-16 h-16 rounded-card flex items-center justify-center"
             style={{
               background: isDarkMode
                 ? "linear-gradient(135deg, #22c55e20 0%, #16a34a20 100%)"
@@ -424,7 +424,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                 type="button"
                 onClick={handleStartOrResume}
                 disabled={starting || !todayRoutine}
-                className={`w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 ${
+                className={`w-full py-3.5 rounded-card font-bold text-sm flex items-center justify-center gap-2 ${
                   isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
                 } disabled:opacity-50 disabled:pointer-events-none`}
               >
@@ -446,7 +446,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                 }`}
               >
                 <div
-                  className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl pr-1 -mr-0.5 ${
+                  className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-card pr-1 -mr-0.5 ${
                     isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
                   }`}
                 >
@@ -458,7 +458,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       return (
                         <StaggerItem key={ex.exercise_name}>
                           <div
-                            className={`relative w-full rounded-2xl transition-colors ${
+                            className={`relative w-full rounded-card transition-colors ${
                               isDarkMode
                                 ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
                                 : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
@@ -468,12 +468,12 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                               <button
                                 type="button"
                                 onClick={() => openExercise(ex.exercise_name, ex.category)}
-                                className={`w-full text-left rounded-2xl p-4 flex gap-4 ${
+                                className={`w-full text-left rounded-card p-4 flex gap-4 ${
                                   ex.added_today ? "pr-14" : ""
                                 }`}
                               >
                               <div
-                                className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
+                                className={`relative w-16 h-16 rounded-card overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
                                 }`}
                               >
@@ -568,7 +568,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                   e.preventDefault();
                                   handleRemoveAddedToday(ex.exercise_name);
                                 }}
-                                className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border transition-colors touch-manipulation ${
+                                className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-card flex items-center justify-center border transition-colors touch-manipulation ${
                                   isDarkMode
                                     ? "border-iron-700/80 bg-iron-900/70 text-iron-400 hover:bg-iron-800 hover:text-red-400"
                                     : "border-slate-200/90 bg-white/90 text-slate-400 hover:bg-slate-50 hover:text-red-600"
@@ -594,7 +594,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
                     )
                   }
-                  className={`w-full py-3.5 rounded-xl font-semibold border border-dashed flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 rounded-card font-semibold border border-dashed flex items-center justify-center gap-2 ${
                     isDarkMode
                       ? "border-iron-700 text-iron-100"
                       : "border-slate-300 text-slate-800"
@@ -607,7 +607,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className={`w-full py-3.5 rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 ${
+                  className={`w-full py-3.5 rounded-card font-bold text-sm inline-flex items-center justify-center gap-2 ${
                     isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
                   }`}
                 >

@@ -838,7 +838,7 @@ export default function LifeLog() {
           <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>Sign in to use Life Log</p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
+            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
               isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
             }`}
           >
@@ -875,7 +875,7 @@ export default function LifeLog() {
         >
           <div className="flex items-center gap-2">
             <div
-              className={`flex-1 flex gap-1.5 p-1 rounded-xl ${
+              className={`flex-1 flex gap-1.5 p-1 rounded-card ${
                 isDarkMode ? "bg-iron-900" : "bg-slate-100"
               }`}
             >
@@ -925,7 +925,7 @@ export default function LifeLog() {
                   setShowAddHabitModal(true);
                 }
               }}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm ${
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-card font-medium text-sm ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -958,7 +958,7 @@ export default function LifeLog() {
                     resetEventForm();
                     setShowAddDrawer(true);
                   }}
-                  className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium ${
+                  className={`mt-4 px-4 py-2 rounded-card text-sm font-medium ${
                     isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-200 text-slate-700"
                   }`}
                 >
@@ -981,7 +981,7 @@ export default function LifeLog() {
                 return (
                   <div
                     key={eventType.id}
-                    className={`rounded-2xl overflow-hidden transition-all duration-200 ${
+                    className={`rounded-card overflow-hidden transition-all duration-200 ${
                       isDarkMode ? "bg-iron-900" : "bg-white shadow-sm"
                     } ${
                       isOverdue
@@ -1002,7 +1002,7 @@ export default function LifeLog() {
                             className="flex items-center gap-3 flex-1 min-w-0"
                           >
                             <div
-                              className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                              className="w-11 h-11 rounded-card flex items-center justify-center text-xl flex-shrink-0"
                               style={{ backgroundColor: `${eventType.color}25` }}
                             >
                               {eventType.icon}
@@ -1058,7 +1058,7 @@ export default function LifeLog() {
                                   : `Quick log ${eventType.name}`
                             }
                             onClick={() => handleQuickLog(eventType)}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90 relative ${
+                            className={`w-10 h-10 rounded-card flex items-center justify-center flex-shrink-0 transition-all active:scale-90 relative ${
                               isLoggedToday
                                 ? isDarkMode
                                   ? "bg-lift-primary text-iron-950 shadow-inner"
@@ -1120,7 +1120,7 @@ export default function LifeLog() {
                             <button
                               type="button"
                               onClick={() => openLogDrawer(eventType)}
-                              className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
+                              className={`w-full py-3 rounded-card text-sm font-semibold flex items-center justify-center gap-2 ${
                                 isDarkMode
                                   ? "bg-iron-800 text-iron-200 ring-1 ring-iron-700 active:bg-iron-700"
                                   : "bg-slate-100 text-slate-800 ring-1 ring-slate-200/80 active:bg-slate-200"
@@ -1221,7 +1221,7 @@ export default function LifeLog() {
                                   <ContextMenu>
                                     <ContextMenuTrigger asChild>
                                       <div
-                                        className={`flex items-start gap-3 p-2.5 rounded-xl border transition-colors ${
+                                        className={`flex items-start gap-3 p-2.5 rounded-card border transition-colors ${
                                           idx === 0
                                             ? isDarkMode
                                               ? "border-iron-700/70 bg-iron-800/40"
@@ -1376,7 +1376,7 @@ export default function LifeLog() {
                     });
                     setShowAddHabitModal(true);
                   }}
-                  className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium ${
+                  className={`mt-4 px-4 py-2 rounded-card text-sm font-medium ${
                     isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-200 text-slate-700"
                   }`}
                 >
@@ -1399,7 +1399,7 @@ export default function LifeLog() {
                     <ContextMenu key={trackable.id}>
                       <ContextMenuTrigger asChild>
                         <div
-                          className={`rounded-2xl overflow-hidden ${
+                          className={`rounded-card overflow-hidden ${
                             isDarkMode
                               ? "bg-iron-900"
                               : "bg-white border border-slate-200 shadow-sm"
@@ -1412,7 +1412,7 @@ export default function LifeLog() {
                               className="flex items-center gap-3 flex-1"
                             >
                               <div
-                                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+                                className="w-10 h-10 rounded-card flex items-center justify-center text-lg"
                                 style={{ backgroundColor: `${trackable.color}30` }}
                               >
                                 {trackable.icon}
@@ -1496,7 +1496,7 @@ export default function LifeLog() {
                                   <button
                                     type="button"
                                     onClick={() => openPastEntryDrawer(trackable)}
-                                    className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 ${
+                                    className={`w-full py-3 rounded-card text-sm font-semibold flex items-center justify-center gap-2 ${
                                       isDarkMode
                                         ? "bg-iron-800 text-iron-200 ring-1 ring-iron-700 active:bg-iron-700"
                                         : "bg-slate-100 text-slate-800 ring-1 ring-slate-200/80 active:bg-slate-200"
@@ -1578,7 +1578,7 @@ export default function LifeLog() {
                                                     </div>
                                                   )}
                                                   <div
-                                                    className={`flex items-start justify-between gap-3 p-2.5 rounded-xl border transition-colors ${
+                                                    className={`flex items-start justify-between gap-3 p-2.5 rounded-card border transition-colors ${
                                                       isAccentRow
                                                         ? isDarkMode
                                                           ? "border-iron-700/70 bg-iron-800/40"
@@ -1768,7 +1768,7 @@ export default function LifeLog() {
 
             {/* Need Value Toggle */}
             <div
-              className={`flex items-center justify-between p-3 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
+              className={`flex items-center justify-between p-3 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -1810,7 +1810,7 @@ export default function LifeLog() {
 
             {/* Require notes toggle */}
             <div
-              className={`flex items-center justify-between p-3 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
+              className={`flex items-center justify-between p-3 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -1852,7 +1852,7 @@ export default function LifeLog() {
 
             {/* Track Graph Toggle */}
             <div
-              className={`flex items-center justify-between p-3 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
+              className={`flex items-center justify-between p-3 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -1898,7 +1898,7 @@ export default function LifeLog() {
                 setShowAddDrawer(false);
                 resetEventForm();
               }}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -1907,7 +1907,7 @@ export default function LifeLog() {
             <button
               onClick={handleSaveEvent}
               disabled={!newEvent.name.trim()}
-              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 ${
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -1984,7 +1984,7 @@ export default function LifeLog() {
                   onChange={e => setLogDetails({ ...logDetails, notes: e.target.value })}
                   placeholder="What happened? Add any details…"
                   rows={4}
-                  className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                  className={`min-h-[120px] w-full resize-none rounded-card border px-3 py-3 text-base outline-none focus:ring-2 ${
                     isDarkMode
                       ? "border-iron-700 bg-iron-800 text-iron-100 placeholder:text-iron-600 focus:ring-lift-primary/40"
                       : "border-slate-200 bg-slate-100 text-slate-800 placeholder:text-slate-400 focus:ring-amber-500/40"
@@ -2018,7 +2018,7 @@ export default function LifeLog() {
             <button
               type="button"
               onClick={() => setShowLogDrawer(false)}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -2027,7 +2027,7 @@ export default function LifeLog() {
             <button
               type="button"
               onClick={() => handleLogEvent()}
-              className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -2081,7 +2081,7 @@ export default function LifeLog() {
                     <ContextMenu key={log.id}>
                       <ContextMenuTrigger asChild>
                         <div
-                          className={`p-3 rounded-xl ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
+                          className={`p-3 rounded-card ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}
                         >
                           <div>
                             <p
@@ -2171,7 +2171,7 @@ export default function LifeLog() {
                   type="date"
                   value={editLogDetails.date}
                   onChange={e => setEditLogDetails({ ...editLogDetails, date: e.target.value })}
-                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                  className={`w-full h-12 px-4 rounded-card outline-none focus:ring-2 ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 focus:ring-lift-primary/50"
                       : "bg-slate-100 text-slate-800 focus:ring-amber-500/50"
@@ -2189,7 +2189,7 @@ export default function LifeLog() {
                   value={editLogDetails.notes}
                   onChange={e => setEditLogDetails({ ...editLogDetails, notes: e.target.value })}
                   placeholder="Optional notes"
-                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                  className={`w-full h-12 px-4 rounded-card outline-none focus:ring-2 ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
                       : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
@@ -2210,7 +2210,7 @@ export default function LifeLog() {
                     placeholder="Enter a numeric value"
                     min="0"
                     step="0.01"
-                    className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                    className={`w-full h-12 px-4 rounded-card outline-none focus:ring-2 ${
                       isDarkMode
                         ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
                         : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
@@ -2223,7 +2223,7 @@ export default function LifeLog() {
           <ModalFooter>
             <button
               onClick={() => setEditingLog(null)}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -2231,7 +2231,7 @@ export default function LifeLog() {
             </button>
             <button
               onClick={handleSaveEditLog}
-              className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -2333,8 +2333,8 @@ export default function LifeLog() {
               onClick={handleRemoveExistingDuplicateLog}
               className={
                 isDarkMode
-                  ? "inline-flex h-10 items-center justify-center rounded-xl border border-red-500/50 bg-transparent px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
-                  : "inline-flex h-10 items-center justify-center rounded-xl border border-red-300 bg-transparent px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  ? "inline-flex h-10 items-center justify-center rounded-card border border-red-500/50 bg-transparent px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                  : "inline-flex h-10 items-center justify-center rounded-card border border-red-300 bg-transparent px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
               }
             >
               Undo entry
@@ -2476,7 +2476,7 @@ export default function LifeLog() {
           <ModalFooter>
             <button
               onClick={() => setShowAddHabitModal(false)}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -2485,7 +2485,7 @@ export default function LifeLog() {
             <button
               onClick={handleSavePill}
               disabled={!newPill.name.trim()}
-              className={`flex-1 py-3 rounded-xl font-bold transition-colors ${
+              className={`flex-1 py-3 rounded-card font-bold transition-colors ${
                 newPill.name.trim()
                   ? isDarkMode
                     ? "bg-lift-primary text-iron-950"
@@ -2617,7 +2617,7 @@ export default function LifeLog() {
           <ModalFooter>
             <button
               onClick={() => setPastEntryTrackable(null)}
-              className={`w-full py-3 rounded-xl font-bold ${
+              className={`w-full py-3 rounded-card font-bold ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >

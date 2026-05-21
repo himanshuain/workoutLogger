@@ -80,7 +80,7 @@ export default function App({ Component, pageProps }) {
                 position="bottom-right"
                 duration={1600}
                 toastOptions={{
-                  className: "!rounded-xl !text-sm !shadow-lg",
+                  className: "!rounded-card !text-sm !shadow-lg",
                   style: {
                     background: "var(--toast-bg)",
                     color: "var(--toast-fg)",

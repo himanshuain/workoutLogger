@@ -97,7 +97,7 @@ export default function TrackingOverview({
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden ${
+      className={`rounded-card overflow-hidden ${
         isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
       }`}
     >

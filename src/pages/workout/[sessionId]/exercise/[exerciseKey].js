@@ -206,7 +206,7 @@ export default function ExerciseLoggerPage() {
         <button
           type="button"
           onClick={handleClose}
-          className={`shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${
+          className={`shrink-0 w-11 h-11 rounded-card flex items-center justify-center ${
             isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
           }`}
           aria-label="Done"
@@ -234,7 +234,7 @@ export default function ExerciseLoggerPage() {
         />
 
         <div
-          className={`rounded-3xl p-6 space-y-4 ${
+          className={`rounded-card p-6 space-y-4 ${
             isDarkMode ? "bg-iron-900/80 border border-iron-800" : "bg-white border border-slate-200 shadow-sm"
           }`}
         >
@@ -256,7 +256,7 @@ export default function ExerciseLoggerPage() {
           <button
             type="button"
             onClick={handleSaveSet}
-            className={`w-full py-3.5 rounded-2xl font-semibold transition-colors ${
+            className={`w-full py-3.5 rounded-card font-semibold transition-colors ${
               hasLoggedSets
                 ? "bg-emerald-500 text-iron-950"
                 : isDarkMode
@@ -280,7 +280,7 @@ export default function ExerciseLoggerPage() {
             {setsForExercise.map((s) => (
               <div
                 key={s.id}
-                className={`inline-flex items-center gap-2 text-sm font-medium pl-3 pr-1 py-1.5 rounded-xl ${
+                className={`inline-flex items-center gap-2 text-sm font-medium pl-3 pr-1 py-1.5 rounded-card ${
                   isDarkMode ? "bg-iron-800 text-iron-200" : "bg-slate-100 text-slate-800"
                 }`}
               >
@@ -306,7 +306,7 @@ export default function ExerciseLoggerPage() {
         <button
           type="button"
           onClick={handleMarkComplete}
-          className={`w-full py-3.5 rounded-2xl font-semibold ${
+          className={`w-full py-3.5 rounded-card font-semibold ${
             isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-900 text-white"
           }`}
         >

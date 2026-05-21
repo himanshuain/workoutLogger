@@ -366,7 +366,7 @@ export default function ActivityHeatmap({
 
   return (
     <div
-      className={`${mini ? "rounded-2xl" : "rounded-3xl"} overflow-hidden ${
+      className={`${mini ? "rounded-card" : "rounded-card"} overflow-hidden ${
         isDarkMode
           ? "bg-gradient-to-br from-iron-900 to-iron-950 shadow-xl shadow-black/20"
           : "bg-gradient-to-br from-white to-slate-50 shadow-lg shadow-slate-200/50 border border-slate-200/80"
@@ -377,7 +377,7 @@ export default function ActivityHeatmap({
         {label && (
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl" style={{ backgroundColor: `${activeColor}1A` }}>
+              <div className="p-2 rounded-card" style={{ backgroundColor: `${activeColor}1A` }}>
                 <Calendar className="w-4 h-4" style={{ color: activeColor }} />
               </div>
               <div>
@@ -442,7 +442,7 @@ export default function ActivityHeatmap({
             whileTap={{ scale: 0.9 }}
             onClick={handlePrevMonth}
             disabled={!canGoPrev}
-            className={`${navBtnPad} rounded-xl disabled:opacity-30 transition-colors ${
+            className={`${navBtnPad} rounded-card disabled:opacity-30 transition-colors ${
               isDarkMode
                 ? "bg-iron-800/50 text-iron-300 hover:bg-iron-700 active:bg-iron-600"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300"
@@ -483,7 +483,7 @@ export default function ActivityHeatmap({
             whileTap={{ scale: 0.9 }}
             onClick={handleNextMonth}
             disabled={!canGoNext}
-            className={`${navBtnPad} rounded-xl disabled:opacity-30 transition-colors ${
+            className={`${navBtnPad} rounded-card disabled:opacity-30 transition-colors ${
               isDarkMode
                 ? "bg-iron-800/50 text-iron-300 hover:bg-iron-700 active:bg-iron-600"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300"
@@ -635,7 +635,7 @@ export default function ActivityHeatmap({
                       onClick={() => onDateClick && !isFuture && onDateClick(dateStr, isCompleted)}
                       disabled={isFuture || !onDateClick}
                       className={`
-                        aspect-square ${mini ? "rounded-lg" : "rounded-xl"} flex flex-col items-center justify-center
+                        aspect-square ${mini ? "rounded-lg" : "rounded-card"} flex flex-col items-center justify-center
                         font-semibold transition-all duration-200 relative
                         ${isFuture ? "opacity-30" : onDateClick ? "cursor-pointer" : ""}
                         ${isToday ? (mini ? "text-[9px]" : "text-[10px]") : mini ? "text-xs" : "text-sm"}

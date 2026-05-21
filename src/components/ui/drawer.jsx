@@ -64,7 +64,7 @@ const DrawerContent = React.forwardRef(
             else if (ref) ref.current = node;
           }}
           className={cn(
-            "fixed inset-x-0 z-50 flex flex-col rounded-t-3xl border-t border-iron-800 bg-iron-900 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+            "fixed inset-x-0 z-50 flex flex-col rounded-t-card border-t border-iron-800 bg-iron-900 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
             className,
           )}
           style={{

@@ -214,6 +214,8 @@ input[type="number"] {
   @apply bg-workout-primary text-white shadow-workout-primary/30;
 }
 
+/* Design tokens: rounded-card (12px), rounded-pill (9999px), gap-section (20px), gap-section-inner (16px) */
+
 /* Modal backdrop */
 .modal-backdrop {
   @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-40;
@@ -221,7 +223,7 @@ input[type="number"] {
 
 /* Slide up modal */
 .modal-content {
-  @apply fixed bottom-0 left-0 right-0 rounded-t-3xl z-50 max-h-[85vh] overflow-hidden;
+  @apply fixed bottom-0 left-0 right-0 rounded-t-card z-50 max-h-[85vh] overflow-hidden;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -235,7 +237,7 @@ input[type="number"] {
 
 /* Exercise card */
 .exercise-card {
-  @apply rounded-2xl p-4 mb-3;
+  @apply rounded-card p-4 mb-3;
 }
 
 .dark .exercise-card {
@@ -443,7 +445,7 @@ input[type="number"] {
 
 /* Set card styles */
 .set-card {
-  @apply rounded-2xl p-4 transition-all duration-200;
+  @apply rounded-card p-4 transition-all duration-200;
 }
 
 .dark .set-card {
@@ -465,7 +467,7 @@ input[type="number"] {
 
 /* Stepper buttons for workout */
 .workout-stepper-btn {
-  @apply w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-150 active:scale-95;
+  @apply w-12 h-12 rounded-card flex items-center justify-center transition-all duration-150 active:scale-95;
 }
 
 .dark .workout-stepper-btn {
@@ -482,7 +484,7 @@ input[type="number"] {
 
 /* Input styles */
 .input-field {
-  @apply w-full h-12 px-4 rounded-xl outline-none focus:ring-2 transition-all;
+  @apply w-full h-12 px-4 rounded-card outline-none focus:ring-2 transition-all;
 }
 
 .dark .input-field {
@@ -495,7 +497,7 @@ input[type="number"] {
 
 /* Button styles with enhanced feedback */
 .btn-primary {
-  @apply py-3 px-6 rounded-xl font-bold transition-all duration-150;
+  @apply py-3 px-6 rounded-card font-bold transition-all duration-150;
   transform-origin: center;
 }
 
@@ -522,7 +524,7 @@ input[type="number"] {
 }
 
 .btn-secondary {
-  @apply py-3 px-6 rounded-xl font-medium transition-all duration-150;
+  @apply py-3 px-6 rounded-card font-medium transition-all duration-150;
   transform-origin: center;
 }
 
@@ -548,7 +550,7 @@ input[type="number"] {
 
 /* Card base styles with hierarchy */
 .card {
-  @apply rounded-2xl p-4;
+  @apply rounded-card p-4;
 }
 
 .dark .card {
@@ -561,7 +563,7 @@ input[type="number"] {
 
 /* Card hierarchy variants */
 .card-hero {
-  @apply rounded-2xl p-6;
+  @apply rounded-card p-6;
   background-color: var(--bg-elevated);
 }
 
@@ -575,7 +577,7 @@ input[type="number"] {
 }
 
 .card-secondary {
-  @apply rounded-2xl p-4;
+  @apply rounded-card p-4;
   background-color: var(--bg-card);
 }
 
@@ -588,7 +590,7 @@ input[type="number"] {
 }
 
 .card-compact {
-  @apply rounded-xl p-3;
+  @apply rounded-card p-3;
   background-color: var(--bg-tertiary);
 }
 
@@ -658,11 +660,19 @@ input[type="number"] {
 
 /* Improved spacing utilities */
 .section-spacing {
-  @apply mb-8;
+  @apply mb-section;
+}
+
+.section-stack {
+  @apply space-y-section;
+}
+
+.inner-stack {
+  @apply space-y-section-inner;
 }
 
 .card-spacing {
-  @apply mb-4;
+  @apply mb-section-inner;
 }
 
 .compact-spacing {

@@ -536,7 +536,7 @@ export default function Progress() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
+            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
               isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
             }`}
           >
@@ -571,14 +571,14 @@ export default function Progress() {
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
               {/* Streak - Highlighted */}
               <div
-                className={`flex-shrink-0 rounded-2xl px-5 py-3 border flex items-center gap-3 ${
+                className={`flex-shrink-0 rounded-card px-5 py-3 border flex items-center gap-3 ${
                   isDarkMode
                     ? "bg-gradient-to-r from-lift-primary/20 to-lift-primary/5 border-lift-primary/30"
                     : "bg-gradient-to-r from-workout-primary/10 to-workout-primary/5 border-workout-primary/30"
                 }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-card flex items-center justify-center ${
                     isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
                   }`}
                 >
@@ -600,12 +600,12 @@ export default function Progress() {
 
               {/* This Month */}
               <div
-                className={`flex-shrink-0 rounded-2xl px-5 py-3 flex items-center gap-3 ${
+                className={`flex-shrink-0 rounded-card px-5 py-3 flex items-center gap-3 ${
                   isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-card flex items-center justify-center ${
                     isDarkMode ? "bg-iron-800" : "bg-slate-100"
                   }`}
                 >
@@ -627,12 +627,12 @@ export default function Progress() {
 
               {/* Last Month */}
               <div
-                className={`flex-shrink-0 rounded-2xl px-5 py-3 flex items-center gap-3 ${
+                className={`flex-shrink-0 rounded-card px-5 py-3 flex items-center gap-3 ${
                   isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-card flex items-center justify-center ${
                     isDarkMode ? "bg-iron-800" : "bg-slate-100"
                   }`}
                 >
@@ -654,12 +654,12 @@ export default function Progress() {
 
               {/* Total Workouts */}
               <div
-                className={`flex-shrink-0 rounded-2xl px-5 py-3 flex items-center gap-3 ${
+                className={`flex-shrink-0 rounded-card px-5 py-3 flex items-center gap-3 ${
                   isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  className={`w-10 h-10 rounded-card flex items-center justify-center ${
                     isDarkMode ? "bg-iron-800" : "bg-slate-100"
                   }`}
                 >
@@ -701,7 +701,7 @@ export default function Progress() {
             {monthlyHistoryData.months?.length > 0 && (
               <button
                 onClick={() => setShowMonthlyHistory(true)}
-                className={`w-full mt-3 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
+                className={`w-full mt-3 py-3 rounded-card font-medium flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
                   isDarkMode
                     ? "bg-iron-800 text-iron-300 hover:bg-iron-700"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -928,7 +928,7 @@ export default function Progress() {
               </div>
             </div>
           </ModalHeader>
-          <ModalBody className="p-0 overflow-hidden rounded-b-2xl">
+          <ModalBody className="p-0 overflow-hidden rounded-b-card">
             <div className="overflow-auto max-h-[60vh] p-1">
               {historyViewMode === "monthly" ? (
                 /* Monthly View Table */

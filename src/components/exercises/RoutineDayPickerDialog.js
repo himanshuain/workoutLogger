@@ -58,7 +58,7 @@ export default function RoutineDayPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!z-[100] max-h-[85vh] overflow-y-auto rounded-2xl border p-5 sm:p-6",
+          "!z-[100] max-h-[85vh] overflow-y-auto rounded-card border p-5 sm:p-6",
           isDarkMode ? "border-iron-800 bg-iron-900" : "!border-slate-200 !bg-white"
         )}
       >
@@ -93,7 +93,7 @@ export default function RoutineDayPickerDialog({
                   type="button"
                   onClick={() => setSelectedDay(d.value)}
                   className={cn(
-                    "rounded-xl px-3 py-2 text-xs font-semibold transition-colors",
+                    "rounded-card px-3 py-2 text-xs font-semibold transition-colors",
                     active
                       ? isDarkMode
                         ? "bg-lift-primary text-iron-950"
@@ -112,7 +112,7 @@ export default function RoutineDayPickerDialog({
 
         <div
           className={cn(
-            "mt-5 rounded-2xl border p-4",
+            "mt-5 rounded-card border p-4",
             isDarkMode ? "border-iron-800 bg-iron-950/50" : "border-slate-200 bg-slate-50"
           )}
         >
@@ -154,7 +154,7 @@ export default function RoutineDayPickerDialog({
           disabled={disabled || busy}
           onClick={handleConfirm}
           className={cn(
-            "mt-5 w-full py-3.5 rounded-2xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2",
+            "mt-5 w-full py-3.5 rounded-card font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2",
             isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
           )}
         >

@@ -113,7 +113,7 @@ export default function TodayFoodLogSection({
             : `${item.name} — tap to log`
         }
         onClick={() => onToggle(item)}
-        className={`flex flex-col items-stretch rounded-2xl border text-left transition-all active:scale-[0.98] ${
+        className={`flex flex-col items-stretch rounded-card border text-left transition-all active:scale-[0.98] ${
           compact ? "p-2.5" : "p-3"
         } ${
           isDarkMode
@@ -127,7 +127,7 @@ export default function TodayFoodLogSection({
       >
         <div className="flex items-start gap-2">
           <span
-            className={`flex shrink-0 items-center justify-center rounded-xl text-xl ${
+            className={`flex shrink-0 items-center justify-center rounded-card text-xl ${
               compact ? "h-10 w-10" : "h-11 w-11"
             } ${
               consumed
@@ -215,7 +215,7 @@ export default function TodayFoodLogSection({
           <button
             type="button"
             onClick={() => router.push("/food")}
-            className={`w-full rounded-2xl px-4 py-3 text-left text-sm ${
+            className={`w-full rounded-card px-4 py-3 text-left text-sm ${
               isDarkMode ? "bg-iron-900/50 text-iron-400 hover:bg-iron-900" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >

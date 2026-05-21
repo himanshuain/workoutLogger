@@ -51,7 +51,7 @@ export default function PillRail({
               type="button"
               ref={active ? selectedRef : null}
               onClick={() => onSelect(v)}
-              className={`shrink-0 min-h-[44px] min-w-[44px] px-4 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] ${
+              className={`shrink-0 min-h-[44px] min-w-[44px] px-4 rounded-pill text-sm font-semibold transition-all active:scale-[0.97] ${
                 active
                   ? isDarkMode
                     ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/25"

@@ -85,7 +85,7 @@ export default function TodayStripDemoPage() {
             className="mb-6"
           />
 
-          <div className="rounded-2xl border border-iron-800 bg-iron-900/40 p-5">
+          <div className="rounded-card border border-iron-800 bg-iron-900/40 p-5">
             <p className="text-xs font-semibold text-iron-500 uppercase tracking-wide mb-1">Selected</p>
             <p className="text-2xl font-bold text-iron-50">{formatChip(selected, todayStr)}</p>
             <p className="text-sm text-iron-400 mt-1 font-mono">{selected}</p>

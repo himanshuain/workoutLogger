@@ -34,7 +34,7 @@ function GoogleGIcon({ className }) {
 export default function RoutineExerciseThumb({ exerciseName, thumbUrl, isDarkMode }) {
   if (thumbUrl) {
     return (
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-iron-800">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-card bg-iron-800">
         <Image
           src={thumbUrl}
           alt=""
@@ -61,7 +61,7 @@ export default function RoutineExerciseThumb({ exerciseName, thumbUrl, isDarkMod
       onClick={e => {
         if (!href) e.preventDefault();
       }}
-      className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+      className={`relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-card ring-1 ring-inset transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
         isDarkMode
           ? "bg-iron-800 ring-white/10 hover:bg-iron-700 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-950"
           : "bg-slate-100 ring-black/10 hover:bg-slate-200 focus-visible:ring-workout-primary focus-visible:ring-offset-white"

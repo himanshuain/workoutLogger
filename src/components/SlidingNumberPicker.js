@@ -124,7 +124,7 @@ export default function SlidingNumberPicker({
 
   return (
     <div className="select-none" data-no-swipe-deck>
-      <div className={`relative overflow-hidden rounded-t-[1.75rem] rounded-b-2xl ${frameClass}`}>
+      <div className={`relative overflow-hidden rounded-t-[1.75rem] rounded-b-card ${frameClass}`}>
         {/* Side fades */}
         <div
           className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r ${fadeL} to-transparent`}
@@ -186,7 +186,7 @@ export default function SlidingNumberPicker({
 
       {/* Large readout — like a scale display */}
       <div
-        className={`mt-3 flex flex-col items-center rounded-b-2xl px-2 pb-1 ${
+        className={`mt-3 flex flex-col items-center rounded-b-card px-2 pb-1 ${
           accent === "reps"
             ? isDarkMode
               ? "text-cyan-100"

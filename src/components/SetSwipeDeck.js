@@ -134,7 +134,7 @@ export default function SetSwipeDeck({
 
       {nextSet ? (
         <div
-          className={`pointer-events-none absolute inset-x-2 top-[5.5rem] z-0 rounded-2xl border p-3 opacity-30 scale-[0.97] sm:top-24 ${
+          className={`pointer-events-none absolute inset-x-2 top-[5.5rem] z-0 rounded-card border p-3 opacity-30 scale-[0.97] sm:top-24 ${
             isDarkMode ? "border-iron-800 bg-iron-900/40" : "border-slate-200 bg-white"
           }`}
           aria-hidden

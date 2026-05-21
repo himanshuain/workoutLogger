@@ -83,7 +83,7 @@ export default function HabitPills({
               animate={isCompleted ? { scale: [1, 1.05, 1] } : {}}
               transition={{ duration: 0.3, ease: "easeOut" }}
               className={`
-                relative min-h-[44px] px-4 py-2.5 rounded-xl font-medium text-sm
+                relative min-h-[44px] px-4 py-2.5 rounded-pill font-medium text-sm
                 transition-all duration-200 ease-out
                 flex items-center gap-2
                 ${
@@ -139,7 +139,7 @@ export default function HabitPills({
           <button
             onClick={onAddNew}
             className={`
-              min-h-[44px] px-4 py-2.5 rounded-xl font-medium text-sm
+              min-h-[44px] px-4 py-2.5 rounded-pill font-medium text-sm
               border border-dashed transition-colors flex items-center gap-2 active:scale-95
               ${
                 isDarkMode
@@ -172,7 +172,7 @@ export default function HabitPills({
           <div className="modal-backdrop" onClick={() => setValueModal(null)} />
           <div
             className={`
-            fixed inset-x-4 top-1/2 -translate-y-1/2 rounded-2xl p-6 z-50 max-w-sm mx-auto
+            fixed inset-x-4 top-1/2 -translate-y-1/2 rounded-card p-6 z-50 max-w-sm mx-auto
             ${isDarkMode ? "bg-iron-900" : "bg-white shadow-xl"}
           `}
           >
@@ -203,7 +203,7 @@ export default function HabitPills({
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder={`Enter ${valueModal.value_unit || "value"}`}
                 className={`
-                  w-full h-14 px-4 rounded-xl text-xl text-center font-mono outline-none focus:ring-2
+                  w-full h-14 px-4 rounded-card text-xl text-center font-mono outline-none focus:ring-2
                   ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
@@ -218,7 +218,7 @@ export default function HabitPills({
               {entries[valueModal.id]?.is_completed && (
                 <button
                   onClick={handleValueClear}
-                  className={`flex-1 min-h-[48px] py-3 rounded-xl font-medium ${
+                  className={`flex-1 min-h-[48px] py-3 rounded-card font-medium ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-400"
                       : "bg-slate-100 text-slate-600"
@@ -229,7 +229,7 @@ export default function HabitPills({
               )}
               <button
                 onClick={() => setValueModal(null)}
-                className={`flex-1 min-h-[48px] py-3 rounded-xl font-medium ${
+                className={`flex-1 min-h-[48px] py-3 rounded-card font-medium ${
                   isDarkMode
                     ? "bg-iron-800 text-iron-400"
                     : "bg-slate-100 text-slate-600"
@@ -241,7 +241,7 @@ export default function HabitPills({
                 onClick={handleValueSubmit}
                 disabled={!inputValue}
                 className={`
-                  flex-1 min-h-[48px] py-3 rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed
+                  flex-1 min-h-[48px] py-3 rounded-card font-bold disabled:opacity-50 disabled:cursor-not-allowed
                   ${
                     isDarkMode
                       ? "bg-lift-primary text-iron-950"

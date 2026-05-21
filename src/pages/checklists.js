@@ -92,7 +92,7 @@ function SortableStepItem({ item, card, isChecked, isDarkMode, onToggle, onEdit,
         <div
           ref={setNodeRef}
           style={style}
-          className={`flex items-center gap-2.5 p-2.5 rounded-xl transition-colors ${
+          className={`flex items-center gap-2.5 p-2.5 rounded-card transition-colors ${
             isDragging
               ? isDarkMode ? "bg-iron-800" : "bg-slate-100"
               : isDarkMode ? "active:bg-iron-800/50" : "active:bg-slate-50"
@@ -366,7 +366,7 @@ export default function Steps() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
+            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
               isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
             }`}
           >
@@ -421,7 +421,7 @@ export default function Steps() {
               </div>
               <button
                 onClick={handleOpenAddCard}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-medium text-sm ${
+                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-card font-medium text-sm ${
                   isDarkMode
                     ? "bg-lift-primary text-iron-950"
                     : "bg-workout-primary text-white"
@@ -444,7 +444,7 @@ export default function Steps() {
             </p>
             <button
               onClick={handleOpenAddCard}
-              className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium ${
+              className={`mt-4 px-4 py-2 rounded-card text-sm font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-200 text-slate-700"
               }`}
             >
@@ -465,7 +465,7 @@ export default function Steps() {
                 <ContextMenu key={card.id}>
                   <ContextMenuTrigger asChild>
                     <div
-                      className={`rounded-2xl overflow-hidden transition-all duration-200 ${
+                      className={`rounded-card overflow-hidden transition-all duration-200 ${
                         isDarkMode ? "bg-iron-900" : "bg-white shadow-sm"
                       } ${allDone
                         ? isDarkMode
@@ -479,7 +479,7 @@ export default function Steps() {
                         className="w-full flex items-center gap-3 p-4 text-left"
                       >
                         <div
-                          className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                          className="w-10 h-10 rounded-card flex items-center justify-center text-lg flex-shrink-0"
                           style={{ backgroundColor: card.color + "20" }}
                         >
                           {card.icon}
@@ -550,7 +550,7 @@ export default function Steps() {
                                   </SortableContext>
                                 </DndContext>
                               </div>
-                              <div className={`flex items-center gap-2 mt-2 p-2 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+                              <div className={`flex items-center gap-2 mt-2 p-2 rounded-card ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
                                 <div className={`w-6 h-6 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 ${isDarkMode ? "border-iron-700" : "border-slate-300"}`}>
                                   <Plus className={`w-3 h-3 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`} />
                                 </div>
@@ -598,13 +598,13 @@ export default function Steps() {
                         layoutId={`step-card-${card.id}`}
                         transition={{ type: "spring", stiffness: 350, damping: 30 }}
                         onClick={() => { setZoomedCard(card.id); setNewStepText(""); }}
-                      className={`w-full text-left rounded-2xl p-4 flex flex-col gap-2.5 transition-all ${
+                      className={`w-full text-left rounded-card p-4 flex flex-col gap-2.5 transition-all ${
                         isDarkMode ? "bg-iron-900" : "bg-white shadow-sm"
                       } ${allDone ? isDarkMode ? "ring-1 ring-green-500/40" : "ring-1 ring-green-400/50" : ""}`}
                     >
                       <div className="flex items-start justify-between">
                         <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                          className="w-9 h-9 rounded-card flex items-center justify-center text-lg flex-shrink-0"
                           style={{ backgroundColor: card.color + "20" }}
                         >
                           {card.icon}
@@ -699,7 +699,7 @@ export default function Steps() {
               <motion.div
                 layoutId={`step-card-${card.id}`}
                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                className={`relative w-full max-w-md max-h-[85vh] rounded-2xl overflow-hidden flex flex-col ${
+                className={`relative w-full max-w-md max-h-[85vh] rounded-card overflow-hidden flex flex-col ${
                   isDarkMode ? "bg-iron-900" : "bg-white"
                 } ${allDone ? isDarkMode ? "ring-2 ring-green-500/40" : "ring-2 ring-green-400/50" : ""}`}
                 onClick={(e) => e.stopPropagation()}
@@ -707,7 +707,7 @@ export default function Steps() {
                 {/* Zoomed Card Header */}
                 <div className="flex items-center gap-3 p-4 flex-shrink-0">
                   <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                    className="w-11 h-11 rounded-card flex items-center justify-center text-xl flex-shrink-0"
                     style={{ backgroundColor: card.color + "20" }}
                   >
                     {card.icon}
@@ -764,7 +764,7 @@ export default function Steps() {
 
                 {/* Zoomed Add Step Input */}
                 <div className={`flex-shrink-0 border-t px-4 py-3 ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-                  <div className={`flex items-center gap-2 p-2.5 rounded-xl ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+                  <div className={`flex items-center gap-2 p-2.5 rounded-card ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
                     <div className={`w-6 h-6 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 ${isDarkMode ? "border-iron-700" : "border-slate-300"}`}>
                       <Plus className={`w-3 h-3 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`} />
                     </div>
@@ -817,7 +817,7 @@ export default function Steps() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setFollowMode(null)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-card flex items-center justify-center ${
                       isDarkMode 
                         ? "bg-iron-800 text-iron-300 hover:bg-iron-700" 
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -829,7 +829,7 @@ export default function Steps() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                        className="w-12 h-12 rounded-card flex items-center justify-center text-xl"
                         style={{ backgroundColor: card.color + "20" }}
                       >
                         {card.icon}
@@ -882,7 +882,7 @@ export default function Steps() {
                       <motion.button
                         key={item.id}
                         onClick={() => toggleCheck(item.id)}
-                        className={`w-full text-left p-4 rounded-2xl transition-all ${
+                        className={`w-full text-left p-4 rounded-card transition-all ${
                           isChecked
                             ? "opacity-60"
                             : isNext
@@ -1066,7 +1066,7 @@ export default function Steps() {
                     type="button"
                     onClick={handleAddCardFormStep}
                     disabled={!cardFormStepInput.trim()}
-                    className={`px-3 rounded-xl font-medium text-sm disabled:opacity-30 ${
+                    className={`px-3 rounded-card font-medium text-sm disabled:opacity-30 ${
                       isDarkMode ? "bg-iron-700 text-iron-200" : "bg-slate-200 text-slate-700"
                     }`}
                   >
@@ -1079,7 +1079,7 @@ export default function Steps() {
           <ModalFooter>
             <button
               onClick={() => { setShowCardModal(false); resetCardForm(); }}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -1088,7 +1088,7 @@ export default function Steps() {
             <button
               onClick={handleSaveCard}
               disabled={!cardForm.name.trim()}
-              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 ${
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -1153,7 +1153,7 @@ export default function Steps() {
           <ModalFooter>
             <button
               onClick={() => { setEditingItem(null); setEditItemText(""); }}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -1162,7 +1162,7 @@ export default function Steps() {
             <button
               onClick={handleUpdateStep}
               disabled={!editItemText.trim()}
-              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 ${
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >

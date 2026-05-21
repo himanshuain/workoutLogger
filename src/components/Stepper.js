@@ -93,7 +93,7 @@ export default function Stepper({
       <div className="flex items-center gap-1">
         <button
           type="button"
-          className={`stepper-btn rounded-xl bg-iron-800 text-iron-300 flex items-center justify-center font-bold select-none ${classes.button}`}
+          className={`stepper-btn rounded-card bg-iron-800 text-iron-300 flex items-center justify-center font-bold select-none ${classes.button}`}
           onClick={decrement}
           onTouchStart={() => startHold(decrement)}
           onTouchEnd={stopHold}
@@ -114,7 +114,7 @@ export default function Stepper({
 
         <button
           type="button"
-          className={`stepper-btn rounded-xl bg-iron-800 text-iron-300 flex items-center justify-center font-bold select-none ${classes.button}`}
+          className={`stepper-btn rounded-card bg-iron-800 text-iron-300 flex items-center justify-center font-bold select-none ${classes.button}`}
           onClick={increment}
           onTouchStart={() => startHold(increment)}
           onTouchEnd={stopHold}

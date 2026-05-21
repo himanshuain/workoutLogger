@@ -226,12 +226,12 @@ export default function Layout({ children }) {
                 aria-current={isNavActive ? "page" : undefined}
                 role="tab"
                 aria-selected={isNavActive}
-                className="relative flex flex-col items-center justify-center py-2 px-3 rounded-xl min-w-[3.5rem] touch-none"
+                className="relative flex flex-col items-center justify-center py-2 px-3 rounded-card min-w-[3.5rem] touch-none"
               >
                 {isHighlighted && (
                   <motion.div
                     layoutId="navActiveIndicator"
-                    className={`absolute inset-0 rounded-xl ${
+                    className={`absolute inset-0 rounded-card ${
                       isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/10"
                     }`}
                     transition={{ type: "spring", stiffness: 400, damping: 22, mass: 0.8 }}

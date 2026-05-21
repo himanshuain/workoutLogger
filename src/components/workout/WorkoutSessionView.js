@@ -120,7 +120,7 @@ export default function WorkoutSessionView({
       {/* Exercise List */}
       {plannedExercises.length > 0 ? (
         <div
-          className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-2xl pr-1 -mr-0.5 ${
+          className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-card pr-1 -mr-0.5 ${
             isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
           }`}
         >
@@ -135,14 +135,14 @@ export default function WorkoutSessionView({
                     <button
                       type="button"
                       onClick={() => onExerciseClick?.(ex.exercise_name, ex.category)}
-                      className={`w-full text-left rounded-2xl p-4 flex gap-4 transition-colors ${
+                      className={`w-full text-left rounded-card p-4 flex gap-4 transition-colors ${
                         isDarkMode
                           ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
                           : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
                       }`}
                     >
                       <div
-                        className={`relative w-16 h-16 rounded-2xl overflow-hidden shrink-0 flex flex-col items-center justify-center ${
+                        className={`relative w-16 h-16 rounded-card overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                           isDarkMode ? "bg-iron-800" : "bg-slate-100"
                         }`}
                       >

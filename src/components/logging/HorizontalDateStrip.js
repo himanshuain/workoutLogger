@@ -95,7 +95,7 @@ export default function HorizontalDateStrip({
       : "border-sky-200/90 bg-gradient-to-b from-sky-50 via-sky-100/70 to-blue-50/90 shadow-sm";
 
   return (
-    <div className={cn("rounded-2xl border p-3 mb-6 transition-colors duration-300", shellGradient, className)}>
+    <div className={cn("rounded-card border p-4 mb-section transition-colors duration-300", shellGradient, className)}>
       <div className="relative w-full min-w-0">
         {!isViewingToday && todayStr ? (
           <div className="pointer-events-none absolute right-0 top-0 z-30 flex h-6 items-center pr-0.5">
@@ -173,7 +173,7 @@ export default function HorizontalDateStrip({
                 disabled={d > todayStr}
                 onClick={() => d <= todayStr && onPickDate(d)}
                 className={cn(
-                  "grid h-[4.5rem] min-w-[3.25rem] grid-rows-[1fr_auto_1fr] grid-cols-1 justify-items-center rounded-2xl border px-2.5 transition-all duration-200 active:scale-[0.96] disabled:opacity-40",
+                  "grid h-[4.5rem] min-w-[3.25rem] grid-rows-[1fr_auto_1fr] grid-cols-1 justify-items-center rounded-card border px-2.5 transition-all duration-200 active:scale-[0.96] disabled:opacity-40",
                   active
                     ? isViewingToday
                       ? isDarkMode

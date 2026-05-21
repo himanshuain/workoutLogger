@@ -32,7 +32,7 @@ export default function ExerciseListThumbnail({ exercise, isDarkMode }) {
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
           className={cn(
-            "relative flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-px rounded-xl px-0.5 outline-none ring-1 ring-inset transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
+            "relative flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-px rounded-card px-0.5 outline-none ring-1 ring-inset transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
             isDarkMode
               ? `${bg} text-iron-300 ring-white/15 ring-offset-iron-900 focus-visible:ring-lift-primary`
               : `${bg} text-slate-500 ring-black/10 ring-offset-white focus-visible:ring-workout-primary`,
@@ -53,7 +53,7 @@ export default function ExerciseListThumbnail({ exercise, isDarkMode }) {
     }
     return (
       <div
-        className={`relative w-14 h-14 rounded-xl overflow-hidden shrink-0 flex flex-col items-center justify-center gap-0.5 px-0.5 ${bg} ${iconClass}`}
+        className={`relative w-14 h-14 rounded-card overflow-hidden shrink-0 flex flex-col items-center justify-center gap-0.5 px-0.5 ${bg} ${iconClass}`}
       >
         <ExerciseIcon name={exercise?.name} className="w-8 h-8" color="currentColor" />
         <span
@@ -68,7 +68,7 @@ export default function ExerciseListThumbnail({ exercise, isDarkMode }) {
   }
 
   return (
-    <div className={`relative w-14 h-14 rounded-xl overflow-hidden shrink-0 ${bg}`}>
+    <div className={`relative w-14 h-14 rounded-card overflow-hidden shrink-0 ${bg}`}>
       <Image
         src={url}
         alt=""

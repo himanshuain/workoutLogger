@@ -560,7 +560,7 @@ export default function Home() {
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
           <div
-            className="w-20 h-20 mb-6 rounded-2xl flex items-center justify-center"
+            className="w-20 h-20 mb-6 rounded-card flex items-center justify-center"
             style={{
               background: isDarkMode
                 ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
@@ -575,13 +575,13 @@ export default function Home() {
             Welcome to Logbook
           </h1>
           <p
-            className={`text-center mb-8 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+            className={`text-center mb-section ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
           >
             Sign in to start tracking
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`px-8 py-3 rounded-xl font-bold ${
+            className={`px-8 py-3 rounded-card font-bold ${
               isDarkMode
                 ? "bg-lift-primary text-iron-950"
                 : "bg-workout-primary text-white"
@@ -615,7 +615,7 @@ export default function Home() {
               type="button"
               onClick={handleRefresh}
               aria-label="Refresh"
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+              className={`w-10 h-10 rounded-card flex items-center justify-center transition-colors ${
                 isDarkMode ? "bg-iron-800 active:bg-iron-700" : "bg-slate-100 active:bg-slate-200"
               } ${isRefreshing ? "animate-spin" : ""}`}
             >
@@ -627,7 +627,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => router.push("/settings")}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+              className={`w-10 h-10 rounded-card flex items-center justify-center transition-colors ${
                 isDarkMode ? "bg-iron-800 active:bg-iron-700 text-iron-400" : "bg-slate-100 active:bg-slate-200 text-slate-500"
               }`}
               aria-label="Settings"
@@ -869,10 +869,10 @@ export default function Home() {
                               byExercise[name].volume += (s.weight || 0) * (s.reps || 0);
                             });
                             return Object.entries(byExercise).map(([name, { sets, volume }]) => (
-                              <div key={name} className={`rounded-2xl p-3 mb-2 last:mb-0 ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
+                              <div key={name} className={`rounded-card p-3 mb-2 last:mb-0 ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
                                 {/* Exercise header */}
                                 <div className="flex items-center gap-2.5 mb-2">
-                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-700/70" : "bg-slate-100"}`}>
+                                  <div className={`w-8 h-8 rounded-card flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-700/70" : "bg-slate-100"}`}>
                                     <ExerciseIcon name={name} className="w-5 h-5" color={isDarkMode ? "#a1a1aa" : "#64748b"} />
                                   </div>
                                   <p className={`text-sm font-semibold truncate flex-1 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
@@ -1024,13 +1024,13 @@ export default function Home() {
                   isViewingToday ? handleStartWorkout(routine) : handleStartWithPickedRoutineForViewingDate(routine)
                 }
                 disabled={isStartingWorkout}
-                className={`w-full p-4 rounded-2xl text-left transition-all disabled:opacity-50 disabled:pointer-events-none ${
+                className={`w-full p-4 rounded-card text-left transition-all disabled:opacity-50 disabled:pointer-events-none ${
                   isDarkMode ? "bg-iron-800 hover:bg-iron-700" : "bg-slate-100 hover:bg-slate-200"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    className="w-12 h-12 rounded-card flex items-center justify-center"
                     style={{ backgroundColor: `${routine.color}20` }}
                   >
                     <Dumbbell className="w-6 h-6" style={{ color: routine.color }} />
@@ -1084,7 +1084,7 @@ export default function Home() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setNewHabit({ ...newHabit, type: "habit", has_value: false })}
-                  className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 rounded-card text-sm font-medium flex items-center justify-center gap-2 ${
                     newHabit.type === "habit"
                       ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
                       : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
@@ -1095,7 +1095,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setNewHabit({ ...newHabit, type: "health", has_value: true })}
-                  className={`flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-3 rounded-card text-sm font-medium flex items-center justify-center gap-2 ${
                     newHabit.type === "health"
                       ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
                       : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
@@ -1163,7 +1163,7 @@ export default function Home() {
           <ModalFooter>
             <button
               onClick={() => setShowAddHabitDrawer(false)}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -1172,7 +1172,7 @@ export default function Home() {
             <button
               onClick={handleSaveHabit}
               disabled={!newHabit.name.trim()}
-              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >
@@ -1337,7 +1337,7 @@ export default function Home() {
                   value={lifeSheetValue}
                   onChange={e => setLifeSheetValue(e.target.value)}
                   placeholder="e.g. 12.5"
-                  className={`w-full rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                  className={`w-full rounded-card border px-3 py-3 text-base outline-none focus:ring-2 ${
                     isDarkMode
                       ? "border-iron-700 bg-iron-900 text-iron-100 focus:ring-lift-primary/40"
                       : "border-slate-200 bg-white focus:ring-workout-primary/40"
@@ -1359,7 +1359,7 @@ export default function Home() {
                   onChange={e => setLifeSheetNotes(e.target.value)}
                   placeholder="What happened? Add any details…"
                   rows={4}
-                  className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                  className={`min-h-[120px] w-full resize-none rounded-card border px-3 py-3 text-base outline-none focus:ring-2 ${
                     isDarkMode
                       ? "border-iron-700 bg-iron-900 text-iron-100 placeholder:text-iron-600 focus:ring-lift-primary/40"
                       : "border-slate-200 bg-white placeholder:text-slate-400 focus:ring-workout-primary/40"
@@ -1373,7 +1373,7 @@ export default function Home() {
             <button
               type="button"
               onClick={closeViewingLifeLogSheet}
-              className={`flex-1 rounded-xl py-3 text-sm font-medium ${
+              className={`flex-1 rounded-card py-3 text-sm font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -1382,7 +1382,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => void submitViewingLifeLogSheet()}
-              className={`flex-1 rounded-xl py-3 text-sm font-bold ${
+              className={`flex-1 rounded-card py-3 text-sm font-bold ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
               }`}
             >

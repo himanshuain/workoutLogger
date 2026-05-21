@@ -271,16 +271,16 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
   const selectedType = GOAL_TYPES.find((t) => t.id === newGoal.type);
 
   return (
-    <div className={`rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
+    <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
       {/* Header — collapsible */}
       <div className={`p-4 flex items-center justify-between gap-2`}>
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
           aria-expanded={expanded}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left rounded-xl -m-1 p-1 active:opacity-90"
+          className="flex min-w-0 flex-1 items-center gap-3 text-left rounded-card -m-1 p-1 active:opacity-90"
         >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isDarkMode ? "bg-amber-500/20" : "bg-amber-100"}`}>
+          <div className={`w-10 h-10 rounded-card flex items-center justify-center shrink-0 ${isDarkMode ? "bg-amber-500/20" : "bg-amber-100"}`}>
             <Target className={`w-5 h-5 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
           </div>
           <div className="min-w-0 flex-1">
@@ -299,7 +299,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className={`shrink-0 p-2 rounded-xl ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
+          className={`shrink-0 p-2 rounded-card ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
           aria-label="Add goal"
         >
           <Plus className="w-4 h-4" />
@@ -314,7 +314,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
             <ContextMenu key={goal.id}>
               <ContextMenuTrigger asChild>
                 <div
-                  className={`rounded-xl overflow-hidden ${
+                  className={`rounded-card overflow-hidden ${
                     goal.progress >= 100
                       ? isDarkMode
                         ? "bg-green-500/10 border border-green-500/20"
@@ -401,7 +401,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className={`w-full py-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 ${
+            className={`w-full py-6 rounded-card border-2 border-dashed flex flex-col items-center gap-2 ${
               isDarkMode ? "border-iron-700 text-iron-500" : "border-slate-300 text-slate-400"
             }`}
           >
@@ -424,7 +424,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                 <button
                   key={type.id}
                   onClick={() => setNewGoal({ ...newGoal, type: type.id })}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                  className={`w-full flex items-center gap-3 p-3 rounded-card text-left transition-all ${
                     newGoal.type === type.id
                       ? isDarkMode
                         ? "bg-lift-primary/10 border border-lift-primary/30"
@@ -484,14 +484,14 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           <ModalFooter>
             <button
               onClick={() => setShowAddModal(false)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
+              className={`px-4 py-2.5 rounded-card text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
             >
               Cancel
             </button>
             <button
               onClick={handleAddGoal}
               disabled={!newGoal.target || (newGoal.type === "custom" && !newGoal.name)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold ${
+              className={`px-6 py-2.5 rounded-card text-sm font-bold ${
                 isDarkMode
                   ? "bg-lift-primary text-iron-950 disabled:opacity-40"
                   : "bg-workout-primary text-white disabled:opacity-40"
@@ -537,14 +537,14 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           <ModalFooter>
             <button
               onClick={() => setEditingGoal(null)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
+              className={`px-4 py-2.5 rounded-card text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
             >
               Cancel
             </button>
             <button
               onClick={handleSaveEdit}
               disabled={!editingGoal?.target || (editingGoal?.type === "custom" && !editingGoal?.name)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold ${
+              className={`px-6 py-2.5 rounded-card text-sm font-bold ${
                 isDarkMode
                   ? "bg-lift-primary text-iron-950 disabled:opacity-40"
                   : "bg-workout-primary text-white disabled:opacity-40"

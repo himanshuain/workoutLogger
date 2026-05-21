@@ -49,7 +49,7 @@ export default function InstallPrompt({ isDarkMode }) {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className={`fixed left-4 right-4 z-50 rounded-xl border ${cardCls}`}
+        className={`fixed left-4 right-4 z-50 rounded-card border ${cardCls}`}
         style={{ bottom: 80 }}
       >
         <div className="flex items-center gap-3 p-4">

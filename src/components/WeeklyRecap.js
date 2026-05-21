@@ -28,7 +28,7 @@ function StatCard({ icon: Icon, label, value, compare, isDarkMode }) {
   const improved = compare != null && compare > 0;
   const declined = compare != null && compare < 0;
   return (
-    <div className={`rounded-xl p-4 ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+    <div className={`rounded-card p-4 ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
       <div className="flex items-center gap-2 mb-2">
         <Icon className={`w-4 h-4 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
         <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>{label}</span>
@@ -92,10 +92,10 @@ export default function WeeklyRecap({
   }, [workoutHeatmapData, habitHeatmapData, trackables.length, exerciseLogsByName, inThisWeek, inLastWeek]);
 
   return (
-    <div className={`rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
+    <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
       <div className="p-4">
         <div className="flex items-center gap-3 mb-4">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"}`}>
+          <div className={`w-10 h-10 rounded-card flex items-center justify-center ${isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"}`}>
             <Calendar className={`w-5 h-5 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
           </div>
           <div>
@@ -125,7 +125,7 @@ export default function WeeklyRecap({
             compare={stats.habits.diff}
             isDarkMode={isDarkMode}
           />
-          <div className={`rounded-xl p-4 ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+          <div className={`rounded-card p-4 ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
             <div className="flex items-center gap-2 mb-2">
               <Dumbbell className={`w-4 h-4 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`} />
               <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Best Exercise</span>

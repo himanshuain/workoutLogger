@@ -61,7 +61,7 @@ export default function CompletionToggle({
       aria-pressed={completed}
       aria-label={completed ? ariaLabelIncomplete : ariaLabelComplete}
       className={`
-        inline-flex shrink-0 items-center justify-center rounded-lg transition-colors active:scale-95
+        inline-flex shrink-0 items-center justify-center rounded-pill transition-colors active:scale-95
         disabled:opacity-50 disabled:pointer-events-none
         ${s.btn}
         ${completed ? completeShell : incompleteShell}

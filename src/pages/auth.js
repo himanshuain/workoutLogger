@@ -242,7 +242,7 @@ export default function Auth() {
                 onChange={e => setNewPassword(e.target.value)}
                 autoComplete="new-password"
                 className={`
-                  w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
+                  w-full h-12 px-4 rounded-card outline-none focus:ring-2 border
                   ${
                     isDarkMode
                       ? "bg-iron-900 text-iron-100 placeholder-iron-600 border-iron-800 focus:ring-lift-primary/50"
@@ -266,7 +266,7 @@ export default function Auth() {
                 onChange={e => setConfirmNewPassword(e.target.value)}
                 autoComplete="new-password"
                 className={`
-                  w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
+                  w-full h-12 px-4 rounded-card outline-none focus:ring-2 border
                   ${
                     isDarkMode
                       ? "bg-iron-900 text-iron-100 placeholder-iron-600 border-iron-800 focus:ring-lift-primary/50"
@@ -298,7 +298,7 @@ export default function Auth() {
               type="submit"
               disabled={loading}
               className={`
-                w-full h-12 rounded-xl font-bold transition-colors disabled:opacity-50
+                w-full h-12 rounded-card font-bold transition-colors disabled:opacity-50
                 ${
                   isDarkMode
                     ? "bg-lift-primary text-iron-950 active:bg-lift-secondary"
@@ -334,7 +334,7 @@ export default function Auth() {
       {/* Logo */}
       <div className="mb-8 text-center">
         <div
-          className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-4 rounded-card flex items-center justify-center"
           style={{
             background: isDarkMode
               ? "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
@@ -377,7 +377,7 @@ export default function Auth() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               className={`
-                w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
+                w-full h-12 px-4 rounded-card outline-none focus:ring-2 border
                 ${
                   isDarkMode
                     ? "bg-iron-900 text-iron-100 placeholder-iron-600 border-iron-800 focus:ring-lift-primary/50"
@@ -401,7 +401,7 @@ export default function Auth() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className={`
-                  w-full h-12 px-4 rounded-xl outline-none focus:ring-2 border
+                  w-full h-12 px-4 rounded-card outline-none focus:ring-2 border
                   ${
                     isDarkMode
                       ? "bg-iron-900 text-iron-100 placeholder-iron-600 border-iron-800 focus:ring-lift-primary/50"
@@ -452,7 +452,7 @@ export default function Auth() {
             type="submit"
             disabled={loading}
             className={`
-              w-full h-12 rounded-xl font-bold transition-colors disabled:opacity-50
+              w-full h-12 rounded-card font-bold transition-colors disabled:opacity-50
               ${
                 isDarkMode
                   ? "bg-lift-primary text-iron-950 active:bg-lift-secondary"

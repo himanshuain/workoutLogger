@@ -32,7 +32,7 @@ class ErrorBoundaryClass extends Component {
 
     return (
       <div className="min-h-[200px] flex items-center justify-center p-6">
-        <div className={`rounded-2xl p-6 max-w-md w-full ${isDarkMode ? dark : light}`}>
+        <div className={`rounded-card p-6 max-w-md w-full ${isDarkMode ? dark : light}`}>
           <div className="flex flex-col items-center text-center">
             <span className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-2xl mb-3">⚠️</span>
             <h3 className={`font-bold text-lg mb-2 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>Something went wrong</h3>
@@ -54,7 +54,7 @@ class ErrorBoundaryClass extends Component {
                 )}
               </div>
             )}
-            <button onClick={this.handleRetry} className={`px-6 py-2.5 rounded-xl font-semibold ${btnCls}`}>
+            <button onClick={this.handleRetry} className={`px-6 py-2.5 rounded-card font-semibold ${btnCls}`}>
               Try Again
             </button>
           </div>

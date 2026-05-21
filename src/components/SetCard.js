@@ -73,7 +73,7 @@ function FieldBlock({ title, hint, children, isDarkMode, accent }) {
           : "text-slate-700";
 
   return (
-    <div className={`rounded-xl p-3 ${shell}`}>
+    <div className={`rounded-card p-3 ${shell}`}>
       <div className="flex items-baseline justify-between gap-2 mb-2">
         <span className={`text-xs font-bold uppercase tracking-wide ${titleClass}`}>{title}</span>
         {hint ? (
@@ -175,7 +175,7 @@ export default function SetCard({
   return (
     <div
       className={`
-        rounded-2xl border overflow-hidden
+        rounded-card border overflow-hidden
         ${
           isCompleted
             ? isDarkMode

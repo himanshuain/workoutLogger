@@ -25,7 +25,7 @@ export default function SwipeableItem({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl relative">
+    <div className="overflow-hidden rounded-card relative">
       <motion.div
         className="absolute inset-y-0 right-0 flex items-center justify-end pr-4 gap-2 bg-red-500 text-white min-w-[100px]"
         style={{ opacity: deleteOpacity }}

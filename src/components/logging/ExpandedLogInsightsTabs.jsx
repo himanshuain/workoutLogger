@@ -195,7 +195,7 @@ export default function ExpandedLogInsightsTabs({
       <div>{primaryAction}</div>
 
       <div
-        className={`flex shrink-0 gap-1 rounded-xl p-1 ${isDarkMode ? "bg-iron-900/70" : "bg-slate-100"}`}
+        className={`flex shrink-0 gap-1 rounded-card p-1 ${isDarkMode ? "bg-iron-900/70" : "bg-slate-100"}`}
         role="tablist"
         aria-label="Expanded section"
       >

@@ -151,7 +151,7 @@ export default function ExerciseLogModal({
       <ModalContent className="bg-iron-900 border-iron-800">
         <ModalHeader className="border-b border-iron-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-iron-800 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded-card bg-iron-800 flex items-center justify-center flex-shrink-0">
               <ExerciseIcon
                 name={exercise?.name}
                 className="w-8 h-8"
@@ -178,7 +178,7 @@ export default function ExerciseLogModal({
                   key={i}
                   onClick={() => handlePresetClick(preset)}
                   className={`
-                    flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all active:scale-95
+                    flex items-center gap-2 px-4 py-2.5 rounded-card text-sm font-medium transition-all active:scale-95
                     ${
                       preset.type === "pr"
                         ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
@@ -198,12 +198,12 @@ export default function ExerciseLogModal({
           )}
 
           {/* Weight Stepper */}
-          <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-2xl">
+          <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-card">
             <span className="text-iron-300 font-medium">Weight</span>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setWeight(Math.max(0, weight - weightStep))}
-                className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+                className="w-12 h-12 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
               >
                 <Minus className="w-5 h-5 text-iron-300" />
               </button>
@@ -215,7 +215,7 @@ export default function ExerciseLogModal({
               </div>
               <button
                 onClick={() => setWeight(Math.min(500, weight + weightStep))}
-                className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+                className="w-12 h-12 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
               >
                 <Plus className="w-5 h-5 text-iron-300" />
               </button>
@@ -226,7 +226,7 @@ export default function ExerciseLogModal({
           <div className="flex gap-2">
             <button
               onClick={() => setMode("quick")}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex-1 py-2.5 rounded-card text-sm font-medium transition-colors ${
                 mode === "quick"
                   ? "bg-lift-primary text-iron-950"
                   : "bg-iron-800 text-iron-400"
@@ -236,7 +236,7 @@ export default function ExerciseLogModal({
             </button>
             <button
               onClick={() => setMode("detailed")}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              className={`flex-1 py-2.5 rounded-card text-sm font-medium transition-colors ${
                 mode === "detailed"
                   ? "bg-lift-primary text-iron-950"
                   : "bg-iron-800 text-iron-400"
@@ -249,7 +249,7 @@ export default function ExerciseLogModal({
           {mode === "quick" ? (
             /* Quick Mode - Same reps for all sets */
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-2xl">
+              <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-card">
                 <span className="text-iron-300 font-medium">Reps per set</span>
                 <div className="flex items-center gap-3">
                   <button
@@ -261,7 +261,7 @@ export default function ExerciseLogModal({
                         })),
                       )
                     }
-                    className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+                    className="w-12 h-12 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
                   >
                     <Minus className="w-5 h-5 text-iron-300" />
                   </button>
@@ -279,21 +279,21 @@ export default function ExerciseLogModal({
                         })),
                       )
                     }
-                    className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+                    className="w-12 h-12 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
                   >
                     <Plus className="w-5 h-5 text-iron-300" />
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-2xl">
+              <div className="flex items-center justify-between p-4 bg-iron-800/50 rounded-card">
                 <span className="text-iron-300 font-medium">Sets</span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() =>
                       sets.length > 1 && setSets(sets.slice(0, -1))
                     }
-                    className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+                    className="w-12 h-12 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
                   >
                     <Minus className="w-5 h-5 text-iron-300" />
                   </button>
@@ -304,7 +304,7 @@ export default function ExerciseLogModal({
                   </div>
                   <button
                     onClick={handleAddSet}
-                    className="w-12 h-12 rounded-xl bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
+                    className="w-12 h-12 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600 transition-colors"
                   >
                     <Plus className="w-5 h-5 text-iron-300" />
                   </button>
@@ -321,7 +321,7 @@ export default function ExerciseLogModal({
               {sets.map((set, index) => (
                 <div
                   key={index}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                  className={`flex items-center gap-3 p-3 rounded-card transition-colors ${
                     set.completed
                       ? "bg-lift-primary/20 border border-lift-primary/30"
                       : "bg-iron-800/50"
@@ -372,7 +372,7 @@ export default function ExerciseLogModal({
 
               <button
                 onClick={handleAddSet}
-                className="w-full py-3 rounded-xl border-2 border-dashed border-iron-700 text-iron-400 
+                className="w-full py-3 rounded-card border-2 border-dashed border-iron-700 text-iron-400 
                          flex items-center justify-center gap-2 active:bg-iron-800/50"
               >
                 <Plus className="w-4 h-4" />
@@ -382,7 +382,7 @@ export default function ExerciseLogModal({
           )}
 
           {/* Summary */}
-          <div className="p-4 bg-gradient-to-r from-lift-primary/10 to-transparent rounded-2xl border border-lift-primary/20">
+          <div className="p-4 bg-gradient-to-r from-lift-primary/10 to-transparent rounded-card border border-lift-primary/20">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-iron-400 text-sm">Summary</p>
@@ -413,7 +413,7 @@ export default function ExerciseLogModal({
           <button
             onClick={handleLog}
             disabled={isLogging}
-            className="w-full py-4 rounded-2xl bg-lift-primary text-iron-950 font-bold text-lg
+            className="w-full py-4 rounded-card bg-lift-primary text-iron-950 font-bold text-lg
                      active:bg-lift-secondary transition-all disabled:opacity-50
                      flex items-center justify-center gap-2 shadow-lg shadow-lift-primary/30"
           >

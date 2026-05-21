@@ -186,9 +186,9 @@ export default function ProgressGraph({
 
   if (compact) {
     return (
-      <div className={`rounded-2xl overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
+      <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
         <button onClick={() => setIsExpanded(!isExpanded)} className="w-full p-4 flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
+          <div className={`w-11 h-11 rounded-card flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
             <ExerciseIcon name={exerciseName} className="w-7 h-7" color={isDarkMode ? "#6b7280" : "#64748b"} />
           </div>
           <div className="flex-1 text-left min-w-0">
@@ -222,25 +222,25 @@ export default function ProgressGraph({
 
             {/* Stats row */}
             <div className={`flex gap-2 mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-              <div className={`flex-1 rounded-xl p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Current</p>
                 <p className={`font-bold text-sm ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
                   {stats.currentWeight || 0}{unit}
                 </p>
               </div>
-              <div className={`flex-1 rounded-xl p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Best</p>
                 <p className={`font-bold text-sm ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>
                   {stats.maxWeight || 0}{unit}
                 </p>
               </div>
-              <div className={`flex-1 rounded-xl p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Est. 1RM</p>
                 <p className={`font-bold text-sm ${isDarkMode ? "text-orange-400" : "text-orange-600"}`}>
                   {stats.e1rm || 0}{unit}
                 </p>
               </div>
-              <div className={`flex-1 rounded-xl p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
                 <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Sessions</p>
                 <p className={`font-bold text-sm ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
                   {stats.totalSessions}
@@ -273,10 +273,10 @@ export default function ProgressGraph({
   }
 
   return (
-    <div className={`rounded-2xl p-4 ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
+    <div className={`rounded-card p-4 ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
+          <div className={`w-12 h-12 rounded-card flex items-center justify-center ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
             <ExerciseIcon name={exerciseName} className="w-8 h-8" color={accentColor} />
           </div>
           <div>
@@ -295,19 +295,19 @@ export default function ProgressGraph({
       <LineGraph data={graphData} height={160} color={accentColor} isDarkMode={isDarkMode} />
 
       <div className="grid grid-cols-4 gap-2 mt-4">
-        <div className={`text-center p-2 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
           <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Current</p>
           <p className={`font-bold text-sm ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>{stats.currentWeight || 0}{unit}</p>
         </div>
-        <div className={`text-center p-2 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
           <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Best</p>
           <p className={`font-bold text-sm ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`}>{stats.maxWeight || 0}{unit}</p>
         </div>
-        <div className={`text-center p-2 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
           <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Est. 1RM</p>
           <p className={`font-bold text-sm ${isDarkMode ? "text-orange-400" : "text-orange-600"}`}>{stats.e1rm || 0}{unit}</p>
         </div>
-        <div className={`text-center p-2 rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
           <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Sessions</p>
           <p className={`font-bold text-sm ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>{stats.totalSessions}</p>
         </div>

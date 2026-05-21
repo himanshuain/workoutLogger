@@ -435,7 +435,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
             : `${item.name} — tap to log`
         }
         onClick={() => onToggle(item)}
-        className={`flex flex-col items-stretch rounded-2xl border text-left transition-all active:scale-[0.98] ${
+        className={`flex flex-col items-stretch rounded-card border text-left transition-all active:scale-[0.98] ${
           compact ? "p-2.5" : "p-3"
         } ${
           isDarkMode
@@ -449,7 +449,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
       >
         <div className="flex items-start gap-2">
           <span
-            className={`flex shrink-0 items-center justify-center rounded-xl text-xl ${
+            className={`flex shrink-0 items-center justify-center rounded-card text-xl ${
               compact ? "h-10 w-10" : "h-11 w-11"
             } ${
               consumed
@@ -554,7 +554,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                 >
                   <span
                     className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-card",
                       isDarkMode ? "bg-amber-500/15 text-amber-400" : "bg-amber-100 text-amber-700",
                     )}
                   >
@@ -594,7 +594,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                 <button
                   type="button"
                   onClick={() => pickDate(yesterdayStr)}
-                  className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${
+                  className={`relative overflow-hidden rounded-card border-2 p-4 text-left transition-all active:scale-[0.98] ${
                     pastLogDate === yesterdayStr
                       ? isDarkMode
                         ? "border-amber-400/90 bg-gradient-to-br from-amber-500/20 to-transparent shadow-lg shadow-amber-500/10"
@@ -605,7 +605,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                   }`}
                 >
                   <div
-                    className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl ${
+                    className={`mb-2 flex h-10 w-10 items-center justify-center rounded-card ${
                       isDarkMode ? "bg-amber-500/15 text-amber-400" : "bg-amber-100 text-amber-600"
                     }`}
                   >
@@ -619,7 +619,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                 <button
                   type="button"
                   onClick={() => pickDate(dayBeforeYesterdayStr)}
-                  className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all active:scale-[0.98] ${
+                  className={`relative overflow-hidden rounded-card border-2 p-4 text-left transition-all active:scale-[0.98] ${
                     pastLogDate === dayBeforeYesterdayStr
                       ? isDarkMode
                         ? "border-violet-400/80 bg-gradient-to-br from-violet-500/15 to-transparent shadow-lg shadow-violet-500/10"
@@ -630,7 +630,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                   }`}
                 >
                   <div
-                    className={`mb-2 flex h-10 w-10 items-center justify-center rounded-xl ${
+                    className={`mb-2 flex h-10 w-10 items-center justify-center rounded-card ${
                       isDarkMode ? "bg-violet-500/15 text-violet-300" : "bg-violet-100 text-violet-700"
                     }`}
                   >
@@ -658,7 +658,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-card ${
                             isDarkMode ? "bg-amber-500/12 text-amber-400" : "bg-amber-100 text-amber-700"
                           }`}
                         >
@@ -702,7 +702,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                 <button
                   type="button"
                   onClick={() => setStripOffset(s => Math.min(s + 7, 370))}
-                  className={`flex h-[4.5rem] w-10 shrink-0 items-center justify-center self-center rounded-2xl border transition-all active:scale-95 ${
+                  className={`flex h-[4.5rem] w-10 shrink-0 items-center justify-center self-center rounded-card border transition-all active:scale-95 ${
                     isDarkMode
                       ? "border-iron-700/80 bg-iron-900/50 text-iron-400 hover:border-iron-600 hover:bg-iron-800/50 hover:text-iron-200"
                       : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
@@ -765,7 +765,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                         <button
                           type="button"
                           onClick={() => pickDate(d)}
-                          className={`flex min-w-[3.25rem] flex-col items-center rounded-2xl border px-2.5 pt-2.5 pb-2 transition-all duration-200 active:scale-[0.96] ${
+                          className={`flex min-w-[3.25rem] flex-col items-center rounded-card border px-2.5 pt-2.5 pb-2 transition-all duration-200 active:scale-[0.96] ${
                             active
                               ? isDarkMode
                                 ? "border-amber-400/50 bg-gradient-to-b from-amber-500/20 via-amber-500/10 to-transparent text-amber-50 shadow-[0_0_0_1px_rgba(251,191,36,0.25),0_8px_24px_-4px_rgba(0,0,0,0.45)]"
@@ -838,7 +838,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                   type="button"
                   disabled={stripOffset === 0}
                   onClick={() => setStripOffset(s => Math.max(0, s - 7))}
-                  className={`flex h-[4.5rem] w-10 shrink-0 items-center justify-center self-center rounded-2xl border transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-25 ${
+                  className={`flex h-[4.5rem] w-10 shrink-0 items-center justify-center self-center rounded-card border transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-25 ${
                     isDarkMode
                       ? "border-iron-700/80 bg-iron-900/50 text-iron-400 hover:border-iron-600 hover:bg-iron-800/50 hover:text-iron-200"
                       : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
@@ -852,7 +852,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
 
             {pastLogDate && sortedItems.length > 0 && (
               <div
-                className={`rounded-2xl border p-3 ${
+                className={`rounded-card border p-3 ${
                   isDarkMode ? "border-iron-800 bg-iron-950/40" : "border-slate-200 bg-slate-50/90"
                 }`}
               >
@@ -882,7 +882,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
             )}
 
             <div
-              className={`rounded-2xl border p-3 ${
+              className={`rounded-card border p-3 ${
                 isDarkMode ? "border-iron-800" : "border-slate-200"
               }`}
             >
@@ -917,7 +917,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                         return (
                           <li
                             key={t.id}
-                            className={`flex items-center gap-3 rounded-xl px-2 py-2 ${
+                            className={`flex items-center gap-3 rounded-card px-2 py-2 ${
                               isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
                             }`}
                           >
@@ -928,7 +928,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                                 done ? `Mark ${t.name} not done for this day` : `Mark ${t.name} done for this day`
                               }
                               onClick={() => handleHabitToggle(t)}
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition-all ${
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card text-lg transition-all ${
                                 done
                                   ? "shadow-md"
                                   : isDarkMode
@@ -975,7 +975,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                         return (
                           <li
                             key={et.id}
-                            className={`flex items-center gap-3 rounded-xl px-2 py-2 ${
+                            className={`flex items-center gap-3 rounded-card px-2 py-2 ${
                               isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
                             }`}
                           >
@@ -1021,7 +1021,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                                     : `Quick log ${et.name}`
                               }
                               onClick={() => handleQuickLifeLog(et)}
-                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold transition-colors active:scale-95 ${
+                              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card text-xs font-bold transition-colors active:scale-95 ${
                                 done
                                   ? isDarkMode
                                     ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
@@ -1100,7 +1100,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                     value={lifeSheetValue}
                     onChange={e => setLifeSheetValue(e.target.value)}
                     placeholder="e.g. 12.5"
-                    className={`w-full rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                    className={`w-full rounded-card border px-3 py-3 text-base outline-none focus:ring-2 ${
                       isDarkMode
                         ? "border-iron-700 bg-iron-900 text-iron-100 focus:ring-violet-500/40"
                         : "border-slate-200 bg-white focus:ring-violet-400"
@@ -1120,7 +1120,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                     onChange={e => setLifeSheetNotes(e.target.value)}
                     placeholder="What happened? Add any details…"
                     rows={4}
-                    className={`min-h-[120px] w-full resize-none rounded-xl border px-3 py-3 text-base outline-none focus:ring-2 ${
+                    className={`min-h-[120px] w-full resize-none rounded-card border px-3 py-3 text-base outline-none focus:ring-2 ${
                       isDarkMode
                         ? "border-iron-700 bg-iron-900 text-iron-100 placeholder:text-iron-600 focus:ring-violet-500/40"
                         : "border-slate-200 bg-white placeholder:text-slate-400 focus:ring-violet-400"
@@ -1133,7 +1133,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
               <button
                 type="button"
                 onClick={closeLifeLogSheet}
-                className={`flex-1 rounded-xl py-3 text-sm font-medium ${
+                className={`flex-1 rounded-card py-3 text-sm font-medium ${
                   isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
                 }`}
               >
@@ -1142,7 +1142,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
               <button
                 type="button"
                 onClick={submitLifeLogSheet}
-                className={`flex-1 rounded-xl py-3 text-sm font-bold ${
+                className={`flex-1 rounded-card py-3 text-sm font-bold ${
                   isDarkMode ? "bg-violet-500 text-white" : "bg-violet-600 text-white"
                 }`}
               >

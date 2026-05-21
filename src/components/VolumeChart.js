@@ -115,7 +115,7 @@ export default function VolumeChart({
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden ${
+      className={`rounded-card overflow-hidden ${
         isDarkMode
           ? "bg-iron-900/50"
           : "bg-white border border-slate-200 shadow-sm"
@@ -127,7 +127,7 @@ export default function VolumeChart({
       >
         <div className="flex items-center gap-3">
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            className={`w-10 h-10 rounded-card flex items-center justify-center ${
               isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20"
             }`}
           >
@@ -187,7 +187,7 @@ export default function VolumeChart({
             {showInfo ? "Hide explanation" : "What is training volume?"}
           </button>
           {showInfo && (
-            <div className={`rounded-xl p-3 mb-3 text-xs leading-relaxed ${
+            <div className={`rounded-card p-3 mb-3 text-xs leading-relaxed ${
               isDarkMode ? "bg-iron-800/60 text-iron-400" : "bg-slate-50 text-slate-600"
             }`}>
               <p className="font-semibold mb-1">Volume = Weight × Reps (per set)</p>
@@ -250,15 +250,15 @@ export default function VolumeChart({
 
           {/* Summary stats */}
           <div className={`flex gap-2 mt-4 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-            <div className={`flex-1 rounded-xl p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
               <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>This Week</p>
               <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(thisWeekVolume)}</p>
             </div>
-            <div className={`flex-1 rounded-xl p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
               <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Last Week</p>
               <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(lastWeekVolume)}</p>
             </div>
-            <div className={`flex-1 rounded-xl p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
+            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
               <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>All Time</p>
               <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(totalVolume)}</p>
             </div>

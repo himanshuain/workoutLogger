@@ -160,7 +160,7 @@ export function ExerciseInfoCard({ exerciseName, isDarkMode, compact = false }) 
     );
   }
 
-  const cardCls = `rounded-xl ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`;
+  const cardCls = `rounded-card ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`;
   const textCls = isDarkMode ? "text-iron-100" : "text-slate-800";
   const mutedCls = isDarkMode ? "text-iron-400" : "text-slate-500";
 

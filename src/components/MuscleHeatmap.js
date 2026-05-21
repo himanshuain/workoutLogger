@@ -96,7 +96,7 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden ${
+      className={`rounded-card overflow-hidden ${
         isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
       }`}
     >
@@ -105,7 +105,7 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              className={`w-10 h-10 rounded-card flex items-center justify-center ${
                 isDarkMode ? "bg-amber-500/20" : "bg-red-100"
               }`}
             >
@@ -151,7 +151,7 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
         <div
           className={`flex justify-center py-2 transition-opacity duration-200 ${
             isDarkMode ? "bg-iron-800/30" : "bg-slate-50"
-          } rounded-xl`}
+          } rounded-card`}
         >
           {(viewSide === "both" || viewSide === "anterior") && (
             <div className={viewSide === "both" ? "flex-1 max-w-[180px]" : "max-w-[220px]"}>

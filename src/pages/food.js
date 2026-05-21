@@ -426,7 +426,7 @@ export default function Food() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-xl font-bold ${
+            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
               isDarkMode
                 ? "bg-lift-primary text-iron-950"
                 : "bg-workout-primary text-white"
@@ -479,7 +479,7 @@ export default function Food() {
               });
               setShowAddModal(true);
             }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-card font-medium ${
               isDarkMode
                 ? "bg-lift-primary/20 text-lift-primary"
                 : "bg-amber-100 text-amber-600"
@@ -494,7 +494,7 @@ export default function Food() {
           {/* Quick Stats */}
           <section className="grid grid-cols-3 gap-3">
             <div
-              className={`rounded-xl p-3 ${
+              className={`rounded-card p-3 ${
                 isDarkMode
                   ? "bg-iron-900/50"
                   : "bg-white border border-slate-200 shadow-sm"
@@ -530,7 +530,7 @@ export default function Food() {
               </p>
             </div>
             <div
-              className={`rounded-xl p-3 border ${
+              className={`rounded-card p-3 border ${
                 isDarkMode
                   ? "bg-gradient-to-br from-lift-primary/20 to-transparent border-lift-primary/30"
                   : "bg-gradient-to-br from-amber-100 to-transparent border-amber-300"
@@ -566,7 +566,7 @@ export default function Food() {
               </p>
             </div>
             <div
-              className={`rounded-xl p-3 ${
+              className={`rounded-card p-3 ${
                 isDarkMode
                   ? "bg-iron-900/50"
                   : "bg-white border border-slate-200 shadow-sm"
@@ -606,7 +606,7 @@ export default function Food() {
           {/* Progress Bar */}
           {foodItems.length > 0 && (
             <div
-              className={`p-4 rounded-2xl ${
+              className={`p-4 rounded-card ${
                 isDarkMode
                   ? "bg-iron-900/50"
                   : "bg-white border border-slate-200 shadow-sm"
@@ -664,7 +664,7 @@ export default function Food() {
                 <ContextMenu key={item.id}>
                   <ContextMenuTrigger asChild>
                     <div
-                      className={`rounded-2xl overflow-hidden ${
+                      className={`rounded-card overflow-hidden ${
                         isDarkMode
                           ? "bg-iron-900/50"
                           : "bg-white border border-slate-200 shadow-sm"
@@ -681,7 +681,7 @@ export default function Food() {
                           }
                           onClick={() => handleToggle(item)}
                           className={`
-                            w-14 h-14 rounded-xl flex items-center justify-center text-2xl
+                            w-14 h-14 rounded-card flex items-center justify-center text-2xl
                             transition-all duration-200 active:scale-90
                             ${
                               isConsumed
@@ -757,7 +757,7 @@ export default function Food() {
                               e.stopPropagation();
                               openQuantityModal(item, quantity);
                             }}
-                            className={`shrink-0 px-3 py-2 rounded-xl text-sm font-semibold ${
+                            className={`shrink-0 px-3 py-2 rounded-card text-sm font-semibold ${
                               isDarkMode
                                 ? "bg-iron-800 text-iron-200 active:bg-iron-700"
                                 : "bg-slate-100 text-slate-700 active:bg-slate-200"
@@ -813,14 +813,14 @@ export default function Food() {
             {foodItems.length === 0 && (
               <button
                 onClick={() => setShowAddModal(true)}
-                className={`w-full p-8 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-colors ${
+                className={`w-full p-8 rounded-card border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-colors ${
                   isDarkMode
                     ? "border-iron-800 hover:border-iron-700 active:bg-iron-900/50"
                     : "border-slate-300 hover:border-slate-400 active:bg-slate-50"
                 }`}
               >
                 <div
-                  className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                  className={`w-16 h-16 rounded-card flex items-center justify-center ${
                     isDarkMode ? "bg-lift-primary/20" : "bg-amber-100"
                   }`}
                 >
@@ -880,7 +880,7 @@ export default function Food() {
               {recentHistory.map(({ date, entries }) => (
                 <div
                   key={date}
-                  className={`rounded-xl p-3 ${
+                  className={`rounded-card p-3 ${
                     isDarkMode ? "bg-iron-900/30" : "bg-slate-50"
                   }`}
                 >
@@ -959,7 +959,7 @@ export default function Food() {
                 value={newFood.name}
                 onChange={(e) => setNewFood({ ...newFood, name: e.target.value })}
                 placeholder="e.g., Eggs, Protein Shake"
-                className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                className={`w-full h-12 px-4 rounded-card outline-none focus:ring-2 ${
                   isDarkMode
                     ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
                     : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
@@ -977,7 +977,7 @@ export default function Food() {
                   value={newFood.unit}
                   onChange={(e) => setNewFood({ ...newFood, unit: e.target.value })}
                   placeholder="servings, eggs, ml"
-                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                  className={`w-full h-12 px-4 rounded-card outline-none focus:ring-2 ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
                       : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
@@ -1002,7 +1002,7 @@ export default function Food() {
                       setNewFood({ ...newFood, default_quantity: Number.isFinite(raw) ? raw : 1 });
                     }
                   }}
-                  className={`w-full h-12 px-4 rounded-xl outline-none focus:ring-2 ${
+                  className={`w-full h-12 px-4 rounded-card outline-none focus:ring-2 ${
                     isDarkMode
                       ? "bg-iron-800 text-iron-100 placeholder-iron-600 focus:ring-lift-primary/50"
                       : "bg-slate-100 text-slate-800 placeholder-slate-400 focus:ring-amber-500/50"
@@ -1012,7 +1012,7 @@ export default function Food() {
             </div>
 
             <label
-              className={`flex items-start gap-3 cursor-pointer rounded-xl p-3 ${
+              className={`flex items-start gap-3 cursor-pointer rounded-card p-3 ${
                 isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
               }`}
             >
@@ -1070,14 +1070,14 @@ export default function Food() {
                   setDeleteConfirm(editingItem);
                   setShowAddModal(false);
                 }}
-                className="px-4 py-3 rounded-xl bg-red-500/20 text-red-400 font-medium"
+                className="px-4 py-3 rounded-card bg-red-500/20 text-red-400 font-medium"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
             )}
             <button
               onClick={() => setShowAddModal(false)}
-              className={`flex-1 py-3 rounded-xl font-medium ${
+              className={`flex-1 py-3 rounded-card font-medium ${
                 isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
               }`}
             >
@@ -1086,7 +1086,7 @@ export default function Food() {
             <button
               onClick={handleSaveFood}
               disabled={!newFood.name.trim()}
-              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
               }`}
             >
@@ -1136,7 +1136,7 @@ export default function Food() {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 rounded-2xl p-3 ${
+                  className={`flex items-center gap-3 rounded-card p-3 ${
                     isDarkMode ? "bg-iron-800/60" : "bg-slate-50"
                   }`}
                 >
@@ -1144,7 +1144,7 @@ export default function Food() {
                     type="button"
                     aria-pressed={consumed}
                     onClick={() => handleDayNudgeToggle(item)}
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl transition-all active:scale-95 ${
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-card text-xl transition-all active:scale-95 ${
                       consumed
                         ? "shadow-md"
                         : isDarkMode
@@ -1191,7 +1191,7 @@ export default function Food() {
                       <button
                         type="button"
                         onClick={() => handleDayNudgeEditAmount(item)}
-                        className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                        className={`rounded-card px-3 py-2 text-xs font-semibold ${
                           isDarkMode
                             ? "bg-iron-700 text-iron-200 active:bg-iron-600"
                             : "bg-white text-slate-700 ring-1 ring-slate-200 active:bg-slate-100"
@@ -1202,7 +1202,7 @@ export default function Food() {
                       <button
                         type="button"
                         onClick={() => handleDayNudgeToggle(item)}
-                        className={`rounded-xl px-3 py-2 text-xs font-semibold ${
+                        className={`rounded-card px-3 py-2 text-xs font-semibold ${
                           isDarkMode
                             ? "bg-red-500/15 text-red-400 active:bg-red-500/25"
                             : "bg-red-50 text-red-600 active:bg-red-100"

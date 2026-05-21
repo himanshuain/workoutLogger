@@ -17,7 +17,7 @@ export default function LogDayWorkoutPanel({
 
   return (
     <div
-      className={`rounded-2xl border p-3 mb-6 ${
+      className={`rounded-card border p-3 mb-6 ${
         isDarkMode ? "border-iron-800 bg-iron-950/40" : "border-slate-200 bg-slate-50/90"
       }`}
     >
@@ -55,12 +55,12 @@ export default function LogDayWorkoutPanel({
             return (
               <div
                 key={session.id}
-                className={`flex items-center gap-3 rounded-xl p-3 ${
+                className={`flex items-center gap-3 rounded-card p-3 ${
                   isDarkMode ? "bg-iron-900/60" : "bg-white ring-1 ring-slate-100"
                 }`}
               >
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card ${
                     isDarkMode ? "bg-lift-primary/20 text-lift-primary" : "bg-workout-primary/20 text-workout-primary"
                   }`}
                 >
@@ -73,7 +73,7 @@ export default function LogDayWorkoutPanel({
                 <button
                   type="button"
                   onClick={() => onNavigateSession(session)}
-                  className={`flex shrink-0 items-center gap-1 rounded-xl px-3 py-2 text-xs font-bold transition-colors ${
+                  className={`flex shrink-0 items-center gap-1 rounded-card px-3 py-2 text-xs font-bold transition-colors ${
                     session.status === "completed"
                       ? isDarkMode
                         ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
@@ -105,7 +105,7 @@ export default function LogDayWorkoutPanel({
               type="button"
               onClick={onStartWorkout}
               disabled={startingRoutine}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-card text-sm font-bold transition-colors ${
                 isDarkMode ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30" : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
               } disabled:opacity-50`}
             >
@@ -117,7 +117,7 @@ export default function LogDayWorkoutPanel({
                 type="button"
                 onClick={onPickRoutine}
                 disabled={startingRoutine}
-                className={`py-2.5 rounded-xl text-sm font-semibold border ${
+                className={`py-2.5 rounded-card text-sm font-semibold border ${
                   isDarkMode ? "border-iron-600 text-iron-200 hover:bg-iron-800/80" : "border-slate-300 text-slate-800 hover:bg-slate-50"
                 } disabled:opacity-50`}
               >

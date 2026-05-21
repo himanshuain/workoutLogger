@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
+import SectionHeader from "@/components/SectionHeader";
 
 function exerciseStatus(name, doneMap, setLogs) {
   if (doneMap[name]) return "completed";
@@ -131,6 +132,11 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     };
   }, [plannedExercises, doneMap, setLogs]);
 
+  const completedSetCount = useMemo(
+    () => (setLogs || []).filter(l => l.is_completed).length,
+    [setLogs],
+  );
+
   useEffect(() => {
     const onFocus = () => bumpExtras();
     window.addEventListener("focus", onFocus);
@@ -209,31 +215,24 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   const getDayName = () => new Date().toLocaleDateString("en-US", { weekday: "long" });
 
   if (completedTodaySession && !hasSession) {
+    const doneSets = (completedTodaySession.set_logs || []).filter(s => s.is_completed).length;
     return (
       <div className="max-w-lg mx-auto">
         <div className="card-hero overflow-hidden">
-          <div
-            className={`px-4 py-2.5 border-b ${
-              isDarkMode ? "border-iron-800" : "border-slate-100"
-            }`}
-          >
-            <span
-              className={`text-[11px] font-bold uppercase tracking-wider ${
-                isDarkMode ? "text-lift-primary" : "text-green-600"
-              }`}
-            >
-              Completed today
-            </span>
-          </div>
-          <div className="p-4">
+          <div className="p-4 sm:p-5">
+            <SectionHeader
+              icon={Dumbbell}
+              label="Workout"
+              meta={`${doneSets} set${doneSets !== 1 ? "s" : ""}`}
+              isDarkMode={isDarkMode}
+            />
             <h3
               className={`text-lg font-bold mb-1 ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}
             >
               {completedTodaySession.routine_name}
             </h3>
             <p className={`text-sm mb-4 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              {(completedTodaySession.set_logs || []).filter(s => s.is_completed).length} sets
-              logged
+              Completed today
             </p>
             <button
               type="button"
@@ -383,40 +382,47 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       </button>
     ) : null;
 
+  const workoutMeta = hasSession
+    ? `${completedSetCount} set${completedSetCount !== 1 ? "s" : ""}`
+    : stats.planned > 0
+      ? `${stats.planned} planned`
+      : null;
+
   return (
     <SpringIn className="max-w-lg mx-auto">
       <div className="card-hero overflow-hidden">
         <div className="p-4 sm:p-5">
-          <motion.p
-            initial={{ opacity: 0, y: 6 }}
+          <SectionHeader
+            icon={Dumbbell}
+            label="Workout"
+            meta={workoutMeta}
+            isDarkMode={isDarkMode}
+          >
+            {resetInProgressButton}
+            {routineActionButton}
+          </SectionHeader>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`text-section-header ${isDarkMode ? "text-iron-200" : ""}`}
+            transition={{ delay: 0.05 }}
+            className="text-screen-title min-w-0 leading-tight"
           >
-            Today&apos;s Workout
-          </motion.p>
+            {routineTitle}
+          </motion.h2>
 
-          <div className="mt-2 flex items-start justify-between gap-3">
-            <motion.h2
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="text-screen-title min-w-0 flex-1 leading-tight"
+          {hasSession ? (
+            <p
+              className={`mt-3 text-sm leading-relaxed ${
+                isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
             >
-              {routineTitle}
-            </motion.h2>
-            <div className="shrink-0 flex flex-wrap items-center gap-1 justify-end">
-              {resetInProgressButton}
-              {routineActionButton}
-            </div>
-          </div>
-
-          <p
-            className={`mt-3 text-sm leading-relaxed ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
-          >
-            {stats.planned} planned · {stats.completed} done · {stats.addedToday} added today
-          </p>
+              {stats.completed} exercise{stats.completed !== 1 ? "s" : ""} done
+              {stats.addedToday > 0
+                ? ` · ${stats.addedToday} added today`
+                : ""}
+            </p>
+          ) : null}
 
           {!hasSession ? (
             <div className="mt-6">

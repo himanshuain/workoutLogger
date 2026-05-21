@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Utensils, Check } from "lucide-react";
 import SectionManageButton from "@/components/SectionManageButton";
+import SectionHeader from "@/components/SectionHeader";
 import SectionSurface from "@/components/SectionSurface";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
@@ -31,6 +32,16 @@ export default function TodayFoodLogSection({
     () => [...foodItems].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
     [foodItems],
   );
+
+  const loggedCount = useMemo(
+    () => sortedItems.filter(item => entryMap[item.id]).length,
+    [sortedItems, entryMap],
+  );
+
+  const foodMeta =
+    sortedItems.length > 0
+      ? `${loggedCount} logged`
+      : null;
 
   const openQuantity = useCallback((item, quantity, targetDate = null) => {
     setQtyItem(item);
@@ -196,13 +207,12 @@ export default function TodayFoodLogSection({
     return (
       <section className="section-spacing mt-6">
         <SectionSurface isDarkMode={isDarkMode}>
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h3
-              className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
-            >
-              <Utensils className="w-3.5 h-3.5 shrink-0" />
-              Food
-            </h3>
+          <SectionHeader
+            icon={Utensils}
+            label="Food"
+            meta={foodMeta}
+            isDarkMode={isDarkMode}
+          >
             <SectionManageButton
               isDarkMode={isDarkMode}
               onClick={() => router.push("/food")}
@@ -211,7 +221,7 @@ export default function TodayFoodLogSection({
             >
               Add items
             </SectionManageButton>
-          </div>
+          </SectionHeader>
           <button
             type="button"
             onClick={() => router.push("/food")}
@@ -229,24 +239,22 @@ export default function TodayFoodLogSection({
   return (
     <section className="section-spacing mt-6">
       <SectionSurface isDarkMode={isDarkMode}>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <h3
-            className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}
-          >
-            <Utensils className="w-3.5 h-3.5 shrink-0" />
-            Food
-            {isPastDayMode && calendarToday && logForDate ? (
-              <span className={`text-xs font-normal normal-case ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                · {formatChipLabel(logForDate, calendarToday)}
-              </span>
-            ) : null}
-          </h3>
+        <SectionHeader
+          icon={Utensils}
+          label="Food"
+          meta={
+            isPastDayMode && calendarToday && logForDate
+              ? `${loggedCount} logged · ${formatChipLabel(logForDate, calendarToday)}`
+              : foodMeta
+          }
+          isDarkMode={isDarkMode}
+        >
           <SectionManageButton
             isDarkMode={isDarkMode}
             onClick={() => router.push("/food")}
             ariaLabel="Manage food items"
           />
-        </div>
+        </SectionHeader>
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {sortedItems.map(item => {

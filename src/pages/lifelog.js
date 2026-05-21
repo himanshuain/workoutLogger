@@ -70,7 +70,7 @@ import {
   notifyLifelogEventSettingsChanged,
   mergeEventTypesWithLifelogSettings,
 } from "@/lib/lifelogEventSettings";
-import { formatDaysSince } from "@/lib/lifelogUtils";
+import { formatDaysSince, formatDate } from "@/lib/lifelogUtils";
 import LifeLogGapPill from "@/components/lifelog/LifeLogGapPill";
 
 const EVENT_ICONS = [

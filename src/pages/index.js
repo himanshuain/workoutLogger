@@ -57,6 +57,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
 import SectionManageButton from "@/components/SectionManageButton";
+import SectionHeader, { SectionHeaderLink } from "@/components/SectionHeader";
 import SectionSurface from "@/components/SectionSurface";
 import TodayWorkoutSection from "@/components/workout/TodayWorkoutSection";
 import HorizontalDateStrip from "@/components/logging/HorizontalDateStrip";
@@ -305,6 +306,26 @@ export default function Home() {
       })
       .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
   }, [trackables, viewingDate]);
+
+  const todayHabitTrackables = useMemo(() => {
+    if (!isViewingToday || !viewingDate) return [];
+    const dow = new Date(viewingDate + "T12:00:00").getDay();
+    return (trackables || []).filter(
+      t =>
+        t.name !== "Body Weight" &&
+        (!t.active_days || t.active_days.includes(dow)),
+    );
+  }, [trackables, viewingDate, isViewingToday]);
+
+  const todayHabitsDone = useMemo(
+    () => todayHabitTrackables.filter(t => todayEntries[t.id]?.is_completed).length,
+    [todayHabitTrackables, todayEntries],
+  );
+
+  const todayHabitsMeta =
+    todayHabitTrackables.length > 0
+      ? `${todayHabitsDone}/${todayHabitTrackables.length}`
+      : null;
 
   const mergedLifeEventTypes = useMemo(
     () => mergeEventTypesWithLifelogSettings(eventTypes || []),
@@ -683,23 +704,20 @@ export default function Home() {
         {isViewingToday ? (
         <section className="section-spacing">
           <SectionSurface isDarkMode={isDarkMode}>
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}>
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                Habits
-              </h3>
+            <SectionHeader
+              icon={Sparkles}
+              label="Habits"
+              meta={todayHabitsMeta}
+              isDarkMode={isDarkMode}
+            >
               <SectionManageButton
                 isDarkMode={isDarkMode}
                 onClick={() => router.push("/lifelog")}
                 ariaLabel="Manage habits"
               />
-            </div>
+            </SectionHeader>
             <HabitPills
-              trackables={trackables.filter(
-                t =>
-                  t.name !== "Body Weight" &&
-                  (!t.active_days || t.active_days.includes(new Date((viewingDate || today) + "T12:00:00").getDay())),
-              )}
+              trackables={todayHabitTrackables}
               entries={todayEntries}
               onToggle={handleToggleHabit}
               onAddNew={() => setShowAddHabitDrawer(true)}
@@ -756,23 +774,16 @@ export default function Home() {
         {/* Recent Workouts */}
         {recentSessions.length > 0 && (
         <section className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className={`text-section-header flex items-center gap-2 ${isDarkMode ? "text-iron-200" : ""}`}>
-              <History className="w-3.5 h-3.5" />
-              Workout History
-            </h3>
-            <button
-              type="button"
-              onClick={() => router.push("/history")}
-              className={`text-xs font-semibold flex items-center gap-0.5 ${
-                isDarkMode
-                  ? "text-iron-300 hover:text-iron-200 active:text-iron-200"
-                  : "text-slate-500 hover:text-slate-800 active:text-slate-700"
-              }`}
-            >
-              View All <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
+          <SectionHeader
+            icon={History}
+            label="Workout history"
+            meta={`${recentSessions.length} recent`}
+            isDarkMode={isDarkMode}
+          >
+            <SectionHeaderLink isDarkMode={isDarkMode} onClick={() => router.push("/history")}>
+              View all <ChevronRight className="w-3 h-3" aria-hidden />
+            </SectionHeaderLink>
+          </SectionHeader>
 
           {recentSessions.length > 0 && (
             <LongPressContextHint variant="deleteOnly" isDarkMode={isDarkMode} className="mb-2" />

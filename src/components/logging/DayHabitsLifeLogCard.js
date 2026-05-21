@@ -1,5 +1,6 @@
-import { ListChecks, Check } from "lucide-react";
+import { ListChecks, Sparkles, Check } from "lucide-react";
 import SectionManageButton from "@/components/SectionManageButton";
+import SectionHeader from "@/components/SectionHeader";
 import { sectionSurfaceClass } from "@/components/SectionSurface";
 import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
 
@@ -20,18 +21,58 @@ export default function DayHabitsLifeLogCard({
   showHabits = true,
   showLifeLog = true,
 }) {
-  const cardTitle =
-    showHabits && showLifeLog ? "Habits & life log" : showHabits ? "Habits" : "Life log";
+  const habitsDone = habitList.filter(t => trackingForDay[t.id]?.is_completed).length;
+  const habitsMeta = habitList.length > 0 ? `${habitsDone}/${habitList.length}` : null;
+
+  const lifeLoggedCount = selectedDate
+    ? sortedLifeEvents.filter(et => hasLifeLogThisDay(et, selectedDate)).length
+    : 0;
+  const lifeMeta =
+    sortedLifeEvents.length > 0 ? `${lifeLoggedCount} logged` : null;
+
+  const showCombinedHeader = showHabits && showLifeLog;
 
   return (
     <div className={sectionSurfaceClass(isDarkMode)}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <ListChecks className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`} />
-          <p className="text-card-subtitle">{cardTitle}</p>
-        </div>
-        <SectionManageButton isDarkMode={isDarkMode} onClick={onManageLifelog} ariaLabel="Manage habits and life log" />
-      </div>
+      {showCombinedHeader ? (
+        <SectionHeader
+          icon={ListChecks}
+          label="Habits & life log"
+          isDarkMode={isDarkMode}
+        >
+          <SectionManageButton
+            isDarkMode={isDarkMode}
+            onClick={onManageLifelog}
+            ariaLabel="Manage habits and life log"
+          />
+        </SectionHeader>
+      ) : showHabits ? (
+        <SectionHeader
+          icon={Sparkles}
+          label="Habits"
+          meta={habitsMeta}
+          isDarkMode={isDarkMode}
+        >
+          <SectionManageButton
+            isDarkMode={isDarkMode}
+            onClick={onManageLifelog}
+            ariaLabel="Manage habits"
+          />
+        </SectionHeader>
+      ) : (
+        <SectionHeader
+          icon={ListChecks}
+          label="Life log"
+          meta={lifeMeta}
+          isDarkMode={isDarkMode}
+        >
+          <SectionManageButton
+            isDarkMode={isDarkMode}
+            onClick={onManageLifelog}
+            ariaLabel="Manage life log"
+          />
+        </SectionHeader>
+      )}
 
       {!selectedDate ? (
         <p className="text-body">Choose a day above to log habits or life events for that date.</p>
@@ -39,7 +80,16 @@ export default function DayHabitsLifeLogCard({
         <>
           {showHabits ? (
             <>
-              <p className="text-section-header mb-2">Habits</p>
+              {showCombinedHeader ? (
+                <SectionHeader
+                  as="p"
+                  icon={Sparkles}
+                  label="Habits"
+                  meta={habitsMeta}
+                  isDarkMode={isDarkMode}
+                  className="mb-2"
+                />
+              ) : null}
               {habitList.length === 0 ? (
                 <p className="text-body mb-4">
                   No habits for this weekday. Add habits on Today, or open{" "}
@@ -55,7 +105,7 @@ export default function DayHabitsLifeLogCard({
                   to create and schedule them.
                 </p>
               ) : (
-                <ul className="mb-4 space-y-2">
+                <ul className={`space-y-2 ${showLifeLog ? "mb-4" : ""}`}>
                   {habitList.map(t => {
                     const entry = trackingForDay[t.id];
                     const done = !!entry?.is_completed;
@@ -102,7 +152,16 @@ export default function DayHabitsLifeLogCard({
 
           {showLifeLog ? (
             <>
-              {showHabits && showLifeLog && <p className="text-section-header mb-2">Life log</p>}
+              {showCombinedHeader ? (
+                <SectionHeader
+                  as="p"
+                  icon={ListChecks}
+                  label="Life log"
+                  meta={lifeMeta}
+                  isDarkMode={isDarkMode}
+                  className="mb-2"
+                />
+              ) : null}
               {sortedLifeEvents.length === 0 ? (
                 <p className="text-body">
                   No event types yet.{" "}

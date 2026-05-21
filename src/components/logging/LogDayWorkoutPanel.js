@@ -1,5 +1,6 @@
 import { Dumbbell, Play } from "lucide-react";
 import { formatChipLabel } from "@/lib/dateLogUtils";
+import SectionHeader from "@/components/SectionHeader";
 
 export default function LogDayWorkoutPanel({
   isDarkMode,
@@ -15,30 +16,40 @@ export default function LogDayWorkoutPanel({
 }) {
   if (!pastLogDate) return null;
 
+  const completedSets = workoutSessions.reduce(
+    (sum, session) => sum + (session.set_logs || []).filter(l => l.is_completed).length,
+    0,
+  );
+  const workoutMeta =
+    workoutSessions.length > 0
+      ? `${completedSets} set${completedSets !== 1 ? "s" : ""}`
+      : formatChipLabel(pastLogDate, todayStr);
+
   return (
     <div
-      className={`rounded-card border p-3 mb-6 ${
+      className={`rounded-card border p-4 mb-section ${
         isDarkMode ? "border-iron-800 bg-iron-950/40" : "border-slate-200 bg-slate-50/90"
       }`}
     >
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <Dumbbell className={`h-4 w-4 shrink-0 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
-          <p className="text-section-header truncate">Workout · {formatChipLabel(pastLogDate, todayStr)}</p>
-        </div>
+      <SectionHeader
+        icon={Dumbbell}
+        label="Workout"
+        meta={workoutMeta}
+        isDarkMode={isDarkMode}
+      >
         {routines.length > 0 ? (
           <button
             type="button"
             onClick={onPickRoutine}
             disabled={startingRoutine}
-            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg ${
+            className={`shrink-0 rounded-card px-3 py-1.5 text-xs font-bold transition-colors ${
               isDarkMode ? "bg-iron-800 text-lift-primary hover:bg-iron-700" : "bg-slate-200 text-workout-primary hover:bg-slate-300"
             } disabled:opacity-50`}
           >
             Pick routine
           </button>
         ) : null}
-      </div>
+      </SectionHeader>
 
       {workoutSessions.length > 0 ? (
         <div className="space-y-2">

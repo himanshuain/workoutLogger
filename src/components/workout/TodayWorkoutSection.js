@@ -37,6 +37,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
 import SectionHeader from "@/components/SectionHeader";
+import {
+  actionPrimary,
+  actionSecondary,
+  actionDestructive,
+  actionDestructiveGhost,
+  actionGhost,
+} from "@/lib/actionButtonStyles";
 
 function exerciseStatus(name, doneMap, setLogs) {
   if (doneMap[name]) return "completed";
@@ -275,9 +282,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             <button
               type="button"
               onClick={() => onChooseRoutine?.()}
-              className={`w-full py-3 rounded-card font-bold flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`w-full rounded-card py-3 font-bold flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
             >
               <Dumbbell className="w-5 h-5" />
               Choose routine
@@ -285,11 +290,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             <button
               type="button"
               onClick={() => router.push(`/plan?day=${todayDow}`)}
-              className={`w-full py-3 rounded-card font-semibold flex items-center justify-center gap-2 border ${
-                isDarkMode
-                  ? "border-iron-700 text-iron-200 hover:bg-iron-800/80"
-                  : "border-slate-200 text-slate-800 hover:bg-slate-50"
-              }`}
+              className={`w-full rounded-card py-3 font-semibold flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
             >
               <ClipboardList className="w-5 h-5" />
               Plan this day
@@ -352,11 +353,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       <button
         type="button"
         onClick={() => onChooseRoutine?.()}
-        className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${
-          isDarkMode
-            ? "text-iron-300 hover:text-iron-200 hover:bg-iron-800/80"
-            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-        }`}
+        className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${actionGhost(isDarkMode)}`}
         aria-label={hasSession ? "Switch routine" : "Choose another routine"}
       >
         <RefreshCw className="w-3.5 h-3.5 shrink-0" aria-hidden />
@@ -371,11 +368,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
         onClick={handleResetInProgress}
         disabled={resetting}
         aria-label="Reset in-progress workout"
-        className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-          isDarkMode
-            ? "text-iron-400 hover:text-red-400 hover:bg-iron-800/80"
-            : "text-slate-500 hover:text-red-600 hover:bg-slate-100"
-        }`}
+        className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${actionDestructiveGhost(isDarkMode)}`}
       >
         <RotateCw className={`w-3.5 h-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`} aria-hidden />
         {resetting ? "Resetting…" : "Reset"}
@@ -430,9 +423,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                 type="button"
                 onClick={handleStartOrResume}
                 disabled={starting || !todayRoutine}
-                className={`w-full py-3.5 rounded-card font-bold text-sm flex items-center justify-center gap-2 ${
-                  isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                } disabled:opacity-50 disabled:pointer-events-none`}
+                className={`w-full rounded-card py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none ${actionPrimary(isDarkMode)}`}
               >
                 {starting ? (
                   <span className="animate-pulse">Starting…</span>
@@ -600,10 +591,10 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
                     )
                   }
-                  className={`w-full py-3.5 rounded-card font-semibold border border-dashed flex items-center justify-center gap-2 ${
+                  className={`w-full rounded-card py-3.5 font-semibold border border-dashed flex items-center justify-center gap-2 ${
                     isDarkMode
-                      ? "border-iron-700 text-iron-100"
-                      : "border-slate-300 text-slate-800"
+                      ? "border-iron-700 bg-transparent text-iron-300 hover:bg-iron-800/50"
+                      : "border-slate-300 bg-transparent text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <Plus className="w-5 h-5" />
@@ -613,9 +604,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                 <button
                   type="button"
                   onClick={handleFinish}
-                  className={`w-full py-3.5 rounded-card font-bold text-sm inline-flex items-center justify-center gap-2 ${
-                    isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                  }`}
+                  className={`w-full rounded-card py-3.5 font-bold text-sm inline-flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
                 >
                   <CircleCheck className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
                   Finish workout
@@ -642,7 +631,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDiscardWorkout}
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={actionDestructive(isDarkMode, "border-0")}
             >
               Discard
             </AlertDialogAction>

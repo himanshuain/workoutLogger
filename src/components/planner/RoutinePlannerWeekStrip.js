@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { actionPrimary, actionSecondary } from "@/lib/actionButtonStyles";
 import { ArrowRightLeft, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -288,7 +289,7 @@ export default function RoutinePlannerWeekStrip({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
-              className={`inline-flex items-center justify-center gap-2 ${isDarkMode ? "border-iron-700 bg-iron-800 text-iron-200" : ""}`}
+              className={`inline-flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
             >
               <X className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
               Cancel
@@ -301,9 +302,7 @@ export default function RoutinePlannerWeekStrip({
                 if (!payload) return;
                 void execMove(payload.fromDay, payload.toDay);
               }}
-              className={`inline-flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90" : "bg-workout-primary text-white"
-              }`}
+              className={`inline-flex items-center justify-center gap-2 border-0 ${actionPrimary(isDarkMode)}`}
             >
               <ArrowRightLeft className="w-4 h-4 shrink-0" aria-hidden />
               Swap

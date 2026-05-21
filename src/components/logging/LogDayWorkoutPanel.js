@@ -1,6 +1,11 @@
 import { Dumbbell, Play } from "lucide-react";
 import { formatChipLabel } from "@/lib/dateLogUtils";
 import SectionHeader from "@/components/SectionHeader";
+import {
+  actionPrimary,
+  actionSecondary,
+  actionSecondaryCompact,
+} from "@/lib/actionButtonStyles";
 
 export default function LogDayWorkoutPanel({
   isDarkMode,
@@ -42,9 +47,7 @@ export default function LogDayWorkoutPanel({
             type="button"
             onClick={onPickRoutine}
             disabled={startingRoutine}
-            className={`shrink-0 rounded-card px-3 py-1.5 text-xs font-bold transition-colors ${
-              isDarkMode ? "bg-iron-800 text-lift-primary hover:bg-iron-700" : "bg-slate-200 text-workout-primary hover:bg-slate-300"
-            } disabled:opacity-50`}
+            className={`shrink-0 rounded-card px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${actionSecondaryCompact(isDarkMode)}`}
           >
             Pick routine
           </button>
@@ -84,14 +87,10 @@ export default function LogDayWorkoutPanel({
                 <button
                   type="button"
                   onClick={() => onNavigateSession(session)}
-                  className={`flex shrink-0 items-center gap-1 rounded-card px-3 py-2 text-xs font-bold transition-colors ${
+                  className={`flex shrink-0 items-center gap-1 rounded-card px-3 py-2 text-xs font-semibold transition-colors ${
                     session.status === "completed"
-                      ? isDarkMode
-                        ? "border border-iron-600 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
-                        : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                      : isDarkMode
-                        ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30"
-                        : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
+                      ? actionSecondary(isDarkMode)
+                      : actionPrimary(isDarkMode)
                   }`}
                 >
                   {session.status === "completed" ? "Review" : "Continue"}
@@ -116,9 +115,7 @@ export default function LogDayWorkoutPanel({
               type="button"
               onClick={onStartWorkout}
               disabled={startingRoutine}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-card text-sm font-bold transition-colors ${
-                isDarkMode ? "bg-lift-primary/20 text-lift-primary hover:bg-lift-primary/30" : "bg-workout-primary/20 text-workout-primary hover:bg-workout-primary/30"
-              } disabled:opacity-50`}
+              className={`flex items-center justify-center gap-2 rounded-card px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${actionPrimary(isDarkMode)}`}
             >
               <Play className="h-4 w-4" />
               {routineForSelectedDay ? "Start with planned day" : "Start workout"}
@@ -128,9 +125,7 @@ export default function LogDayWorkoutPanel({
                 type="button"
                 onClick={onPickRoutine}
                 disabled={startingRoutine}
-                className={`py-2.5 rounded-card text-sm font-semibold border ${
-                  isDarkMode ? "border-iron-600 text-iron-200 hover:bg-iron-800/80" : "border-slate-300 text-slate-800 hover:bg-slate-50"
-                } disabled:opacity-50`}
+                className={`rounded-card py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${actionSecondary(isDarkMode)}`}
               >
                 Choose another routine
               </button>

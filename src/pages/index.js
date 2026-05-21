@@ -56,6 +56,13 @@ import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
+import {
+  segmentSelected,
+  segmentUnselected,
+  actionPrimary,
+  actionSecondary,
+  actionDestructive,
+} from "@/lib/actionButtonStyles";
 import SectionManageButton from "@/components/SectionManageButton";
 import SectionHeader, { SectionHeaderLink } from "@/components/SectionHeader";
 import SectionSurface from "@/components/SectionSurface";
@@ -1097,8 +1104,8 @@ export default function Home() {
                   onClick={() => setNewHabit({ ...newHabit, type: "habit", has_value: false })}
                   className={`flex-1 py-3 rounded-card text-sm font-medium flex items-center justify-center gap-2 ${
                     newHabit.type === "habit"
-                      ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                      : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+                      ? segmentSelected(isDarkMode)
+                      : segmentUnselected(isDarkMode)
                   }`}
                 >
                   {newHabit.type === "habit" && <Check className="w-4 h-4" />}
@@ -1108,8 +1115,8 @@ export default function Home() {
                   onClick={() => setNewHabit({ ...newHabit, type: "health", has_value: true })}
                   className={`flex-1 py-3 rounded-card text-sm font-medium flex items-center justify-center gap-2 ${
                     newHabit.type === "health"
-                      ? isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-                      : isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
+                      ? segmentSelected(isDarkMode)
+                      : segmentUnselected(isDarkMode)
                   }`}
                 >
                   {newHabit.type === "health" && <Check className="w-4 h-4" />}
@@ -1174,18 +1181,14 @@ export default function Home() {
           <ModalFooter>
             <button
               onClick={() => setShowAddHabitDrawer(false)}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
+              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
             >
               Cancel
             </button>
             <button
               onClick={handleSaveHabit}
               disabled={!newHabit.name.trim()}
-              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
             >
               <Check className="w-4 h-4" />
               Add Habit
@@ -1223,7 +1226,7 @@ export default function Home() {
                 }
                 setDeleteConfirm(null);
               }}
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={actionDestructive(isDarkMode, "border-0")}
             >
               Delete
             </AlertDialogAction>
@@ -1293,7 +1296,7 @@ export default function Home() {
                   setReplaceWorkoutConfirm(null);
                 }
               }}
-              className={isDarkMode ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90 border-0" : "bg-workout-primary text-white hover:bg-workout-primary/90 border-0"}
+              className={actionPrimary(isDarkMode, "border-0")}
             >
               Replace
             </AlertDialogAction>

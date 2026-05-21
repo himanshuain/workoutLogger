@@ -34,6 +34,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  actionPrimary,
+  actionSecondary,
+  actionDestructive,
+  actionDestructiveGhost,
+  actionGhost,
+} from "@/lib/actionButtonStyles";
 
 export default function RoutinePlannerPage() {
   const router = useRouter();
@@ -234,8 +241,8 @@ export default function RoutinePlannerPage() {
         <button
           type="button"
           onClick={() => setRestForDay(!restDay)}
-          className={`mt-4 flex items-center gap-2 text-sm font-medium ${
-            restDay ? (isDarkMode ? "text-lift-primary" : "text-workout-primary") : isDarkMode ? "text-iron-500" : "text-slate-500"
+          className={`mt-4 flex items-center gap-2 text-sm font-medium ${actionGhost(isDarkMode)} ${
+            restDay ? (isDarkMode ? "!text-iron-200" : "!text-slate-700") : ""
           }`}
         >
           <Moon className="w-4 h-4" />
@@ -291,8 +298,8 @@ export default function RoutinePlannerPage() {
                     <button
                       type="button"
                       onClick={() => setList((prev) => prev.filter((x) => x.key !== item.key))}
-                      className={`p-2 rounded-card ${isDarkMode ? "text-iron-500 hover:bg-iron-800" : "text-slate-400 hover:bg-slate-100"}`}
-                      aria-label="Remove"
+                      className={`rounded-card p-2 ${actionDestructiveGhost(isDarkMode)}`}
+                      aria-label={`Remove ${item.exercise_name}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -308,8 +315,10 @@ export default function RoutinePlannerPage() {
                   `/exercises?routineDay=${selectedDay}&returnTo=plan&day=${selectedDay}`
                 )
               }
-              className={`mt-4 w-full py-3.5 rounded-card font-semibold flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-100 text-slate-800"
+              className={`mt-4 flex w-full items-center justify-center gap-2 rounded-card border border-dashed py-3 font-semibold ${
+                isDarkMode
+                  ? "border-iron-700 bg-transparent text-iron-300 hover:bg-iron-800/50"
+                  : "border-slate-300 bg-transparent text-slate-700 hover:bg-slate-50"
               }`}
             >
               <Plus className="w-5 h-5" />
@@ -319,7 +328,7 @@ export default function RoutinePlannerPage() {
             <button
               type="button"
               onClick={handleClear}
-              className={`mt-2 w-full py-3 text-sm font-medium inline-flex items-center justify-center gap-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+              className={`mt-2 inline-flex w-full items-center justify-center gap-2 py-3 text-sm font-medium ${actionDestructiveGhost(isDarkMode)}`}
             >
               <RotateCcw className="w-4 h-4 shrink-0" aria-hidden />
               Clear day
@@ -330,9 +339,7 @@ export default function RoutinePlannerPage() {
         <button
           type="button"
           onClick={handleSave}
-          className={`mt-8 w-full py-4 rounded-card font-semibold flex items-center justify-center gap-2 ${
-            isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-          }`}
+          className={`mt-8 flex w-full items-center justify-center gap-2 rounded-card py-4 font-semibold ${actionPrimary(isDarkMode)}`}
         >
           <Save className="w-5 h-5" />
           Save routine
@@ -380,11 +387,7 @@ export default function RoutinePlannerPage() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget({ id: r.id, name: r.name || "Untitled" })}
-                    className={`shrink-0 p-2.5 rounded-card ${
-                      isDarkMode
-                        ? "text-red-400 hover:bg-red-950/50"
-                        : "text-red-600 hover:bg-red-50"
-                    }`}
+                    className={`shrink-0 rounded-card p-2.5 ${actionDestructiveGhost(isDarkMode)}`}
                     aria-label={`Delete routine ${r.name}`}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -408,7 +411,7 @@ export default function RoutinePlannerPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
-              className={`inline-flex items-center justify-center gap-2 ${isDarkMode ? "border-iron-700 bg-iron-800 text-iron-200" : ""}`}
+              className={`inline-flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
             >
               <X className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
               Cancel
@@ -418,7 +421,7 @@ export default function RoutinePlannerPage() {
                 e.preventDefault();
                 void handleConfirmDeleteRoutine();
               }}
-              className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white inline-flex items-center justify-center gap-2"
+              className={`inline-flex items-center justify-center gap-2 border-0 ${actionDestructive(isDarkMode)}`}
             >
               <Trash2 className="w-4 h-4 shrink-0" aria-hidden />
               Delete

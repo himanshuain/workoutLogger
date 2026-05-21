@@ -548,6 +548,23 @@ input[type="number"] {
   @apply bg-slate-200 text-slate-700;
 }
 
+.btn-destructive {
+  @apply py-3 px-6 rounded-card font-semibold transition-all duration-150;
+  transform-origin: center;
+}
+
+.btn-destructive:active {
+  transform: scale(0.96);
+}
+
+.dark .btn-destructive {
+  @apply bg-red-600 text-white hover:bg-red-500;
+}
+
+.light .btn-destructive {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+
 /* Card base styles with hierarchy */
 .card {
   @apply rounded-card p-4;

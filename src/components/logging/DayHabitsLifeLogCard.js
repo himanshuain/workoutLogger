@@ -3,6 +3,10 @@ import SectionManageButton from "@/components/SectionManageButton";
 import SectionHeader from "@/components/SectionHeader";
 import { sectionSurfaceClass } from "@/components/SectionSurface";
 import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
+import {
+  actionSuccess,
+  actionNeutralIcon,
+} from "@/lib/actionButtonStyles";
 
 /**
  * Habits list + Life log quick actions (shared by Log page and Today).
@@ -219,19 +223,15 @@ export default function DayHabitsLifeLogCard({
                           onClick={() => onQuickLifeLog(et)}
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card transition-all active:scale-90 ${
                             done
-                              ? isDarkMode
-                                ? "bg-lift-primary text-iron-950 shadow-inner"
-                                : "bg-workout-primary text-white shadow-sm"
-                              : isDarkMode
-                                ? "bg-iron-800/85 text-lift-primary ring-1 ring-iron-600 shadow-inner shadow-black/10"
-                                : "bg-white text-workout-primary ring-1 ring-slate-300 shadow-sm"
+                              ? actionSuccess(isDarkMode)
+                              : actionNeutralIcon(isDarkMode)
                           }`}
                         >
                           <LifeLogEventQuickGlyph
                             isLoggedToday={done}
                             needValue={Boolean(et.need_value)}
                             needNotes={Boolean(et.need_notes)}
-                            loggedIconClass={isDarkMode ? "text-iron-950" : "text-white"}
+                            loggedIconClass={isDarkMode ? "text-green-400" : "text-green-700"}
                           />
                         </button>
                       </li>

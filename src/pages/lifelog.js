@@ -71,6 +71,15 @@ import {
   mergeEventTypesWithLifelogSettings,
 } from "@/lib/lifelogEventSettings";
 import { formatDaysSince, formatDate } from "@/lib/lifelogUtils";
+import {
+  actionPrimary,
+  actionSecondary,
+  actionDestructive,
+  actionSuccess,
+  actionNeutralIcon,
+  toggleTrackOn,
+  toggleTrackOff,
+} from "@/lib/actionButtonStyles";
 import LifeLogGapPill from "@/components/lifelog/LifeLogGapPill";
 
 const EVENT_ICONS = [
@@ -838,9 +847,7 @@ export default function LifeLog() {
           <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>Sign in to use Life Log</p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
+            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${actionPrimary(isDarkMode)}`}
           >
             Sign In
           </button>
@@ -925,9 +932,7 @@ export default function LifeLog() {
                   setShowAddHabitModal(true);
                 }
               }}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-card font-medium text-sm ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-card font-medium text-sm ${actionPrimary(isDarkMode)}`}
             >
               <Plus className="w-4 h-4" />
               {activeTab === "events" ? "Add Event" : "Add Habit"}
@@ -1060,12 +1065,8 @@ export default function LifeLog() {
                             onClick={() => handleQuickLog(eventType)}
                             className={`w-10 h-10 rounded-card flex items-center justify-center flex-shrink-0 transition-all active:scale-90 relative ${
                               isLoggedToday
-                                ? isDarkMode
-                                  ? "bg-lift-primary text-iron-950 shadow-inner"
-                                  : "bg-workout-primary text-white shadow-sm"
-                                : isDarkMode
-                                  ? "bg-iron-800/85 text-lift-primary ring-1 ring-iron-600 shadow-inner shadow-black/10"
-                                  : "bg-white text-workout-primary ring-1 ring-slate-300 shadow-sm"
+                                ? actionSuccess(isDarkMode)
+                                : actionNeutralIcon(isDarkMode)
                             }`}
                           >
                             <LifeLogEventQuickGlyph
@@ -1073,7 +1074,7 @@ export default function LifeLog() {
                               needValue={Boolean(eventType.need_value)}
                               needNotes={Boolean(eventType.need_notes)}
                               loggedIconClass={
-                                isDarkMode ? "text-iron-950" : "text-white"
+                                isDarkMode ? "text-green-400" : "text-green-700"
                               }
                             />
                           </button>
@@ -1462,8 +1463,8 @@ export default function LifeLog() {
                                 } ${
                                   NotificationService.getSchedule(trackable.id)?.enabled
                                     ? isDarkMode
-                                      ? "text-lift-primary"
-                                      : "text-workout-primary"
+                                      ? "text-iron-200"
+                                      : "text-slate-700"
                                     : isDarkMode
                                       ? "text-iron-500 hover:text-iron-300"
                                       : "text-slate-400 hover:text-slate-600"
@@ -1791,13 +1792,7 @@ export default function LifeLog() {
                 type="button"
                 onClick={() => setNewEvent({ ...newEvent, need_value: !newEvent.need_value })}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  newEvent.need_value
-                    ? isDarkMode
-                      ? "bg-lift-primary"
-                      : "bg-workout-primary"
-                    : isDarkMode
-                      ? "bg-iron-700"
-                      : "bg-slate-300"
+                  newEvent.need_value ? toggleTrackOn(isDarkMode) : toggleTrackOff(isDarkMode)
                 }`}
               >
                 <span
@@ -1833,13 +1828,7 @@ export default function LifeLog() {
                 type="button"
                 onClick={() => setNewEvent({ ...newEvent, need_notes: !newEvent.need_notes })}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  newEvent.need_notes
-                    ? isDarkMode
-                      ? "bg-lift-primary"
-                      : "bg-workout-primary"
-                    : isDarkMode
-                      ? "bg-iron-700"
-                      : "bg-slate-300"
+                  newEvent.need_notes ? toggleTrackOn(isDarkMode) : toggleTrackOff(isDarkMode)
                 }`}
               >
                 <span
@@ -1875,13 +1864,7 @@ export default function LifeLog() {
                 type="button"
                 onClick={() => setNewEvent({ ...newEvent, track_graph: !newEvent.track_graph })}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  newEvent.track_graph
-                    ? isDarkMode
-                      ? "bg-lift-primary"
-                      : "bg-workout-primary"
-                    : isDarkMode
-                      ? "bg-iron-700"
-                      : "bg-slate-300"
+                  newEvent.track_graph ? toggleTrackOn(isDarkMode) : toggleTrackOff(isDarkMode)
                 }`}
               >
                 <span
@@ -1898,18 +1881,14 @@ export default function LifeLog() {
                 setShowAddDrawer(false);
                 resetEventForm();
               }}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
+              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
             >
               Cancel
             </button>
             <button
               onClick={handleSaveEvent}
               disabled={!newEvent.name.trim()}
-              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${actionPrimary(isDarkMode)}`}
             >
               {editingEventId ? "Save Changes" : "Add Event"}
             </button>
@@ -2018,18 +1997,14 @@ export default function LifeLog() {
             <button
               type="button"
               onClick={() => setShowLogDrawer(false)}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
+              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={() => handleLogEvent()}
-              className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
             >
               <Check className="w-4 h-4" />
               Log Event
@@ -2223,17 +2198,13 @@ export default function LifeLog() {
           <ModalFooter>
             <button
               onClick={() => setEditingLog(null)}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
+              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
             >
               Cancel
             </button>
             <button
               onClick={handleSaveEditLog}
-              className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
             >
               <Check className="w-4 h-4" />
               Save
@@ -2341,11 +2312,7 @@ export default function LifeLog() {
             </button>
             <AlertDialogAction
               onClick={handleConfirmDuplicateLog}
-              className={`sm:col-span-1 mt-0 ${
-                isDarkMode
-                  ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90 border-0"
-                  : "bg-workout-primary text-white hover:bg-workout-primary/90 border-0"
-              }`}
+              className={`sm:col-span-1 mt-0 border-0 ${actionPrimary(isDarkMode)}`}
             >
               Add Anyway
             </AlertDialogAction>
@@ -2427,13 +2394,7 @@ export default function LifeLog() {
               <button
                 onClick={() => setNewPill({ ...newPill, has_value: !newPill.has_value })}
                 className={`w-12 h-7 rounded-full transition-colors ${
-                  newPill.has_value
-                    ? isDarkMode
-                      ? "bg-lift-primary"
-                      : "bg-workout-primary"
-                    : isDarkMode
-                      ? "bg-iron-700"
-                      : "bg-slate-200"
+                  newPill.has_value ? toggleTrackOn(isDarkMode) : toggleTrackOff(isDarkMode)
                 }`}
               >
                 <div
@@ -2476,23 +2437,15 @@ export default function LifeLog() {
           <ModalFooter>
             <button
               onClick={() => setShowAddHabitModal(false)}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
+              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
             >
               Cancel
             </button>
             <button
               onClick={handleSavePill}
               disabled={!newPill.name.trim()}
-              className={`flex-1 py-3 rounded-card font-bold transition-colors ${
-                newPill.name.trim()
-                  ? isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                  : isDarkMode
-                    ? "bg-iron-800 text-iron-600"
-                    : "bg-slate-200 text-slate-400"
+              className={`flex-1 py-3 rounded-card font-bold transition-colors disabled:opacity-50 ${
+                newPill.name.trim() ? actionPrimary(isDarkMode) : actionSecondary(isDarkMode)
               }`}
             >
               {editingTrackable ? "Save Changes" : "Add Habit"}
@@ -2617,9 +2570,7 @@ export default function LifeLog() {
           <ModalFooter>
             <button
               onClick={() => setPastEntryTrackable(null)}
-              className={`w-full py-3 rounded-card font-bold ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={`w-full py-3 rounded-card font-bold ${actionPrimary(isDarkMode)}`}
             >
               Done
             </button>

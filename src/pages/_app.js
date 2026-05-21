@@ -10,14 +10,9 @@ import { Toaster } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ThemeSettingsSync from "@/components/ThemeSettingsSync";
 
-const outfit = localFont({
-  src: [
-    { path: "../../public/fonts/outfit-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "../../public/fonts/outfit-latin-500-normal.woff2", weight: "500", style: "normal" },
-    { path: "../../public/fonts/outfit-latin-600-normal.woff2", weight: "600", style: "normal" },
-    { path: "../../public/fonts/outfit-latin-700-normal.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-outfit",
+const fjallaOne = localFont({
+  src: [{ path: "../../public/fonts/fjalla-one-latin-400.woff2", weight: "400", style: "normal" }],
+  variable: "--font-fjalla-one",
   display: "swap",
 });
 
@@ -42,6 +37,13 @@ const queryClient = new QueryClient({
 });
 
 export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    document.documentElement.classList.add(fjallaOne.variable, jetbrainsMono.variable);
+    return () => {
+      document.documentElement.classList.remove(fjallaOne.variable, jetbrainsMono.variable);
+    };
+  }, []);
+
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
@@ -72,7 +74,7 @@ export default function App({ Component, pageProps }) {
         <QueryClientProvider client={queryClient}>
           <WorkoutProvider>
             <ThemeSettingsSync />
-            <div className={`${outfit.variable} ${jetbrainsMono.variable} font-sans`}>
+            <div className={`${fjallaOne.className} font-sans antialiased`}>
               <ErrorBoundary>
                 <Component {...pageProps} />
               </ErrorBoundary>

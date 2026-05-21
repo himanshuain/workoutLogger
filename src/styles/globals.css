@@ -121,6 +121,8 @@ textarea {
 
 html {
   scroll-behavior: smooth;
+  font-family: var(--font-fjalla-one), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Dark theme body */
@@ -136,6 +138,7 @@ html {
 
 body {
   @apply font-body antialiased;
+  letter-spacing: 0.02em;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   background-color: var(--bg-primary);
@@ -716,17 +719,17 @@ input[type="number"] {
 
 /* Typography hierarchy */
 .text-screen-title {
-  @apply text-2xl font-bold tracking-tight;
+  @apply text-2xl font-normal tracking-tight;
   color: var(--text-primary);
 }
 
 .text-section-header {
-  @apply text-xs font-semibold uppercase tracking-wider;
+  @apply text-xs font-normal uppercase tracking-widest;
   color: var(--text-muted);
 }
 
 .text-card-title {
-  @apply text-lg font-semibold;
+  @apply text-base font-normal tracking-tight;
   color: var(--text-primary);
 }
 

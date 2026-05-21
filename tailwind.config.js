@@ -83,10 +83,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
-        body: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
-        sans: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains-mono)', 'monospace'],
+        display: ['var(--font-fjalla-one)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-fjalla-one)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-fjalla-one)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'monospace'],
       },
       spacing: {
         'safe-bottom': 'env(safe-area-inset-bottom)',

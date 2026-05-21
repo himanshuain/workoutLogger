@@ -20,7 +20,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Scale, Plus, TrendingDown, TrendingUp, Minus, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { Scale, Plus, TrendingDown, TrendingUp, Minus, Pencil, Trash2 } from "lucide-react";
+import {
+  ChartBody,
+  ChartCollapsibleHeader,
+  ChartSection,
+  chartPanelInnerClass,
+} from "@/components/charts/ChartChrome";
+import { cn } from "@/lib/utils";
 
 function MiniLineChart({ data, width = 280, height = 100, isDarkMode }) {
   if (!data || data.length < 2) return null;
@@ -29,7 +36,7 @@ function MiniLineChart({ data, width = 280, height = 100, isDarkMode }) {
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
-  const padding = { top: 10, bottom: 20, left: 0, right: 0 };
+  const padding = { top: 8, bottom: 18, left: 0, right: 0 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
 
@@ -219,102 +226,103 @@ export default function BodyWeightTracker({ isDarkMode }) {
   const chartData = weightHistory.slice(-30);
 
   return (
-    <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
-      {/* Header */}
-      <div
-        className={`p-4 flex items-center justify-between cursor-pointer`}
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-card flex items-center justify-center ${isDarkMode ? "bg-purple-500/20" : "bg-purple-100"}`}>
-            <Scale className={`w-5 h-5 ${isDarkMode ? "text-purple-400" : "text-purple-600"}`} />
-          </div>
-          <div>
-            <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>Body Weight</h3>
-            {stats ? (
-              <div className="flex items-center gap-2">
-                <span className={`text-lg font-bold ${isDarkMode ? "text-purple-400" : "text-purple-600"}`}>
-                  {stats.latest.value} kg
-                </span>
-                {stats.change && (
-                  <span className={`text-xs flex items-center gap-0.5 ${
-                    parseFloat(stats.change) < 0 ? "text-green-400" : parseFloat(stats.change) > 0 ? "text-red-400" : isDarkMode ? "text-iron-500" : "text-slate-500"
-                  }`}>
-                    {parseFloat(stats.change) < 0 ? <TrendingDown className="w-3 h-3" /> : parseFloat(stats.change) > 0 ? <TrendingUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                    {Math.abs(parseFloat(stats.change))} kg
-                  </span>
+    <ChartSection isDarkMode={isDarkMode}>
+      <div className="flex items-start justify-between gap-2 pr-1">
+        <ChartCollapsibleHeader
+          isDarkMode={isDarkMode}
+          icon={Scale}
+          label="Body Weight"
+          meta={stats ? `${stats.latest.value} kg` : "No data yet"}
+          expanded={isExpanded}
+          onToggle={() => setIsExpanded(!isExpanded)}
+          className="flex-1"
+          trailing={
+            stats?.change ? (
+              <span
+                className={cn(
+                  "flex shrink-0 items-center gap-0.5 text-[10px] font-semibold",
+                  parseFloat(stats.change) < 0
+                    ? "text-green-400"
+                    : parseFloat(stats.change) > 0
+                      ? "text-red-400"
+                      : "text-metadata",
                 )}
-              </div>
-            ) : (
-              <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>No data yet</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setLogWeight(todayWeight?.value?.toString() || "");
-              setLogDate(today);
-              setShowLogModal(true);
-            }}
-            className={`p-2 rounded-card ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-          {isExpanded ? (
-            <ChevronUp className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
-          ) : (
-            <ChevronDown className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
+              >
+                {parseFloat(stats.change) < 0 ? (
+                  <TrendingDown className="h-3 w-3" />
+                ) : parseFloat(stats.change) > 0 ? (
+                  <TrendingUp className="h-3 w-3" />
+                ) : (
+                  <Minus className="h-3 w-3" />
+                )}
+                {Math.abs(parseFloat(stats.change))} kg
+              </span>
+            ) : null
+          }
+        />
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            setLogWeight(todayWeight?.value?.toString() || "");
+            setLogDate(today);
+            setShowLogModal(true);
+          }}
+          className={cn(
+            "mt-3 shrink-0 rounded-card p-2",
+            chartPanelInnerClass(isDarkMode, isDarkMode ? "text-iron-400 active:bg-surface-pressed" : "text-[color:var(--text-secondary)]"),
           )}
-        </div>
+        >
+          <Plus className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Expandable Content */}
       {isExpanded && (
-        <div className={`px-4 pb-4 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-          {/* Chart */}
+        <ChartBody isDarkMode={isDarkMode}>
           {chartData.length >= 2 ? (
-            <div className="pt-3">
-              <MiniLineChart data={chartData} width={300} height={120} isDarkMode={isDarkMode} />
-              <p className={`text-xs text-center mt-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                Last {chartData.length} entries
-              </p>
+            <div>
+              <MiniLineChart data={chartData} width={300} height={100} isDarkMode={isDarkMode} />
+              <p className="text-metadata mt-1 text-center">Last {chartData.length} entries</p>
             </div>
           ) : (
-            <p className={`text-center text-sm py-6 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+            <p className={`py-4 text-center text-sm ${isDarkMode ? "text-iron-600" : "text-[color:var(--text-muted)]"}`}>
               Log at least 2 entries to see the trend
             </p>
           )}
 
-          {/* Stats Row */}
           {stats && (
-            <div className={`flex gap-3 mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-              <div className={`flex-1 rounded-card p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
-                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Start</p>
-                <p className={`font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{stats.oldest.value}</p>
+            <div className="mt-2 flex gap-1.5 border-t border-surface-subtle pt-2">
+              <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
+                <p className="text-metadata">Start</p>
+                <p className={`font-bold ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>{stats.oldest.value}</p>
               </div>
-              <div className={`flex-1 rounded-card p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
-                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Current</p>
+              <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
+                <p className="text-metadata">Current</p>
                 <p className={`font-bold ${isDarkMode ? "text-purple-400" : "text-purple-600"}`}>{stats.latest.value}</p>
               </div>
-              <div className={`flex-1 rounded-card p-3 text-center ${isDarkMode ? "bg-iron-800/50" : "bg-slate-50"}`}>
-                <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Change</p>
-                <p className={`font-bold ${
-                  parseFloat(stats.totalChange) < 0 ? "text-green-400" : parseFloat(stats.totalChange) > 0 ? "text-red-400" : isDarkMode ? "text-iron-200" : "text-slate-700"
-                }`}>
-                  {parseFloat(stats.totalChange) > 0 ? "+" : ""}{stats.totalChange}
+              <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
+                <p className="text-metadata">Change</p>
+                <p
+                  className={`font-bold ${
+                    parseFloat(stats.totalChange) < 0
+                      ? "text-green-400"
+                      : parseFloat(stats.totalChange) > 0
+                        ? "text-red-400"
+                        : isDarkMode
+                          ? "text-iron-200"
+                          : "text-[color:var(--text-primary)]"
+                  }`}
+                >
+                  {parseFloat(stats.totalChange) > 0 ? "+" : ""}
+                  {stats.totalChange}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Recent Entries */}
           {weightHistory.length > 0 && (
-            <div className={`mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-              <h4 className={`text-xs font-medium uppercase tracking-wider mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                Recent
-              </h4>
+            <div className="mt-2 border-t border-surface-subtle pt-2">
+              <h4 className="text-section-header mb-1">Recent</h4>
               <div className="space-y-1">
                 {weightHistory.slice(-5).reverse().map((entry) => (
                   <div key={entry.date} className={`flex items-center py-1.5 px-2 rounded-lg gap-2 ${isDarkMode ? "hover:bg-iron-800/30" : "hover:bg-slate-50"}`}>
@@ -341,7 +349,7 @@ export default function BodyWeightTracker({ isDarkMode }) {
               </div>
             </div>
           )}
-        </div>
+        </ChartBody>
       )}
 
       {/* Log Weight Modal */}
@@ -418,6 +426,6 @@ export default function BodyWeightTracker({ isDarkMode }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ChartSection>
   );
 }

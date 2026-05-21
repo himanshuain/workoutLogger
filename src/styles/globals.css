@@ -728,6 +728,11 @@ input[type="number"] {
   border-radius: 0.75rem;
 }
 
+.chart-legend {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+}
+
 /* Pale red selected chip — pills, tabs, nav (light mode) */
 .light .accent-soft-surface {
   background: var(--accent-soft);

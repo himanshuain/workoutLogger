@@ -3,10 +3,15 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import {
+  ChartBody,
+  ChartCollapsibleHeader,
+  ChartSection,
+  chartPanelInnerClass,
+} from "@/components/charts/ChartChrome";
+import { cn } from "@/lib/utils";
 
 function LineGraph({ data, color = "#fbbf24", height = 140, isDarkMode = true }) {
   if (!data || data.length === 0) {
@@ -25,7 +30,7 @@ function LineGraph({ data, color = "#fbbf24", height = 140, isDarkMode = true })
   const minWeight = Math.min(...weights);
   const range = maxWeight - minWeight || 1;
 
-  const padding = { top: 20, bottom: 32, left: 40, right: 16 };
+  const padding = { top: 12, bottom: 22, left: 32, right: 10 };
   const graphWidth = 300;
   const graphHeight = height - padding.top - padding.bottom;
 
@@ -186,79 +191,56 @@ export default function ProgressGraph({
 
   if (compact) {
     return (
-      <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "chart-panel"}`}>
-        <button onClick={() => setIsExpanded(!isExpanded)} className="w-full p-4 flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-card flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-800" : "chart-panel-inner"}`}>
-            <ExerciseIcon name={exerciseName} className="w-7 h-7" color={isDarkMode ? "#6b7280" : "#64748b"} />
-          </div>
-          <div className="flex-1 text-left min-w-0">
-            <p className={`font-medium truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-              {exerciseName}
-            </p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-sm font-semibold ${isDarkMode ? "text-iron-300" : "text-slate-600"}`}>
-                {stats.currentWeight || stats.maxWeight}{unit}
+      <ChartSection isDarkMode={isDarkMode}>
+        <ChartCollapsibleHeader
+          isDarkMode={isDarkMode}
+          leading={
+            <ExerciseIcon
+              name={exerciseName}
+              className="h-7 w-7 shrink-0 rounded-card"
+              color={isDarkMode ? "#6b7280" : "#64748b"}
+            />
+          }
+          label={exerciseName}
+          meta={`${stats.currentWeight || stats.maxWeight}${unit}`}
+          expanded={isExpanded}
+          onToggle={() => setIsExpanded(!isExpanded)}
+          trailing={
+            stats.change > 0 ? (
+              <span className={cn("flex shrink-0 items-center gap-0.5 rounded-pill px-1.5 py-0.5 text-[10px] font-semibold", trendBg, trendColor)}>
+                <TrendIcon className="h-2.5 w-2.5" />
+                {stats.changeRaw > 0 ? "+" : ""}{stats.changeRaw}{unit}
               </span>
-              {stats.change > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-medium ${trendBg} ${trendColor}`}>
-                  <TrendIcon className="w-2.5 h-2.5" />
-                  {stats.changeRaw > 0 ? "+" : ""}{stats.changeRaw}{unit}
-                </span>
-              )}
-            </div>
-          </div>
-          {isExpanded ? (
-            <ChevronUp className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
-          ) : (
-            <ChevronDown className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
-          )}
-        </button>
+            ) : null
+          }
+        />
 
         {isExpanded && (
-          <div className={`px-4 pb-4 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-            <div className="pt-2">
-              <LineGraph data={graphData} height={150} color={accentColor} isDarkMode={isDarkMode} />
+          <ChartBody isDarkMode={isDarkMode}>
+            <LineGraph data={graphData} height={132} color={accentColor} isDarkMode={isDarkMode} />
+
+            <div className="mt-2 flex gap-1.5 border-t border-surface-subtle pt-2">
+              {[
+                ["Current", stats.currentWeight || 0, isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"],
+                ["Best", stats.maxWeight || 0, isDarkMode ? "text-lift-primary" : "text-[color:var(--text-primary)]"],
+                ["Est. 1RM", stats.e1rm || 0, isDarkMode ? "text-orange-400" : "text-orange-600"],
+                ["Sessions", stats.totalSessions, isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"],
+              ].map(([lbl, val, colorClass]) => (
+                <div key={lbl} className={cn("flex-1 rounded-card p-1.5 text-center", chartPanelInnerClass(isDarkMode))}>
+                  <p className="text-metadata">{lbl}</p>
+                  <p className={cn("text-sm font-bold", colorClass)}>{val}{lbl !== "Sessions" ? unit : ""}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Stats row */}
-            <div className={`flex gap-2 mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-                <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Current</p>
-                <p className={`font-bold text-sm ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                  {stats.currentWeight || 0}{unit}
-                </p>
-              </div>
-              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-                <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Best</p>
-                <p className={`font-bold text-sm ${isDarkMode ? "text-lift-primary" : "text-slate-800"}`}>
-                  {stats.maxWeight || 0}{unit}
-                </p>
-              </div>
-              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-                <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Est. 1RM</p>
-                <p className={`font-bold text-sm ${isDarkMode ? "text-orange-400" : "text-orange-600"}`}>
-                  {stats.e1rm || 0}{unit}
-                </p>
-              </div>
-              <div className={`flex-1 rounded-card p-2 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-                <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Sessions</p>
-                <p className={`font-bold text-sm ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
-                  {stats.totalSessions}
-                </p>
-              </div>
-            </div>
-
-            {/* Last few entries */}
             {graphData.length > 0 && (
-              <div className={`mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-                <p className={`text-[10px] uppercase tracking-wider font-medium mb-1.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  Recent sessions
-                </p>
-                <div className="space-y-1">
-                  {graphData.slice(-4).reverse().map((d) => (
-                    <div key={d.date} className={`flex items-center justify-between py-1 text-xs ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+              <div className="mt-2 border-t border-surface-subtle pt-2">
+                <p className="text-section-header mb-1">Recent sessions</p>
+                <div className="space-y-0.5">
+                  {graphData.slice(-4).reverse().map(d => (
+                    <div key={d.date} className={`flex items-center justify-between py-0.5 text-xs ${isDarkMode ? "text-iron-400" : "text-[color:var(--text-secondary)]"}`}>
                       <span>{formatDate(d.date)}</span>
-                      <span className={`font-medium ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>
+                      <span className={`font-medium ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>
                         {d.weight}{unit} × {d.reps} reps
                       </span>
                     </div>
@@ -266,52 +248,51 @@ export default function ProgressGraph({
                 </div>
               </div>
             )}
-          </div>
+          </ChartBody>
         )}
-      </div>
+      </ChartSection>
     );
   }
 
   return (
-    <div className={`rounded-card p-4 ${isDarkMode ? "bg-iron-900/50" : "chart-panel"}`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-card flex items-center justify-center ${isDarkMode ? "bg-iron-800" : "chart-panel-inner"}`}>
-            <ExerciseIcon name={exerciseName} className="w-8 h-8" color={accentColor} />
+    <ChartSection isDarkMode={isDarkMode}>
+      <div className="px-3 pt-3 pb-2">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ExerciseIcon name={exerciseName} className="h-8 w-8" color={accentColor} />
+            <div>
+              <h3 className={`text-card-title ${isDarkMode ? "text-iron-100" : ""}`}>{exerciseName}</h3>
+              <p className="text-metadata capitalize">{exerciseCategory}</p>
+            </div>
           </div>
-          <div>
-            <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>{exerciseName}</h3>
-            <p className={`text-sm capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>{exerciseCategory}</p>
+          <div className={cn("flex items-center gap-1 rounded-card px-2 py-1", trendBg)}>
+            <TrendIcon className={cn("h-4 w-4", trendColor)} />
+            <span className={cn("text-sm font-medium", trendColor)}>
+              {stats.changeRaw > 0 && "+"}{stats.changeRaw || 0}{unit}
+            </span>
           </div>
-        </div>
-        <div className={`flex items-center gap-1 px-3 py-1.5 rounded-lg ${trendBg}`}>
-          <TrendIcon className={`w-4 h-4 ${trendColor}`} />
-          <span className={`font-medium ${trendColor}`}>
-            {stats.changeRaw > 0 && "+"}{stats.changeRaw || 0}{unit}
-          </span>
         </div>
       </div>
 
-      <LineGraph data={graphData} height={160} color={accentColor} isDarkMode={isDarkMode} />
+      <div className="px-3 pb-3">
+        <LineGraph data={graphData} height={148} color={accentColor} isDarkMode={isDarkMode} />
 
-      <div className="grid grid-cols-4 gap-2 mt-4">
-        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-          <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Current</p>
-          <p className={`font-bold text-sm ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>{stats.currentWeight || 0}{unit}</p>
-        </div>
-        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-          <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Best</p>
-          <p className={`font-bold text-sm ${isDarkMode ? "text-lift-primary" : "text-slate-800"}`}>{stats.maxWeight || 0}{unit}</p>
-        </div>
-        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-          <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Est. 1RM</p>
-          <p className={`font-bold text-sm ${isDarkMode ? "text-orange-400" : "text-orange-600"}`}>{stats.e1rm || 0}{unit}</p>
-        </div>
-        <div className={`text-center p-2 rounded-card ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-          <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>Sessions</p>
-          <p className={`font-bold text-sm ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>{stats.totalSessions}</p>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          {[
+            ["Current", stats.currentWeight || 0],
+            ["Best", stats.maxWeight || 0],
+            ["Est. 1RM", stats.e1rm || 0],
+            ["Sessions", stats.totalSessions],
+          ].map(([lbl, val]) => (
+            <div key={lbl} className={cn("rounded-card p-1.5 text-center", chartPanelInnerClass(isDarkMode))}>
+              <p className="text-metadata">{lbl}</p>
+              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"}`}>
+                {val}{lbl !== "Sessions" ? unit : ""}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </ChartSection>
   );
 }

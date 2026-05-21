@@ -27,6 +27,9 @@ import {
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
 import LongPressContextHint from "@/components/LongPressContextHint";
+import { ChartSection, ChartSectionHeader } from "@/components/charts/ChartChrome";
+import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
+import { cn } from "@/lib/utils";
 import { Target, Plus, Trash2, Trophy, ChevronRight, ChevronDown, Minus, Check, Pencil } from "lucide-react";
 
 const GOAL_TYPES = [
@@ -271,38 +274,41 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
   const selectedType = GOAL_TYPES.find((t) => t.id === newGoal.type);
 
   return (
-    <div className={`rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"}`}>
-      {/* Header — collapsible */}
-      <div className={`p-4 flex items-center justify-between gap-2`}>
+    <ChartSection isDarkMode={isDarkMode}>
+      <div className="flex items-center justify-between gap-2 px-3 pt-3 pb-2">
         <button
           type="button"
-          onClick={() => setExpanded((e) => !e)}
+          onClick={() => setExpanded(e => !e)}
           aria-expanded={expanded}
-          className="flex min-w-0 flex-1 items-center gap-3 text-left rounded-card -m-1 p-1 active:opacity-90"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
-          <div className={`w-10 h-10 rounded-card flex items-center justify-center shrink-0 ${isDarkMode ? "bg-amber-500/20" : "bg-amber-100"}`}>
-            <Target className={`w-5 h-5 ${isDarkMode ? "text-amber-400" : "text-amber-600"}`} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>Goals</h3>
-            <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              {goals.length === 0 ? "Set your targets" : `${goalProgress.filter((g) => g.progress >= 100).length}/${goals.length} completed`}
-            </p>
-          </div>
+          <ChartSectionHeader
+            icon={Target}
+            label="Goals"
+            meta={
+              goals.length === 0
+                ? "Set your targets"
+                : `${goalProgress.filter(g => g.progress >= 100).length}/${goals.length} completed`
+            }
+            isDarkMode={isDarkMode}
+            className="pointer-events-none min-w-0 flex-1 px-0 pt-0 pb-0"
+          />
           <ChevronDown
-            className={`w-5 h-5 shrink-0 transition-transform duration-200 opacity-70 ${
-              isDarkMode ? "text-iron-400" : "text-slate-500"
-            } ${expanded ? "rotate-180" : ""}`}
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-200",
+              expanded && "rotate-180",
+              isDarkMode ? "text-iron-400" : "text-[color:var(--text-muted)]",
+            )}
             aria-hidden
           />
         </button>
         <button
           type="button"
           onClick={() => setShowAddModal(true)}
-          className={`shrink-0 p-2 rounded-card ${isDarkMode ? "bg-iron-800 text-iron-400 active:bg-iron-700" : "bg-slate-100 text-slate-600 active:bg-slate-200"}`}
+          className={cn("shrink-0 rounded-card p-2", actionSecondaryCompact(isDarkMode))}
           aria-label="Add goal"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="h-4 w-4" />
         </button>
       </div>
 
@@ -578,6 +584,6 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ChartSection>
   );
 }

@@ -15,6 +15,7 @@ import MuscleHeatmap from "@/components/MuscleHeatmap";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody } from "@/components/ui/modal";
 import { FadeIn } from "@/components/ui/fade-in";
 import { SkeletonHeatmap, SkeletonSection, SkeletonStats } from "@/components/SkeletonLoader";
+import { ChartSegmentButton, ChartSegmentTrack } from "@/components/charts/ChartChrome";
 import {
   TrendingUp,
   Calendar,
@@ -192,15 +193,15 @@ export default function Progress() {
     enabled: !!user,
   });
 
-  const isProgressLoading =
-    sessionsPending || legacyPending || habitsPending || foodPending || todaySetsPending;
-
   // TanStack Query for today's set logs
   const { data: todaySetLogs = [], isPending: todaySetsPending } = useQuery({
     queryKey: ["todaySetLogs", user?.id, today],
     queryFn: () => getTodaySetLogs(),
     enabled: !!user,
   });
+
+  const isProgressLoading =
+    sessionsPending || legacyPending || habitsPending || foodPending || todaySetsPending;
 
   // Merge workout data from both systems
   const workoutHeatmapData = useMemo(() => {
@@ -819,46 +820,32 @@ export default function Progress() {
                 </ModalTitle>
 
                 {/* View Toggle - Compact Pills */}
-                <div
-                  className={`flex rounded-full p-0.5 ${isDarkMode ? "bg-iron-800/80" : "bg-surface-interactive border border-surface-subtle"}`}
-                >
-                  <button
+                <ChartSegmentTrack isDarkMode={isDarkMode}>
+                  <ChartSegmentButton
+                    isDarkMode={isDarkMode}
+                    selected={historyViewMode === "monthly"}
                     onClick={() => {
                       setHistoryViewMode("monthly");
                       setSelectedMonth(null);
                     }}
-                    className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                      historyViewMode === "monthly"
-                        ? isDarkMode
-                          ? "bg-lift-primary text-iron-950 shadow-sm"
-                          : "accent-soft-surface shadow-sm"
-                        : isDarkMode
-                          ? "text-iron-500 hover:text-iron-300"
-                          : "text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]"
-                    }`}
+                    className="px-3"
                   >
                     Monthly
-                  </button>
-                  <button
+                  </ChartSegmentButton>
+                  <ChartSegmentButton
+                    isDarkMode={isDarkMode}
+                    selected={historyViewMode === "daily"}
                     onClick={() => {
                       if (!selectedMonth && monthlyHistoryData.months?.length > 0) {
                         setSelectedMonth(monthlyHistoryData.months[0].month);
                       }
                       setHistoryViewMode("daily");
                     }}
-                    className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                      historyViewMode === "daily"
-                        ? isDarkMode
-                          ? "bg-lift-primary text-iron-950 shadow-sm"
-                          : "accent-soft-surface shadow-sm"
-                        : isDarkMode
-                          ? "text-iron-500 hover:text-iron-300"
-                          : "text-[color:var(--text-secondary)] hover:text-[color:var(--text-primary)]"
-                    }`}
+                    className="px-3"
                   >
                     Daily
-                  </button>
-                </div>
+                  </ChartSegmentButton>
+                </ChartSegmentTrack>
               </div>
 
               {/* Subtitle / Month Selector Row */}

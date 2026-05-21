@@ -4,10 +4,16 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  ChevronDown,
-  ChevronUp,
   Info,
 } from "lucide-react";
+import {
+  ChartBody,
+  ChartCollapsibleHeader,
+  ChartSection,
+  chartPanelInnerClass,
+} from "@/components/charts/ChartChrome";
+import { surfaceSelected } from "@/lib/surfaceStyles";
+import { cn } from "@/lib/utils";
 
 function getWeekLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
@@ -114,67 +120,35 @@ export default function VolumeChart({
   }, [thisWeekVolume, lastWeekVolume, weeklyChange]);
 
   return (
-    <div
-      className={`rounded-card overflow-hidden ${
-        isDarkMode
-          ? "bg-iron-900/50"
-          : "chart-panel"
-      }`}
-    >
-      <div
-        className="p-4 flex items-center justify-between cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-10 h-10 rounded-card flex items-center justify-center ${
-              isDarkMode ? "bg-lift-primary/20" : "chart-panel-inner"
-            }`}
-          >
-            <BarChart3
-              className={`w-5 h-5 ${
-                isDarkMode ? "text-lift-primary" : "text-[color:var(--text-secondary)]"
-              }`}
-            />
-          </div>
-          <div>
-            <h3
-              className={`font-semibold ${
-                isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"
-              }`}
-            >
-              Training Volume
-            </h3>
-            <div className="flex items-center gap-2">
-              <p className={`text-sm font-bold ${
-                isDarkMode ? "text-lift-primary" : "text-[color:var(--text-primary)]"
-              }`}>
-                {formatVolume(thisWeekVolume)} kg this week
-              </p>
-              {lastWeekVolume > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-medium ${
-                  changeDirection === "up"
-                    ? "bg-green-500/15 text-green-500"
-                    : changeDirection === "down"
+    <ChartSection isDarkMode={isDarkMode}>
+      <ChartCollapsibleHeader
+        isDarkMode={isDarkMode}
+        icon={BarChart3}
+        label="Training Volume"
+        meta={`${formatVolume(thisWeekVolume)} kg this week`}
+        expanded={isExpanded}
+        onToggle={() => setIsExpanded(!isExpanded)}
+        trailing={
+          lastWeekVolume > 0 ? (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 rounded-pill px-1.5 py-0.5 text-[10px] font-semibold",
+                changeDirection === "up"
+                  ? "bg-green-500/15 text-green-500"
+                  : changeDirection === "down"
                     ? "bg-orange-500/15 text-orange-400"
-                    : isDarkMode ? "bg-iron-800 text-iron-500" : "chart-panel-inner text-[color:var(--text-muted)]"
-                }`}>
-                  <ChangeIcon className="w-2.5 h-2.5" />
-                  {weeklyChange !== 0 ? `${Math.abs(weeklyChange)}%` : "Same"}
-                </span>
+                    : chartPanelInnerClass(isDarkMode, "text-metadata"),
               )}
-            </div>
-          </div>
-        </div>
-        {isExpanded ? (
-          <ChevronUp className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
-        ) : (
-          <ChevronDown className={`w-5 h-5 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
-        )}
-      </div>
+            >
+              <ChangeIcon className="h-2.5 w-2.5" />
+              {weeklyChange !== 0 ? `${Math.abs(weeklyChange)}%` : "Same"}
+            </span>
+          ) : null
+        }
+      />
 
       {isExpanded && (
-        <div className={`px-4 pb-4 border-t ${isDarkMode ? "border-iron-800/50" : "border-surface-subtle"}`}>
+        <ChartBody isDarkMode={isDarkMode}>
 
           {/* What is training volume? */}
           <button
@@ -187,9 +161,7 @@ export default function VolumeChart({
             {showInfo ? "Hide explanation" : "What is training volume?"}
           </button>
           {showInfo && (
-            <div className={`rounded-card p-3 mb-3 text-xs leading-relaxed ${
-              isDarkMode ? "bg-iron-800/60 text-iron-400" : "chart-panel-inner text-[color:var(--text-secondary)]"
-            }`}>
+            <div className={cn("mb-2 rounded-card p-2.5 text-xs leading-relaxed text-body", chartPanelInnerClass(isDarkMode))}>
               <p className="font-semibold mb-1">Volume = Weight × Reps (per set)</p>
               <p>
                 Training volume measures your total workload. Gradually increasing it over weeks 
@@ -200,16 +172,12 @@ export default function VolumeChart({
           )}
 
           {/* Insight */}
-          <p className={`text-xs mb-3 italic ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-            {insight}
-          </p>
+          <p className="text-metadata mb-2 italic">{insight}</p>
 
           {/* 4-week bar chart with value labels */}
-          <div className="pt-1">
-            <h4 className={`text-xs font-medium mb-2 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              Last 4 weeks
-            </h4>
-            <div className="flex items-end gap-2 h-[100px]">
+          <div>
+            <h4 className="text-section-header mb-1.5">Last 4 weeks</h4>
+            <div className="flex h-[88px] items-end gap-1.5">
               {weeklyVolumes.map((w, i) => {
                 const pct = maxWeekly > 0 ? (w.volume / maxWeekly) * 100 : 0;
                 const isThisWeek = i === 3;
@@ -222,7 +190,7 @@ export default function VolumeChart({
                     }`}>
                       {w.volume > 0 ? formatVolume(w.volume) : "—"}
                     </span>
-                    <div className={`w-full rounded-lg ${isDarkMode ? "bg-iron-800" : "chart-panel-inner"}`} style={{ height: "60px" }}>
+                    <div className={cn("w-full rounded-lg", chartPanelInnerClass(isDarkMode))} style={{ height: "52px" }}>
                       <div
                         className="w-full rounded-lg transition-all duration-500"
                         style={{
@@ -235,11 +203,14 @@ export default function VolumeChart({
                         }}
                       />
                     </div>
-                    <span className={`text-[10px] ${
-                      isThisWeek
-                        ? isDarkMode ? "text-lift-primary font-semibold" : "text-slate-800 font-semibold"
-                        : isDarkMode ? "text-iron-600" : "text-slate-400"
-                    }`}>
+                    <span
+                      className={cn(
+                        "text-[10px]",
+                        isThisWeek
+                          ? surfaceSelected(isDarkMode, "rounded-pill px-1 py-px font-semibold")
+                          : "text-metadata",
+                      )}
+                    >
                       {w.label}
                     </span>
                   </div>
@@ -249,37 +220,34 @@ export default function VolumeChart({
           </div>
 
           {/* Summary stats */}
-          <div className={`flex gap-2 mt-4 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-surface-subtle"}`}>
-            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>This Week</p>
-              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(thisWeekVolume)}</p>
+          <div className="mt-3 flex gap-1.5 border-t border-surface-subtle pt-2">
+            <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
+              <p className="text-metadata">This Week</p>
+              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>{formatVolume(thisWeekVolume)}</p>
             </div>
-            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>Last Week</p>
-              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(lastWeekVolume)}</p>
+            <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
+              <p className="text-metadata">Last Week</p>
+              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>{formatVolume(lastWeekVolume)}</p>
             </div>
-            <div className={`flex-1 rounded-card p-2.5 text-center ${isDarkMode ? "bg-iron-800/50" : "chart-panel-inner"}`}>
-              <p className={`text-[10px] ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>All Time</p>
-              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-slate-700"}`}>{formatVolume(totalVolume)}</p>
+            <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
+              <p className="text-metadata">All Time</p>
+              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>{formatVolume(totalVolume)}</p>
             </div>
           </div>
 
-          {/* Volume by muscle group */}
           {volumeByCategory.length > 0 && (
-            <div className={`mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-              <h4 className={`text-xs font-medium mb-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                Volume by muscle group
-              </h4>
-              <p className={`text-[10px] mb-2.5 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                Shows which muscles are getting the most work. Balance these for well-rounded training.
+            <div className="mt-2 border-t border-surface-subtle pt-2">
+              <h4 className="text-section-header mb-1">Volume by muscle group</h4>
+              <p className="text-metadata mb-1.5">
+                Which muscles are getting the most work this period.
               </p>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {volumeByCategory.slice(0, 6).map(([cat, vol]) => {
                   const pct = (vol / maxCategory) * 100;
                   return (
                     <div key={cat} className="flex items-center gap-2">
-                      <span className={`text-xs w-20 truncate ${isDarkMode ? "text-iron-300" : "text-slate-700"}`}>{cat}</span>
-                      <div className={`flex-1 h-5 rounded-lg overflow-hidden ${isDarkMode ? "bg-iron-800" : "chart-panel-inner"}`}>
+                      <span className={`w-16 truncate text-[11px] ${isDarkMode ? "text-iron-300" : "text-[color:var(--text-secondary)]"}`}>{cat}</span>
+                      <div className={cn("h-4 flex-1 overflow-hidden rounded-lg", chartPanelInnerClass(isDarkMode))}>
                         <div
                           className={`h-full rounded-lg transition-all duration-500 ${isDarkMode ? "bg-lift-primary" : "bg-workout-blue"}`}
                           style={{ width: `${pct}%` }}
@@ -294,8 +262,8 @@ export default function VolumeChart({
               </div>
             </div>
           )}
-        </div>
+        </ChartBody>
       )}
-    </div>
+    </ChartSection>
   );
 }

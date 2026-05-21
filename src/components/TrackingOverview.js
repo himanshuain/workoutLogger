@@ -1,5 +1,11 @@
 import { useMemo } from "react";
-import { Check, X, Dumbbell } from "lucide-react";
+import { Check, Dumbbell, CalendarRange } from "lucide-react";
+import {
+  ChartSection,
+  ChartSectionHeader,
+  chartSelectedColumnClass,
+} from "@/components/charts/ChartChrome";
+import { cn } from "@/lib/utils";
 
 export default function TrackingOverview({
   trackables = [],
@@ -96,30 +102,23 @@ export default function TrackingOverview({
   }, [foodItems, dateRange, foodByDate]);
 
   return (
-    <div
-      className={`rounded-card overflow-hidden ${
-        isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
-      }`}
-    >
-      {/* Header */}
-      <div className={`p-4 border-b ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-        <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-          Weekly Overview
-        </h3>
-        <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-          Last {days} days at a glance. Check marks are completed days; dashes are not.
-        </p>
-      </div>
+    <ChartSection isDarkMode={isDarkMode}>
+      <ChartSectionHeader
+        icon={CalendarRange}
+        label="Weekly Overview"
+        meta={`Last ${days} days`}
+        isDarkMode={isDarkMode}
+      />
 
       {/* Table Container */}
       <div className="overflow-x-auto thin-scrollbar">
         <table className="w-full text-sm">
           {/* Date Header Row */}
           <thead>
-            <tr className={isDarkMode ? "bg-iron-900/30" : "bg-slate-50"}>
+            <tr className={isDarkMode ? "bg-surface-interactive/40" : "bg-surface-interactive/60"}>
               <th
-                className={`sticky left-0 z-10 p-3 text-left font-medium w-32 ${
-                  isDarkMode ? "bg-iron-900 text-iron-400" : "bg-white text-slate-500"
+                className={`sticky left-0 z-10 w-28 p-2 text-left text-section-header ${
+                  isDarkMode ? "bg-surface-section" : "bg-surface-section"
                 }`}
               >
                 Metric
@@ -127,52 +126,47 @@ export default function TrackingOverview({
               {dateRange.map(({ date, dayName, dayNum, isToday }) => (
                 <th
                   key={date}
-                  className={`p-2 text-center min-w-[44px] ${
-                    isToday ? (isDarkMode ? "bg-lift-primary/10" : "bg-workout-primary/10") : ""
-                  }`}
+                  className={cn(
+                    "min-w-[40px] p-1.5 text-center",
+                    isToday && chartSelectedColumnClass(isDarkMode),
+                  )}
                 >
                   <div
-                    className={`text-xs ${
+                    className={cn(
+                      "text-[10px] font-semibold uppercase tracking-wide",
                       isToday
                         ? isDarkMode
-                          ? "text-lift-primary font-semibold"
-                          : "text-workout-primary font-semibold"
-                        : isDarkMode
-                          ? "text-iron-500"
-                          : "text-slate-500"
-                    }`}
+                          ? "text-lift-primary"
+                          : "text-[color:var(--accent-soft-foreground)]"
+                        : "text-metadata",
+                    )}
                   >
                     {isToday ? "Today" : dayName}
                   </div>
                   <div
-                    className={`font-bold ${
+                    className={cn(
+                      "text-sm font-bold",
                       isToday
                         ? isDarkMode
                           ? "text-lift-primary"
-                          : "text-workout-primary"
+                          : "text-[color:var(--accent-soft-foreground)]"
                         : isDarkMode
                           ? "text-iron-300"
-                          : "text-slate-700"
-                    }`}
+                          : "text-[color:var(--text-primary)]",
+                    )}
                   >
                     {dayNum}
                   </div>
                 </th>
               ))}
-              <th
-                className={`p-3 text-center font-medium min-w-[50px] ${
-                  isDarkMode ? "text-iron-400" : "text-slate-500"
-                }`}
-              >
-                Done
-              </th>
+              <th className="min-w-[44px] p-2 text-center text-section-header">Done</th>
             </tr>
           </thead>
 
           <tbody>
             {/* Workouts Row */}
-            <tr className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}>
-              <td className={`sticky left-0 z-10 p-3 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+            <tr className={`border-b border-surface-subtle`}>
+              <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-surface-section" : "bg-surface-section"}`}>
                 <div className="flex items-center gap-2">
                   <div
                     className={`w-7 h-7 rounded-lg flex items-center justify-center ${
@@ -197,9 +191,10 @@ export default function TrackingOverview({
               {dateRange.map(({ date, isToday }) => (
                 <td
                   key={date}
-                  className={`p-2 text-center ${
-                    isToday ? (isDarkMode ? "bg-lift-primary/10" : "bg-workout-primary/10") : ""
-                  }`}
+                  className={cn(
+                    "p-1.5 text-center",
+                    isToday && chartSelectedColumnClass(isDarkMode),
+                  )}
                 >
                   {workoutsByDate[date] > 0 ? (
                     <span
@@ -216,7 +211,7 @@ export default function TrackingOverview({
                   )}
                 </td>
               ))}
-              <td className="p-3 text-center">
+              <td className="p-2 text-center">
                 <span
                   className={`text-xs font-bold ${
                     workoutDaysCount >= Math.ceil(days * 0.7)
@@ -237,9 +232,9 @@ export default function TrackingOverview({
             {habits.map(habit => (
               <tr
                 key={habit.id}
-                className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
+                className={`border-b border-surface-subtle`}
               >
-                <td className={`sticky left-0 z-10 p-3 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-surface-section" : "bg-surface-section"}`}>
                   <div className="flex items-center gap-1.5">
                     <div
                       className="w-6 h-6 min-w-[24px] rounded-lg flex items-center justify-center text-xs"
@@ -276,7 +271,7 @@ export default function TrackingOverview({
                     )}
                   </td>
                 ))}
-                <td className="p-3 text-center">
+                <td className="p-2 text-center">
                   <span
                     className={`text-xs font-bold ${
                       habitCompletionCounts[habit.id] >= Math.ceil(days * 0.7)
@@ -298,9 +293,9 @@ export default function TrackingOverview({
             {foodItems.map(food => (
               <tr
                 key={food.id}
-                className={`border-b ${isDarkMode ? "border-iron-800/30" : "border-slate-100"}`}
+                className={`border-b border-surface-subtle`}
               >
-                <td className={`sticky left-0 z-10 p-3 ${isDarkMode ? "bg-iron-900" : "bg-white"}`}>
+                <td className={`sticky left-0 z-10 p-2 ${isDarkMode ? "bg-surface-section" : "bg-surface-section"}`}>
                   <div className="flex items-center gap-1.5">
                     <div
                       className="w-6 h-6 min-w-[24px] rounded-lg flex items-center justify-center text-xs"
@@ -337,7 +332,7 @@ export default function TrackingOverview({
                     )}
                   </td>
                 ))}
-                <td className="p-3 text-center">
+                <td className="p-2 text-center">
                   <span
                     className={`text-xs font-bold ${
                       foodCompletionCounts[food.id] >= Math.ceil(days * 0.7)
@@ -357,6 +352,6 @@ export default function TrackingOverview({
           </tbody>
         </table>
       </div>
-    </div>
+    </ChartSection>
   );
 }

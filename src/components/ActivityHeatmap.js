@@ -1,6 +1,14 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChartLegend,
+  ChartLegendItem,
+  ChartSectionHeader,
+  ChartSegmentButton,
+  ChartSegmentTrack,
+  chartSectionClass,
+} from "@/components/charts/ChartChrome";
 
 // Format date to YYYY-MM-DD in LOCAL timezone
 function formatDateLocal(date) {
@@ -349,8 +357,8 @@ export default function ActivityHeatmap({
     exit: (dir) => ({ x: dir > 0 ? -50 : 50, opacity: 0 }),
   };
 
-  const headerPad = mini ? "px-2.5 pt-2 pb-1.5" : compact ? "px-3 pt-3 pb-2" : "px-4 pt-4 pb-3";
-  const calendarPad = mini ? "px-2.5 pb-2" : compact ? "px-3 pb-3" : "px-4 pb-4";
+  const headerPad = mini ? "px-2.5 pt-2 pb-1.5" : compact ? "px-3 pt-2.5 pb-1.5" : "px-3 pt-3 pb-2";
+  const calendarPad = mini ? "px-2.5 pb-2" : compact ? "px-3 pb-2" : "px-3 pb-2.5";
   const monthTitleClass = mini ? "text-sm" : "text-lg";
   const navBtnPad = mini ? "p-1.5" : "p-2";
   const navIconClass = mini ? "w-4 h-4" : "w-5 h-5";
@@ -365,75 +373,58 @@ export default function ActivityHeatmap({
   const gridGap = "gap-1.5";
 
   return (
-    <div
-      className={`${mini ? "rounded-card" : "rounded-card"} overflow-hidden ${
-        isDarkMode
-          ? "bg-gradient-to-br from-iron-900 to-iron-950 shadow-xl shadow-black/20"
-          : "bg-gradient-to-br from-white to-slate-50 shadow-lg shadow-slate-200/50 border border-slate-200/80"
-      }`}
-    >
+    <div className={chartSectionClass(isDarkMode, mini ? "rounded-card" : undefined)}>
       {/* Header */}
       <div className={headerPad}>
-        {label && (
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-card" style={{ backgroundColor: `${activeColor}1A` }}>
-                <Calendar className="w-4 h-4" style={{ color: activeColor }} />
-              </div>
-              <div>
-                <h3 className={`font-bold ${compact ? "text-sm" : "text-base"} ${
-                  isDarkMode ? "text-iron-100" : "text-slate-800"
-                }`}>
-                  {label}
-                </h3>
-                {subtitle && (
-                  <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {/* Stats Pills */}
-            <div className="flex gap-2">
+        {label && !mini ? (
+          <ChartSectionHeader
+            icon={Calendar}
+            label={label}
+            meta={subtitle || undefined}
+            isDarkMode={isDarkMode}
+            className="px-0 pt-0 pb-2"
+          >
+            <div className="flex shrink-0 gap-1.5">
               {stats.streak > 0 && (
-                <div className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
-                  isDarkMode 
-                    ? "bg-orange-500/20 text-orange-400" 
-                    : "bg-orange-500/10 text-orange-600"
-                }`}>
+                <div
+                  className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold ${
+                    isDarkMode
+                      ? "bg-orange-500/20 text-orange-400"
+                      : "bg-orange-500/10 text-orange-600"
+                  }`}
+                >
                   🔥 {stats.streak}
                 </div>
               )}
-              <div className="px-2.5 py-1 rounded-full text-xs font-semibold"
-                style={{ backgroundColor: `${activeColor}33`, color: activeColor }}>
+              <div
+                className="rounded-pill px-2 py-0.5 text-[10px] font-semibold"
+                style={{ backgroundColor: `${activeColor}22`, color: activeColor }}
+              >
                 {stats.completed} days
               </div>
             </div>
+          </ChartSectionHeader>
+        ) : label && mini ? (
+          <div className="mb-2 flex items-center justify-between">
+            <p className={`text-section-header ${isDarkMode ? "text-iron-200" : ""}`}>{label}</p>
           </div>
-        )}
+        ) : null}
 
         {/* Year Pills */}
         {!compact && availableYears.length > 1 && (
-          <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide">
+          <ChartSegmentTrack isDarkMode={isDarkMode} className="mb-2 flex gap-0.5 overflow-x-auto scrollbar-hide">
             {availableYears.map(year => (
-              <motion.button
+              <ChartSegmentButton
                 key={year}
-                whileTap={{ scale: 0.95 }}
+                isDarkMode={isDarkMode}
+                selected={viewYear === year}
                 onClick={() => handleYearChange(year)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                  viewYear === year
-                    ? "text-white shadow-lg"
-                    : isDarkMode
-                      ? "bg-iron-800/80 text-iron-400 hover:bg-iron-700"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-                style={viewYear === year ? { backgroundColor: activeColor, boxShadow: `0 4px 12px ${activeColor}4D` } : {}}
+                className="shrink-0"
               >
                 {year}
-              </motion.button>
+              </ChartSegmentButton>
             ))}
-          </div>
+          </ChartSegmentTrack>
         )}
 
         {/* Month Navigation */}
@@ -679,53 +670,51 @@ export default function ActivityHeatmap({
 
         {/* Legend */}
         {!compact && (
-          <div className={`flex items-center justify-center gap-5 mt-4 pt-4 border-t ${
-            isDarkMode ? "border-iron-800/50" : "border-slate-200"
-          }`}>
+          <ChartLegend isDarkMode={isDarkMode} className="mx-0 mb-0 mt-2">
             {progressMode ? (
               <>
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" className="-rotate-90">
-                    <circle cx="8" cy="8" r="6.5" fill="none" stroke={isDarkMode ? "#27272a" : "#e2e8f0"} strokeWidth="2" />
-                    <circle cx="8" cy="8" r="6.5" fill="none" stroke={activeColor} strokeWidth="2"
-                      strokeDasharray={2 * Math.PI * 6.5} strokeDashoffset={2 * Math.PI * 6.5 * 0.5} strokeLinecap="round" />
-                  </svg>
-                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    Partial
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" className="-rotate-90">
-                    <circle cx="8" cy="8" r="6.5" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    All done
-                  </span>
-                </div>
+                <ChartLegendItem
+                  label="Partial"
+                  swatch={
+                    <svg width="12" height="12" className="-rotate-90">
+                      <circle cx="6" cy="6" r="5" fill="none" stroke={isDarkMode ? "#27272a" : "#e2e8f0"} strokeWidth="2" />
+                      <circle cx="6" cy="6" r="5" fill="none" stroke={activeColor} strokeWidth="2"
+                        strokeDasharray={2 * Math.PI * 5} strokeDashoffset={2 * Math.PI * 5 * 0.5} strokeLinecap="round" />
+                    </svg>
+                  }
+                />
+                <ChartLegendItem
+                  label="All done"
+                  swatch={
+                    <svg width="12" height="12" className="-rotate-90">
+                      <circle cx="6" cy="6" r="5" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  }
+                />
               </>
             ) : (
               <>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-md"
-                    style={{ backgroundColor: isDarkMode ? "#27272a" : "#f1f5f9" }}
-                  />
-                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    Missed
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded-md shadow-sm" 
-                    style={{ backgroundColor: activeColor, boxShadow: `0 2px 4px ${activeColor}4D` }} 
-                  />
-                  <span className={`text-xs font-medium ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    Completed
-                  </span>
-                </div>
+                <ChartLegendItem
+                  label="Missed"
+                  swatch={
+                    <div
+                      className="h-3 w-3 rounded-md"
+                      style={{ backgroundColor: isDarkMode ? "#27272a" : "#f1f5f9" }}
+                    />
+                  }
+                />
+                <ChartLegendItem
+                  label="Completed"
+                  swatch={
+                    <div
+                      className="h-3 w-3 rounded-md"
+                      style={{ backgroundColor: activeColor }}
+                    />
+                  }
+                />
               </>
             )}
-          </div>
+          </ChartLegend>
         )}
         </div>
       </div>

@@ -1,6 +1,17 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Activity } from "lucide-react";
+import {
+  ChartLegend,
+  ChartLegendItem,
+  ChartSection,
+  ChartSectionHeader,
+  ChartSegmentButton,
+  ChartSegmentTrack,
+  chartPanelInnerClass,
+} from "@/components/charts/ChartChrome";
+import { surfaceSelected } from "@/lib/surfaceStyles";
+import { cn } from "@/lib/utils";
 
 const Model = dynamic(() => import("react-body-highlighter"), { ssr: false });
 
@@ -95,63 +106,38 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
     : ["#ef444466", "#ef4444aa", "#ef4444"];
 
   return (
-    <div
-      className={`rounded-card overflow-hidden ${
-        isDarkMode ? "bg-iron-900/50" : "bg-white border border-slate-200 shadow-sm"
-      }`}
-    >
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-card flex items-center justify-center ${
-                isDarkMode ? "bg-amber-500/20" : "bg-red-100"
-              }`}
+    <ChartSection isDarkMode={isDarkMode}>
+      <ChartSectionHeader
+        icon={Activity}
+        label="Muscle Map"
+        meta={totalSets > 0 ? `${totalSets} sets this week` : "No data this week"}
+        isDarkMode={isDarkMode}
+      >
+        <ChartSegmentTrack isDarkMode={isDarkMode}>
+          {[
+            { id: "both", label: "Both" },
+            { id: "anterior", label: "Front" },
+            { id: "posterior", label: "Back" },
+          ].map(v => (
+            <ChartSegmentButton
+              key={v.id}
+              isDarkMode={isDarkMode}
+              selected={viewSide === v.id}
+              onClick={() => setViewSide(v.id)}
             >
-              <Activity className={`w-5 h-5 ${isDarkMode ? "text-amber-400" : "text-red-600"}`} />
-            </div>
-            <div>
-              <h3 className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                Muscle Map
-              </h3>
-              <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                {totalSets > 0 ? `${totalSets} sets this week` : "No training data this week"}
-              </p>
-            </div>
-          </div>
+              {v.label}
+            </ChartSegmentButton>
+          ))}
+        </ChartSegmentTrack>
+      </ChartSectionHeader>
 
-          {/* View toggle */}
-          <div className={`flex gap-0.5 p-0.5 rounded-lg ${isDarkMode ? "bg-iron-800" : "bg-slate-100"}`}>
-            {[
-              { id: "both", label: "Both" },
-              { id: "anterior", label: "Front" },
-              { id: "posterior", label: "Back" },
-            ].map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setViewSide(v.id)}
-                className={`px-2.5 py-1 rounded-md text-[10px] font-medium transition-all ${
-                  viewSide === v.id
-                    ? isDarkMode
-                      ? "bg-lift-primary text-iron-950"
-                      : "bg-workout-primary text-white"
-                    : isDarkMode
-                      ? "text-iron-400"
-                      : "text-slate-500"
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
+      <div className="px-3 pb-3">
         {/* Body Models */}
         <div
-          className={`flex justify-center py-2 transition-opacity duration-200 ${
-            isDarkMode ? "bg-iron-800/30" : "bg-slate-50"
-          } rounded-card`}
+          className={cn(
+            "flex justify-center rounded-card py-1.5 transition-opacity duration-200",
+            chartPanelInnerClass(isDarkMode),
+          )}
         >
           {(viewSide === "both" || viewSide === "anterior") && (
             <div className={viewSide === "both" ? "flex-1 max-w-[180px]" : "max-w-[220px]"}>
@@ -189,26 +175,23 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
           )}
         </div>
 
-        {/* Legend */}
-        <div className="mt-3 grid grid-cols-2 gap-1.5">
+        {/* Category legend */}
+        <div className="mt-2 grid grid-cols-2 gap-1">
           {CATEGORY_LABELS.map(({ key, label }) => {
             const count = counts[key] || 0;
             const isActive = count > 0;
             return (
               <div
                 key={key}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 ${
+                className={cn(
+                  "flex items-center gap-1.5 rounded-card px-2 py-1.5",
                   isActive
-                    ? isDarkMode
-                      ? "bg-amber-500/10 border border-amber-500/20"
-                      : "bg-red-50 border border-red-200"
-                    : isDarkMode
-                      ? "bg-iron-800/50"
-                      : "bg-slate-50"
-                }`}
+                    ? surfaceSelected(isDarkMode)
+                    : chartPanelInnerClass(isDarkMode, "opacity-70"),
+                )}
               >
                 <div
-                  className="w-3 h-3 rounded-full shrink-0"
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
                   style={{
                     backgroundColor: isActive
                       ? isDarkMode ? "#fbbf24" : "#ef4444"
@@ -216,20 +199,22 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
                   }}
                 />
                 <span
-                  className={`text-xs font-medium truncate ${
+                  className={cn(
+                    "truncate text-[11px] font-medium",
                     isActive
-                      ? isDarkMode ? "text-iron-100" : "text-slate-800"
-                      : isDarkMode ? "text-iron-500" : "text-slate-400"
-                  }`}
+                      ? isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"
+                      : "text-metadata",
+                  )}
                 >
                   {label}
                 </span>
                 <span
-                  className={`text-xs ml-auto shrink-0 tabular-nums ${
+                  className={cn(
+                    "ml-auto shrink-0 tabular-nums text-[11px] font-semibold",
                     isActive
-                      ? isDarkMode ? "text-amber-400" : "text-red-500"
-                      : isDarkMode ? "text-iron-600" : "text-slate-400"
-                  }`}
+                      ? isDarkMode ? "text-amber-400" : "text-red-600"
+                      : "text-metadata",
+                  )}
                 >
                   {count}
                 </span>
@@ -238,20 +223,23 @@ export default function MuscleHeatmap({ exerciseLogsByName = {}, isDarkMode = fa
           })}
         </div>
 
-        {/* Intensity Legend */}
-        <div className={`flex items-center justify-center gap-4 mt-3 pt-3 border-t ${isDarkMode ? "border-iron-800/50" : "border-slate-100"}`}>
-          <span className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>Intensity:</span>
-          {["Low", "Medium", "High"].map((label, i) => (
-            <div key={label} className="flex items-center gap-1">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: highlightedColors[i] }}
-              />
-              <span className={`text-[10px] ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>{label}</span>
-            </div>
+        {/* Intensity legend */}
+        <ChartLegend isDarkMode={isDarkMode} className="mt-2 justify-start px-0">
+          <span className="text-metadata mr-1">Intensity</span>
+          {["Low", "Medium", "High"].map((lbl, i) => (
+            <ChartLegendItem
+              key={lbl}
+              label={lbl}
+              swatch={
+                <div
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: highlightedColors[i] }}
+                />
+              }
+            />
           ))}
-        </div>
+        </ChartLegend>
       </div>
-    </div>
+    </ChartSection>
   );
 }

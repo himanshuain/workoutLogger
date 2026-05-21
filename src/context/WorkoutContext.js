@@ -6,9 +6,24 @@ import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 import {
   addSessionExtra,
   clearSessionClientState,
+  hydrateSessionClientState,
   removeSessionExtra,
   renameSessionExerciseClient,
+  setSessionMetaPersistCallback,
 } from "@/lib/workoutSessionClient";
+import NotificationService from "@/lib/notifications";
+import {
+  cacheLocalNavConfig,
+  mergeTrackablesActiveDays,
+  readLegacyNotificationSchedules,
+  readLocalEventSettings,
+  readLocalNavConfig,
+  readLocalRestMap,
+  cacheLocalRestMap,
+} from "@/lib/userPrefsMigration";
+import { useTrackableActions } from "@/context/hooks/useTrackables";
+import { useNotificationSchedules } from "@/context/hooks/useNotificationSchedules";
+import { useWorkoutSettings } from "@/context/hooks/useWorkoutSettings";
 
 const WorkoutContext = createContext();
 
@@ -29,6 +44,7 @@ export function WorkoutProvider({ children }) {
     unit: "kg",
     dark_mode: true,
   });
+  const [notificationSchedules, setNotificationSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Use local timezone for today's date
@@ -40,6 +56,14 @@ export function WorkoutProvider({ children }) {
   };
 
   const today = getLocalDateStr();
+
+  const { loadTrackables, createTrackable, updateTrackable, deleteTrackable } =
+    useTrackableActions(user, trackables, setTrackables);
+
+  const { upsertNotificationSchedule, removeNotificationSchedule, getNotificationSchedule } =
+    useNotificationSchedules(user, notificationSchedules, setNotificationSchedules);
+
+  const { updateSettings } = useWorkoutSettings(user, settings, setSettings);
 
   // Auth state listener — dedupe by user ID to prevent cascading re-renders
   useEffect(() => {
@@ -117,48 +141,25 @@ export function WorkoutProvider({ children }) {
     }
   }, [user]);
 
-  // Helper: load/save active_days from localStorage (not in Supabase schema)
-  const getActiveDaysMap = useCallback(() => {
-    if (typeof window === "undefined" || !user) return {};
-    try {
-      const stored = localStorage.getItem(`logbook_active_days_${user.id}`);
-      return stored ? JSON.parse(stored) : {};
-    } catch { return {}; }
-  }, [user]);
+  // Persist session client_meta to Supabase
+  const persistSessionClientMeta = useCallback(
+    async (sessionId, clientMeta) => {
+      if (!user || !sessionId) return;
+      await supabase
+        .from("workout_sessions")
+        .update({ client_meta: clientMeta })
+        .eq("id", sessionId)
+        .eq("user_id", user.id);
+    },
+    [user],
+  );
 
-  const saveActiveDays = useCallback((trackableId, activeDays) => {
-    if (typeof window === "undefined" || !user) return;
-    const map = getActiveDaysMap();
-    if (activeDays === null || activeDays === undefined) {
-      delete map[trackableId];
-    } else {
-      map[trackableId] = activeDays;
-    }
-    localStorage.setItem(`logbook_active_days_${user.id}`, JSON.stringify(map));
-  }, [user, getActiveDaysMap]);
+  useEffect(() => {
+    setSessionMetaPersistCallback(persistSessionClientMeta);
+    return () => setSessionMetaPersistCallback(null);
+  }, [persistSessionClientMeta]);
 
-  // Load trackables (habits/health)
-  const loadTrackables = useCallback(async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from("trackables")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("order_index");
-
-      if (!error && data) {
-        const daysMap = getActiveDaysMap();
-        const enriched = data.map(t => ({
-          ...t,
-          active_days: daysMap[t.id] || null,
-        }));
-        setTrackables(enriched);
-      }
-    } catch (err) {
-      console.error("Error loading trackables:", err);
-    }
-  }, [user, getActiveDaysMap]);
+  // Load trackables handled by useTrackableActions hook
 
   // Load today's tracking entries
   const loadTodayEntries = useCallback(async () => {
@@ -395,6 +396,7 @@ export function WorkoutProvider({ children }) {
         .maybeSingle();
 
       setActiveSession(data || null);
+      if (data) hydrateSessionClientState(data);
     } catch (err) {
       setActiveSession(null);
     }
@@ -1011,7 +1013,6 @@ export function WorkoutProvider({ children }) {
     async function loadInitData() {
       try {
         const { data, error } = await supabase.rpc("get_user_init_data", {
-          p_user_id: uid,
           p_today: today,
         });
 
@@ -1019,7 +1020,39 @@ export function WorkoutProvider({ children }) {
 
         setExercises(data.exercises || []);
 
-        if (data.user_settings) setSettings(data.user_settings);
+        if (data.user_settings) {
+          setSettings(data.user_settings);
+
+          const serverRest = data.user_settings.routine_rest_days;
+          if (!serverRest || Object.keys(serverRest || {}).length === 0) {
+            const localRest = readLocalRestMap(uid);
+            if (Object.keys(localRest).length > 0) {
+              void supabase
+                .from("user_settings")
+                .update({ routine_rest_days: localRest })
+                .eq("user_id", uid);
+              setSettings(prev => ({ ...prev, routine_rest_days: localRest }));
+              cacheLocalRestMap(uid, localRest);
+            }
+          } else {
+            cacheLocalRestMap(uid, serverRest);
+          }
+
+          const serverNav = data.user_settings.nav_config;
+          if (!serverNav || Object.keys(serverNav || {}).length === 0) {
+            const localNav = readLocalNavConfig();
+            if (localNav.order || localNav.hidden?.length || Object.keys(localNav.labels || {}).length) {
+              void supabase
+                .from("user_settings")
+                .update({ nav_config: localNav })
+                .eq("user_id", uid);
+              setSettings(prev => ({ ...prev, nav_config: localNav }));
+              cacheLocalNavConfig(localNav);
+            }
+          } else {
+            cacheLocalNavConfig(serverNav);
+          }
+        }
 
         const historyMap = {};
         for (const h of (data.exercise_history || [])) {
@@ -1027,12 +1060,19 @@ export function WorkoutProvider({ children }) {
         }
         setExerciseHistory(historyMap);
 
-        const daysMap = getActiveDaysMap();
-        const enriched = (data.trackables || []).map(t => ({
-          ...t,
-          active_days: daysMap[t.id] || null,
-        }));
-        setTrackables(enriched);
+        const { merged: mergedTrackables, toMigrate: activeDaysToMigrate } =
+          mergeTrackablesActiveDays(data.trackables || [], uid);
+        setTrackables(mergedTrackables);
+        if (activeDaysToMigrate.length > 0) {
+          await Promise.all(
+            activeDaysToMigrate.map(row =>
+              supabase
+                .from("trackables")
+                .update({ active_days: row.active_days })
+                .eq("id", row.id),
+            ),
+          );
+        }
 
         const entriesMap = {};
         for (const e of (data.today_entries || [])) {
@@ -1057,8 +1097,72 @@ export function WorkoutProvider({ children }) {
         setRoutines(sortedRoutines);
 
         setActiveSession(data.active_session || null);
+        if (data.active_session) hydrateSessionClientState(data.active_session);
 
-        const processedEvents = (data.event_types || []).map(eventType => {
+        let schedules = data.notification_schedules || [];
+        const legacySchedules = readLegacyNotificationSchedules();
+        if ((!schedules || schedules.length === 0) && Object.keys(legacySchedules).length > 0) {
+          const migrated = await Promise.all(
+            Object.entries(legacySchedules).map(async ([trackableId, sched]) => {
+              const { data: row } = await supabase
+                .from("notification_schedules")
+                .upsert(
+                  {
+                    user_id: uid,
+                    trackable_id: trackableId,
+                    title: sched.title,
+                    body: sched.body,
+                    icon: sched.icon,
+                    time: sched.time,
+                    days: sched.days || [],
+                    enabled: sched.enabled !== false,
+                    updated_at: new Date().toISOString(),
+                  },
+                  { onConflict: "user_id,trackable_id" },
+                )
+                .select()
+                .single();
+              return row;
+            }),
+          );
+          schedules = migrated.filter(Boolean);
+        }
+        setNotificationSchedules(schedules);
+        NotificationService.setUserId(uid);
+        NotificationService.setSchedulesFromServer(schedules, uid);
+
+        const localEventSettings = readLocalEventSettings();
+        const eventTypesRaw = data.event_types || [];
+        const eventTypesNeedingMigration = eventTypesRaw.filter(et => localEventSettings[et.id]);
+        if (eventTypesNeedingMigration.length > 0) {
+          await Promise.all(
+            eventTypesNeedingMigration.map(et => {
+              const local = localEventSettings[et.id];
+              return supabase
+                .from("event_types")
+                .update({
+                  track_graph: local.track_graph || false,
+                  need_value: local.need_value || false,
+                  need_notes: local.need_notes || false,
+                })
+                .eq("id", et.id);
+            }),
+          );
+        }
+
+        const processedEvents = (eventTypesNeedingMigration.length > 0
+          ? eventTypesRaw.map(et => {
+              const local = localEventSettings[et.id];
+              if (!local) return et;
+              return {
+                ...et,
+                track_graph: local.track_graph || false,
+                need_value: local.need_value || false,
+                need_notes: local.need_notes || false,
+              };
+            })
+          : eventTypesRaw
+        ).map(eventType => {
           const logs = eventType.event_logs || [];
           const sortedLogs = logs.sort((a, b) => new Date(b.date) - new Date(a.date));
           const lastLog = sortedLogs[0] || null;
@@ -1497,72 +1601,6 @@ export function WorkoutProvider({ children }) {
     [user]
   );
 
-  // Create trackable
-  const createTrackable = useCallback(
-    async trackable => {
-      if (!user) return null;
-
-      const { active_days, ...dbFields } = trackable;
-
-      const { data, error } = await supabase
-        .from("trackables")
-        .insert({
-          user_id: user.id,
-          ...dbFields,
-          order_index: trackables.length,
-        })
-        .select()
-        .single();
-
-      if (!error && data) {
-        if (active_days) {
-          saveActiveDays(data.id, active_days);
-        }
-        const enriched = { ...data, active_days: active_days || null };
-        setTrackables(prev => [...prev, enriched]);
-        return enriched;
-      }
-      return null;
-    },
-    [user, trackables, saveActiveDays]
-  );
-
-  // Update trackable
-  const updateTrackable = useCallback(
-    async (id, updates) => {
-      if (!user) return;
-
-      const { active_days, ...dbUpdates } = updates;
-
-      if (active_days !== undefined) {
-        saveActiveDays(id, active_days);
-      }
-
-      const hasDbUpdates = Object.keys(dbUpdates).length > 0;
-      if (hasDbUpdates) {
-        const { error } = await supabase.from("trackables").update(dbUpdates).eq("id", id);
-        if (error) return;
-      }
-
-      setTrackables(prev => prev.map(t => (t.id === id ? { ...t, ...updates } : t)));
-    },
-    [user, saveActiveDays]
-  );
-
-  // Delete trackable
-  const deleteTrackable = useCallback(
-    async id => {
-      if (!user) return;
-
-      const { error } = await supabase.from("trackables").delete().eq("id", id);
-
-      if (!error) {
-        setTrackables(prev => prev.filter(t => t.id !== id));
-      }
-    },
-    [user]
-  );
-
   // ============================================
   // FOOD TRACKING FUNCTIONS
   // ============================================
@@ -1759,18 +1797,7 @@ export function WorkoutProvider({ children }) {
     [user]
   );
 
-  // Update settings
-  const updateSettings = useCallback(
-    async newSettings => {
-      if (!user) return;
-
-      const updated = { ...settings, ...newSettings };
-      setSettings(updated);
-
-      await supabase.from("user_settings").update(newSettings).eq("user_id", user.id);
-    },
-    [settings, user]
-  );
+  // Update settings handled by useWorkoutSettings hook
 
   // Create event type
   const createEventType = useCallback(
@@ -2236,6 +2263,10 @@ export function WorkoutProvider({ children }) {
         updateFoodEntryQuantity,
         getFoodEntries,
         updateSettings,
+        notificationSchedules,
+        upsertNotificationSchedule,
+        removeNotificationSchedule,
+        getNotificationSchedule,
         signIn,
         signInWithGoogle,
         signUp,

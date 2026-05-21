@@ -529,7 +529,7 @@ export default function Auth() {
                 </>
               ) : (
                 <>
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <span className={isDarkMode ? "text-lift-primary" : "text-workout-primary"}>
                     Sign up
                   </span>

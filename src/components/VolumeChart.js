@@ -194,7 +194,7 @@ export default function VolumeChart({
               <p>
                 Training volume measures your total workload. Gradually increasing it over weeks 
                 (progressive overload) is how muscles grow stronger. A steady upward trend means 
-                you're pushing harder. Dips are normal during deload/rest weeks.
+                you&apos;re pushing harder. Dips are normal during deload/rest weeks.
               </p>
             </div>
           )}

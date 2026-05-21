@@ -68,10 +68,10 @@ import {
 } from "@/components/ui/context-menu";
 import {
   notifyLifelogEventSettingsChanged,
-  readLifelogEventSettings,
   mergeEventTypesWithLifelogSettings,
-  LIFEBOOK_EVENT_SETTINGS_KEY,
 } from "@/lib/lifelogEventSettings";
+import { formatDaysSince } from "@/lib/lifelogUtils";
+import LifeLogGapPill from "@/components/lifelog/LifeLogGapPill";
 
 const EVENT_ICONS = [
   "💇",
@@ -140,166 +140,6 @@ const MONTH_NAMES = [
 ];
 const DAY_NAMES = ["S", "M", "T", "W", "T", "F", "S"];
 
-// Format days since into human readable
-function formatDaysSince(days) {
-  if (days === null || days === undefined) return "Never";
-  if (days === 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days < 7) return `${days} days ago`;
-  if (days < 14) return "1 week ago";
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  if (days < 60) return "1 month ago";
-  if (days < 365) return `${Math.floor(days / 30)} months ago`;
-  if (days < 730) return "1 year ago";
-  return `${Math.floor(days / 365)} years ago`;
-}
-
-// Format date for display
-function formatDate(dateStr) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-/** Rough month chunks for compound display (~30-day months). */
-const GAP_MONTH_DAYS = 30;
-const GAP_WEEK_DAYS = 7;
-
-function buildGapTierOrder(gapDays) {
-  const order = ["d"];
-  if (gapDays >= GAP_WEEK_DAYS) order.push("w");
-  if (gapDays >= GAP_MONTH_DAYS) order.push("m");
-  return order;
-}
-
-function nextTierAriaHint(tiers, idx) {
-  if (tiers.length < 2) return "";
-  const next = tiers[(idx + 1) % tiers.length];
-  if (next === "d") return " Tap again for days.";
-  if (next === "w") return " Tap again for weeks.";
-  return " Tap again for months.";
-}
-
-/** e.g. 9 → "1w 2d"; 14 → "2w" */
-function formatGapCompoundWeeks(totalDays) {
-  if (totalDays <= 0) return "";
-  const w = Math.floor(totalDays / 7);
-  const d = totalDays % 7;
-  const parts = [];
-  if (w > 0) parts.push(`${w}w`);
-  if (d > 0) parts.push(`${d}d`);
-  return parts.length ? parts.join(" ") : "0d";
-}
-
-/** e.g. 93 → "3 months 3d"; 68 → "2 months 1w 1d" */
-function formatGapCompoundMonths(totalDays) {
-  if (totalDays <= 0) return "";
-  let rem = Math.max(0, Math.floor(totalDays));
-  const months = Math.floor(rem / GAP_MONTH_DAYS);
-  rem -= months * GAP_MONTH_DAYS;
-  const weeks = Math.floor(rem / 7);
-  rem -= weeks * 7;
-  const days = rem;
-
-  const parts = [];
-  if (months > 0) parts.push(months === 1 ? `1 month` : `${months} months`);
-  if (weeks > 0) parts.push(`${weeks}w`);
-  if (days > 0) parts.push(`${days}d`);
-  if (parts.length === 0 && totalDays > 0) parts.push(`${Math.floor(totalDays)}d`);
-
-  return parts.join(" ");
-}
-
-/** Tap cycles through applicable units only: weeks if ≥7d, months if ≥30d. */
-function LifeLogGapPill({ gapDays, newerDateStr, olderDateStr, isDarkMode, kind = "completions" }) {
-  const tiers = useMemo(() => buildGapTierOrder(gapDays), [gapDays]);
-  const [tierIdx, setTierIdx] = useState(0);
-
-  useEffect(() => {
-    setTierIdx(0);
-  }, [gapDays]);
-
-  const tier = tiers[Math.min(tierIdx, tiers.length - 1)];
-
-  const pillBodyClass = `text-[9px] font-medium max-w-[min(100%,16rem)] px-2 py-px rounded-full select-none text-center whitespace-normal leading-tight border ${
-    isDarkMode
-      ? "bg-iron-800/80 text-iron-600 border-iron-700/50"
-      : "bg-slate-100 text-slate-400 border-slate-200"
-  }`;
-
-  const { text, ariaLabel, titleHint } = useMemo(() => {
-    const base =
-      kind === "logs"
-        ? `${gapDays} day span between consecutive logs`
-        : `${gapDays} day span between completed days`;
-    const between =
-      newerDateStr && olderDateStr ? ` From ${formatDate(newerDateStr)} to ${formatDate(olderDateStr)}.` : "";
-
-    let display;
-    if (tier === "d") display = `${gapDays}d gap`;
-    else if (tier === "w") display = `${formatGapCompoundWeeks(gapDays)} gap`;
-    else display = `${formatGapCompoundMonths(gapDays)} gap`;
-
-    const hint = nextTierAriaHint(tiers, tierIdx);
-    const titleHint =
-      tiers.length < 2
-        ? undefined
-        : `Tap to switch: ${tiers.map(t => (t === "d" ? "days" : t === "w" ? "weeks" : "months")).join(" · ")}`;
-
-    return {
-      text: display,
-      ariaLabel: `${display} ${gapDays} calendar days (${base}).${between}${hint}`,
-      titleHint,
-    };
-  }, [gapDays, newerDateStr, olderDateStr, kind, tier, tiers, tierIdx]);
-
-  if (tiers.length < 2) {
-    return (
-      <span className={`${pillBodyClass} cursor-default`} aria-label={ariaLabel}>
-        {text}
-      </span>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => setTierIdx(i => (i + 1) % tiers.length)}
-      aria-label={ariaLabel}
-      title={titleHint}
-      className={`${pillBodyClass} cursor-pointer transition-colors active:scale-95 touch-manipulation ${
-        isDarkMode
-          ? "active:bg-iron-800 hover:text-iron-400 hover:border-iron-600/60"
-          : "active:bg-slate-100 hover:text-slate-600 hover:border-slate-300"
-      }`}
-    >
-      {text}
-    </button>
-  );
-}
-
-function getEventSettings() {
-  return readLifelogEventSettings();
-}
-
-function setEventSetting(eventTypeId, settings) {
-  const all = getEventSettings();
-  all[eventTypeId] = { ...(all[eventTypeId] || {}), ...settings };
-  localStorage.setItem(LIFEBOOK_EVENT_SETTINGS_KEY, JSON.stringify(all));
-  notifyLifelogEventSettingsChanged();
-}
-
-function removeEventSetting(eventTypeId) {
-  const all = getEventSettings();
-  delete all[eventTypeId];
-  localStorage.setItem(LIFEBOOK_EVENT_SETTINGS_KEY, JSON.stringify(all));
-  notifyLifelogEventSettingsChanged();
-}
-
 export default function LifeLog() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -324,7 +164,7 @@ export default function LifeLog() {
     today,
   } = useWorkout();
 
-  // Merge localStorage settings into event types
+  // Event types include DB-backed UI settings
   const eventTypes = useMemo(() => mergeEventTypesWithLifelogSettings(rawEventTypes), [rawEventTypes]);
 
   const [showAddDrawer, setShowAddDrawer] = useState(false);
@@ -534,12 +374,11 @@ export default function LifeLog() {
           color: newEvent.color,
           description: newEvent.description.trim() || null,
           reminder_days: newEvent.reminder_days || null,
-        });
-        setEventSetting(editingEventId, {
           track_graph: newEvent.track_graph || false,
           need_value: newEvent.need_value || false,
           need_notes: newEvent.need_notes || false,
         });
+        notifyLifelogEventSettingsChanged();
         toast.success("Event type updated");
       } else {
         const created = await createEventType({
@@ -548,14 +387,13 @@ export default function LifeLog() {
           color: newEvent.color,
           description: newEvent.description.trim() || null,
           reminder_days: newEvent.reminder_days || null,
+          track_graph: newEvent.track_graph || false,
+          need_value: newEvent.need_value || false,
+          need_notes: newEvent.need_notes || false,
         });
 
         if (created?.id) {
-          setEventSetting(created.id, {
-            track_graph: newEvent.track_graph || false,
-            need_value: newEvent.need_value || false,
-            need_notes: newEvent.need_notes || false,
-          });
+          notifyLifelogEventSettingsChanged();
         }
         toast.success("Event type created");
       }
@@ -973,7 +811,6 @@ export default function LifeLog() {
       } else if (deleteConfirm.type === "eventType") {
         const etId = deleteConfirm.data.eventType.id;
         await deleteEventType(etId);
-        removeEventSetting(etId);
         toast.success("Event type deleted");
       } else if (deleteConfirm.type === "log") {
         const { logId, eventTypeId } = deleteConfirm.data;
@@ -2472,7 +2309,7 @@ export default function LifeLog() {
                   {pendingLogAction.existingEntry?.notes && (
                     <span className={isDarkMode ? "text-iron-500" : "text-slate-500"}>
                       {" "}
-                      ("{pendingLogAction.existingEntry.notes}")
+                      ({pendingLogAction.existingEntry.notes})
                     </span>
                   )}
                   . You can add another entry, undo (remove) the existing log, or cancel.

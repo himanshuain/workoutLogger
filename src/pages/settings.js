@@ -143,10 +143,15 @@ function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setE
 }
 
 function NavCustomizer({ isDarkMode }) {
-  const [config, setConfig] = useState(() => getNavConfig());
+  const { settings, updateSettings } = useWorkout();
+  const [config, setConfig] = useState(() => getNavConfig(settings?.nav_config));
   const [editingId, setEditingId] = useState(null);
   const [editLabel, setEditLabel] = useState("");
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    setConfig(getNavConfig(settings?.nav_config));
+  }, [settings?.nav_config]);
 
   const orderedIds = (() => {
     let ids = DEFAULT_TABS.map(t => t.id);
@@ -164,8 +169,8 @@ function NavCustomizer({ isDarkMode }) {
 
   const persist = useCallback((newConfig) => {
     setConfig(newConfig);
-    saveNavConfig(newConfig);
-  }, []);
+    saveNavConfig(newConfig, updateSettings);
+  }, [updateSettings]);
 
   const handleReorder = (newOrder) => {
     persist({ ...config, order: newOrder });

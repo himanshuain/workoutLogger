@@ -1,10 +1,54 @@
 /**
- * Client-only session state: "added today" exercises and per-exercise completion flags.
- * Does not modify saved weekly routines.
+ * Client session state: ad-hoc exercises and per-exercise completion flags.
+ * Persists to localStorage cache and optional Supabase `workout_sessions.client_meta`.
  */
 
-const extrasKey = (sessionId) => `wl_session_extras_${sessionId}`;
-const doneKey = (sessionId) => `wl_session_exercise_done_${sessionId}`;
+const extrasKey = sessionId => `wl_session_extras_${sessionId}`;
+const doneKey = sessionId => `wl_session_exercise_done_${sessionId}`;
+
+let persistMetaCallback = null;
+
+export function setSessionMetaPersistCallback(fn) {
+  persistMetaCallback = fn;
+}
+
+function readMeta(session) {
+  const meta = session?.client_meta;
+  if (meta && typeof meta === "object") return meta;
+  return {};
+}
+
+function buildMeta(sessionId, extras, doneMap) {
+  return {
+    extras: extras ?? getSessionExtras(sessionId),
+    exercise_done: doneMap ?? getExerciseDoneMap(sessionId),
+  };
+}
+
+function persistLocal(sessionId, extras, doneMap) {
+  if (typeof window === "undefined" || !sessionId) return;
+  try {
+    localStorage.setItem(extrasKey(sessionId), JSON.stringify(extras));
+    localStorage.setItem(doneKey(sessionId), JSON.stringify(doneMap));
+  } catch {
+    /* ignore */
+  }
+  if (persistMetaCallback) {
+    persistMetaCallback(sessionId, buildMeta(sessionId, extras, doneMap));
+  }
+}
+
+/** Hydrate localStorage from server session row. */
+export function hydrateSessionClientState(session) {
+  if (typeof window === "undefined" || !session?.id) return;
+  const meta = readMeta(session);
+  if (Array.isArray(meta.extras)) {
+    localStorage.setItem(extrasKey(session.id), JSON.stringify(meta.extras));
+  }
+  if (meta.exercise_done && typeof meta.exercise_done === "object") {
+    localStorage.setItem(doneKey(session.id), JSON.stringify(meta.exercise_done));
+  }
+}
 
 export function getSessionExtras(sessionId) {
   if (typeof window === "undefined" || !sessionId) return [];
@@ -20,14 +64,12 @@ export function getSessionExtras(sessionId) {
 
 export function setSessionExtras(sessionId, extras) {
   if (typeof window === "undefined" || !sessionId) return;
-  try {
-    localStorage.setItem(extrasKey(sessionId), JSON.stringify(extras));
-  } catch {}
+  persistLocal(sessionId, extras, getExerciseDoneMap(sessionId));
 }
 
 export function addSessionExtra(sessionId, exercise) {
   const list = getSessionExtras(sessionId);
-  const exists = list.some((e) => e.exercise_name === exercise.exercise_name);
+  const exists = list.some(e => e.exercise_name === exercise.exercise_name);
   if (exists) return list;
   const next = [
     ...list,
@@ -48,7 +90,7 @@ export function addSessionExtra(sessionId, exercise) {
 export function removeSessionExtra(sessionId, exerciseName) {
   if (typeof window === "undefined" || !sessionId || !exerciseName) return [];
   const list = getSessionExtras(sessionId);
-  const next = list.filter((e) => e.exercise_name !== exerciseName);
+  const next = list.filter(e => e.exercise_name !== exerciseName);
   setSessionExtras(sessionId, next);
   setExerciseDone(sessionId, exerciseName, false);
   return next;
@@ -70,18 +112,13 @@ export function renameSessionExerciseClient(sessionId, oldName, newName) {
   const list = getSessionExtras(sessionId).map(e =>
     e.exercise_name === oldName ? { ...e, exercise_name: newName } : e,
   );
-  setSessionExtras(sessionId, list);
   const dm = getExerciseDoneMap(sessionId);
-  if (dm[oldName]) {
-    const next = { ...dm };
-    delete next[oldName];
-    next[newName] = true;
-    try {
-      localStorage.setItem(doneKey(sessionId), JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
+  const nextDone = { ...dm };
+  if (nextDone[oldName]) {
+    delete nextDone[oldName];
+    nextDone[newName] = true;
   }
+  persistLocal(sessionId, list, nextDone);
 }
 
 export function getExerciseDoneMap(sessionId) {
@@ -101,9 +138,7 @@ export function setExerciseDone(sessionId, exerciseName, done = true) {
   const map = { ...getExerciseDoneMap(sessionId) };
   if (done) map[exerciseName] = true;
   else delete map[exerciseName];
-  try {
-    localStorage.setItem(doneKey(sessionId), JSON.stringify(map));
-  } catch {}
+  persistLocal(sessionId, getSessionExtras(sessionId), map);
 }
 
 export function clearSessionClientState(sessionId) {
@@ -111,5 +146,7 @@ export function clearSessionClientState(sessionId) {
   try {
     localStorage.removeItem(extrasKey(sessionId));
     localStorage.removeItem(doneKey(sessionId));
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 }

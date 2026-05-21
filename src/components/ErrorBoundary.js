@@ -37,21 +37,23 @@ class ErrorBoundaryClass extends Component {
             <span className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-2xl mb-3">⚠️</span>
             <h3 className={`font-bold text-lg mb-2 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>Something went wrong</h3>
             <p className={`text-sm mb-4 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>We hit an unexpected error. You can try again.</p>
-            <div className="w-full mb-4 text-left">
-              <button
-                type="button"
-                className={`cursor-pointer text-xs ${isDarkMode ? "text-iron-500 hover:text-iron-400" : "text-slate-500 hover:text-slate-600"}`}
-                onClick={() => this.setState({ isExpanded: !isExpanded })}
-              >
-                {isExpanded ? "Hide" : "Show"} error details
-              </button>
-              {isExpanded && (
-                <pre className={`mt-2 p-3 rounded-lg text-xs overflow-auto max-h-32 ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}>
-                  {error?.toString?.()}
-                  {errorInfo?.componentStack}
-                </pre>
-              )}
-            </div>
+            {process.env.NODE_ENV !== "production" && (
+              <div className="w-full mb-4 text-left">
+                <button
+                  type="button"
+                  className={`cursor-pointer text-xs ${isDarkMode ? "text-iron-500 hover:text-iron-400" : "text-slate-500 hover:text-slate-600"}`}
+                  onClick={() => this.setState({ isExpanded: !isExpanded })}
+                >
+                  {isExpanded ? "Hide" : "Show"} error details
+                </button>
+                {isExpanded && (
+                  <pre className={`mt-2 p-3 rounded-lg text-xs overflow-auto max-h-32 ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}>
+                    {error?.toString?.()}
+                    {errorInfo?.componentStack}
+                  </pre>
+                )}
+              </div>
+            )}
             <button onClick={this.handleRetry} className={`px-6 py-2.5 rounded-xl font-semibold ${btnCls}`}>
               Try Again
             </button>

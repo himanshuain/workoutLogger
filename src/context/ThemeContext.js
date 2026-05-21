@@ -6,7 +6,6 @@ export function ThemeProvider({ children, initialDarkMode = true }) {
   const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load theme from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved) {
@@ -15,7 +14,6 @@ export function ThemeProvider({ children, initialDarkMode = true }) {
     setIsLoaded(true);
   }, []);
 
-  // Apply theme class to document
   useEffect(() => {
     if (!isLoaded) return;
 
@@ -28,7 +26,6 @@ export function ThemeProvider({ children, initialDarkMode = true }) {
       root.classList.remove("dark");
     }
 
-    // Update meta theme color
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
       metaTheme.setAttribute("content", isDarkMode ? "#18181b" : "#f8fafc");
@@ -38,17 +35,15 @@ export function ThemeProvider({ children, initialDarkMode = true }) {
   }, [isDarkMode, isLoaded]);
 
   const toggleTheme = () => {
-    setIsDarkMode((prev) => !prev);
+    setIsDarkMode(prev => !prev);
   };
 
-  const setTheme = (dark) => {
+  const setTheme = dark => {
     setIsDarkMode(dark);
   };
 
   return (
-    <ThemeContext.Provider
-      value={{ isDarkMode, toggleTheme, setTheme, isLoaded }}
-    >
+    <ThemeContext.Provider value={{ isDarkMode, toggleTheme, setTheme, isLoaded }}>
       {children}
     </ThemeContext.Provider>
   );

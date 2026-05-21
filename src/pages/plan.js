@@ -9,10 +9,10 @@ import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia"
 import { toast } from "sonner";
 import {
   PLANNER_DAYS,
-  loadRestMap,
+  persistRestMap,
+  resolveRestMap,
   sortRoutinesForList,
   routineDayLabel,
-  saveRestMap,
 } from "@/lib/routinePlanner";
 import RoutinePlannerWeekStrip from "@/components/planner/RoutinePlannerWeekStrip";
 import {
@@ -46,6 +46,8 @@ export default function RoutinePlannerPage() {
     createRoutine,
     updateRoutine,
     deleteRoutine,
+    settings,
+    updateSettings,
   } = useWorkout();
 
   const [selectedDay, setSelectedDay] = useState(1);
@@ -70,17 +72,17 @@ export default function RoutinePlannerPage() {
 
   useEffect(() => {
     if (!user?.id) return;
-    setRestByDay(loadRestMap(user.id));
-  }, [user?.id]);
+    setRestByDay(resolveRestMap(user.id, settings?.routine_rest_days));
+  }, [user?.id, settings?.routine_rest_days]);
 
   const handleRestMapCommit = useCallback(patch => {
     if (!user?.id) return;
     setRestByDay(prev => {
       const next = typeof patch === "function" ? patch(prev) : patch;
-      saveRestMap(user.id, next);
+      void persistRestMap(user.id, next, updateSettings);
       return next;
     });
-  }, [user?.id]);
+  }, [user?.id, updateSettings]);
 
   useEffect(() => {
     const r = getRoutineForDay(selectedDay);
@@ -103,10 +105,10 @@ export default function RoutinePlannerPage() {
 
   const setRestForDay = val => {
     if (!user?.id) return;
-    const map = loadRestMap(user.id);
+    const map = resolveRestMap(user.id, settings?.routine_rest_days);
     if (val) map[selectedDay] = true;
     else delete map[selectedDay];
-    saveRestMap(user.id, map);
+    void persistRestMap(user.id, map, updateSettings);
     setRestByDay(map);
   };
 

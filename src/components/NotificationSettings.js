@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Bell, BellOff, Clock, Check } from "lucide-react";
 import NotificationService from "@/lib/notifications";
+import { useWorkout } from "@/context/WorkoutContext";
 import {
   Modal,
   ModalContent,
@@ -21,20 +22,20 @@ const DAYS = [
 ];
 
 export default function NotificationSettings({ trackable, onClose }) {
+  const { getNotificationSchedule, upsertNotificationSchedule, removeNotificationSchedule } =
+    useWorkout();
   const [permissionStatus, setPermissionStatus] = useState("default");
   const [schedule, setSchedule] = useState({
     enabled: false,
     time: "09:00",
-    days: [1, 2, 3, 4, 5], // Mon-Fri by default
+    days: [1, 2, 3, 4, 5],
   });
   const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
-    // Check notification permission
     setPermissionStatus(NotificationService.getPermission());
 
-    // Load existing schedule
-    const existing = NotificationService.getSchedule(trackable.id);
+    const existing = getNotificationSchedule(trackable.id);
     if (existing) {
       setSchedule({
         enabled: existing.enabled,
@@ -42,23 +43,22 @@ export default function NotificationSettings({ trackable, onClose }) {
         days: existing.days || [],
       });
     }
-  }, [trackable.id]);
+  }, [trackable.id, getNotificationSchedule]);
 
   const handleRequestPermission = async () => {
     const result = await NotificationService.requestPermission();
     setPermissionStatus(result.permission || "denied");
 
     if (result.granted) {
-      // Show test notification
-      NotificationService.showNotification("Notifications Enabled! 🎉", {
+      NotificationService.showNotification("Notifications Enabled!", {
         body: "You will now receive reminders for your habits.",
       });
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (schedule.enabled) {
-      NotificationService.scheduleNotification(trackable.id, {
+      await upsertNotificationSchedule(trackable.id, {
         title: `${trackable.icon} ${trackable.name}`,
         body: `Time to log your ${trackable.name.toLowerCase()}!`,
         icon: "/favicon.svg",
@@ -67,7 +67,7 @@ export default function NotificationSettings({ trackable, onClose }) {
         enabled: true,
       });
     } else {
-      NotificationService.removeSchedule(trackable.id);
+      await removeNotificationSchedule(trackable.id);
     }
 
     if (window.navigator?.vibrate) {
@@ -82,24 +82,24 @@ export default function NotificationSettings({ trackable, onClose }) {
     setTimeout(() => onClose?.(), 200);
   };
 
-  const toggleDay = (dayId) => {
-    setSchedule((prev) => ({
+  const toggleDay = dayId => {
+    setSchedule(prev => ({
       ...prev,
       days: prev.days.includes(dayId)
-        ? prev.days.filter((d) => d !== dayId)
+        ? prev.days.filter(d => d !== dayId)
         : [...prev.days, dayId].sort(),
     }));
   };
 
   const selectAllDays = () => {
-    setSchedule((prev) => ({
+    setSchedule(prev => ({
       ...prev,
       days: prev.days.length === 7 ? [] : [0, 1, 2, 3, 4, 5, 6],
     }));
   };
 
   const selectWeekdays = () => {
-    setSchedule((prev) => ({
+    setSchedule(prev => ({
       ...prev,
       days: [1, 2, 3, 4, 5],
     }));
@@ -116,7 +116,6 @@ export default function NotificationSettings({ trackable, onClose }) {
         </ModalHeader>
 
         <ModalBody className="space-y-5">
-          {/* Permission Status */}
           {permissionStatus !== "granted" && (
             <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
               <div className="flex items-start gap-3">
@@ -130,7 +129,7 @@ export default function NotificationSettings({ trackable, onClose }) {
                   <p className="text-iron-400 text-xs mt-1">
                     {permissionStatus === "denied"
                       ? "Please enable notifications in your browser/device settings."
-                      : "Allow notifications to receive reminders for your habits."}
+                      : "Allow notifications to receive reminders for your habits. Background reminders work best on Android PWAs; iOS requires the app to stay installed."}
                   </p>
                   {permissionStatus !== "denied" && (
                     <button
@@ -145,7 +144,6 @@ export default function NotificationSettings({ trackable, onClose }) {
             </div>
           )}
 
-          {/* Enable Toggle */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-iron-800">
             <div className="flex items-center gap-3">
               <div
@@ -156,15 +154,11 @@ export default function NotificationSettings({ trackable, onClose }) {
               </div>
               <div>
                 <p className="text-iron-100 font-medium">Daily Reminder</p>
-                <p className="text-iron-500 text-xs">
-                  Get notified to log this habit
-                </p>
+                <p className="text-iron-500 text-xs">Get notified to log this habit</p>
               </div>
             </div>
             <button
-              onClick={() =>
-                setSchedule((prev) => ({ ...prev, enabled: !prev.enabled }))
-              }
+              onClick={() => setSchedule(prev => ({ ...prev, enabled: !prev.enabled }))}
               className={`w-12 h-7 rounded-full transition-colors relative ${
                 schedule.enabled ? "bg-lift-primary" : "bg-iron-700"
               }`}
@@ -180,7 +174,6 @@ export default function NotificationSettings({ trackable, onClose }) {
 
           {schedule.enabled && permissionStatus === "granted" && (
             <>
-              {/* Time Picker */}
               <div>
                 <label className="block text-iron-400 text-sm mb-2 flex items-center gap-2">
                   <Clock className="w-4 h-4" />
@@ -189,9 +182,7 @@ export default function NotificationSettings({ trackable, onClose }) {
                 <input
                   type="time"
                   value={schedule.time}
-                  onChange={(e) =>
-                    setSchedule((prev) => ({ ...prev, time: e.target.value }))
-                  }
+                  onChange={e => setSchedule(prev => ({ ...prev, time: e.target.value }))}
                   className="w-full h-14 px-4 rounded-xl bg-iron-800 text-iron-100 text-lg
                            outline-none focus:ring-2 focus:ring-lift-primary/50"
                 />
@@ -200,7 +191,6 @@ export default function NotificationSettings({ trackable, onClose }) {
                 </p>
               </div>
 
-              {/* Day Picker */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-iron-400 text-sm">Repeat on</label>
@@ -220,7 +210,7 @@ export default function NotificationSettings({ trackable, onClose }) {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {DAYS.map((day) => (
+                  {DAYS.map(day => (
                     <button
                       key={day.id}
                       onClick={() => toggleDay(day.id)}
@@ -239,11 +229,10 @@ export default function NotificationSettings({ trackable, onClose }) {
                     ? "Select at least one day"
                     : schedule.days.length === 7
                       ? "Every day"
-                      : schedule.days.map((d) => DAYS[d].name).join(", ")}
+                      : schedule.days.map(d => DAYS[d].name).join(", ")}
                 </p>
               </div>
 
-              {/* Preview */}
               <div className="p-4 rounded-xl bg-iron-800/50">
                 <p className="text-iron-500 text-xs mb-2">Preview</p>
                 <div className="flex items-start gap-3">

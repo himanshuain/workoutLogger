@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useTheme } from "@/context/ThemeContext";
+import { useWorkout } from "@/context/WorkoutContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, ClipboardList } from "lucide-react";
 import InstallPrompt from "@/components/InstallPrompt";
+import { cacheLocalNavConfig, readLocalNavConfig } from "@/lib/userPrefsMigration";
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
@@ -12,20 +14,21 @@ const DEFAULT_TABS = [
   { id: "progress", href: "/progress", icon: TrendingUp, label: "Progress" },
 ];
 
-const NAV_CONFIG_KEY = "logbook_nav_config";
+const DEFAULT_NAV_CONFIG = { order: null, hidden: [], labels: {} };
 
-export function getNavConfig() {
-  if (typeof window === "undefined") return { order: null, hidden: [], labels: {} };
-  try {
-    const stored = localStorage.getItem(NAV_CONFIG_KEY);
-    return stored ? JSON.parse(stored) : { order: null, hidden: [], labels: {} };
-  } catch { return { order: null, hidden: [], labels: {} }; }
+export function getNavConfig(settingsNavConfig) {
+  if (settingsNavConfig && Object.keys(settingsNavConfig).length > 0) {
+    return settingsNavConfig;
+  }
+  return readLocalNavConfig();
 }
 
-export function saveNavConfig(config) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(NAV_CONFIG_KEY, JSON.stringify(config));
+export function saveNavConfig(config, updateSettings) {
+  cacheLocalNavConfig(config);
   window.dispatchEvent(new Event("nav-config-changed"));
+  if (updateSettings) {
+    void updateSettings({ nav_config: config });
+  }
 }
 
 export { DEFAULT_TABS };
@@ -35,21 +38,20 @@ const navItemVariants = {
   hover: { scale: 1.05 },
 };
 
-const DEFAULT_NAV_CONFIG = { order: null, hidden: [], labels: {} };
-
 export default function Layout({ children }) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
+  const { settings } = useWorkout();
 
   const [navConfig, setNavConfig] = useState(DEFAULT_NAV_CONFIG);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
-    setNavConfig(getNavConfig());
-    const handler = () => setNavConfig(getNavConfig());
+    setNavConfig(getNavConfig(settings?.nav_config));
+    const handler = () => setNavConfig(getNavConfig(settings?.nav_config));
     window.addEventListener("nav-config-changed", handler);
     return () => window.removeEventListener("nav-config-changed", handler);
-  }, []);
+  }, [settings?.nav_config]);
 
   const allTabs = useMemo(() => {
     let ordered = [...DEFAULT_TABS];

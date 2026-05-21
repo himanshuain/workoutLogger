@@ -1,5 +1,10 @@
 /** Mon-first week UI (Sunday last). day_of_week matches JS Date: 0=Sun … 6=Sat */
 
+import {
+  cacheLocalRestMap,
+  readLocalRestMap,
+} from "@/lib/userPrefsMigration";
+
 export const PLANNER_DAYS = [
   { value: 1, label: "Monday", short: "Mon" },
   { value: 2, label: "Tuesday", short: "Tue" },
@@ -10,21 +15,39 @@ export const PLANNER_DAYS = [
   { value: 0, label: "Sunday", short: "Sun" },
 ];
 
+/** @deprecated use resolveRestMap */
 export const REST_KEY = userId => `wl_routine_rest_${userId}`;
 
-export function loadRestMap(userId) {
-  if (typeof window === "undefined" || !userId) return {};
-  try {
-    const raw = localStorage.getItem(REST_KEY(userId));
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
+/** Resolve rest-day map: server settings first, then localStorage cache. */
+export function resolveRestMap(userId, serverRestDays) {
+  if (!userId) return {};
+  const server =
+    serverRestDays && typeof serverRestDays === "object" && !Array.isArray(serverRestDays)
+      ? serverRestDays
+      : {};
+  if (Object.keys(server).length > 0) {
+    cacheLocalRestMap(userId, server);
+    return server;
+  }
+  return readLocalRestMap(userId);
+}
+
+/** @deprecated use resolveRestMap */
+export function loadRestMap(userId, serverRestDays) {
+  return resolveRestMap(userId, serverRestDays);
+}
+
+export async function persistRestMap(userId, map, updateSettings) {
+  if (!userId) return;
+  cacheLocalRestMap(userId, map);
+  if (updateSettings) {
+    await updateSettings({ routine_rest_days: map });
   }
 }
 
-export function saveRestMap(userId, map) {
-  if (typeof window === "undefined" || !userId) return;
-  localStorage.setItem(REST_KEY(userId), JSON.stringify(map));
+/** @deprecated use persistRestMap */
+export function saveRestMap(userId, map, updateSettings) {
+  void persistRestMap(userId, map, updateSettings);
 }
 
 /** Mon–Sun order (0 = Sunday last in week), then templates with no day last. */

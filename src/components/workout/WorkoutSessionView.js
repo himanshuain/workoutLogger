@@ -264,6 +264,3 @@ export default function WorkoutSessionView({
     </div>
   );
 }
-
-// Export helper functions for use in other components
-export { mergePlannedExercises, exerciseStatus, statusLabel };

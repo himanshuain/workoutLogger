@@ -141,6 +141,7 @@ export default function Home() {
   const [showAddHabitDrawer, setShowAddHabitDrawer] = useState(false);
   const [isStartingWorkout, setIsStartingWorkout] = useState(false);
   const [showRoutineSelector, setShowRoutineSelector] = useState(false);
+  const [replaceWorkoutConfirm, setReplaceWorkoutConfirm] = useState(null);
   const [newHabit, setNewHabit] = useState({
     name: "",
     type: "habit",
@@ -448,19 +449,13 @@ export default function Home() {
     try {
       const activeForDay = workoutSessionsForViewing.find(s => s.status === "active");
       if (activeForDay) {
-        const ok =
-          typeof window !== "undefined" &&
-          window.confirm(
-            "Replace the in-progress workout for this day with the selected routine? Unsaved progress on the current session will be removed.",
-          );
-        if (!ok) {
-          setIsStartingWorkout(false);
-          return;
-        }
-        await deleteWorkoutSession(activeForDay.id);
-        await queryClient.invalidateQueries({
-          queryKey: ["workoutSessionsForDate", user?.id, viewingDate],
+        setReplaceWorkoutConfirm({
+          type: "past",
+          routine,
+          activeForDay,
         });
+        setIsStartingWorkout(false);
+        return;
       }
       const session = await startWorkoutSessionForDate(viewingDate, routine);
       if (!session) {
@@ -516,17 +511,9 @@ export default function Home() {
 
     try {
       if (activeSession && activeSession.status === "active") {
-        const ok =
-          typeof window !== "undefined" &&
-          window.confirm(
-            "Replace your current in-progress workout with this routine? Progress on the current session will be lost."
-          );
-        if (!ok) {
-          setIsStartingWorkout(false);
-          return;
-        }
-        await deleteWorkoutSession(activeSession.id);
-        await loadActiveSession();
+        setReplaceWorkoutConfirm({ type: "today", routine });
+        setIsStartingWorkout(false);
+        return;
       }
       const session = await startWorkoutSession(routine);
       if (session) {
@@ -1228,6 +1215,76 @@ export default function Home() {
               className="bg-red-600 text-white hover:bg-red-700 border-0"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!replaceWorkoutConfirm}
+        onOpenChange={open => !open && setReplaceWorkoutConfirm(null)}
+      >
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Replace in-progress workout?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              {replaceWorkoutConfirm?.type === "past"
+                ? "Replace the in-progress workout for this day with the selected routine? Unsaved progress on the current session will be removed."
+                : "Replace your current in-progress workout with this routine? Progress on the current session will be lost."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!replaceWorkoutConfirm) return;
+                setIsStartingWorkout(true);
+                try {
+                  if (replaceWorkoutConfirm.type === "past") {
+                    await deleteWorkoutSession(replaceWorkoutConfirm.activeForDay.id);
+                    await queryClient.invalidateQueries({
+                      queryKey: ["workoutSessionsForDate", user?.id, viewingDate],
+                    });
+                    const session = await startWorkoutSessionForDate(
+                      viewingDate,
+                      replaceWorkoutConfirm.routine,
+                    );
+                    if (!session) {
+                      toast.error("Could not start workout");
+                      return;
+                    }
+                    await queryClient.invalidateQueries({
+                      queryKey: ["workoutSessionsForDate", user?.id, viewingDate],
+                    });
+                    navigateToWorkoutSession(session);
+                    toast.success("Workout started");
+                  } else {
+                    await deleteWorkoutSession(activeSession.id);
+                    await loadActiveSession();
+                    const session = await startWorkoutSession(replaceWorkoutConfirm.routine);
+                    if (session) {
+                      await loadActiveSession();
+                      toast.success("Workout started");
+                    } else {
+                      toast.error("Could not start workout");
+                    }
+                    await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+                  }
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Could not start workout");
+                } finally {
+                  setIsStartingWorkout(false);
+                  setReplaceWorkoutConfirm(null);
+                }
+              }}
+              className={isDarkMode ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90 border-0" : "bg-workout-primary text-white hover:bg-workout-primary/90 border-0"}
+            >
+              Replace
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

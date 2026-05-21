@@ -618,7 +618,7 @@ export default function Food() {
                     isDarkMode ? "text-iron-400" : "text-slate-600"
                   }`}
                 >
-                  Today's Progress
+                  Today&apos;s Progress
                 </span>
                 <span
                   className={`font-medium ${

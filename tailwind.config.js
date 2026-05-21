@@ -69,9 +69,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        display: ['Outfit', 'system-ui', 'sans-serif'],
-        body: ['Outfit', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-outfit)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', 'monospace'],
       },
       spacing: {
         'safe-bottom': 'env(safe-area-inset-bottom)',

@@ -24,6 +24,16 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function mergePlannedExercises(todayRoutine, extras) {
   const map = new Map();
@@ -77,6 +87,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
 
   const [starting, setStarting] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [extrasVersion, setExtrasVersion] = useState(0);
   const [thumbFailed, setThumbFailed] = useState({});
 
@@ -170,12 +181,12 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
   const handleResetInProgress = async () => {
     const id = activeSession?.id;
     if (!id || activeSession.status !== "active") return;
-    const ok =
-      typeof window !== "undefined" &&
-      window.confirm(
-        "Discard this in-progress workout? All logged sets and today-only extras will be permanently removed.",
-      );
-    if (!ok) return;
+    setShowDiscardConfirm(true);
+  };
+
+  const confirmDiscardWorkout = async () => {
+    const id = activeSession?.id;
+    if (!id) return;
     setResetting(true);
     try {
       const success = await deleteWorkoutSession(id);
@@ -188,6 +199,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       }
     } finally {
       setResetting(false);
+      setShowDiscardConfirm(false);
     }
   };
 
@@ -628,6 +640,30 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
           )}
         </div>
       </div>
+
+      <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
+              Discard workout?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+              Discard this in-progress workout? All logged sets and today-only extras will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDiscardWorkout}
+              className="bg-red-600 text-white hover:bg-red-700 border-0"
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SpringIn>
   );
 }

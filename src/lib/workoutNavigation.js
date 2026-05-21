@@ -3,6 +3,8 @@
  * Handles date-aware routing for today vs past-date sessions
  */
 
+import { localDateStr } from "@/lib/dateLogUtils";
+
 /**
  * Get the appropriate return path after workout actions based on session date
  * @param {Object} session - Workout session with date property
@@ -10,8 +12,8 @@
  */
 export function getPostWorkoutReturnPath(session) {
   if (!session?.date) return "/";
-  
-  const today = new Date().toISOString().split('T')[0];
+
+  const today = localDateStr();
   if (session.date === today) {
     return "/";
   }
@@ -86,7 +88,7 @@ export function getSessionAwareCopy(session) {
     };
   }
   
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const isToday = session.date === today;
   
   return {
@@ -103,7 +105,7 @@ export function getSessionAwareCopy(session) {
  */
 export function isSessionToday(session) {
   if (!session?.date) return false;
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   return session.date === today;
 }
 

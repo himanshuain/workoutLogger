@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { ArrowRightLeft, MoreHorizontal, X } from "lucide-react";
+import { ArrowRightLeft, X } from "lucide-react";
 import { toast } from "sonner";
 
 /**
@@ -171,10 +171,6 @@ export default function RoutinePlannerWeekStrip({
                 ? "text-slate-700"
                 : "text-slate-500");
 
-          const actionBtnCls = isDarkMode
-            ? "shrink-0 rounded-lg p-1 text-iron-500 hover:bg-iron-800/90 hover:text-iron-300"
-            : "shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-200/80 hover:text-slate-700";
-
           const columnInner = (
             <div className="min-w-[5.25rem] max-w-[6rem] shrink-0 snap-start md:min-w-[5.5rem] md:max-w-[6.25rem]">
               <div
@@ -192,32 +188,7 @@ export default function RoutinePlannerWeekStrip({
                 }}
                 className={`${pillBase} min-h-[6.125rem]`}
               >
-                <div className="flex min-h-[1.625rem] shrink-0 items-center justify-between gap-1.5">
-                  <span className={`${dayBadgeCls} min-w-0 flex-1 truncate`}>{d.short}</span>
-                  {canMove ? (
-                    <button
-                      type="button"
-                      onPointerDown={e => e.stopPropagation()}
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openMovePicker(d.value);
-                      }}
-                      className={`${actionBtnCls} [&_svg]:size-[1.05rem]`}
-                      aria-label={`Actions for ${d.label}`}
-                      title={`Move routine from ${d.label}`}
-                    >
-                      <MoreHorizontal strokeWidth={2} aria-hidden />
-                    </button>
-                  ) : (
-                    <span
-                      className="inline-flex size-7 shrink-0 items-center justify-center"
-                      aria-hidden
-                    >
-                      <MoreHorizontal strokeWidth={2} className="invisible size-[1.05rem]" />
-                    </span>
-                  )}
-                </div>
+                <span className={`${dayBadgeCls} block truncate`}>{d.short}</span>
 
                 <p className={`${subtitleBodyCls(active)} flex-1`} title={subtitle}>
                   {subtitle}
@@ -246,6 +217,21 @@ export default function RoutinePlannerWeekStrip({
           );
         })}
       </div>
+
+      {getRoutineForDay(selectedDay) ? (
+        <button
+          type="button"
+          onClick={() => openMovePicker(selectedDay)}
+          className={`mt-1 inline-flex items-center gap-1.5 text-xs font-medium ${
+            isDarkMode
+              ? "text-iron-500 hover:text-iron-300"
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <ArrowRightLeft className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden />
+          Move split to another day
+        </button>
+      ) : null}
 
       <Dialog open={movePickerFrom !== null} onOpenChange={open => !open && setMovePickerFrom(null)}>
         <DialogContent className={`max-w-sm ${isDarkMode ? "!bg-iron-900 !border-iron-700" : "!bg-white !border-slate-200"}`}>

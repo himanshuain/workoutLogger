@@ -27,6 +27,20 @@ import { useWorkoutSettings } from "@/context/hooks/useWorkoutSettings";
 
 const WorkoutContext = createContext();
 
+/** JSON payload for replace_routine_exercises RPC (order = array order). */
+function buildRoutineExercisesJson(routineExercises) {
+  return (routineExercises || []).map(ex => ({
+    exercise_id: ex.exercise_id ?? null,
+    exercise_name: ex.exercise_name,
+    category: ex.category || "other",
+    target_sets: ex.target_sets || 3,
+    notes:
+      ex.notes != null && String(ex.notes).trim()
+        ? String(ex.notes).trim().slice(0, 500)
+        : null,
+  }));
+}
+
 export function WorkoutProvider({ children }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
@@ -242,7 +256,8 @@ export function WorkoutProvider({ children }) {
             exercise_name,
             category,
             target_sets,
-            order_index
+            order_index,
+            notes
           )
         `
         )
@@ -288,18 +303,17 @@ export function WorkoutProvider({ children }) {
         return null;
       }
 
-      // Add exercises to the routine
+      // Add exercises atomically (single DB transaction — avoids empty routine if insert fails)
       if (routineExercises && routineExercises.length > 0) {
-        const exercisesToInsert = routineExercises.map((ex, index) => ({
-          routine_id: newRoutine.id,
-          exercise_id: ex.exercise_id || null,
-          exercise_name: ex.exercise_name,
-          category: ex.category || "other",
-          target_sets: ex.target_sets || 3,
-          order_index: index,
-        }));
-
-        await supabase.from("routine_exercises").insert(exercisesToInsert);
+        const { error: exError } = await supabase.rpc("replace_routine_exercises", {
+          p_routine_id: newRoutine.id,
+          p_exercises: buildRoutineExercisesJson(routineExercises),
+        });
+        if (exError) {
+          console.error("Error adding routine exercises:", exError);
+          await loadRoutines();
+          return newRoutine;
+        }
       }
 
       await loadRoutines();
@@ -326,21 +340,16 @@ export function WorkoutProvider({ children }) {
         })
         .eq("id", routineId);
 
-      // Delete existing exercises and re-add
-      if (routineExercises) {
-        await supabase.from("routine_exercises").delete().eq("routine_id", routineId);
-
-        if (routineExercises.length > 0) {
-          const exercisesToInsert = routineExercises.map((ex, index) => ({
-            routine_id: routineId,
-            exercise_id: ex.exercise_id || null,
-            exercise_name: ex.exercise_name,
-            category: ex.category || "other",
-            target_sets: ex.target_sets || 3,
-            order_index: index,
-          }));
-
-          await supabase.from("routine_exercises").insert(exercisesToInsert);
+      // Replace exercises atomically when the payload includes `exercises`
+      if (routineExercises !== undefined) {
+        const { error: exError } = await supabase.rpc("replace_routine_exercises", {
+          p_routine_id: routineId,
+          p_exercises: buildRoutineExercisesJson(routineExercises),
+        });
+        if (exError) {
+          console.error("Error replacing routine exercises:", exError);
+          await loadRoutines();
+          return;
         }
       }
 

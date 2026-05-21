@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Layout from "@/components/Layout";
@@ -19,13 +19,29 @@ import {
   EQUIPMENT_FILTER_ROW,
   exerciseMatchesEquipmentFilter,
 } from "@/lib/exerciseEquipmentFilter";
-import { Plus, List, LayoutGrid, ArrowLeft, Check, Eye, XCircle, ListChecks } from "lucide-react";
+import {
+  Plus,
+  List,
+  LayoutGrid,
+  ArrowLeft,
+  Check,
+  Eye,
+  XCircle,
+  ListChecks,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { toast } from "sonner";
 import { getRoutinePlannerReturnHref, getQueryParamString } from "@/lib/workoutNavigation";
 
 const EQUIPMENT_KEYS = new Set(EQUIPMENT_FILTER_ROW.map(({ key }) => key));
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const pillScrollerClass =
+  "overflow-x-auto overscroll-x-contain py-1.5 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
+
+const pillRowClass = "flex flex-nowrap items-center gap-1.5 w-max min-w-full";
 
 // Component to handle exercise thumbnails with proper error fallback
 function ExerciseThumbnail({ exercise, isDarkMode }) {
@@ -109,7 +125,7 @@ function ExerciseThumbnail({ exercise, isDarkMode }) {
 export default function ExercisesSearchPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { user, exercises, getRoutineForDay, updateRoutine, createRoutine } = useWorkout();
+  const { user, exercises, routines, getRoutineForDay, updateRoutine, createRoutine } = useWorkout();
   const [q, setQ] = useState("");
   const [chip, setChip] = useState(null);
   const [subChip, setSubChip] = useState(null);
@@ -119,6 +135,11 @@ export default function ExercisesSearchPage() {
   const [uiHydrated, setUiHydrated] = useState(false);
   const [viewMode, setViewMode] = useState("list"); // "list" or "card"
   const [equipmentFilter, setEquipmentFilter] = useState(null);
+  /** Collapsible block showing exercises already saved on the planner day */
+  const [pinnedSavedOpen, setPinnedSavedOpen] = useState(false);
+  const exerciseRowRefs = useRef(new Map());
+  const pendingScrollExerciseId = useRef(null);
+  const [scrollFlashId, setScrollFlashId] = useState(null);
 
   // Load view mode preference from localStorage
   useEffect(() => {
@@ -228,6 +249,46 @@ export default function ExercisesSearchPage() {
     router.replace({ pathname: "/exercises", query: next }, undefined, { shallow: true });
   }, [router]);
 
+  /** Explicit planner URL — avoids router.back() landing on the wrong screen. */
+  const getRoutinePickerBackHref = useCallback(() => {
+    const fromNav = getRoutinePlannerReturnHref(router.query);
+    if (fromNav) return fromNav;
+    const rt = getQueryParamString(router.query, "returnTo").toLowerCase();
+    const day = routineDayNum;
+    if (Number.isNaN(day) || day < 0 || day > 6) return "/plan";
+    if (rt === "routine") return `/routine?day=${encodeURIComponent(String(day))}`;
+    return `/plan?day=${encodeURIComponent(String(day))}`;
+  }, [router.query, routineDayNum]);
+
+  const routineForDay = useMemo(
+    () => (isRoutinePicker ? getRoutineForDay(routineDayNum) : null),
+    [isRoutinePicker, routineDayNum, getRoutineForDay, routines],
+  );
+
+  const savedRoutineExercises = useMemo(
+    () => routineForDay?.routine_exercises || [],
+    [routineForDay],
+  );
+
+  const savedRoutineNameSet = useMemo(
+    () => new Set(savedRoutineExercises.map(ex => ex.exercise_name)),
+    [savedRoutineExercises],
+  );
+
+  const pendingAddCount = useMemo(() => {
+    let n = 0;
+    for (const id of selectedIds) {
+      const ex = exercises.find(e => e.id === id);
+      if (ex && !savedRoutineNameSet.has(ex.name)) n += 1;
+    }
+    return n;
+  }, [selectedIds, exercises, savedRoutineNameSet]);
+
+  const registerExerciseRowRef = useCallback((id, el) => {
+    if (el) exerciseRowRefs.current.set(id, el);
+    else exerciseRowRefs.current.delete(id);
+  }, []);
+
   useEffect(() => {
     if (!previewId || !router.isReady || !user) return;
     if (!exercises || exercises.length === 0) return;
@@ -247,10 +308,11 @@ export default function ExercisesSearchPage() {
 
   const handleBack = useCallback(() => {
     if (isRoutinePicker) {
-      setSelectedIds(new Set());
+      void router.replace(getRoutinePickerBackHref());
+      return;
     }
     router.back();
-  }, [isRoutinePicker, router]);
+  }, [isRoutinePicker, router, getRoutinePickerBackHref]);
 
   const clearRoutineSelection = useCallback(() => {
     setSelectedIds(new Set());
@@ -290,22 +352,83 @@ export default function ExercisesSearchPage() {
     return list.slice(0, 80);
   }, [exercises, q, chip, subChip, equipmentFilter]);
 
-  const subcategories = useMemo(() => getSubcategoriesForParent(chip), [chip]);
-
-  const toggleSelect = useCallback(id => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const scrollToCatalogExercise = useCallback(exerciseId => {
+    const el = exerciseRowRefs.current.get(exerciseId);
+    if (!el) return false;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setScrollFlashId(exerciseId);
+    window.setTimeout(() => setScrollFlashId(prev => (prev === exerciseId ? null : prev)), 1200);
+    return true;
   }, []);
 
+  const scrollToSavedExercise = useCallback(
+    exerciseName => {
+      const catalogEx = exercises.find(e => e.name === exerciseName);
+      if (!catalogEx) {
+        toast.message("Exercise not found in catalog");
+        return;
+      }
+      const visible = filtered.some(e => e.id === catalogEx.id);
+      if (!visible) {
+        pendingScrollExerciseId.current = catalogEx.id;
+        setChip(null);
+        setSubChip(null);
+        setEquipmentFilter(null);
+        setQ(exerciseName);
+        return;
+      }
+      scrollToCatalogExercise(catalogEx.id);
+    },
+    [exercises, filtered, scrollToCatalogExercise],
+  );
+
+  useEffect(() => {
+    const id = pendingScrollExerciseId.current;
+    if (!id) return;
+    pendingScrollExerciseId.current = null;
+    const t = window.setTimeout(() => {
+      if (!scrollToCatalogExercise(id)) {
+        toast.message("Could not scroll to exercise — try searching by name");
+      }
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [filtered, scrollToCatalogExercise]);
+
+  const routinePickerRowClass = (exId, extra = "") =>
+    cn(
+      extra,
+      isRoutinePicker && scrollFlashId === exId
+        ? isDarkMode
+          ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-iron-950"
+          : "ring-2 ring-emerald-500 ring-offset-2 ring-offset-slate-50"
+        : "",
+      isRoutinePicker ? "scroll-mt-24" : "",
+    );
+
+  const subcategories = useMemo(() => getSubcategoriesForParent(chip), [chip]);
+
+  const toggleSelect = useCallback(
+    id => {
+      const ex = exercises.find(e => e.id === id);
+      if (ex && savedRoutineNameSet.has(ex.name)) {
+        toast.message("Already in this routine");
+        return;
+      }
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    },
+    [exercises, savedRoutineNameSet],
+  );
+
   const handleBatchAddToRoutine = async () => {
-    if (!isRoutinePicker || selectedIds.size === 0) return;
+    if (!isRoutinePicker || pendingAddCount === 0) return;
     const picks = Array.from(selectedIds)
       .map(id => exercises.find(e => e.id === id))
-      .filter(Boolean);
+      .filter(ex => ex && !savedRoutineNameSet.has(ex.name));
     if (picks.length === 0) return;
 
     setAddingBatch(true);
@@ -336,6 +459,7 @@ export default function ExercisesSearchPage() {
         exercise_name: ex.exercise_name,
         category: ex.category || "other",
         target_sets: ex.target_sets || 3,
+        notes: ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim().slice(0, 500) : null,
       }));
       const existingNames = new Set(existing.map(e => e.exercise_name));
       let added = 0;
@@ -356,6 +480,7 @@ export default function ExercisesSearchPage() {
         exercises: existing,
       });
       toast.success(`Added ${added} exercise(s) to routine`);
+      setSelectedIds(new Set());
       const href = getRoutinePlannerReturnHref(router.query);
       if (href) await router.replace(href);
     } finally {
@@ -375,7 +500,7 @@ export default function ExercisesSearchPage() {
     <Layout>
       <div
         className={`px-5 pt-8 max-w-lg mx-auto ${
-          isRoutinePicker && selectedIds.size > 0 ? "pb-40" : "pb-28"
+          isRoutinePicker && pendingAddCount > 0 ? "pb-40" : "pb-28"
         }`}
       >
         <div className="flex items-center gap-3 mb-2">
@@ -387,7 +512,7 @@ export default function ExercisesSearchPage() {
                 ? "bg-iron-800 text-iron-300 hover:bg-iron-700"
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
-            aria-label="Go back"
+            aria-label={isRoutinePicker ? "Back to workout planner" : "Go back"}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -396,78 +521,199 @@ export default function ExercisesSearchPage() {
           </h1>
         </div>
         {isRoutinePicker && (
-          <p className={`mt-2 text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
-            Tap a row to select or deselect. Tap the <span className="font-medium">image</span> for
-            a full preview (sheet). Then add to your{" "}
-            <span className="font-medium">{DAY_NAMES[routineDayNum]}</span> routine.
+          <p className={`mt-1.5 text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+            Green = saved · gold = new picks for {DAY_NAMES[routineDayNum]}
           </p>
         )}
 
         <div
           className={cn(
-            "sticky z-20 -mx-5 px-5 pt-2 mt-6 pb-3 border-b",
+            "sticky z-20 -mx-5 px-5 pb-2 border-b",
             isDarkMode
-              ? "top-0 bg-iron-950 border-iron-800/90"
-              : "top-0 bg-slate-50 border-slate-200/90"
+              ? "top-0 bg-iron-950/95 backdrop-blur-sm border-iron-800/90"
+              : "top-0 bg-slate-50/95 backdrop-blur-sm border-slate-200/90",
           )}
         >
+          {isRoutinePicker && savedRoutineExercises.length > 0 ? (
+            <div
+              className={`mt-2 rounded-xl border ${
+                isDarkMode ? "border-iron-700/80 bg-iron-900/50" : "border-slate-200 bg-white"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => setPinnedSavedOpen(o => !o)}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left ${
+                  isDarkMode ? "hover:bg-iron-800/70" : "hover:bg-slate-50"
+                }`}
+                aria-expanded={pinnedSavedOpen}
+              >
+                <p className={`min-w-0 text-xs font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-800"}`}>
+                  <span className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
+                    {DAY_NAMES[routineDayNum]} plan ·{" "}
+                  </span>
+                  {savedRoutineExercises.length} saved
+                  {!pinnedSavedOpen ? (
+                    <span className={isDarkMode ? "text-iron-500" : "text-slate-400"}> · tap to expand</span>
+                  ) : null}
+                </p>
+                {pinnedSavedOpen ? (
+                  <ChevronUp
+                    className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                  />
+                ) : (
+                  <ChevronDown
+                    className={`w-4 h-4 shrink-0 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                  />
+                )}
+              </button>
+              {pinnedSavedOpen ? (
+                <div
+                  className={`border-t rounded-b-xl overflow-hidden ${
+                    isDarkMode ? "border-iron-800" : "border-slate-100"
+                  }`}
+                >
+                  <div className={pillScrollerClass}>
+                    <div className={cn(pillRowClass, "px-2")}>
+                      {savedRoutineExercises.map(ex => {
+                        const note =
+                          ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim() : "";
+                        return (
+                          <button
+                            key={ex.id || ex.exercise_name}
+                            type="button"
+                            onClick={() => scrollToSavedExercise(ex.exercise_name)}
+                            className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap pl-2.5 pr-2.5 py-1.5 rounded-lg text-left text-[11px] font-medium transition-colors ${
+                              isDarkMode
+                                ? "bg-iron-800/80 text-iron-200 border border-iron-700 hover:bg-iron-700"
+                                : "bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200"
+                            }`}
+                            aria-label={`Scroll to ${ex.exercise_name} in list`}
+                          >
+                            <Check
+                              className={`w-3 h-3 shrink-0 ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}
+                              strokeWidth={2.5}
+                            />
+                            <span>{ex.exercise_name}</span>
+                            {note ? (
+                              <span className={`opacity-70 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+                                · {note}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div
+            className={cn(
+              isRoutinePicker && savedRoutineExercises.length > 0 ? "mt-2" : "mt-3",
+            )}
+          >
           <input
             type="search"
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search exercise…"
-            className={`w-full rounded-2xl px-4 py-3.5 text-base outline-none ${
+            className={`w-full rounded-xl px-3.5 py-2.5 text-sm outline-none ${
               isDarkMode
                 ? "bg-iron-900 border border-iron-800 text-iron-100 placeholder:text-iron-600"
                 : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400"
             }`}
           />
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {PARENT_CHIPS.map(c => {
-              const active = chip === c;
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => {
-                    setChip(active ? null : c);
-                    setSubChip(null);
-                  }}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                    active
-                      ? isDarkMode
-                        ? "bg-lift-primary text-iron-950"
-                        : "bg-workout-primary text-white"
-                      : isDarkMode
-                        ? "bg-iron-800 text-iron-300"
-                        : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {c}
-                </button>
-              );
-            })}
+          <div className={cn(pillScrollerClass, "mt-2")}>
+            <div className={pillRowClass}>
+              {PARENT_CHIPS.map(c => {
+                const active = chip === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => {
+                      setChip(active ? null : c);
+                      setSubChip(null);
+                    }}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                      active
+                        ? isDarkMode
+                          ? "bg-lift-primary text-iron-950"
+                          : "bg-workout-primary text-white"
+                        : isDarkMode
+                          ? "bg-iron-800 text-iron-300"
+                          : "bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+              <span
+                className={`shrink-0 w-px h-4 self-center mx-0.5 ${isDarkMode ? "bg-iron-700" : "bg-slate-300"}`}
+                aria-hidden
+              />
+              <button
+                type="button"
+                onClick={() => setEquipmentFilter(null)}
+                className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  equipmentFilter == null
+                    ? isDarkMode
+                      ? "bg-iron-700 text-iron-100 ring-1 ring-inset ring-iron-500"
+                      : "bg-slate-200 text-slate-900 ring-1 ring-inset ring-slate-400"
+                    : isDarkMode
+                      ? "bg-iron-800/80 text-iron-400"
+                      : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                All equip.
+              </button>
+              {EQUIPMENT_FILTER_ROW.map(row => {
+                const active = equipmentFilter === row.key;
+                return (
+                  <button
+                    key={row.key}
+                    type="button"
+                    onClick={() => setEquipmentFilter(active ? null : row.key)}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      active
+                        ? isDarkMode
+                          ? "bg-iron-700 text-iron-100 ring-1 ring-inset ring-lift-primary/80"
+                          : "bg-slate-200 text-slate-900 ring-1 ring-inset ring-workout-primary/70"
+                        : isDarkMode
+                          ? "bg-iron-800/80 text-iron-400"
+                          : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {row.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {subcategories.length > 0 ? (
-            <div className="mt-4">
-              <p
-                className={`text-[11px] font-medium uppercase tracking-wide mb-2 ${
-                  isDarkMode ? "text-iron-500" : "text-slate-500"
-                }`}
-              >
-                Muscle focus
-              </p>
-              <div className="flex flex-wrap gap-1.5">
+            <div className={cn(pillScrollerClass, "mt-1.5")}>
+              <div className={pillRowClass}>
+                <span
+                  className={`shrink-0 self-center px-1 text-[10px] font-semibold uppercase tracking-wide ${
+                    isDarkMode ? "text-iron-600" : "text-slate-400"
+                  }`}
+                >
+                  Focus
+                </span>
                 <button
                   type="button"
                   onClick={() => setSubChip(null)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                  className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
                     subChip == null
                       ? isDarkMode
-                        ? "bg-iron-700 text-iron-100 ring-1 ring-iron-500"
-                        : "bg-slate-200 text-slate-900 ring-1 ring-slate-400"
+                        ? "bg-iron-700 text-iron-100 ring-1 ring-inset ring-iron-500"
+                        : "bg-slate-200 text-slate-900 ring-1 ring-inset ring-slate-400"
                       : isDarkMode
                         ? "bg-iron-800/80 text-iron-400"
                         : "bg-slate-100 text-slate-600"
@@ -482,11 +728,11 @@ export default function ExercisesSearchPage() {
                       key={s.label}
                       type="button"
                       onClick={() => setSubChip(active ? null : s.label)}
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                      className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
                         active
                           ? isDarkMode
-                            ? "bg-iron-700 text-iron-100 ring-1 ring-lift-primary/80"
-                            : "bg-slate-200 text-slate-900 ring-1 ring-workout-primary/70"
+                            ? "bg-iron-700 text-iron-100 ring-1 ring-inset ring-lift-primary/80"
+                            : "bg-slate-200 text-slate-900 ring-1 ring-inset ring-workout-primary/70"
                           : isDarkMode
                             ? "bg-iron-800/80 text-iron-400"
                             : "bg-slate-100 text-slate-600"
@@ -500,65 +746,17 @@ export default function ExercisesSearchPage() {
             </div>
           ) : null}
 
-          <div className="mt-4">
-            <p
-              className={`text-[11px] font-medium uppercase tracking-wide mb-2 ${
-                isDarkMode ? "text-iron-500" : "text-slate-500"
-              }`}
-            >
-              Equipment
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={() => setEquipmentFilter(null)}
-                className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                  equipmentFilter == null
-                    ? isDarkMode
-                      ? "bg-iron-700 text-iron-100 ring-1 ring-iron-500"
-                      : "bg-slate-200 text-slate-900 ring-1 ring-slate-400"
-                    : isDarkMode
-                      ? "bg-iron-800/80 text-iron-400"
-                      : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                All
-              </button>
-              {EQUIPMENT_FILTER_ROW.map(row => {
-                const active = equipmentFilter === row.key;
-                return (
-                  <button
-                    key={row.key}
-                    type="button"
-                    onClick={() => setEquipmentFilter(active ? null : row.key)}
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                      active
-                        ? isDarkMode
-                          ? "bg-iron-700 text-iron-100 ring-1 ring-lift-primary/80"
-                          : "bg-slate-200 text-slate-900 ring-1 ring-workout-primary/70"
-                        : isDarkMode
-                          ? "bg-iron-800/80 text-iron-400"
-                          : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {row.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* View Toggle */}
-          <div className="mt-4 flex items-center justify-between">
-            <p className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               {filtered.length} exercise{filtered.length !== 1 ? "s" : ""}
             </p>
-            <div className={`flex rounded-lg p-1 ${
+            <div className={`flex rounded-lg p-0.5 ${
               isDarkMode ? "bg-iron-800" : "bg-slate-100"
             }`}>
               <button
                 onClick={() => handleViewModeChange("list")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                   viewMode === "list"
                     ? isDarkMode
                       ? "bg-iron-700 text-iron-100"
@@ -568,12 +766,12 @@ export default function ExercisesSearchPage() {
                       : "text-slate-500 hover:text-slate-600"
                 }`}
               >
-                <List className="w-4 h-4" />
+                <List className="w-3.5 h-3.5" />
                 List
               </button>
               <button
                 onClick={() => handleViewModeChange("card")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors ${
                   viewMode === "card"
                     ? isDarkMode
                       ? "bg-iron-700 text-iron-100"
@@ -583,16 +781,19 @@ export default function ExercisesSearchPage() {
                       : "text-slate-500 hover:text-slate-600"
                 }`}
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="w-3.5 h-3.5" />
                 Cards
               </button>
             </div>
+          </div>
           </div>
         </div>
 
         <div className={`mt-6 ${viewMode === "card" ? "grid grid-cols-2 gap-3" : "space-y-2"}`}>
           {filtered.map(ex => {
-            const selected = selectedIds.has(ex.id);
+            const inRoutine = savedRoutineNameSet.has(ex.name);
+            const pendingAdd = selectedIds.has(ex.id) && !inRoutine;
+            const highlighted = inRoutine || pendingAdd;
             
             if (viewMode === "card") {
               // Card view layout
@@ -648,6 +849,7 @@ export default function ExercisesSearchPage() {
               return (
                 <div
                   key={ex.id}
+                  ref={el => registerExerciseRowRef(ex.id, el)}
                   role="button"
                   tabIndex={0}
                   onClick={() => toggleSelect(ex.id)}
@@ -657,9 +859,23 @@ export default function ExercisesSearchPage() {
                       toggleSelect(ex.id);
                     }
                   }}
-                  className={`${cardClass} text-left transition-all cursor-pointer ${selected ? (isDarkMode ? "ring-2 ring-lift-primary" : "ring-2 ring-workout-primary") : ""} ${
-                    isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-50"
-                  }`}
+                  className={routinePickerRowClass(
+                    ex.id,
+                    cn(
+                      cardClass,
+                      "text-left transition-all cursor-pointer",
+                      highlighted
+                        ? inRoutine
+                          ? isDarkMode
+                            ? "ring-2 ring-emerald-500/70"
+                            : "ring-2 ring-emerald-500/60"
+                          : isDarkMode
+                            ? "ring-2 ring-lift-primary"
+                            : "ring-2 ring-workout-primary"
+                        : "",
+                      isDarkMode ? "hover:bg-iron-800" : "hover:bg-slate-50",
+                    ),
+                  )}
                 >
                   <div className="aspect-square relative">
                     <ExerciseThumbnail 
@@ -668,11 +884,19 @@ export default function ExercisesSearchPage() {
                     />
                     
                     {/* Selection indicator overlay */}
-                    {selected && (
+                    {highlighted && (
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          isDarkMode ? "bg-lift-primary" : "bg-workout-primary"
-                        }`}>
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            inRoutine
+                              ? isDarkMode
+                                ? "bg-emerald-500"
+                                : "bg-emerald-600"
+                              : isDarkMode
+                                ? "bg-lift-primary"
+                                : "bg-workout-primary"
+                          }`}
+                        >
                           <Check className="w-5 h-5 text-white" strokeWidth={3} />
                         </div>
                       </div>
@@ -683,9 +907,17 @@ export default function ExercisesSearchPage() {
                     <div className="flex items-center gap-2">
                       <div className="flex-1 min-w-0">
                         <p className={`font-semibold text-sm leading-tight ${
-                          selected
-                            ? isDarkMode ? "text-lift-primary" : "text-workout-primary"
-                            : isDarkMode ? "text-iron-100" : "text-slate-900"
+                          highlighted
+                            ? inRoutine
+                              ? isDarkMode
+                                ? "text-emerald-300"
+                                : "text-emerald-700"
+                              : isDarkMode
+                                ? "text-lift-primary"
+                                : "text-workout-primary"
+                            : isDarkMode
+                              ? "text-iron-100"
+                              : "text-slate-900"
                         }`}>
                           {ex.name}
                         </p>
@@ -768,13 +1000,22 @@ export default function ExercisesSearchPage() {
             return (
               <div
                 key={ex.id}
-                className={`${baseCard} ${
-                  selected
-                    ? isDarkMode
-                      ? "ring-2 ring-lift-primary border-lift-primary/50"
-                      : "ring-2 ring-workout-primary border-workout-primary/40"
-                    : ""
-                }`}
+                ref={el => registerExerciseRowRef(ex.id, el)}
+                className={routinePickerRowClass(
+                  ex.id,
+                  cn(
+                    baseCard,
+                    highlighted
+                      ? inRoutine
+                        ? isDarkMode
+                          ? "ring-2 ring-emerald-500/70 border-emerald-500/40 bg-emerald-500/10"
+                          : "ring-2 ring-emerald-500/60 border-emerald-500/30 bg-emerald-50"
+                        : isDarkMode
+                          ? "ring-2 ring-lift-primary border-lift-primary/50 bg-lift-primary/10"
+                          : "ring-2 ring-workout-primary border-workout-primary/40 bg-workout-primary/[0.07]"
+                      : "",
+                  ),
+                )}
               >
                 {exerciseMediaUrl(ex) ? (
                   <button
@@ -797,25 +1038,63 @@ export default function ExercisesSearchPage() {
                 <button
                   type="button"
                   onClick={() => toggleSelect(ex.id)}
-                  className="flex-1 py-3 pr-3 pl-0 text-left min-w-0 rounded-r-2xl"
-                  aria-pressed={selected}
-                  aria-label={selected ? `Deselect ${ex.name}` : `Select ${ex.name}`}
+                  className="flex-1 py-3 pr-3 pl-0 text-left min-w-0 rounded-r-2xl flex items-start gap-2"
+                  aria-pressed={pendingAdd}
+                  aria-label={
+                    inRoutine
+                      ? `${ex.name} is already in this routine`
+                      : pendingAdd
+                        ? `Deselect ${ex.name}`
+                        : `Select ${ex.name}`
+                  }
                 >
-                  <p className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
-                    {ex.name}
-                  </p>
-                  <p
-                    className={`text-xs mt-0.5 capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                  >
-                    {ex.category || "General"}
-                  </p>
-                  {getExerciseEquipment(ex) && (
+                  <div className="min-w-0 flex-1">
                     <p
-                      className={`text-[11px] mt-0.5 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+                      className={`font-semibold ${
+                        highlighted
+                          ? inRoutine
+                            ? isDarkMode
+                              ? "text-emerald-300"
+                              : "text-emerald-700"
+                            : isDarkMode
+                              ? "text-lift-primary"
+                              : "text-workout-primary"
+                          : isDarkMode
+                            ? "text-iron-100"
+                            : "text-slate-900"
+                      }`}
                     >
-                      {getExerciseEquipment(ex)}
+                      {ex.name}
                     </p>
-                  )}
+                    <p
+                      className={`text-xs mt-0.5 capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                    >
+                      {ex.category || "General"}
+                    </p>
+                    {getExerciseEquipment(ex) && (
+                      <p
+                        className={`text-[11px] mt-0.5 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
+                      >
+                        {getExerciseEquipment(ex)}
+                      </p>
+                    )}
+                  </div>
+                  {highlighted ? (
+                    <span
+                      className={`shrink-0 mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full ${
+                        inRoutine
+                          ? isDarkMode
+                            ? "bg-emerald-500 text-white"
+                            : "bg-emerald-600 text-white"
+                          : isDarkMode
+                            ? "bg-lift-primary text-iron-950"
+                            : "bg-workout-primary text-white"
+                      }`}
+                      aria-hidden
+                    >
+                      <Check className="w-4 h-4" strokeWidth={2.5} />
+                    </span>
+                  ) : null}
                 </button>
               </div>
             );
@@ -850,7 +1129,7 @@ export default function ExercisesSearchPage() {
         </button>
       </div>
 
-      {isRoutinePicker && selectedIds.size > 0 ? (
+      {isRoutinePicker && pendingAddCount > 0 ? (
         <div
           className={`fixed left-0 right-0 z-30 px-4 border-t ${
             isDarkMode
@@ -883,7 +1162,7 @@ export default function ExercisesSearchPage() {
               }`}
             >
               <ListChecks className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
-              {addingBatch ? "Adding…" : `Add ${selectedIds.size} to routine`}
+              {addingBatch ? "Adding…" : `Add ${pendingAddCount} to routine`}
             </button>
           </div>
         </div>

@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import DragReorderList from "@/components/DragReorderList";
-import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
+import RoutineExerciseThumb from "@/components/planner/RoutineExerciseThumb";
+import { exerciseMediaUrl } from "@/lib/exerciseMedia";
 import { toast } from "sonner";
 import {
   PLANNER_DAYS,
@@ -95,6 +95,7 @@ export default function RoutinePlannerPage() {
           exercise_name: ex.exercise_name,
           category: ex.category || "other",
           target_sets: ex.target_sets || 3,
+          notes: ex.notes != null ? String(ex.notes) : "",
         })),
       );
     } else {
@@ -150,6 +151,10 @@ export default function RoutinePlannerPage() {
       exercise_name: ex.exercise_name,
       category: ex.category || "other",
       target_sets: ex.target_sets || 3,
+      notes:
+        ex.notes != null && String(ex.notes).trim()
+          ? String(ex.notes).trim().slice(0, 500)
+          : null,
     }));
 
     if (routine) {
@@ -247,25 +252,41 @@ export default function RoutinePlannerPage() {
                 isDarkMode={isDarkMode}
                 renderItem={(item) => (
                   <div className="card-secondary flex items-center gap-3">
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-iron-800">
-                      {thumb(item.exercise_name) ? (
-                        <Image
-                          src={thumb(item.exercise_name)}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                          unoptimized={exerciseImageUnoptimized(thumb(item.exercise_name))}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="min-w-0 flex-1">
+                    <RoutineExerciseThumb
+                      exerciseName={item.exercise_name}
+                      thumbUrl={thumb(item.exercise_name)}
+                      isDarkMode={isDarkMode}
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
                       <p className={`font-medium truncate ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
                         {item.exercise_name}
                       </p>
-                      <p className={`text-xs capitalize ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                        {item.category}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
+                        <span className={`text-xs capitalize shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                          {item.category}
+                        </span>
+                        <span className={`text-xs shrink-0 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`} aria-hidden>
+                          ·
+                        </span>
+                        <input
+                          type="text"
+                          value={item.notes ?? ""}
+                          maxLength={500}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setList((prev) =>
+                              prev.map((x) => (x.key === item.key ? { ...x, notes: v } : x)),
+                            );
+                          }}
+                          placeholder="Note (optional)"
+                          className={`min-w-0 flex-1 basis-[6rem] text-xs bg-transparent border-0 p-0 outline-none ring-0 focus:ring-0 ${
+                            isDarkMode
+                              ? "text-iron-300 placeholder:text-iron-600"
+                              : "text-slate-700 placeholder:text-slate-400"
+                          }`}
+                          aria-label={`Note for ${item.exercise_name}`}
+                        />
+                      </div>
                     </div>
                     <button
                       type="button"

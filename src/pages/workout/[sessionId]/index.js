@@ -6,6 +6,8 @@ import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import { getSessionExtras, getExerciseDoneMap, removeSessionExtra } from "@/lib/workoutSessionClient";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
+import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
+import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
 import { getPostWorkoutReturnPath, isSessionToday } from "@/lib/workoutNavigation";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { toast } from "sonner";
@@ -37,26 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Helper functions from TodayWorkoutSection
-function mergePlannedExercises(routine, extras) {
-  const map = new Map();
-  for (const ex of routine?.routine_exercises || []) {
-    map.set(ex.exercise_name, {
-      exercise_id: ex.exercise_id,
-      exercise_name: ex.exercise_name,
-      category: ex.category || "other",
-      equipment: "",
-      added_today: false,
-    });
-  }
-  for (const ex of extras) {
-    if (!map.has(ex.exercise_name)) {
-      map.set(ex.exercise_name, { ...ex, added_today: true });
-    }
-  }
-  return [...map.values()];
-}
-
+// exerciseStatus + statusLabel mirror Today / WorkoutSessionView helpers
 function exerciseStatus(name, doneMap, setLogs) {
   if (doneMap[name]) return "completed";
   const completed = (setLogs || []).filter(l => l.exercise_name === name && l.is_completed);
@@ -415,15 +398,11 @@ export default function WorkoutSessionPage() {
                           >
                             {ex.exercise_name}
                           </p>
-                          <p
-                            className={`text-xs mt-0.5 capitalize ${
-                              isDarkMode ? "text-iron-500" : "text-slate-500"
-                            }`}
-                          >
-                            {ex.category && ex.category !== "other"
-                              ? ex.category
-                              : "General"}
-                          </p>
+                          <PlannedExerciseMetaLine
+                            category={ex.category}
+                            notes={ex.notes}
+                            isDarkMode={isDarkMode}
+                          />
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span
                               className={`inline-flex items-center gap-1 text-xs font-medium ${

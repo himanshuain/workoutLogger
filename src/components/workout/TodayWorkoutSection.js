@@ -6,6 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 import { getSessionExtras, getExerciseDoneMap, removeSessionExtra } from "@/lib/workoutSessionClient";
+import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
   Plus,
   CheckCircle2,
@@ -34,25 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-function mergePlannedExercises(todayRoutine, extras) {
-  const map = new Map();
-  for (const ex of todayRoutine?.routine_exercises || []) {
-    map.set(ex.exercise_name, {
-      exercise_id: ex.exercise_id,
-      exercise_name: ex.exercise_name,
-      category: ex.category || "other",
-      equipment: "",
-      added_today: false,
-    });
-  }
-  for (const ex of extras) {
-    if (!map.has(ex.exercise_name)) {
-      map.set(ex.exercise_name, { ...ex, added_today: true });
-    }
-  }
-  return [...map.values()];
-}
+import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
 
 function exerciseStatus(name, doneMap, setLogs) {
   if (doneMap[name]) return "completed";
@@ -534,15 +517,11 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                 >
                                   {ex.exercise_name}
                                 </p>
-                                <p
-                                  className={`text-xs mt-0.5 capitalize ${
-                                    isDarkMode ? "text-iron-500" : "text-slate-500"
-                                  }`}
-                                >
-                                  {ex.category && ex.category !== "other"
-                                    ? ex.category
-                                    : "General"}
-                                </p>
+                                <PlannedExerciseMetaLine
+                                  category={ex.category}
+                                  notes={ex.notes}
+                                  isDarkMode={isDarkMode}
+                                />
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
                                   <span
                                     className={`inline-flex items-center gap-1 text-xs font-medium ${

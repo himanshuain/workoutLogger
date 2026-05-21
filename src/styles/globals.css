@@ -719,32 +719,32 @@ input[type="number"] {
 
 /* Typography hierarchy */
 .text-screen-title {
-  @apply text-2xl font-normal tracking-tight;
+  @apply text-2xl font-normal tracking-wide;
   color: var(--text-primary);
 }
 
 .text-section-header {
-  @apply text-xs font-normal uppercase tracking-widest;
+  @apply text-xs font-normal uppercase tracking-[0.14em];
   color: var(--text-muted);
 }
 
 .text-card-title {
-  @apply text-base font-normal tracking-tight;
+  @apply text-base font-normal tracking-wide;
   color: var(--text-primary);
 }
 
 .text-card-subtitle {
-  @apply text-sm font-medium;
+  @apply text-sm font-normal tracking-wide;
   color: var(--text-secondary);
 }
 
 .text-metadata {
-  @apply text-xs;
+  @apply text-xs tracking-wider;
   color: var(--text-faint);
 }
 
 .text-body {
-  @apply text-sm;
+  @apply text-sm tracking-wide;
   color: var(--text-secondary);
 }
 

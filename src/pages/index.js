@@ -1,9 +1,13 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import { cn } from "@/lib/utils";
+import { hapticLight } from "@/lib/touchFeedback";
+import { actionGhost } from "@/lib/actionButtonStyles";
+import { surfaceInteractive } from "@/lib/surfaceStyles";
 import HabitPills from "@/components/HabitPills";
 import DayPicker from "@/components/DayPicker";
 import {
@@ -61,6 +65,7 @@ import {
   segmentUnselected,
   actionPrimary,
   actionSecondary,
+  actionSecondaryCompact,
   actionDestructive,
 } from "@/lib/actionButtonStyles";
 import SectionManageButton from "@/components/SectionManageButton";
@@ -68,12 +73,14 @@ import SectionHeader, { SectionHeaderLink } from "@/components/SectionHeader";
 import SectionSurface from "@/components/SectionSurface";
 import TodayWorkoutSection from "@/components/workout/TodayWorkoutSection";
 import HorizontalDateStrip from "@/components/logging/HorizontalDateStrip";
+import PastDayScrollPill from "@/components/logging/PastDayScrollPill";
 import DayHabitsLifeLogCard from "@/components/logging/DayHabitsLifeLogCard";
 import LongPressContextHint from "@/components/LongPressContextHint";
 import LogDayWorkoutPanel from "@/components/logging/LogDayWorkoutPanel";
 import {
   addDaysStr,
   formatChipLabel,
+  formatDayHeader,
   STRIP_INITIAL_DAYS,
   STRIP_LOAD_MORE_DAYS,
   STRIP_MAX_PAST_DAYS,
@@ -201,6 +208,8 @@ export default function Home() {
   const [lifeSheetNotes, setLifeSheetNotes] = useState("");
 
   const [lifeLogSettingsNonce, setLifeLogSettingsNonce] = useState(0);
+  const dateStripRef = useRef(null);
+  const workoutHistoryRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -210,6 +219,7 @@ export default function Home() {
   }, []);
 
   const isViewingToday = viewingDate === today;
+  const dayHeader = formatDayHeader(viewingDate || today, today);
 
   useEffect(() => {
     if (!router.isReady || !user || !today) return;
@@ -505,15 +515,6 @@ export default function Home() {
     }
   };
 
-  const formatDate = isoOrDate => {
-    const d = typeof isoOrDate === "string" ? new Date(isoOrDate + "T12:00:00") : isoOrDate;
-    return d.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   // Refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -585,6 +586,33 @@ export default function Home() {
     }
   };
 
+  const hasActiveSession = activeSession && activeSession.status === "active";
+  const hasCompletedSession =
+    todaySession && todaySession.status === "completed";
+
+  const historySessions = useMemo(() => {
+    const topPanelShowsDayWorkout = isViewingToday
+      ? hasActiveSession || hasCompletedSession
+      : workoutSessionsForViewing.length > 0;
+
+    return recentSessions.filter(
+      session => !(session.date === viewingDate && topPanelShowsDayWorkout),
+    );
+  }, [
+    recentSessions,
+    viewingDate,
+    isViewingToday,
+    hasActiveSession,
+    hasCompletedSession,
+    workoutSessionsForViewing,
+  ]);
+
+  const showHistoryScroll = historySessions.length > 0;
+  const scrollToWorkoutHistory = useCallback(() => {
+    hapticLight();
+    workoutHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   if (!user) {
     return (
       <Layout>
@@ -624,45 +652,65 @@ export default function Home() {
     );
   }
 
-  const hasActiveSession = activeSession && activeSession.status === "active";
-  const hasCompletedSession =
-    todaySession && todaySession.status === "completed";
-
   return (
     <Layout>
       <FadeIn duration={0.5}>
       <div className="px-4 py-4">
         {/* Date strip + header */}
-        <div className="flex items-start justify-between gap-2 mb-4">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className={`text-metadata tracking-wide ${isDarkMode ? "text-iron-400" : ""}`}>
-              {isViewingToday ? "Today" : "This day"}
-            </p>
-            <h2 className="text-screen-title">{viewingDate ? formatDate(viewingDate) : formatDate(new Date())}</h2>
+            <h2 className="text-screen-title leading-tight truncate">{dayHeader.title}</h2>
+            {dayHeader.subtitle ? (
+              <p className={`text-metadata mt-0.5 truncate ${isDarkMode ? "text-iron-400" : ""}`}>
+                {dayHeader.subtitle}
+              </p>
+            ) : null}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-1">
+            {showHistoryScroll ? (
+              <button
+                type="button"
+                onClick={scrollToWorkoutHistory}
+                className={cn(
+                  "inline-flex h-9 items-center gap-1.5 rounded-pill px-3",
+                  actionSecondaryCompact(isDarkMode),
+                )}
+              >
+                <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="text-[11px] font-semibold whitespace-nowrap">Workout history</span>
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={handleRefresh}
+              onClick={() => {
+                hapticLight();
+                handleRefresh();
+              }}
+              disabled={isRefreshing}
               aria-label="Refresh"
-              className={`w-10 h-10 rounded-card flex items-center justify-center transition-colors ${
-                isDarkMode ? "bg-iron-800 active:bg-iron-700" : "bg-slate-100 active:bg-slate-200"
-              } ${isRefreshing ? "animate-spin" : ""}`}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-pill disabled:opacity-50",
+                actionGhost(isDarkMode),
+              )}
             >
               <RefreshCw
-                className={`w-5 h-5 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
+                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
                 aria-hidden
               />
             </button>
             <button
               type="button"
-              onClick={() => router.push("/settings")}
-              className={`w-10 h-10 rounded-card flex items-center justify-center transition-colors ${
-                isDarkMode ? "bg-iron-800 active:bg-iron-700 text-iron-400" : "bg-slate-100 active:bg-slate-200 text-slate-500"
-              }`}
+              onClick={() => {
+                hapticLight();
+                router.push("/settings");
+              }}
               aria-label="Settings"
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-pill",
+                actionGhost(isDarkMode),
+              )}
             >
-              <Settings className="w-5 h-5" />
+              <Settings className="h-4 w-4" aria-hidden />
             </button>
           </div>
         </div>
@@ -673,6 +721,7 @@ export default function Home() {
           <>
         {today && glanceDays.length > 0 ? (
           <HorizontalDateStrip
+            ref={dateStripRef}
             isDarkMode={isDarkMode}
             glanceDays={glanceDays}
             selectedDate={viewingDate}
@@ -685,6 +734,14 @@ export default function Home() {
             className="mb-4"
           />
         ) : null}
+
+        <PastDayScrollPill
+          stripRef={dateStripRef}
+          enabled={!isViewingToday && Boolean(viewingDate)}
+          selectedDate={viewingDate}
+          todayStr={today}
+          isDarkMode={isDarkMode}
+        />
 
         {/* Today's Workout — new board, logger, and routine CTAs */}
         {isViewingToday ? (
@@ -764,7 +821,6 @@ export default function Home() {
           queryClient={queryClient}
           logForDate={!isViewingToday ? viewingDate : null}
           foodEntriesMap={!isViewingToday ? viewingFoodEntries : null}
-          calendarToday={today}
           userId={user?.id}
         />
 
@@ -787,34 +843,29 @@ export default function Home() {
         )}
 
         {/* Recent Workouts */}
-        {recentSessions.length > 0 && (
-        <section className="mt-6">
+        {historySessions.length > 0 && (
+        <section ref={workoutHistoryRef} className="section-spacing scroll-mt-20">
+          <SectionSurface isDarkMode={isDarkMode}>
           <SectionHeader
             icon={History}
             label="Workout history"
-            meta={`${recentSessions.length} recent`}
+            meta={`${historySessions.length} workout${historySessions.length !== 1 ? "s" : ""}`}
             isDarkMode={isDarkMode}
+            className="mb-3"
           >
             <SectionHeaderLink isDarkMode={isDarkMode} onClick={() => router.push("/history")}>
               View all <ChevronRight className="w-3 h-3" aria-hidden />
             </SectionHeaderLink>
           </SectionHeader>
 
-          {recentSessions.length > 0 && (
-            <LongPressContextHint variant="deleteOnly" isDarkMode={isDarkMode} className="mb-2" />
-          )}
-
-          {!todaySession && isViewingToday && (
-            <p
-              className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}
-            >
-              Nothing logged for this day yet.
+          {!todaySession && isViewingToday ? (
+            <p className={`text-metadata mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              No workout logged today — recent sessions below.
             </p>
-          )}
+          ) : null}
 
-          {(
-            <StaggerContainer className="space-y-2">
-              {recentSessions.map((session) => {
+          <StaggerContainer className="space-y-2">
+              {historySessions.map((session) => {
                 const completedSets = (session.set_logs || []).filter((s) => s.is_completed);
                 const totalVolume = completedSets.reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
                 const exerciseNames = [...new Set(completedSets.map((s) => s.exercise_name))];
@@ -836,11 +887,15 @@ export default function Home() {
                     <ContextMenu>
                       <ContextMenuTrigger asChild>
                         <PressableScale>
-                          <div className="card overflow-hidden">
+                          <div className={cn("overflow-hidden rounded-card border", surfaceInteractive(isDarkMode))}>
                     {/* Session header */}
                     <button
+                      type="button"
                       onClick={() => setExpandedSession(isExpanded ? null : session.id)}
-                      className="card-interactive w-full p-3.5 text-left"
+                      className={cn(
+                        "w-full p-3 text-left transition-colors",
+                        isDarkMode ? "hover:bg-surface-pressed" : "hover:bg-surface-pressed",
+                      )}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
@@ -849,7 +904,7 @@ export default function Home() {
                               {dateLabel}
                             </span>
                             {session.routine_name && (
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full truncate max-w-[120px] ${
+                              <span className={`max-w-[7rem] truncate rounded-pill px-2 py-0.5 text-[10px] ${
                                 isDarkMode ? "bg-lift-primary/15 text-lift-primary" : "bg-workout-primary/10 text-workout-primary"
                               }`}>
                                 {session.routine_name}
@@ -1027,7 +1082,7 @@ export default function Home() {
                 );
               })}
             </StaggerContainer>
-          )}
+          </SectionSurface>
         </section>
         )}
       </div>

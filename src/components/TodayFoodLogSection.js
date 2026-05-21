@@ -6,7 +6,6 @@ import SectionHeader from "@/components/SectionHeader";
 import SectionSurface from "@/components/SectionSurface";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
-import { formatChipLabel } from "@/lib/dateLogUtils";
 import EmptyState from "@/components/EmptyState";
 import { hapticLight, touchPressCard } from "@/lib/touchFeedback";
 import { cn } from "@/lib/utils";
@@ -20,7 +19,6 @@ export default function TodayFoodLogSection({
   queryClient,
   logForDate = null,
   foodEntriesMap = null,
-  calendarToday = null,
   userId = null,
 }) {
   const router = useRouter();
@@ -244,11 +242,7 @@ export default function TodayFoodLogSection({
         <SectionHeader
           icon={Utensils}
           label="Food"
-          meta={
-            isPastDayMode && calendarToday && logForDate
-              ? `${loggedCount} logged · ${formatChipLabel(logForDate, calendarToday)}`
-              : foodMeta
-          }
+          meta={foodMeta}
           isDarkMode={isDarkMode}
         >
           <SectionManageButton

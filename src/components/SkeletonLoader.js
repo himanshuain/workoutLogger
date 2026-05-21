@@ -132,11 +132,17 @@ export function SkeletonHeatmap({ isDarkMode = false }) {
 
 export function SkeletonDateStrip({ isDarkMode = false, className }) {
   return (
-    <div className={cn(shell(isDarkMode, "animate-pulse p-4"), className)}>
-      <div className="flex gap-2 overflow-hidden">
-        {Array.from({ length: 7 }).map(i => (
-          <div key={i} className={bone(isDarkMode, "h-24 min-w-[4.5rem] shrink-0 rounded-card")} />
-        ))}
+    <div className={cn(shell(isDarkMode, "animate-pulse px-2 py-2"), className)}>
+      <div className="mb-1">
+        <div className={bone(isDarkMode, "h-3.5 w-8 rounded-md")} />
+      </div>
+      <div className="relative">
+        <div className="flex gap-1.5 overflow-hidden pr-12">
+          {Array.from({ length: 7 }).map(i => (
+            <div key={i} className={bone(isDarkMode, "h-[3.25rem] w-12 shrink-0 rounded-card")} />
+          ))}
+        </div>
+        <div className={bone(isDarkMode, "absolute right-0 top-0 h-9 w-9 rounded-card")} />
       </div>
     </div>
   );

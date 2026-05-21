@@ -30,6 +30,36 @@ export function formatShortDate(iso) {
   return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function formatDayHeaderFull(iso, todayRef) {
+  const d = new Date(iso + "T12:00:00");
+  const todayYear = new Date((todayRef || localDateStr()) + "T12:00:00").getFullYear();
+  return d.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    ...(d.getFullYear() !== todayYear ? { year: "numeric" } : {}),
+  });
+}
+
+/** Page header + sticky scroll bar: primary title with optional full-date subtitle. */
+export function formatDayHeader(iso, todayRef) {
+  const relative = formatChipLabel(iso, todayRef || localDateStr());
+  const full = formatDayHeaderFull(iso, todayRef);
+
+  if (relative === "Today") {
+    return { title: "Today", subtitle: full };
+  }
+  if (relative === "Yesterday" || relative === "Day before yesterday") {
+    return { title: relative, subtitle: full };
+  }
+  return { title: full, subtitle: null };
+}
+
+/** @deprecated Use formatDayHeader */
+export function formatPastDayScrollLabel(iso, todayRef) {
+  return formatDayHeader(iso, todayRef);
+}
+
 /** @deprecated Legacy fixed window; prefer STRIP_INITIAL_DAYS + load-more. */
 export const STRIP_WINDOW_DAYS = 35;
 

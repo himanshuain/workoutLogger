@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import EmptyState, { EmptyInline } from "@/components/EmptyState";
+import { SkeletonList } from "@/components/SkeletonLoader";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
 import LongPressContextHint from "@/components/LongPressContextHint";
 import ExpandedLogInsightsTabs from "@/components/logging/ExpandedLogInsightsTabs";
@@ -952,24 +954,16 @@ export default function LifeLog() {
             className="mt-4 space-y-3"
           >
             {eventTypes.length === 0 ? (
-              <div
-                className={`text-center py-12 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-              >
-                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No events yet</p>
-                <p className="text-sm mt-1">Add events like haircuts, doctor visits, etc.</p>
-                <button
-                  onClick={() => {
-                    resetEventForm();
-                    setShowAddDrawer(true);
-                  }}
-                  className={`mt-4 px-4 py-2 rounded-card text-sm font-medium ${
-                    isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  Add First Event
-                </button>
-              </div>
+              <EmptyState
+                isDarkMode={isDarkMode}
+                message="No events yet"
+                hint="Track haircuts, doctor visits, and other life events."
+                actionLabel="Add event"
+                onAction={() => {
+                  resetEventForm();
+                  setShowAddDrawer(true);
+                }}
+              />
             ) : (
               <>
                 <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-1" />
@@ -1156,11 +1150,7 @@ export default function LifeLog() {
                           logsChildren={
                             <>
                               {isLoadingExpandedLogs ? (
-                                <div
-                                  className={`py-5 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                                >
-                                  Loading...
-                                </div>
+                                <SkeletonList isDarkMode={isDarkMode} count={3} className="border-0 bg-transparent shadow-none" />
                               ) : (
                                 <>
                                   <p
@@ -1174,11 +1164,10 @@ export default function LifeLog() {
                                     <LongPressContextHint isDarkMode={isDarkMode} className="-mt-0.5 mb-1" />
                                   ) : null}
                                   {expandedEventLogs.length === 0 ? (
-                                    <div
-                                      className={`py-4 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                                    >
-                                      No history yet
-                                    </div>
+                                    <EmptyInline
+                                      isDarkMode={isDarkMode}
+                                      message="No history yet — log this event to start."
+                                    />
                                   ) : (
                                     <>
                                       <div className="pt-1 space-y-1.5">
@@ -1357,33 +1346,25 @@ export default function LifeLog() {
             className="mt-4 space-y-3"
           >
             {trackables.filter(t => t.name !== "Body Weight").length === 0 ? (
-              <div
-                className={`text-center py-12 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-              >
-                <Heart className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No habits yet</p>
-                <p className="text-sm mt-1">Add habits like water intake, vitamins, etc.</p>
-                <button
-                  onClick={() => {
-                    setEditingTrackable(null);
-                    setNewPill({
-                      name: "",
-                      type: "habit",
-                      icon: "💧",
-                      color: "#22c55e",
-                      has_value: false,
-                      value_unit: "",
-                      active_days: null,
-                    });
-                    setShowAddHabitModal(true);
-                  }}
-                  className={`mt-4 px-4 py-2 rounded-card text-sm font-medium ${
-                    isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  Add First Habit
-                </button>
-              </div>
+              <EmptyState
+                isDarkMode={isDarkMode}
+                message="No habits yet"
+                hint="Track water, vitamins, and daily routines."
+                actionLabel="Add habit"
+                onAction={() => {
+                  setEditingTrackable(null);
+                  setNewPill({
+                    name: "",
+                    type: "habit",
+                    icon: "💧",
+                    color: "#22c55e",
+                    has_value: false,
+                    value_unit: "",
+                    active_days: null,
+                  });
+                  setShowAddHabitModal(true);
+                }}
+              />
             ) : (
               <>
               <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-1" />
@@ -1525,11 +1506,10 @@ export default function LifeLog() {
                                         .slice(0, 40);
                                       if (!habitLogRows.length) {
                                         return (
-                                          <div
-                                            className={`py-6 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                                          >
-                                            No completed days in your history window yet.
-                                          </div>
+                                          <EmptyInline
+                                            isDarkMode={isDarkMode}
+                                            message="No completed days in your history window yet."
+                                          />
                                         );
                                       }
                                       const accentIdx = 0;
@@ -2026,22 +2006,16 @@ export default function LifeLog() {
           </ModalHeader>
           <ModalBody>
             {isLoadingLogs ? (
-              <div className="py-8 text-center">
-                <div
-                  className={`animate-spin w-6 h-6 mx-auto border-2 rounded-full ${
-                    isDarkMode
-                      ? "border-lift-primary border-t-transparent"
-                      : "border-workout-primary border-t-transparent"
-                  }`}
-                />
-              </div>
+              <SkeletonList isDarkMode={isDarkMode} count={4} />
             ) : eventLogs.length === 0 ? (
-              <div
-                className={`py-8 text-center ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-              >
-                <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p>No logs yet</p>
-              </div>
+              <EmptyState
+                isDarkMode={isDarkMode}
+                message="No logs yet"
+                hint="Log this event from the list to see history here."
+                actionVariant="secondary"
+                actionLabel="Close"
+                onAction={() => setShowHistoryDrawer(false)}
+              />
             ) : (
               <div className="space-y-2">
                 <LongPressContextHint isDarkMode={isDarkMode} className="pb-1" />

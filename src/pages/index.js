@@ -78,6 +78,7 @@ import {
   STRIP_LOAD_MORE_DAYS,
   STRIP_MAX_PAST_DAYS,
 } from "@/lib/dateLogUtils";
+import { SkeletonTodaySections } from "@/components/SkeletonLoader";
 import {
   mergeEventTypesWithLifelogSettings,
   LIFELOG_EVENT_SETTINGS_CHANGED,
@@ -141,6 +142,7 @@ export default function Home() {
     getRoutineForDay,
     getWorkoutSessionsForDate,
     startWorkoutSessionForDate,
+    isLoading: isBootstrapping,
   } = useWorkout();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -665,6 +667,10 @@ export default function Home() {
           </div>
         </div>
 
+        {isBootstrapping ? (
+          <SkeletonTodaySections isDarkMode={isDarkMode} />
+        ) : (
+          <>
         {today && glanceDays.length > 0 ? (
           <HorizontalDateStrip
             isDarkMode={isDarkMode}
@@ -777,6 +783,8 @@ export default function Home() {
             showLifeLog
           />
         </section>
+          </>
+        )}
 
         {/* Recent Workouts */}
         {recentSessions.length > 0 && (

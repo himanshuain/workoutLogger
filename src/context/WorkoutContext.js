@@ -1014,10 +1014,16 @@ export function WorkoutProvider({ children }) {
   useEffect(() => {
     const uid = user?.id ?? null;
 
+    if (!uid) {
+      initUserIdRef.current = null;
+      setIsLoading(false);
+      return;
+    }
+
     if (uid === initUserIdRef.current) return;
     initUserIdRef.current = uid;
 
-    if (!uid) return;
+    setIsLoading(true);
 
     async function loadInitData() {
       try {
@@ -1207,6 +1213,8 @@ export function WorkoutProvider({ children }) {
           loadEventTypes(),
           loadStepCards(),
         ]);
+      } finally {
+        setIsLoading(false);
       }
     }
 

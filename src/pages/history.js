@@ -16,11 +16,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonList } from "@/components/SkeletonLoader";
 import {
   ChevronDown,
   ChevronUp,
   Dumbbell,
-  Clock,
   Flame,
   Target,
   Pencil,
@@ -187,17 +188,15 @@ export default function History() {
 
         <div className="mt-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className={`animate-spin w-8 h-8 border-2 rounded-full ${isDarkMode ? "border-lift-primary border-t-transparent" : "border-workout-primary border-t-transparent"}`} />
-            </div>
+            <SkeletonList isDarkMode={isDarkMode} count={6} />
           ) : timelineByDate.length === 0 ? (
-            <div className="text-center py-12">
-              <div className={`w-20 h-20 mx-auto mb-4 rounded-card flex items-center justify-center ${isDarkMode ? "bg-iron-900" : "bg-slate-100"}`}>
-                <Clock className={`w-10 h-10 ${isDarkMode ? "text-iron-700" : "text-slate-400"}`} />
-              </div>
-              <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>No exercises logged yet</p>
-              <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>Start logging to see your history</p>
-            </div>
+            <EmptyState
+              isDarkMode={isDarkMode}
+              message="No workouts logged yet"
+              hint="Complete a session on Today to build your history."
+              actionLabel="Go to Today"
+              onAction={() => router.push("/")}
+            />
           ) : (
             <div className="space-y-3">
               {timelineByDate.map(({ date, sessions: daySessions, legacyLogs: dayLegacy }) => {

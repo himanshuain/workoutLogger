@@ -42,12 +42,15 @@ import {
   actionGhost,
 } from "@/lib/actionButtonStyles";
 import { surfaceInteractive } from "@/lib/surfaceStyles";
+import EmptyState from "@/components/EmptyState";
+import { SkeletonList } from "@/components/SkeletonLoader";
 
 export default function RoutinePlannerPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const {
     user,
+    isLoading,
     exercises,
     routines,
     getRoutineForDay,
@@ -362,8 +365,14 @@ export default function RoutinePlannerPage() {
           <p className={`text-sm mb-4 ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}>
             Every saved template. Delete removes it from the database (including exercises).
           </p>
-          {routinesSorted.length === 0 ? (
-            <p className={`text-sm ${isDarkMode ? "text-iron-600" : "text-slate-500"}`}>No routines yet.</p>
+          {isLoading && routinesSorted.length === 0 ? (
+            <SkeletonList isDarkMode={isDarkMode} count={3} />
+          ) : routinesSorted.length === 0 ? (
+            <EmptyState
+              isDarkMode={isDarkMode}
+              message="No routines yet"
+              hint="Name a day above, add exercises, then save."
+            />
           ) : (
             <ul className="space-y-2">
               {routinesSorted.map((r) => (

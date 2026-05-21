@@ -7,6 +7,7 @@ import SectionSurface from "@/components/SectionSurface";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 import { formatChipLabel } from "@/lib/dateLogUtils";
+import EmptyState from "@/components/EmptyState";
 
 export default function TodayFoodLogSection({
   isDarkMode,
@@ -222,15 +223,13 @@ export default function TodayFoodLogSection({
               Add items
             </SectionManageButton>
           </SectionHeader>
-          <button
-            type="button"
-            onClick={() => router.push("/food")}
-            className={`w-full rounded-card px-4 py-3 text-left text-sm ${
-              isDarkMode ? "bg-iron-900/50 text-iron-400 hover:bg-iron-900" : "bg-surface-interactive text-[color:var(--text-secondary)] hover:bg-surface-pressed border border-surface-subtle"
-            }`}
-          >
-            Add food items to log them here{isPastDayMode ? "." : " for today."}
-          </button>
+          <EmptyState
+            isDarkMode={isDarkMode}
+            message="No food items yet"
+            hint={isPastDayMode ? "Add items to log meals on past days." : "Add items to log meals for today."}
+            actionLabel="Add food items"
+            onAction={() => router.push("/food")}
+          />
         </SectionSurface>
       </section>
     );

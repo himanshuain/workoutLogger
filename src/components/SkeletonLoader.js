@@ -1,40 +1,113 @@
-export function SkeletonCard({ isDarkMode = false }) {
-  const c = isDarkMode;
+import { cn } from "@/lib/utils";
+
+function bone(isDarkMode, className) {
+  return cn(
+    "animate-pulse rounded-lg",
+    isDarkMode ? "bg-iron-700/80" : "bg-slate-200/90",
+    className,
+  );
+}
+
+function shell(isDarkMode, className) {
+  return cn(
+    "rounded-card border",
+    isDarkMode
+      ? "border-surface-subtle bg-surface-section"
+      : "border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
+    className,
+  );
+}
+
+/** Single list/table row */
+export function SkeletonRow({ isDarkMode = false, className }) {
   return (
-    <div className={`animate-pulse rounded-card p-4 ${c ? "bg-iron-800" : "bg-slate-100"}`}>
-      <div className={`h-4 w-1/3 rounded-lg mb-3 ${c ? "bg-iron-700" : "bg-slate-300"}`} />
-      <div className={`h-3 w-full rounded-lg mb-2 ${c ? "bg-iron-800" : "bg-slate-200"}`} />
-      <div className={`h-3 w-full rounded-lg mb-2 ${c ? "bg-iron-800" : "bg-slate-200"}`} />
-      <div className={`h-3 w-2/3 rounded-lg ${c ? "bg-iron-800" : "bg-slate-200"}`} />
+    <div className={cn("flex items-center gap-3 py-3", className)}>
+      <div className={bone(isDarkMode, "h-10 w-10 shrink-0 rounded-card")} />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className={bone(isDarkMode, "h-3.5 w-2/3")} />
+        <div className={bone(isDarkMode, "h-3 w-1/2")} />
+      </div>
     </div>
   );
 }
 
-export function SkeletonList({ isDarkMode = false }) {
-  const c = isDarkMode;
+/** Section card with optional header + rows or pills */
+export function SkeletonSection({
+  isDarkMode = false,
+  rows = 3,
+  pills = false,
+  grid = false,
+  className,
+}) {
   return (
-    <div className={`animate-pulse rounded-card p-4 ${c ? "bg-iron-800" : "bg-slate-100"}`}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className={`flex items-center gap-3 py-3 border-b last:border-0 ${c ? "border-iron-700/50" : "border-slate-200"}`}>
-          <div className={`h-10 w-10 rounded-card flex-shrink-0 ${c ? "bg-iron-700" : "bg-slate-200"}`} />
-          <div className="flex-1">
-            <div className={`h-3.5 w-2/3 rounded-lg mb-1.5 ${c ? "bg-iron-700" : "bg-slate-200"}`} />
-            <div className={`h-3 w-1/2 rounded-lg ${c ? "bg-iron-800" : "bg-slate-100"}`} />
-          </div>
+    <div className={cn(shell(isDarkMode, "p-4"), className)}>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className={bone(isDarkMode, "h-3.5 w-3.5 rounded")} />
+          <div className={bone(isDarkMode, "h-3 w-24")} />
         </div>
+        <div className={bone(isDarkMode, "h-8 w-16 rounded-card")} />
+      </div>
+      {pills ? (
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className={bone(isDarkMode, "h-11 w-24 rounded-pill")} />
+          ))}
+        </div>
+      ) : grid ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={bone(isDarkMode, "h-20 rounded-card")} />
+          ))}
+        </div>
+      ) : (
+        <div className="divide-y divide-surface-subtle">
+          {Array.from({ length: rows }).map((_, i) => (
+            <SkeletonRow key={i} isDarkMode={isDarkMode} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function SkeletonCard({ isDarkMode = false, className }) {
+  return (
+    <div className={cn(shell(isDarkMode, "animate-pulse p-4"), className)}>
+      <div className={bone(isDarkMode, "mb-3 h-4 w-1/3")} />
+      <div className={bone(isDarkMode, "mb-2 h-3 w-full")} />
+      <div className={bone(isDarkMode, "mb-2 h-3 w-full")} />
+      <div className={bone(isDarkMode, "h-3 w-2/3")} />
+    </div>
+  );
+}
+
+export function SkeletonList({ isDarkMode = false, count = 5, className }) {
+  return (
+    <div className={cn(shell(isDarkMode, "p-2"), className)}>
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonRow
+          key={i}
+          isDarkMode={isDarkMode}
+          className={cn("px-2", i < count - 1 && "border-b border-surface-subtle")}
+        />
       ))}
     </div>
   );
 }
 
 export function SkeletonStats({ isDarkMode = false }) {
-  const c = isDarkMode;
   return (
     <div className="flex gap-3 overflow-x-auto pb-1">
-      {[1, 2, 3, 4].map((i) => (
-        <div key={i} className={`flex-shrink-0 animate-pulse rounded-card p-4 min-w-[100px] ${c ? "bg-iron-800" : "bg-slate-100"}`}>
-          <div className={`h-3 w-1/2 rounded-lg mb-3 ${c ? "bg-iron-700" : "bg-slate-200"}`} />
-          <div className={`h-8 w-3/4 rounded-lg ${c ? "bg-iron-700" : "bg-slate-200"}`} />
+      {[1, 2, 3, 4].map(i => (
+        <div
+          key={i}
+          className={cn(
+            shell(isDarkMode, "min-w-[100px] flex-shrink-0 animate-pulse p-4"),
+          )}
+        >
+          <div className={bone(isDarkMode, "mb-3 h-3 w-1/2")} />
+          <div className={bone(isDarkMode, "h-8 w-3/4")} />
         </div>
       ))}
     </div>
@@ -42,30 +115,52 @@ export function SkeletonStats({ isDarkMode = false }) {
 }
 
 export function SkeletonHeatmap({ isDarkMode = false }) {
-  const c = isDarkMode;
   return (
-    <div className={`animate-pulse rounded-card p-4 ${c ? "bg-iron-800" : "bg-slate-100"}`}>
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`h-10 w-10 rounded-card ${c ? "bg-iron-700" : "bg-slate-200"}`} />
-        <div className={`h-4 w-1/3 rounded-lg ${c ? "bg-iron-700" : "bg-slate-200"}`} />
+    <div className={cn(shell(isDarkMode, "animate-pulse p-4"))}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className={bone(isDarkMode, "h-10 w-10 rounded-card")} />
+        <div className={bone(isDarkMode, "h-4 w-1/3")} />
       </div>
-      <div className="w-full md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto">
-        <div className="grid grid-cols-7 gap-1.5">
-          {Array.from({ length: 42 }).map((_, i) => (
-            <div key={i} className={`aspect-square rounded-md ${c ? "bg-iron-700" : "bg-slate-200"}`} />
-          ))}
-        </div>
+      <div className="grid grid-cols-7 gap-1.5 md:max-w-[min(100%,20.5rem)] lg:max-w-[22.5rem] md:mx-auto">
+        {Array.from({ length: 42 }).map((_, i) => (
+          <div key={i} className={bone(isDarkMode, "aspect-square rounded-md")} />
+        ))}
       </div>
     </div>
   );
 }
 
+export function SkeletonDateStrip({ isDarkMode = false, className }) {
+  return (
+    <div className={cn(shell(isDarkMode, "animate-pulse p-4"), className)}>
+      <div className="flex gap-2 overflow-hidden">
+        {Array.from({ length: 7 }).map(i => (
+          <div key={i} className={bone(isDarkMode, "h-24 min-w-[4.5rem] shrink-0 rounded-card")} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Today page: date strip + workout, habits, food sections */
+export function SkeletonTodaySections({ isDarkMode = false }) {
+  return (
+    <>
+      <SkeletonDateStrip isDarkMode={isDarkMode} className="mb-4" />
+      <div className="space-y-section">
+        <SkeletonSection isDarkMode={isDarkMode} rows={2} />
+        <SkeletonSection isDarkMode={isDarkMode} pills />
+        <SkeletonSection isDarkMode={isDarkMode} grid />
+      </div>
+    </>
+  );
+}
+
 export function SkeletonPage({ isDarkMode = false }) {
-  const c = isDarkMode;
   return (
     <div className="space-y-4 px-4 pt-4">
-      <div className={`animate-pulse h-8 w-1/2 rounded-card mb-2 ${c ? "bg-iron-800" : "bg-slate-200"}`} />
-      <div className={`animate-pulse h-4 w-1/4 rounded-lg mb-6 ${c ? "bg-iron-700" : "bg-slate-200"}`} />
+      <div className={bone(isDarkMode, "mb-2 h-8 w-1/2 rounded-card")} />
+      <div className={bone(isDarkMode, "mb-6 h-4 w-1/4")} />
       <SkeletonStats isDarkMode={isDarkMode} />
       <div className="space-y-3 pt-2">
         <SkeletonCard isDarkMode={isDarkMode} />

@@ -14,6 +14,7 @@ import VolumeChart from "@/components/VolumeChart";
 import MuscleHeatmap from "@/components/MuscleHeatmap";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody } from "@/components/ui/modal";
 import { FadeIn } from "@/components/ui/fade-in";
+import { SkeletonHeatmap, SkeletonSection, SkeletonStats } from "@/components/SkeletonLoader";
 import {
   TrendingUp,
   Calendar,
@@ -60,7 +61,7 @@ export default function Progress() {
   }, []);
 
   // TanStack Query for workout sessions (new system)
-  const { data: workoutSessionData } = useQuery({
+  const { data: workoutSessionData, isPending: sessionsPending } = useQuery({
     queryKey: ["workoutSessions", user?.id, startDate, today],
     queryFn: async () => {
       const sessions = await getWorkoutSessions(startDate, today);
@@ -102,7 +103,7 @@ export default function Progress() {
   });
 
   // TanStack Query for legacy exercise logs (backward compatibility)
-  const { data: legacyExerciseData } = useQuery({
+  const { data: legacyExerciseData, isPending: legacyPending } = useQuery({
     queryKey: ["exerciseLogs", user?.id, startDate, today],
     queryFn: async () => {
       const logs = await getExerciseLogs(startDate, today);
@@ -130,7 +131,7 @@ export default function Progress() {
   });
 
   // TanStack Query for tracking entries
-  const { data: habitData } = useQuery({
+  const { data: habitData, isPending: habitsPending } = useQuery({
     queryKey: ["trackingEntries", user?.id, startDate, today],
     queryFn: async () => {
       const entries = await getTrackingEntries(startDate, today);
@@ -166,7 +167,7 @@ export default function Progress() {
   });
 
   // TanStack Query for food entries
-  const { data: foodData } = useQuery({
+  const { data: foodData, isPending: foodPending } = useQuery({
     queryKey: ["foodEntries", user?.id, startDate, today],
     queryFn: async () => {
       const entries = await getFoodEntries(startDate, today);
@@ -191,8 +192,11 @@ export default function Progress() {
     enabled: !!user,
   });
 
+  const isProgressLoading =
+    sessionsPending || legacyPending || habitsPending || foodPending || todaySetsPending;
+
   // TanStack Query for today's set logs
-  const { data: todaySetLogs = [] } = useQuery({
+  const { data: todaySetLogs = [], isPending: todaySetsPending } = useQuery({
     queryKey: ["todaySetLogs", user?.id, today],
     queryFn: () => getTodaySetLogs(),
     enabled: !!user,
@@ -568,6 +572,9 @@ export default function Progress() {
         <div className="space-y-6 mt-4">
           {/* Quick Stats - Horizontal Scrollable Strip */}
           <section className="-mx-4 px-4">
+            {isProgressLoading ? (
+              <SkeletonStats isDarkMode={isDarkMode} />
+            ) : (
             <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
               {/* Streak - Highlighted */}
               <div
@@ -679,10 +686,15 @@ export default function Progress() {
                 </div>
               </div>
             </div>
+            )}
           </section>
 
           {/* Weekly Overview Table */}
           <div>
+            {isProgressLoading ? (
+              <SkeletonSection isDarkMode={isDarkMode} grid rows={0} />
+            ) : (
+            <>
             <TrackingOverview
               trackables={habitTrackables}
               habitDataByTrackable={habitDataByTrackable}
@@ -711,9 +723,14 @@ export default function Progress() {
                 View All-Time Monthly History
               </button>
             )}
+            </>
+            )}
           </div>
 
           {/* Workout Heatmap */}
+          {isProgressLoading ? (
+            <SkeletonHeatmap isDarkMode={isDarkMode} />
+          ) : (
           <ActivityHeatmap
             data={workoutHeatmapData}
             type="workout"
@@ -721,6 +738,7 @@ export default function Progress() {
             subtitle={`${stats.workoutsThisMonth} workout${stats.workoutsThisMonth !== 1 ? "s" : ""} this month`}
             isDarkMode={isDarkMode}
           />
+          )}
 
           {/* Goals */}
           <GoalsWidget

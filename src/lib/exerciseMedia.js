@@ -1,4 +1,7 @@
-import { getExerciseMediaOverrideUrl } from "@/lib/exerciseMediaOverrides";
+import {
+  getExerciseMediaOverrideUrl,
+  getExerciseMediaOverrideByName,
+} from "@/lib/exerciseMediaOverrides";
 
 /**
  * Prefer user override, then GIF (animated demo), then static image from catalog.
@@ -8,6 +11,27 @@ export function exerciseMediaUrl(exercise, overrides) {
   const custom = getExerciseMediaOverrideUrl(exercise, overrides);
   if (custom) return custom;
   return exercise.gif_url || exercise.image_url || null;
+}
+
+function normalizeExerciseNameForLookup(name) {
+  return String(name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+export function findCatalogExerciseByName(exercises, exerciseName) {
+  if (!Array.isArray(exercises) || !exerciseName) return null;
+  const key = normalizeExerciseNameForLookup(exerciseName);
+  if (!key) return null;
+  return exercises.find(e => normalizeExerciseNameForLookup(e?.name) === key) ?? null;
+}
+
+/** Thumbnail URL for a routine/log row (catalog match + name-keyed overrides). */
+export function resolveExerciseMediaUrl(exercises, exerciseName, overrides) {
+  const ex = findCatalogExerciseByName(exercises, exerciseName);
+  if (ex) return exerciseMediaUrl(ex, overrides);
+  return getExerciseMediaOverrideByName(exerciseName, overrides);
 }
 
 export function exerciseUsesGif(exercise) {
@@ -35,6 +59,8 @@ export function getExerciseEquipment(exercise) {
   if (typeof display === "string" && display.trim()) return display.trim();
   const list = exercise.metadata?.exercisedb?.equipments;
   if (Array.isArray(list) && list.length) return list.join(", ");
+  const eapiEq = exercise.metadata?.exerciseapi?.equipment;
+  if (typeof eapiEq === "string" && eapiEq.trim()) return eapiEq.trim();
   return "";
 }
 

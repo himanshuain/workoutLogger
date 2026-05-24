@@ -111,8 +111,8 @@ export function isSessionToday(session) {
 
 /**
  * When exercises are opened from the routine planner (`returnTo`) and exercises are saved
- * to a routine, navigate back here so `day` restores the weekday on /plan (or /routine, which redirects).
- * Returns null unless `returnTo` is `plan` or `routine` and a weekday 0–6 is known.
+ * to a routine, navigate back here so `day` restores the weekday on /plan.
+ * Returns null unless `returnTo` is `plan` or `routine` (legacy) and a weekday 0–6 is known.
  *
  * @param {Record<string, string | string[] | undefined>} query - `router.query`
  * @param {number} [pickedDay] - Day from RoutineDayPickerDialog when URL has no routineDay/day
@@ -137,6 +137,5 @@ export function getRoutinePlannerReturnHref(query, pickedDay) {
   }
   if (Number.isNaN(dayNum) || dayNum < 0 || dayNum > 6) return null;
 
-  const pathname = returnToRaw === "routine" ? "/routine" : "/plan";
-  return `${pathname}?day=${encodeURIComponent(String(dayNum))}`;
+  return `/plan?day=${encodeURIComponent(String(dayNum))}`;
 }

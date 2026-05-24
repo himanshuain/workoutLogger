@@ -5,22 +5,56 @@ function normalizeName(name) {
     .replace(/\s+/g, " ");
 }
 
-/** Stable key for user_settings.exercise_media_overrides. */
-export function getExerciseMediaOverrideKey(exercise) {
-  if (!exercise) return null;
-  if (exercise.id) return String(exercise.id);
+/** "Face Pull" and "Facepull" → "facepull" for stable override keys. */
+export function compactExerciseName(name) {
+  return normalizeName(name).replace(/[^a-z0-9]/g, "");
+}
+
+function readOverrideEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const url = entry.media_url ?? entry.url ?? entry.image_url ?? entry.gif_url;
+  return typeof url === "string" && url.trim() ? url.trim() : null;
+}
+
+/** All keys used to store/read a custom thumbnail for one exercise. */
+export function getExerciseMediaOverrideKeys(exercise) {
+  if (!exercise) return [];
+  const keys = [];
+  if (exercise.id) keys.push(String(exercise.id));
   const name = normalizeName(exercise.name);
-  return name ? `name:${name}` : null;
+  const compact = compactExerciseName(exercise.name);
+  if (name) keys.push(`name:${name}`);
+  if (compact) keys.push(`name:${compact}`);
+  return [...new Set(keys)];
+}
+
+/** Primary key (legacy); prefer getExerciseMediaOverrideKeys for read/write. */
+export function getExerciseMediaOverrideKey(exercise) {
+  return getExerciseMediaOverrideKeys(exercise)[0] ?? null;
 }
 
 export function getExerciseMediaOverrideUrl(exercise, overrides) {
   if (!exercise || !overrides || typeof overrides !== "object") return null;
-  const key = getExerciseMediaOverrideKey(exercise);
-  if (!key) return null;
-  const entry = overrides[key];
-  if (!entry || typeof entry !== "object") return null;
-  const url = entry.media_url ?? entry.url ?? entry.image_url ?? entry.gif_url;
-  return typeof url === "string" && url.trim() ? url.trim() : null;
+  const keys = getExerciseMediaOverrideKeys(exercise);
+  for (const key of keys) {
+    const url = readOverrideEntry(overrides[key]);
+    if (url) return url;
+  }
+  return null;
+}
+
+/** Override when only the exercise name is known (e.g. routine row). */
+export function getExerciseMediaOverrideByName(exerciseName, overrides) {
+  if (!overrides || typeof overrides !== "object") return null;
+  const keys = [
+    `name:${normalizeName(exerciseName)}`,
+    `name:${compactExerciseName(exerciseName)}`,
+  ];
+  for (const key of [...new Set(keys)]) {
+    const url = readOverrideEntry(overrides[key]);
+    if (url) return url;
+  }
+  return null;
 }
 
 export function mergeMediaUrlsWithOverride(urls, overrideUrl) {
@@ -32,14 +66,18 @@ export function mergeMediaUrlsWithOverride(urls, overrideUrl) {
 }
 
 export function buildExerciseMediaOverridesPatch(overrides, exercise, mediaUrl) {
-  const key = getExerciseMediaOverrideKey(exercise);
-  if (!key) return null;
+  const keys = getExerciseMediaOverrideKeys(exercise);
+  if (!keys.length) return null;
+
   const next = { ...(overrides && typeof overrides === "object" ? overrides : {}) };
   const trimmed = typeof mediaUrl === "string" ? mediaUrl.trim() : "";
-  if (trimmed) {
-    next[key] = { media_url: trimmed };
-  } else {
-    delete next[key];
+
+  for (const key of keys) {
+    if (trimmed) {
+      next[key] = { media_url: trimmed };
+    } else {
+      delete next[key];
+    }
   }
   return next;
 }

@@ -32,7 +32,13 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { getRoutinePlannerReturnHref, getQueryParamString } from "@/lib/workoutNavigation";
+import {
+  exerciseMatchesSearch,
+  buildExerciseCatalogByName,
+  normalizeExerciseName,
+} from "@/lib/exerciseCatalog";
 
 const EQUIPMENT_KEYS = new Set(EQUIPMENT_FILTER_ROW.map(({ key }) => key));
 
@@ -88,8 +94,8 @@ function ExerciseThumbnail({ exercise, isDarkMode, mediaOverrides }) {
 export default function ExercisesSearchPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { user, exercises, routines, getRoutineForDay, updateRoutine, createRoutine, settings } = useWorkout();
-  const mediaOverrides = settings?.exercise_media_overrides;
+  const { user, exercises, routines, getRoutineForDay, updateRoutine, createRoutine } = useWorkout();
+  const mediaOverrides = useExerciseMediaOverrides();
   const [q, setQ] = useState("");
   const [chip, setChip] = useState(null);
   const [subChip, setSubChip] = useState(null);
@@ -217,10 +223,8 @@ export default function ExercisesSearchPage() {
   const getRoutinePickerBackHref = useCallback(() => {
     const fromNav = getRoutinePlannerReturnHref(router.query);
     if (fromNav) return fromNav;
-    const rt = getQueryParamString(router.query, "returnTo").toLowerCase();
     const day = routineDayNum;
     if (Number.isNaN(day) || day < 0 || day > 6) return "/plan";
-    if (rt === "routine") return `/routine?day=${encodeURIComponent(String(day))}`;
     return `/plan?day=${encodeURIComponent(String(day))}`;
   }, [router.query, routineDayNum]);
 
@@ -282,23 +286,13 @@ export default function ExercisesSearchPage() {
     setSelectedIds(new Set());
   }, []);
 
+  const catalogByName = useMemo(() => buildExerciseCatalogByName(exercises), [exercises]);
+
   const filtered = useMemo(() => {
     let list = exercises || [];
-    const term = q.trim().toLowerCase();
+    const term = q.trim();
     if (term) {
-      list = list.filter(e => {
-        if (e.name?.toLowerCase().includes(term) || e.category?.toLowerCase().includes(term))
-          return true;
-        const edb = e.metadata?.exercisedb;
-        const muscleBlob = [
-          ...(edb?.targetMuscles ?? []),
-          ...(edb?.secondaryMuscles ?? []),
-          ...(edb?.bodyParts ?? []),
-        ]
-          .join(" ")
-          .toLowerCase();
-        return muscleBlob.includes(term);
-      });
+      list = list.filter(e => exerciseMatchesSearch(e, term));
     }
     if (chip && chip !== "Full Body") {
       list = list.filter(
@@ -327,7 +321,10 @@ export default function ExercisesSearchPage() {
 
   const scrollToSavedExercise = useCallback(
     exerciseName => {
-      const catalogEx = exercises.find(e => e.name === exerciseName);
+      const key = normalizeExerciseName(exerciseName);
+      const catalogEx =
+        catalogByName.get(key) ||
+        exercises.find(e => normalizeExerciseName(e.name) === key);
       if (!catalogEx) {
         toast.message("Exercise not found in catalog");
         return;
@@ -343,7 +340,7 @@ export default function ExercisesSearchPage() {
       }
       scrollToCatalogExercise(catalogEx.id);
     },
-    [exercises, filtered, scrollToCatalogExercise],
+    [exercises, catalogByName, filtered, scrollToCatalogExercise],
   );
 
   useEffect(() => {
@@ -1153,6 +1150,7 @@ export default function ExercisesSearchPage() {
                 isDarkMode={isDarkMode}
                 hideHeading
                 variant="sheet"
+                onOpenExercise={ex => setPreviewId(ex.id)}
               />
             ) : null}
           </div>

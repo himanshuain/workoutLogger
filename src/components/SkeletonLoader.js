@@ -96,6 +96,29 @@ export function SkeletonList({ isDarkMode = false, count = 5, className }) {
   );
 }
 
+/** Routine planner exercise rows (thumb + title + meta). */
+export function SkeletonRoutineExercises({ isDarkMode = false, count = 4, className }) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className={cn(
+            shell(isDarkMode, "flex items-center gap-3 p-3"),
+          )}
+        >
+          <div className={bone(isDarkMode, "h-12 w-12 shrink-0 rounded-card")} />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className={bone(isDarkMode, "h-4 w-2/5")} />
+            <div className={bone(isDarkMode, "h-3 w-1/3")} />
+          </div>
+          <div className={bone(isDarkMode, "h-8 w-8 shrink-0 rounded-card")} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function SkeletonStats({ isDarkMode = false }) {
   return (
     <div className="flex gap-3 overflow-x-auto pb-1">

@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   async redirects() {
-    return [{ source: "/routines", destination: "/routine", permanent: false }];
+    return [{ source: "/routines", destination: "/plan", permanent: false }];
   },
   images: {
     remotePatterns: [
@@ -15,6 +15,21 @@ const nextConfig = {
         protocol: "https",
         hostname: "static.exercisedb.dev",
         pathname: "/media/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.jsdelivr.net",
+        pathname: "/gh/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.exerciseapi.dev",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.smartworkout.app",
+        pathname: "/asset/**",
       },
     ],
   },

@@ -4,10 +4,12 @@ import { Search, Plus, Check, X } from "lucide-react";
 import { CompletionBadge } from "@/components/CompletionToggle";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseMediaUrl } from "@/lib/exerciseMedia";
+import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import {
-  dedupeExercisesForPicker,
+  prepareExerciseCatalog,
+  exerciseMatchesSearch,
   normalizeExerciseName,
-} from "@/lib/dedupeExercisesForPicker";
+} from "@/lib/exerciseCatalog";
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -35,7 +37,7 @@ export default function ExerciseAutocomplete({
   const searchRef = useRef(null);
 
   const dedupedExercises = useMemo(
-    () => dedupeExercisesForPicker(exercises),
+    () => prepareExerciseCatalog(exercises),
     [exercises],
   );
 
@@ -53,10 +55,7 @@ export default function ExerciseAutocomplete({
       list = list.filter(e => (e.category || "other").toLowerCase() === activeCategory);
     }
     if (search) {
-      const s = search.toLowerCase();
-      list = list.filter(
-        e => e.name.toLowerCase().includes(s) || e.category?.toLowerCase().includes(s)
-      );
+      list = list.filter(e => exerciseMatchesSearch(e, search));
     }
     return list;
   }, [dedupedExercises, search, activeCategory]);
@@ -245,7 +244,8 @@ export default function ExerciseAutocomplete({
 }
 
 function ExerciseRow({ exercise, isDarkMode, isLogged, isSelected, onSelect }) {
-  const mediaUrl = exerciseMediaUrl(exercise);
+  const mediaOverrides = useExerciseMediaOverrides();
+  const mediaUrl = exerciseMediaUrl(exercise, mediaOverrides);
   const hasMedia = Boolean(mediaUrl);
 
   return (

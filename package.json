@@ -5,6 +5,8 @@
   "scripts": {
     "sync:exercises": "node scripts/sync-exercisedb-exercises.mjs",
     "sync:exercises:wger": "node scripts/sync-wger-exercises.mjs",
+    "sync:exercises:exerciseapi": "node scripts/sync-exerciseapi-exercises.mjs",
+    "sync:exercises:all": "npm run sync:exercises && npm run sync:exercises:exerciseapi && npm run sync:exercises:wger",
     "dev": "node scripts/dev-with-auto-recovery.js",
     "dev:clean": "node scripts/clean-next-cache.js && next dev",
     "dev:lan": "node scripts/dev-lan.js",

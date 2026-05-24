@@ -4,7 +4,8 @@ import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import ExerciseIcon from "@/components/ExerciseIcon";
-import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
+import { exerciseImageUnoptimized, resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
+import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
@@ -26,6 +27,10 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
+import GroupedExerciseSections from "@/components/workout/GroupedExerciseSections";
+import ExerciseSessionResetButton, {
+  exerciseHasLoggedSets,
+} from "@/components/workout/ExerciseSessionResetButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,12 +86,15 @@ export default function TodayWorkoutSection({
     exercises,
     loadActiveSession,
     deleteWorkoutSession,
+    resetSessionExerciseLogs,
   } = useWorkout();
+  const mediaOverrides = useExerciseMediaOverrides();
 
   const [starting, setStarting] = useState(false);
   const [markingDone, setMarkingDone] = useState(false);
   const [undoingDone, setUndoingDone] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [resettingExercise, setResettingExercise] = useState(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [extrasVersion, setExtrasVersion] = useState(0);
   const [thumbFailed, setThumbFailed] = useState({});
@@ -252,12 +260,24 @@ export default function TodayWorkoutSection({
     toast.success("Removed from today");
   };
 
-  const resolveExerciseMedia = exerciseName => {
-    const cat =
-      exercises.find(e => e.name === exerciseName) ||
-      exercises.find(e => e.name?.toLowerCase() === exerciseName?.toLowerCase());
-    return cat ? exerciseMediaUrl(cat) : null;
+  const handleResetExercise = async exerciseName => {
+    if (!activeSession?.id || activeSession.status !== "active") return;
+    setResettingExercise(exerciseName);
+    try {
+      const ok = await resetSessionExerciseLogs(activeSession.id, exerciseName);
+      if (ok) {
+        await loadActiveSession?.();
+        toast.success("Exercise reset");
+      } else {
+        toast.error("Could not reset exercise");
+      }
+    } finally {
+      setResettingExercise(null);
+    }
   };
+
+  const resolveExerciseMedia = exerciseName =>
+    resolveExerciseMediaUrl(exercises, exerciseName, mediaOverrides);
 
   if (!user) return null;
 
@@ -518,11 +538,23 @@ export default function TodayWorkoutSection({
                   isDarkMode ? "border-iron-800/80" : "border-slate-100"
                 }`}
               >
-                <StaggerContainer className="space-y-2">
-                    {plannedExercises.map(ex => {
+                <StaggerContainer>
+                  <GroupedExerciseSections
+                    exercises={plannedExercises}
+                    isDarkMode={isDarkMode}
+                    listClassName="space-y-2"
+                    renderExercise={ex => {
                       const st = exerciseStatus(ex.exercise_name, setLogs);
+                      const hasLogs = exerciseHasLoggedSets(ex.exercise_name, setLogs);
+                      const showReset = hasLogs && hasSession;
                       const media = resolveExerciseMedia(ex.exercise_name);
                       const showPlaceholder = !media || thumbFailed[ex.exercise_name];
+                      const cardPadRight =
+                        ex.added_today && showReset
+                          ? "pr-[4.25rem]"
+                          : ex.added_today || showReset
+                            ? "pr-12"
+                            : "";
                       return (
                         <StaggerItem key={ex.exercise_name}>
                           <div
@@ -536,94 +568,102 @@ export default function TodayWorkoutSection({
                               <button
                                 type="button"
                                 onClick={() => openExercise(ex.exercise_name, ex.category)}
-                                className={`w-full text-left rounded-card p-2.5 flex gap-2.5 ${
-                                  ex.added_today ? "pr-12" : ""
-                                }`}
+                                className={`w-full text-left rounded-card p-2.5 flex gap-2.5 ${cardPadRight}`}
                               >
-                              <div
-                                className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 flex flex-col items-center justify-center ${
-                                  isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                                }`}
-                              >
-                                {!showPlaceholder ? (
-                                  <Image
-                                    src={media}
-                                    alt=""
-                                    fill
-                                    className="object-cover"
-                                    sizes="48px"
-                                    unoptimized={exerciseImageUnoptimized(media)}
-                                    onError={() =>
-                                      setThumbFailed(prev => ({
-                                        ...prev,
-                                        [ex.exercise_name]: true,
-                                      }))
-                                    }
-                                  />
-                                ) : (
-                                  <>
-                                    <ExerciseIcon
-                                      name={ex.exercise_name}
-                                      className="w-6 h-6"
-                                      color={isDarkMode ? "#71717a" : "#94a3b8"}
-                                    />
-                                    <span
-                                      className={`mt-0.5 text-[9px] font-medium leading-none ${
-                                        isDarkMode ? "text-iron-500" : "text-slate-400"
-                                      }`}
-                                    >
-                                      No image
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p
-                                  className={`font-semibold text-sm leading-snug ${
-                                    isDarkMode ? "text-iron-100" : "text-slate-900"
+                                <div
+                                  className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 flex flex-col items-center justify-center ${
+                                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
                                   }`}
                                 >
-                                  {ex.exercise_name}
-                                </p>
-                                <PlannedExerciseMetaLine
-                                  category={ex.category}
-                                  notes={ex.notes}
-                                  isDarkMode={isDarkMode}
-                                />
-                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                  <span
-                                    className={`inline-flex items-center gap-1 text-xs font-medium ${
-                                      st === "in_progress"
-                                        ? isDarkMode
-                                          ? "text-emerald-400"
-                                          : "text-emerald-600"
-                                        : isDarkMode
-                                          ? "text-iron-500"
-                                          : "text-slate-500"
-                                    }`}
-                                  >
-                                    {st === "in_progress" ? (
-                                      <CheckCircle2 className="w-3.5 h-3.5" />
-                                    ) : (
-                                      <Circle className="w-3.5 h-3.5" />
-                                    )}
-                                    {statusLabel(st)}
-                                  </span>
-                                  {ex.added_today && (
-                                    <span
-                                      className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                        isDarkMode
-                                          ? "bg-violet-500/15 text-violet-300"
-                                          : "bg-violet-100 text-violet-700"
-                                      }`}
-                                    >
-                                      Added today
-                                    </span>
+                                  {!showPlaceholder ? (
+                                    <Image
+                                      src={media}
+                                      alt=""
+                                      fill
+                                      className="object-cover"
+                                      sizes="48px"
+                                      unoptimized={exerciseImageUnoptimized(media)}
+                                      onError={() =>
+                                        setThumbFailed(prev => ({
+                                          ...prev,
+                                          [ex.exercise_name]: true,
+                                        }))
+                                      }
+                                    />
+                                  ) : (
+                                    <>
+                                      <ExerciseIcon
+                                        name={ex.exercise_name}
+                                        className="w-6 h-6"
+                                        color={isDarkMode ? "#71717a" : "#94a3b8"}
+                                      />
+                                      <span
+                                        className={`mt-0.5 text-[9px] font-medium leading-none ${
+                                          isDarkMode ? "text-iron-500" : "text-slate-400"
+                                        }`}
+                                      >
+                                        No image
+                                      </span>
+                                    </>
                                   )}
                                 </div>
-                              </div>
-                            </button>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={`font-semibold text-sm leading-snug ${
+                                      isDarkMode ? "text-iron-100" : "text-slate-900"
+                                    }`}
+                                  >
+                                    {ex.exercise_name}
+                                  </p>
+                                  <PlannedExerciseMetaLine
+                                    category={ex.category}
+                                    notes={ex.notes}
+                                    isDarkMode={isDarkMode}
+                                  />
+                                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                    <span
+                                      className={`inline-flex items-center gap-1 text-xs font-medium ${
+                                        st === "in_progress"
+                                          ? isDarkMode
+                                            ? "text-emerald-400"
+                                            : "text-emerald-600"
+                                          : isDarkMode
+                                            ? "text-iron-500"
+                                            : "text-slate-500"
+                                      }`}
+                                    >
+                                      {st === "in_progress" ? (
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                      ) : (
+                                        <Circle className="w-3.5 h-3.5" />
+                                      )}
+                                      {statusLabel(st)}
+                                    </span>
+                                    {ex.added_today && (
+                                      <span
+                                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                          isDarkMode
+                                            ? "bg-violet-500/15 text-violet-300"
+                                            : "bg-violet-100 text-violet-700"
+                                        }`}
+                                      >
+                                        Added today
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
                             </PressableScale>
+                            {showReset ? (
+                              <ExerciseSessionResetButton
+                                exerciseName={ex.exercise_name}
+                                isDarkMode={isDarkMode}
+                                compact
+                                disabled={resettingExercise === ex.exercise_name}
+                                onClick={handleResetExercise}
+                                className={ex.added_today ? "right-10" : undefined}
+                              />
+                            ) : null}
                             {ex.added_today ? (
                               <button
                                 type="button"
@@ -645,7 +685,8 @@ export default function TodayWorkoutSection({
                           </div>
                         </StaggerItem>
                       );
-                    })}
+                    }}
+                  />
                 </StaggerContainer>
               </div>
 

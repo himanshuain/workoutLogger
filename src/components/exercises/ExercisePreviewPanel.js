@@ -15,6 +15,11 @@ import {
 } from "@/lib/workoutNavigation";
 import { toast } from "sonner";
 import { CirclePlus, ListChecks } from "lucide-react";
+import {
+  buildExerciseCatalogByName,
+  resolveCatalogVariations,
+} from "@/lib/exerciseCatalog";
+import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 
 /**
  * Shared preview: hero media, title (optional), equipment, add actions.
@@ -25,6 +30,7 @@ export default function ExercisePreviewPanel({
   isDarkMode,
   hideHeading = false,
   variant = "default",
+  onOpenExercise,
 }) {
   const router = useRouter();
   const {
@@ -38,9 +44,14 @@ export default function ExercisePreviewPanel({
     settings,
     updateSettings,
   } = useWorkout();
-  const mediaOverrides = settings?.exercise_media_overrides;
+  const mediaOverrides = useExerciseMediaOverrides();
   const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises, mediaOverrides);
   const equipmentLine = useMemo(() => getExerciseEquipment(exercise), [exercise]);
+  const catalogByName = useMemo(() => buildExerciseCatalogByName(exercises), [exercises]);
+  const variations = useMemo(
+    () => resolveCatalogVariations(exercise, catalogByName),
+    [exercise, catalogByName],
+  );
   const [session, setSession] = useState(null);
   const [routinePickerOpen, setRoutinePickerOpen] = useState(false);
 
@@ -255,6 +266,39 @@ export default function ExercisePreviewPanel({
         <span className="capitalize">{exercise.category || "General"}</span>
         {equipmentLine ? ` · ${equipmentLine}` : ""}
       </p>
+
+      {variations.length > 0 ? (
+        <div className={`shrink-0 ${hideHeading ? (isSheet ? "mt-2" : "mt-4") : "mt-6"}`}>
+          <p
+            className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
+            }`}
+          >
+            Variations
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {variations.map(({ label, exercise: varEx }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={!varEx || !onOpenExercise}
+                onClick={() => varEx && onOpenExercise?.(varEx)}
+                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                  varEx && onOpenExercise
+                    ? isDarkMode
+                      ? "border-iron-600 text-iron-200 active:bg-iron-800"
+                      : "border-slate-300 text-slate-700 active:bg-slate-100"
+                    : isDarkMode
+                      ? "border-iron-800 text-iron-600 cursor-default"
+                      : "border-slate-200 text-slate-400 cursor-default"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div
         className={`shrink-0 ${hideHeading ? (isSheet ? "mt-2" : "mt-6") : "mt-10"} ${isSheet ? "space-y-2" : "space-y-3"}`}

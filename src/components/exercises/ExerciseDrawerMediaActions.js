@@ -52,8 +52,18 @@ export default function ExerciseDrawerMediaActions({
       await updateSettings({ exercise_media_overrides: patch });
       toast.success(url ? "Custom image saved" : "Custom image removed");
       setEditorOpen(false);
-    } catch {
-      toast.error("Could not save image");
+    } catch (err) {
+      const code = err?.code ?? "";
+      const message = String(err?.message ?? "");
+      const migrationHint =
+        message.includes("exercise_media_overrides") || code === "PGRST204";
+      if (migrationHint) {
+        toast.error("Saved on this device only — run migration-v15 on Supabase to sync");
+      } else if (patch && Object.keys(patch).length) {
+        toast.message("Saved on this device — cloud sync failed, will retry on next load");
+      } else {
+        toast.error("Could not save image");
+      }
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { prepareExerciseCatalog } from "@/lib/exerciseCatalog";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 import {
@@ -21,6 +22,7 @@ import {
   readLocalRestMap,
   cacheLocalRestMap,
 } from "@/lib/userPrefsMigration";
+import { reconcileExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
 import { useTrackableActions } from "@/context/hooks/useTrackables";
 import { useNotificationSchedules } from "@/context/hooks/useNotificationSchedules";
 import { useWorkoutSettings } from "@/context/hooks/useWorkoutSettings";
@@ -109,7 +111,7 @@ export function WorkoutProvider({ children }) {
       const { data, error } = await supabase.from("exercises").select("*").order("name");
 
       if (!error && data) {
-        setExercises(data);
+        setExercises(prepareExerciseCatalog(data));
       }
     } catch (err) {
       console.error("Error loading exercises:", err);
@@ -127,7 +129,17 @@ export function WorkoutProvider({ children }) {
         .maybeSingle();
 
       if (!error && data) {
-        setSettings(data);
+        const { merged, needsServerBackfill } = reconcileExerciseMediaOverrides(
+          user.id,
+          data.exercise_media_overrides,
+        );
+        setSettings({ ...data, exercise_media_overrides: merged });
+        if (needsServerBackfill) {
+          void supabase
+            .from("user_settings")
+            .update({ exercise_media_overrides: merged })
+            .eq("user_id", user.id);
+        }
       }
     } catch (err) {
       console.error("Error loading settings:", err);
@@ -356,18 +368,6 @@ export function WorkoutProvider({ children }) {
       await loadRoutines();
     },
     [user, loadRoutines]
-  );
-
-  // Delete workout routine
-  const deleteRoutine = useCallback(
-    async routineId => {
-      if (!user) return;
-
-      await supabase.from("workout_routines").delete().eq("id", routineId);
-
-      setRoutines(prev => prev.filter(r => r.id !== routineId));
-    },
-    [user]
   );
 
   // Get today's routine
@@ -772,6 +772,39 @@ export function WorkoutProvider({ children }) {
       }
 
       removeSessionExtra(sessionId, exerciseName);
+
+      if (activeSession?.id === sessionId) {
+        setActiveSession(prev => ({
+          ...prev,
+          set_logs: (prev.set_logs || []).filter(log => log.exercise_name !== exerciseName),
+        }));
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+      return true;
+    },
+    [user, activeSession, queryClient]
+  );
+
+  /** Clear all logged sets for one exercise; keeps the exercise on the plan (and in extras). */
+  const resetSessionExerciseLogs = useCallback(
+    async (sessionId, exerciseName) => {
+      if (!user || !sessionId || !exerciseName) return false;
+      const { error } = await supabase
+        .from("set_logs")
+        .delete()
+        .eq("session_id", sessionId)
+        .eq("exercise_name", exerciseName);
+
+      if (error) {
+        console.error("resetSessionExerciseLogs:", error);
+        return false;
+      }
 
       if (activeSession?.id === sessionId) {
         setActiveSession(prev => ({
@@ -1213,10 +1246,20 @@ export function WorkoutProvider({ children }) {
 
         if (error) throw error;
 
-        setExercises(data.exercises || []);
+        setExercises(prepareExerciseCatalog(data.exercises || []));
 
         if (data.user_settings) {
-          setSettings(data.user_settings);
+          const { merged: mediaOverrides, needsServerBackfill: backfillMediaOverrides } =
+            reconcileExerciseMediaOverrides(uid, data.user_settings.exercise_media_overrides);
+
+          setSettings({ ...data.user_settings, exercise_media_overrides: mediaOverrides });
+
+          if (backfillMediaOverrides) {
+            void supabase
+              .from("user_settings")
+              .update({ exercise_media_overrides: mediaOverrides })
+              .eq("user_id", uid);
+          }
 
           const serverRest = data.user_settings.routine_rest_days;
           if (!serverRest || Object.keys(serverRest || {}).length === 0) {
@@ -2473,7 +2516,6 @@ export function WorkoutProvider({ children }) {
         // New routine functions
         createRoutine,
         updateRoutine,
-        deleteRoutine,
         getTodayRoutine,
         getRoutineForDay,
         appendExerciseToRoutine,
@@ -2489,6 +2531,7 @@ export function WorkoutProvider({ children }) {
         updateSessionExerciseIndex,
         deleteSetLog,
         deleteSessionExerciseByName,
+        resetSessionExerciseLogs,
         renameSessionExerciseByName,
         seedCompletedExerciseSetsForSession,
         addSetLog,

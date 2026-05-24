@@ -54,6 +54,22 @@ export function cacheLocalNavConfig(config) {
   localStorage.setItem("logbook_nav_config", JSON.stringify(config));
 }
 
+export function readLocalExerciseMediaOverrides(userId) {
+  if (typeof window === "undefined" || !userId) return {};
+  try {
+    const raw = localStorage.getItem(`wl_exercise_media_overrides_${userId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function cacheLocalExerciseMediaOverrides(userId, map) {
+  if (typeof window === "undefined" || !userId) return;
+  if (!map || typeof map !== "object") return;
+  localStorage.setItem(`wl_exercise_media_overrides_${userId}`, JSON.stringify(map));
+}
+
 export function readLegacyNotificationSchedules() {
   if (typeof window === "undefined") return {};
   try {

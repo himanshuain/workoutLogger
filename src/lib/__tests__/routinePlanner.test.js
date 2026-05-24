@@ -1,23 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
   resolveRestMap,
-  sortRoutinesForList,
   swapRestMarkers,
   restMapAfterMove,
 } from "@/lib/routinePlanner";
 import { mergeTrackablesActiveDays } from "@/lib/userPrefsMigration";
 
 describe("routinePlanner", () => {
-  it("sorts routines Mon-first with unassigned last", () => {
-    const sorted = sortRoutinesForList([
-      { name: "Sun", day_of_week: 0 },
-      { name: "Mon", day_of_week: 1 },
-      { name: "Any", day_of_week: null },
-      { name: "Wed", day_of_week: 3 },
-    ]);
-    expect(sorted.map(r => r.name)).toEqual(["Mon", "Wed", "Sun", "Any"]);
-  });
-
   it("swaps rest markers between days", () => {
     const next = swapRestMarkers({ 1: true, 3: true }, 1, 5);
     expect(next[1]).toBeUndefined();

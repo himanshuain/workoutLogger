@@ -12,6 +12,9 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { loadEnvLocal } from "./loadEnvLocal.mjs";
+
+loadEnvLocal();
 
 const WGER_BASE = "https://wger.de";
 const ENGLISH_LANG = 2;

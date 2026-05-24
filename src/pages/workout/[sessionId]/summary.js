@@ -287,11 +287,13 @@ export default function WorkoutSummaryPage() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col px-5 pt-10 pb-12 ${
-        isDarkMode ? "bg-iron-950" : "bg-slate-50"
-      }`}
-      style={{ paddingTop: "max(2.5rem, env(safe-area-inset-top))" }}
+      className={cn(
+        "flex h-[100dvh] flex-col overflow-hidden",
+        isDarkMode ? "bg-iron-950" : "bg-slate-50",
+      )}
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-6 pb-4">
       <h1
         className={`text-2xl font-semibold tracking-tight ${
           isDarkMode ? "text-iron-50" : "text-slate-900"
@@ -420,8 +422,15 @@ export default function WorkoutSummaryPage() {
           ) : null}
         </div>
       </div>
+      </div>
 
-      <div className="mt-auto pt-10 space-y-3">
+      <div
+        className={cn(
+          "shrink-0 space-y-3 border-t px-5 pt-3",
+          isDarkMode ? "border-iron-800 bg-iron-950" : "border-slate-200 bg-slate-50",
+        )}
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
         <button
           type="button"
           onClick={handleSaveWorkout}
@@ -431,7 +440,7 @@ export default function WorkoutSummaryPage() {
           }`}
         >
           <Save className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
-          {saving ? "Saving…" : "Save workout"}
+          {saving ? "Saving…" : session?.status === "completed" ? "Save changes" : "Save workout"}
         </button>
         {extras.length > 0 ? (
           <button

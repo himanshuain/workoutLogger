@@ -81,9 +81,7 @@ export default function History() {
       const date = session.date;
       if (!map[date]) map[date] = { sessions: [], legacyLogs: [] };
       const completedSets = (session.set_logs || []).filter((s) => s.is_completed);
-      if (completedSets.length > 0) {
-        map[date].sessions.push({ ...session, completedSets });
-      }
+      map[date].sessions.push({ ...session, completedSets });
     });
 
     legacyLogs.forEach((log) => {
@@ -271,7 +269,12 @@ export default function History() {
 
                           return (
                             <div key={session.id} className="space-y-2">
-                              {Object.entries(byExercise).map(([exerciseName, { sets, volume }]) => (
+                              {session.completedSets.length === 0 ? (
+                                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                                  No sets logged for this workout.
+                                </p>
+                              ) : (
+                              Object.entries(byExercise).map(([exerciseName, { sets, volume }]) => (
                                 <div key={exerciseName} className={`rounded-card p-3 ${isDarkMode ? "bg-iron-800/40" : "bg-slate-50"}`}>
                                   {/* Exercise header */}
                                   <div className="flex items-center gap-2.5 mb-2">
@@ -371,24 +374,45 @@ export default function History() {
                                     ))}
                                   </div>
                                 </div>
-                              ))}
+                              ))
+                              )}
 
-                              {/* Delete entire session */}
-                              <button
-                                onClick={() => setDeleteConfirm({
-                                  type: "session",
-                                  id: session.id,
-                                  label: `${session.routine_name || "Workout"} on ${formatDate(date)}`,
-                                })}
-                                className={`w-full py-2 rounded-card text-xs font-medium flex items-center justify-center gap-1.5 ${
-                                  isDarkMode
-                                    ? "text-red-400/70 active:text-red-400 active:bg-red-500/10"
-                                    : "text-red-400 active:text-red-500 active:bg-red-50"
-                                }`}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                Delete Workout
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    router.push(
+                                      session.completedSets.length > 0
+                                        ? `/workout/${session.id}/summary`
+                                        : `/workout/${session.id}`,
+                                    )
+                                  }
+                                  className={`flex-1 py-2 rounded-card text-xs font-semibold flex items-center justify-center gap-1.5 border ${
+                                    isDarkMode
+                                      ? "border-iron-700 text-iron-200 active:bg-iron-800"
+                                      : "border-slate-200 text-slate-700 active:bg-slate-50"
+                                  }`}
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                  Edit workout
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirm({
+                                    type: "session",
+                                    id: session.id,
+                                    label: `${session.routine_name || "Workout"} on ${formatDate(date)}`,
+                                  })}
+                                  className={`flex-1 py-2 rounded-card text-xs font-semibold flex items-center justify-center gap-1.5 ${
+                                    isDarkMode
+                                      ? "text-red-400/90 active:text-red-400 active:bg-red-500/10"
+                                      : "text-red-500 active:bg-red-50"
+                                  }`}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           );
                         })}

@@ -595,6 +595,99 @@ export function WorkoutProvider({ children }) {
     [user]
   );
 
+  /** Mark today's workout complete without logging sets; details can be added later on the summary screen. */
+  const markTodayWorkoutDone = useCallback(
+    async (routine = null) => {
+      if (!user) return null;
+
+      const { data: existingCompleted } = await supabase
+        .from("workout_sessions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", today)
+        .eq("status", "completed")
+        .maybeSingle();
+
+      if (existingCompleted?.id) {
+        return getWorkoutSession(existingCompleted.id);
+      }
+
+      const wasAlreadyActive = activeSession?.status === "active";
+      let session = wasAlreadyActive ? activeSession : null;
+
+      if (!session) {
+        const r = routine || getTodayRoutine();
+        if (!r) return null;
+        session = await startWorkoutSession(r);
+      }
+
+      if (!session?.id) return null;
+
+      const planned = getTodayRoutine();
+      let markDoneUndo = "reopen";
+      if (!wasAlreadyActive && (!planned || planned.id !== session.routine_id)) {
+        markDoneUndo = "delete";
+      }
+
+      const prevMeta =
+        session.client_meta && typeof session.client_meta === "object" ? session.client_meta : {};
+      await persistSessionClientMeta(session.id, { ...prevMeta, mark_done_undo: markDoneUndo });
+
+      if (session.status === "active") {
+        await completeWorkoutSession(session.id);
+      }
+
+      return getWorkoutSession(session.id);
+    },
+    [
+      user,
+      today,
+      activeSession,
+      getTodayRoutine,
+      startWorkoutSession,
+      completeWorkoutSession,
+      getWorkoutSession,
+      persistSessionClientMeta,
+    ],
+  );
+
+  /** Reopen a completed session as in-progress (undo mark done / continue logging). */
+  const reopenWorkoutSession = useCallback(
+    async sessionId => {
+      if (!user || !sessionId) return null;
+
+      const { error } = await supabase
+        .from("workout_sessions")
+        .update({
+          status: "active",
+          completed_at: null,
+        })
+        .eq("id", sessionId)
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error reopening session:", error);
+        return null;
+      }
+
+      const session = await getWorkoutSession(sessionId);
+      if (session) {
+        setActiveSession(session);
+        hydrateSessionClientState(session);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+
+      return session;
+    },
+    [user, getWorkoutSession, queryClient],
+  );
+
   // Delete a single set log from a session
   const deleteSetLog = useCallback(
     async (setLogId) => {
@@ -866,6 +959,48 @@ export function WorkoutProvider({ children }) {
       return false;
     },
     [user, queryClient]
+  );
+
+  /** Undo mark done — reopens in-progress workouts or removes ad-hoc picker sessions. */
+  const undoTodayWorkoutDone = useCallback(
+    async sessionId => {
+      if (!user || !sessionId) return null;
+
+      const session = await getWorkoutSession(sessionId);
+      if (!session) return null;
+
+      const meta =
+        session.client_meta && typeof session.client_meta === "object" ? session.client_meta : {};
+      const hasLoggedSets = (session.set_logs || []).some(l => l.is_completed);
+      let undoMode = meta.mark_done_undo;
+      if (!undoMode) {
+        const planned = getTodayRoutine();
+        undoMode =
+          !hasLoggedSets && (!planned || planned.id !== session.routine_id) ? "delete" : "reopen";
+      }
+
+      if (undoMode === "delete" && !hasLoggedSets) {
+        const ok = await deleteWorkoutSession(sessionId);
+        return ok ? { deleted: true } : null;
+      }
+
+      const reopened = await reopenWorkoutSession(sessionId);
+      if (reopened) {
+        const nextMeta = { ...meta };
+        delete nextMeta.mark_done_undo;
+        await persistSessionClientMeta(sessionId, nextMeta);
+        return { deleted: false, session: reopened };
+      }
+      return null;
+    },
+    [
+      user,
+      getWorkoutSession,
+      getTodayRoutine,
+      deleteWorkoutSession,
+      reopenWorkoutSession,
+      persistSessionClientMeta,
+    ],
   );
 
   // Update a set log (for editing history)
@@ -2300,6 +2435,9 @@ export function WorkoutProvider({ children }) {
         startWorkoutSession,
         updateSetLog,
         completeWorkoutSession,
+        markTodayWorkoutDone,
+        reopenWorkoutSession,
+        undoTodayWorkoutDone,
         getWorkoutSession,
         getTodaySession,
         updateSessionExerciseIndex,

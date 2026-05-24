@@ -5,7 +5,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
-import { getSessionExtras, getExerciseDoneMap, removeSessionExtra } from "@/lib/workoutSessionClient";
+import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
   Plus,
@@ -21,6 +21,7 @@ import {
   RotateCw,
   Trash2,
   CircleCheck,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -40,13 +41,13 @@ import SectionHeader from "@/components/SectionHeader";
 import {
   actionPrimary,
   actionSecondary,
+  actionMarkDone,
   actionDestructive,
   actionDestructiveGhost,
   actionGhost,
 } from "@/lib/actionButtonStyles";
 
-function exerciseStatus(name, doneMap, setLogs) {
-  if (doneMap[name]) return "completed";
+function exerciseStatus(name, setLogs) {
   const completed = (setLogs || []).filter(l => l.exercise_name === name && l.is_completed);
   if (completed.length > 0) return "in_progress";
   return "not_started";
@@ -60,9 +61,13 @@ function statusLabel(s) {
 
 /**
  * New workout board + start/finish flow (embedded on the home Today page).
- * @param {{ completedTodaySession?: object | null, onChooseRoutine?: () => void }} props
+ * @param {{ completedTodaySession?: object | null, onChooseRoutine?: () => void, onMarkDonePickRoutine?: () => void }} props
  */
-export default function TodayWorkoutSection({ completedTodaySession = null, onChooseRoutine }) {
+export default function TodayWorkoutSection({
+  completedTodaySession = null,
+  onChooseRoutine,
+  onMarkDonePickRoutine,
+}) {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const {
@@ -71,12 +76,16 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     activeSession,
     getTodayRoutine,
     startWorkoutSession,
+    markTodayWorkoutDone,
+    undoTodayWorkoutDone,
     exercises,
     loadActiveSession,
     deleteWorkoutSession,
   } = useWorkout();
 
   const [starting, setStarting] = useState(false);
+  const [markingDone, setMarkingDone] = useState(false);
+  const [undoingDone, setUndoingDone] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [extrasVersion, setExtrasVersion] = useState(0);
@@ -108,11 +117,6 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     return getSessionExtras(activeSession.id);
   }, [activeSession?.id, extrasVersion]);
 
-  const doneMap = useMemo(() => {
-    if (!activeSession?.id) return {};
-    return getExerciseDoneMap(activeSession.id);
-  }, [activeSession?.id, extrasVersion]);
-
   const plannedExercises = useMemo(
     () => mergePlannedExercises(templateRoutine, extras),
     [templateRoutine, extras]
@@ -128,8 +132,8 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     let completed = 0;
     let added = 0;
     for (const ex of plannedExercises) {
-      const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
-      if (st === "completed") completed += 1;
+      const st = exerciseStatus(ex.exercise_name, setLogs);
+      if (st === "in_progress") completed += 1;
       if (ex.added_today) added += 1;
     }
     return {
@@ -137,7 +141,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       completed,
       addedToday: added,
     };
-  }, [plannedExercises, doneMap, setLogs]);
+  }, [plannedExercises, setLogs]);
 
   const completedSetCount = useMemo(
     () => (setLogs || []).filter(l => l.is_completed).length,
@@ -158,6 +162,48 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
       await loadActiveSession();
     } finally {
       setStarting(false);
+    }
+  };
+
+  const handleUndoMarkDone = async (sessionId = completedTodaySession?.id) => {
+    if (!sessionId) return;
+    setUndoingDone(true);
+    try {
+      const result = await undoTodayWorkoutDone(sessionId);
+      if (!result) {
+        toast.error("Could not undo");
+        return;
+      }
+      await loadActiveSession();
+      toast.success(result.deleted ? "Mark done undone" : "Workout reopened");
+    } catch {
+      toast.error("Could not undo");
+    } finally {
+      setUndoingDone(false);
+    }
+  };
+
+  const handleMarkDone = async () => {
+    const routine = todayRoutine || templateRoutine;
+    if (!routine && !activeSession?.id) return;
+    setMarkingDone(true);
+    try {
+      const session = await markTodayWorkoutDone(routine);
+      if (!session) {
+        toast.error("Could not mark workout done");
+        return;
+      }
+      await loadActiveSession();
+      toast.success("Workout marked done", {
+        action: {
+          label: "Undo",
+          onClick: () => handleUndoMarkDone(session.id),
+        },
+      });
+    } catch {
+      toast.error("Could not mark workout done");
+    } finally {
+      setMarkingDone(false);
     }
   };
 
@@ -225,12 +271,11 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     const doneSets = (completedTodaySession.set_logs || []).filter(s => s.is_completed).length;
     return (
       <div className="max-w-lg mx-auto">
-        <div className="card-hero overflow-hidden">
-          <div className="p-4 sm:p-5">
-            <SectionHeader
+        <div className="card-hero overflow-hidden !p-3 sm:!p-4">
+          <SectionHeader
               icon={Dumbbell}
               label="Workout"
-              meta={`${doneSets} set${doneSets !== 1 ? "s" : ""}`}
+              meta={doneSets > 0 ? `${doneSets} set${doneSets !== 1 ? "s" : ""}` : "Done"}
               isDarkMode={isDarkMode}
             />
             <h3
@@ -238,22 +283,38 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             >
               {completedTodaySession.routine_name}
             </h3>
-            <p className={`text-sm mb-4 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              Completed today
+            <p className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              {doneSets > 0 ? `${doneSets} set${doneSets !== 1 ? "s" : ""} logged` : "Done — log details anytime"}
             </p>
-            <button
-              type="button"
-              onClick={() => router.push("/history")}
-              className={`w-full py-3 rounded-card font-semibold text-sm flex items-center justify-center gap-2 border ${
-                isDarkMode
-                  ? "border-iron-700 text-iron-200 active:bg-iron-800"
-                  : "border-slate-200 text-slate-700 active:bg-slate-50"
-              }`}
-            >
-              <Edit3 className="w-4 h-4" />
-              Review session
-            </button>
-          </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    doneSets > 0
+                      ? `/workout/${completedTodaySession.id}/summary`
+                      : `/workout/${completedTodaySession.id}`,
+                  )
+                }
+                className={`py-2.5 rounded-card font-semibold text-sm flex items-center justify-center gap-2 border ${
+                  isDarkMode
+                    ? "border-iron-700 text-iron-200 active:bg-iron-800"
+                    : "border-slate-200 text-slate-700 active:bg-slate-50"
+                }`}
+              >
+                <Edit3 className="w-4 h-4" />
+                {doneSets > 0 ? "Review" : "Log details"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleUndoMarkDone(completedTodaySession.id)}
+                disabled={undoingDone}
+                className={`py-2.5 rounded-card font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-50 ${actionSecondary(isDarkMode)}`}
+              >
+                <Undo2 className="w-4 h-4" aria-hidden />
+                {undoingDone ? "…" : "Undo"}
+              </button>
+            </div>
         </div>
       </div>
     );
@@ -263,7 +324,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
     const todayDow = new Date().getDay();
     return (
       <div className="max-w-lg mx-auto">
-        <div className="card-hero">
+        <div className="card-hero !p-3 sm:!p-4">
           <div
             className={`flex items-center gap-2 text-sm mb-2 ${
               isDarkMode ? "text-iron-500" : "text-slate-500"
@@ -272,21 +333,27 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
             <Calendar className="w-4 h-4 shrink-0" />
             No workout assigned for {getDayName()}
           </div>
-          <h3
-            className={`text-xl font-bold mb-2 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-          >
-            Start a workout?
-          </h3>
 
           <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => onChooseRoutine?.()}
-              className={`w-full rounded-card py-3 font-bold flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
-            >
-              <Dumbbell className="w-5 h-5" />
-              Choose routine
-            </button>
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <button
+                type="button"
+                onClick={() => onChooseRoutine?.()}
+                className={`flex min-h-[44px] items-center justify-center gap-2 rounded-card py-3 font-bold ${actionPrimary(isDarkMode)}`}
+              >
+                <Dumbbell className="w-5 h-5" />
+                Log workout
+              </button>
+              <button
+                type="button"
+                onClick={() => onMarkDonePickRoutine?.()}
+                disabled={markingDone}
+                className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-card px-3 py-3 text-xs font-semibold disabled:opacity-50 ${actionMarkDone(isDarkMode)}`}
+              >
+                <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                {markingDone ? "…" : "Mark done"}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => router.push(`/plan?day=${todayDow}`)}
@@ -383,13 +450,13 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
 
   return (
     <SpringIn className="max-w-lg mx-auto">
-      <div className="card-hero overflow-hidden">
-        <div className="p-4 sm:p-5">
+      <div className="card-hero overflow-hidden !p-3 sm:!p-4">
           <SectionHeader
             icon={Dumbbell}
             label="Workout"
             meta={workoutMeta}
             isDarkMode={isDarkMode}
+            className="mb-2"
           >
             {resetInProgressButton}
             {routineActionButton}
@@ -406,7 +473,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
 
           {hasSession ? (
             <p
-              className={`mt-3 text-sm leading-relaxed ${
+              className={`mt-1 text-xs leading-snug ${
                 isDarkMode ? "text-iron-500" : "text-slate-500"
               }`}
             >
@@ -418,12 +485,12 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
           ) : null}
 
           {!hasSession ? (
-            <div className="mt-6">
+            <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
               <button
                 type="button"
                 onClick={handleStartOrResume}
-                disabled={starting || !todayRoutine}
-                className={`w-full rounded-card py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none ${actionPrimary(isDarkMode)}`}
+                disabled={starting || markingDone || !todayRoutine}
+                className={`flex min-h-[44px] items-center justify-center gap-2 rounded-card py-3.5 text-sm font-bold disabled:pointer-events-none disabled:opacity-50 ${actionPrimary(isDarkMode)}`}
               >
                 {starting ? (
                   <span className="animate-pulse">Starting…</span>
@@ -434,22 +501,26 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                   </>
                 )}
               </button>
+              <button
+                type="button"
+                onClick={handleMarkDone}
+                disabled={starting || markingDone || !todayRoutine}
+                className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-card px-3 py-3.5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 ${actionMarkDone(isDarkMode)}`}
+              >
+                <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                {markingDone ? "…" : "Mark done"}
+              </button>
             </div>
           ) : (
             <>
               <div
-                className={`mt-5 pt-5 border-t ${
+                className={`mt-3 pt-3 border-t ${
                   isDarkMode ? "border-iron-800/80" : "border-slate-100"
                 }`}
               >
-                <div
-                  className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-card pr-1 -mr-0.5 ${
-                    isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
-                  }`}
-                >
-                  <StaggerContainer className="space-y-3 pb-1">
+                <StaggerContainer className="space-y-2">
                     {plannedExercises.map(ex => {
-                      const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
+                      const st = exerciseStatus(ex.exercise_name, setLogs);
                       const media = resolveExerciseMedia(ex.exercise_name);
                       const showPlaceholder = !media || thumbFailed[ex.exercise_name];
                       return (
@@ -465,12 +536,12 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                               <button
                                 type="button"
                                 onClick={() => openExercise(ex.exercise_name, ex.category)}
-                                className={`w-full text-left rounded-card p-4 flex gap-4 ${
-                                  ex.added_today ? "pr-14" : ""
+                                className={`w-full text-left rounded-card p-2.5 flex gap-2.5 ${
+                                  ex.added_today ? "pr-12" : ""
                                 }`}
                               >
                               <div
-                                className={`relative w-16 h-16 rounded-card overflow-hidden shrink-0 flex flex-col items-center justify-center ${
+                                className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 flex flex-col items-center justify-center ${
                                   isDarkMode ? "bg-iron-800" : "bg-slate-100"
                                 }`}
                               >
@@ -480,7 +551,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                     alt=""
                                     fill
                                     className="object-cover"
-                                    sizes="64px"
+                                    sizes="48px"
                                     unoptimized={exerciseImageUnoptimized(media)}
                                     onError={() =>
                                       setThumbFailed(prev => ({
@@ -493,7 +564,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                   <>
                                     <ExerciseIcon
                                       name={ex.exercise_name}
-                                      className="w-7 h-7"
+                                      className="w-6 h-6"
                                       color={isDarkMode ? "#71717a" : "#94a3b8"}
                                     />
                                     <span
@@ -508,7 +579,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p
-                                  className={`font-semibold leading-snug ${
+                                  className={`font-semibold text-sm leading-snug ${
                                     isDarkMode ? "text-iron-100" : "text-slate-900"
                                   }`}
                                 >
@@ -519,23 +590,19 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                   notes={ex.notes}
                                   isDarkMode={isDarkMode}
                                 />
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                   <span
                                     className={`inline-flex items-center gap-1 text-xs font-medium ${
-                                      st === "completed"
+                                      st === "in_progress"
                                         ? isDarkMode
                                           ? "text-emerald-400"
                                           : "text-emerald-600"
-                                        : st === "in_progress"
-                                          ? isDarkMode
-                                            ? "text-lift-primary"
-                                            : "text-workout-primary"
-                                          : isDarkMode
-                                            ? "text-iron-500"
-                                            : "text-slate-500"
+                                        : isDarkMode
+                                          ? "text-iron-500"
+                                          : "text-slate-500"
                                     }`}
                                   >
-                                    {st === "completed" ? (
+                                    {st === "in_progress" ? (
                                       <CheckCircle2 className="w-3.5 h-3.5" />
                                     ) : (
                                       <Circle className="w-3.5 h-3.5" />
@@ -565,7 +632,7 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                                   e.preventDefault();
                                   handleRemoveAddedToday(ex.exercise_name);
                                 }}
-                                className={`pointer-events-auto absolute top-3 right-3 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-card flex items-center justify-center border transition-colors touch-manipulation ${
+                                className={`pointer-events-auto absolute top-2 right-2 z-10 w-8 h-8 rounded-lg flex items-center justify-center border transition-colors touch-manipulation ${
                                   isDarkMode
                                     ? "border-iron-700/80 bg-iron-900/70 text-iron-400 hover:bg-iron-800 hover:text-red-400"
                                     : "border-slate-200/90 bg-white/90 text-slate-400 hover:bg-slate-50 hover:text-red-600"
@@ -579,11 +646,10 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                         </StaggerItem>
                       );
                     })}
-                  </StaggerContainer>
-                </div>
+                </StaggerContainer>
               </div>
 
-              <div className="mt-4 space-y-2">
+              <div className="mt-2.5 space-y-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -591,24 +657,34 @@ export default function TodayWorkoutSection({ completedTodaySession = null, onCh
                       `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
                     )
                   }
-                  className={`w-full rounded-card py-3.5 font-semibold border border-dashed flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
+                  className={`w-full rounded-card py-2.5 text-sm font-semibold border border-dashed flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
                 >
-                  <Plus className="w-5 h-5" />
+                  <Plus className="w-4 h-4" />
                   Add exercise for today
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleFinish}
-                  className={`w-full rounded-card py-3.5 font-bold text-sm inline-flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
-                >
-                  <CircleCheck className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
-                  Finish workout
-                </button>
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <button
+                    type="button"
+                    onClick={handleFinish}
+                    className={`flex min-h-[40px] items-center justify-center gap-2 rounded-card py-2.5 text-sm font-bold ${actionPrimary(isDarkMode)}`}
+                  >
+                    <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                    Finish workout
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleMarkDone}
+                    disabled={markingDone}
+                    className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-card px-3 py-2.5 text-xs font-semibold disabled:opacity-50 ${actionMarkDone(isDarkMode)}`}
+                  >
+                    <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
+                    {markingDone ? "…" : "Mark done"}
+                  </button>
+                </div>
               </div>
             </>
           )}
-        </div>
       </div>
 
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>

@@ -69,6 +69,18 @@ export function actionDestructiveGhost(isDarkMode, className) {
   );
 }
 
+/** Mark workout done — green confirm (distinct from primary Start/Finish). */
+export function actionMarkDone(isDarkMode, className) {
+  return cn(
+    press,
+    "inline-flex items-center justify-center gap-1.5 font-semibold",
+    isDarkMode
+      ? "bg-emerald-500 text-iron-950 hover:bg-emerald-400 active:bg-emerald-400/90"
+      : "bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 shadow-sm",
+    className,
+  );
+}
+
 /** Logged / completed toggle state (not a primary CTA). */
 export function actionSuccess(isDarkMode, className) {
   return cn(

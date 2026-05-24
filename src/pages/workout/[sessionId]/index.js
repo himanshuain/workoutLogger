@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
-import { getSessionExtras, getExerciseDoneMap, removeSessionExtra } from "@/lib/workoutSessionClient";
+import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
@@ -40,8 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // exerciseStatus + statusLabel mirror Today / WorkoutSessionView helpers
-function exerciseStatus(name, doneMap, setLogs) {
-  if (doneMap[name]) return "completed";
+function exerciseStatus(name, setLogs) {
   const completed = (setLogs || []).filter(l => l.exercise_name === name && l.is_completed);
   if (completed.length > 0) return "in_progress";
   return "not_started";
@@ -101,15 +100,10 @@ export default function WorkoutSessionPage() {
     return routines.find(r => r.id === session.routine_id) || null;
   }, [session?.routine_id, routines]);
 
-  // Get extras and done status
+  // Get extras
   const extras = useMemo(() => {
     if (!sessionId || typeof sessionId !== "string") return [];
     return getSessionExtras(sessionId);
-  }, [sessionId, extrasVersion]);
-
-  const doneMap = useMemo(() => {
-    if (!sessionId || typeof sessionId !== "string") return {};
-    return getExerciseDoneMap(sessionId);
   }, [sessionId, extrasVersion]);
 
   // Merge planned exercises
@@ -129,8 +123,8 @@ export default function WorkoutSessionPage() {
     let completed = 0;
     let added = 0;
     for (const ex of plannedExercises) {
-      const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
-      if (st === "completed") completed += 1;
+      const st = exerciseStatus(ex.exercise_name, setLogs);
+      if (st === "in_progress") completed += 1;
       if (ex.added_today) added += 1;
     }
     return {
@@ -138,7 +132,7 @@ export default function WorkoutSessionPage() {
       completed,
       addedToday: added,
     };
-  }, [plannedExercises, doneMap, setLogs]);
+  }, [plannedExercises, setLogs]);
 
   // Focus refresh for extras
   useEffect(() => {
@@ -333,7 +327,7 @@ export default function WorkoutSessionPage() {
           >
             <StaggerContainer className="space-y-3 pb-1">
               {plannedExercises.map(ex => {
-                const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
+                const st = exerciseStatus(ex.exercise_name, setLogs);
                 const media = resolveExerciseMedia(ex.exercise_name);
                 const showPlaceholder = !media || thumbFailed[ex.exercise_name];
                 return (
@@ -406,20 +400,16 @@ export default function WorkoutSessionPage() {
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span
                               className={`inline-flex items-center gap-1 text-xs font-medium ${
-                                st === "completed"
+                                st === "in_progress"
                                   ? isDarkMode
                                     ? "text-emerald-400"
                                     : "text-emerald-600"
-                                  : st === "in_progress"
-                                    ? isDarkMode
-                                      ? "text-lift-primary"
-                                      : "text-workout-primary"
-                                    : isDarkMode
-                                      ? "text-iron-500"
-                                      : "text-slate-500"
+                                  : isDarkMode
+                                    ? "text-iron-500"
+                                    : "text-slate-500"
                               }`}
                             >
-                              {st === "completed" ? (
+                              {st === "in_progress" ? (
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                               ) : (
                                 <Circle className="w-3.5 h-3.5" />

@@ -2,8 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import { WEIGHT_PILLS_KG, REPS_PILLS, nearestPill } from "@/lib/pillConstants";
-import { setExerciseDone } from "@/lib/workoutSessionClient";
+import { WEIGHT_PILLS_KG, REPS_PILLS, nearestPill, formatWeightPill, formatWeightDisplay, isBarWeight } from "@/lib/pillConstants";
 import { isSessionToday } from "@/lib/workoutNavigation";
 import PillRail from "@/components/workout/PillRail";
 import { Trash2, X } from "lucide-react";
@@ -137,18 +136,6 @@ export default function ExerciseLoggerPage() {
     [sessionId, deleteSetLog, getWorkoutSession, loadActiveSession],
   );
 
-  const handleMarkComplete = () => {
-    if (sessionId && exerciseName) {
-      setExerciseDone(sessionId, exerciseName, true);
-    }
-    // Return to session overview for past dates, home for today
-    if (isSessionToday(effectiveSession)) {
-      router.push("/");
-    } else {
-      router.push(`/workout/${sessionId}`);
-    }
-  };
-
   const handleClose = () => {
     // Return to session overview for past dates, home for today
     if (isSessionToday(effectiveSession)) {
@@ -221,7 +208,7 @@ export default function ExerciseLoggerPage() {
           values={WEIGHT_PILLS_KG}
           selected={weight}
           onSelect={setWeight}
-          format={(v) => (Number.isInteger(v) ? String(v) : String(v))}
+          format={formatWeightPill}
           isDarkMode={isDarkMode}
         />
 
@@ -247,7 +234,7 @@ export default function ExerciseLoggerPage() {
           </p>
           <div className="flex flex-col items-center gap-1">
             <span className={`text-2xl font-semibold tabular-nums ${isDarkMode ? "text-iron-50" : "text-slate-900"}`}>
-              {weight} kg
+              {formatWeightDisplay(weight)}
             </span>
             <span className={`text-lg tabular-nums ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
               {reps} reps
@@ -284,7 +271,9 @@ export default function ExerciseLoggerPage() {
                   isDarkMode ? "bg-iron-800 text-iron-200" : "bg-slate-100 text-slate-800"
                 }`}
               >
-                <span className="tabular-nums">{s.weight}×{s.reps}</span>
+                <span className="tabular-nums">
+                  {isBarWeight(s.weight) ? "Bar" : s.weight}×{s.reps}
+                </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveSet(s.id)}
@@ -302,16 +291,6 @@ export default function ExerciseLoggerPage() {
             ))}
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={handleMarkComplete}
-          className={`w-full py-3.5 rounded-card font-semibold ${
-            isDarkMode ? "bg-iron-800 text-iron-100" : "bg-slate-900 text-white"
-          }`}
-        >
-          Mark exercise complete
-        </button>
       </div>
     </div>
   );

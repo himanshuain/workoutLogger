@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import { useWorkout } from "@/context/WorkoutContext";
-import { getSessionExtras, getExerciseDoneMap } from "@/lib/workoutSessionClient";
+import { getSessionExtras } from "@/lib/workoutSessionClient";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
 import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
@@ -13,8 +13,7 @@ import {
 import { StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 
 // Helper functions for exercise management
-function exerciseStatus(name, doneMap, setLogs) {
-  if (doneMap[name]) return "completed";
+function exerciseStatus(name, setLogs) {
   const completed = (setLogs || []).filter(l => l.exercise_name === name && l.is_completed);
   if (completed.length > 0) return "in_progress";
   return "not_started";
@@ -50,15 +49,9 @@ export default function WorkoutSessionView({
     return routines.find(r => r.id === session.routine_id) || null;
   }, [session?.routine_id, routines]);
 
-  // Get extras and done status
   const extras = useMemo(() => {
     if (!session?.id || typeof session.id !== "string") return [];
     return getSessionExtras(session.id);
-  }, [session?.id, extrasVersion]);
-
-  const doneMap = useMemo(() => {
-    if (!session?.id || typeof session.id !== "string") return {};
-    return getExerciseDoneMap(session.id);
   }, [session?.id, extrasVersion]);
 
   // Merge planned exercises
@@ -78,8 +71,8 @@ export default function WorkoutSessionView({
     let completed = 0;
     let added = 0;
     for (const ex of plannedExercises) {
-      const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
-      if (st === "completed") completed += 1;
+      const st = exerciseStatus(ex.exercise_name, setLogs);
+      if (st === "in_progress") completed += 1;
       if (ex.added_today) added += 1;
     }
     return {
@@ -87,7 +80,7 @@ export default function WorkoutSessionView({
       completed,
       addedToday: added,
     };
-  }, [plannedExercises, doneMap, setLogs]);
+  }, [plannedExercises, setLogs]);
 
   const resolveExerciseMedia = exerciseName => {
     const cat =
@@ -126,7 +119,7 @@ export default function WorkoutSessionView({
         >
           <StaggerContainer className="space-y-3 pb-1">
             {plannedExercises.map(ex => {
-              const st = exerciseStatus(ex.exercise_name, doneMap, setLogs);
+              const st = exerciseStatus(ex.exercise_name, setLogs);
               const media = resolveExerciseMedia(ex.exercise_name);
               const showPlaceholder = !media || thumbFailed[ex.exercise_name];
               return (
@@ -194,20 +187,16 @@ export default function WorkoutSessionView({
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <span
                             className={`inline-flex items-center gap-1 text-xs font-medium ${
-                              st === "completed"
+                              st === "in_progress"
                                 ? isDarkMode
                                   ? "text-emerald-400"
                                   : "text-emerald-600"
-                                : st === "in_progress"
-                                  ? isDarkMode
-                                    ? "text-lift-primary"
-                                    : "text-workout-primary"
-                                  : isDarkMode
-                                    ? "text-iron-500"
-                                    : "text-slate-500"
+                                : isDarkMode
+                                  ? "text-iron-500"
+                                  : "text-slate-500"
                             }`}
                           >
-                            {st === "completed" ? (
+                            {st === "in_progress" ? (
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             ) : (
                               <Circle className="w-3.5 h-3.5" />

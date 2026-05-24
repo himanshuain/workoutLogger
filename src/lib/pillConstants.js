@@ -1,21 +1,36 @@
-/** Weight pills: 2.5–50 kg in 2.5 kg steps (single scroll row). */
+/** Empty barbell — no added weight (stored as 0 kg). */
+export const BAR_WEIGHT_KG = 0;
+
+/** Weight pills: Bar, then 2.5–120 kg in 2.5 kg steps. */
 export const WEIGHT_PILLS_KG = [
-  2.5, 5, 7.5, 10, 12.5, 15, 17.5, 20, 22.5, 25, 27.5, 30, 32.5, 35, 37.5, 40, 42.5, 45, 47.5, 50,
+  BAR_WEIGHT_KG,
+  ...Array.from({ length: 48 }, (_, i) => 2.5 * (i + 1)),
 ];
 
-/** Reps pills: 5–29 step 2, plus 30 (single scroll row). */
-export const REPS_PILLS = [5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 30];
+/** Reps pills: 4–30 (every rep). */
+export const REPS_PILLS = Array.from({ length: 27 }, (_, i) => i + 4);
+
+export function isBarWeight(v) {
+  return v === BAR_WEIGHT_KG || (typeof v === "number" && Math.abs(v) < 0.001);
+}
 
 export function formatWeightPill(v) {
+  if (isBarWeight(v)) return "Bar";
   return Number.isInteger(v) ? String(v) : String(v);
+}
+
+/** e.g. "Bar", "20 kg" */
+export function formatWeightDisplay(v) {
+  if (isBarWeight(v)) return "Bar";
+  return `${formatWeightPill(v)} kg`;
 }
 
 /** Snap a numeric value to the closest pill in a sorted list. */
 export function nearestPill(val, pills) {
   const n = Number(val);
   if (!Number.isFinite(n)) return pills[0];
-  if (pills.some((p) => Math.abs(p - n) < 0.001)) {
-    return pills.find((p) => Math.abs(p - n) < 0.001);
+  if (pills.some(p => Math.abs(p - n) < 0.001)) {
+    return pills.find(p => Math.abs(p - n) < 0.001);
   }
   return pills.reduce((a, b) => (Math.abs(b - n) < Math.abs(a - n) ? b : a));
 }

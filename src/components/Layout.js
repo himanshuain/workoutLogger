@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import { useTheme } from "@/context/ThemeContext";
 import { useWorkout } from "@/context/WorkoutContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, ClipboardList } from "lucide-react";
-import InstallPrompt from "@/components/InstallPrompt";
 import { cacheLocalNavConfig, readLocalNavConfig } from "@/lib/userPrefsMigration";
 import { hapticLight, hapticSelect, touchPressNav } from "@/lib/touchFeedback";
 import { cn } from "@/lib/utils";
+
+const LazyInstallPrompt = dynamic(() => import("@/components/InstallPrompt"), {
+  ssr: false,
+});
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
@@ -196,7 +200,7 @@ export default function Layout({ children }) {
       </main>
 
       {/* PWA Install Prompt */}
-      <InstallPrompt isDarkMode={isDarkMode} />
+      <LazyInstallPrompt isDarkMode={isDarkMode} />
 
       {/* Bottom Navigation Bar — in-flow, not fixed */}
       <nav

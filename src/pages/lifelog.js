@@ -8,8 +8,11 @@ import EmptyState, { EmptyInline } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonLoader";
 import { LazyActivityHeatmap } from "@/components/charts/lazyCharts";
 import LongPressContextHint from "@/components/LongPressContextHint";
-import ExpandedLogInsightsTabs from "@/components/logging/ExpandedLogInsightsTabs";
-import EventExpandedInsightsGraph from "@/components/logging/EventExpandedInsightsGraph";
+import {
+  LazyExpandedLogInsightsTabs,
+  LazyEventExpandedInsightsGraph,
+  LazyNotificationSettings,
+} from "@/components/lifelog/lazyLifelog";
 import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
 import DayPicker from "@/components/DayPicker";
 import {
@@ -54,12 +57,10 @@ import {
   Hash,
   FileText,
 } from "lucide-react";
-import NotificationSettings from "@/components/NotificationSettings";
 import NotificationService from "@/lib/notifications";
 import { toast } from "sonner";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { FadeIn } from "@/components/ui/fade-in";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ContextMenu,
@@ -860,7 +861,7 @@ export default function LifeLog() {
 
   return (
     <Layout>
-      <FadeIn duration={0.5}>
+      <div className="page-enter">
       <div className="px-4 py-4 pb-16">
         {/* Header */}
         <div
@@ -1109,7 +1110,7 @@ export default function LifeLog() {
                         className="overflow-hidden"
                       >
                       <div className="px-3.5 pb-3.5">
-                        <ExpandedLogInsightsTabs
+                        <LazyExpandedLogInsightsTabs
                           isDarkMode={isDarkMode}
                           primaryAction={
                             <button
@@ -1138,7 +1139,7 @@ export default function LifeLog() {
                                   isDarkMode={isDarkMode}
                                 />
                               </div>
-                              <EventExpandedInsightsGraph
+                              <LazyEventExpandedInsightsGraph
                                 eventType={eventType}
                                 expandedEventLogs={expandedEventLogs}
                                 isDarkMode={isDarkMode}
@@ -1472,7 +1473,7 @@ export default function LifeLog() {
                               className="overflow-hidden"
                             >
                             <div className="px-3.5 pb-3">
-                              <ExpandedLogInsightsTabs
+                              <LazyExpandedLogInsightsTabs
                                 isDarkMode={isDarkMode}
                                 primaryAction={
                                   <button
@@ -1650,7 +1651,7 @@ export default function LifeLog() {
         )}
         </AnimatePresence>
       </div>
-      </FadeIn>
+      </div>
 
       {/* Add/Edit Event Type Modal */}
       <Modal
@@ -2552,14 +2553,12 @@ export default function LifeLog() {
         </ModalContent>
       </Modal>
 
-      {/* Notification Settings Drawer */}
-      {notificationTrackable && (
-        <NotificationSettings
+      {notificationTrackable ? (
+        <LazyNotificationSettings
           trackable={notificationTrackable}
           onClose={() => setNotificationTrackable(null)}
-          isDarkMode={isDarkMode}
         />
-      )}
+      ) : null}
     </Layout>
   );
 }

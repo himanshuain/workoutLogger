@@ -5,7 +5,6 @@ import localFont from "next/font/local";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WorkoutProvider } from "@/context/WorkoutContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import NotificationService from "@/lib/notifications";
 import { Toaster } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ThemeSettingsSync from "@/components/ThemeSettingsSync";
@@ -45,13 +44,21 @@ export default function App({ Component, pageProps }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    let cancelled = false;
+    import("@/lib/notifications").then(({ default: NotificationService }) => {
+      if (cancelled) return;
       navigator.serviceWorker.register("/sw.js").catch(() => {});
       NotificationService.startScheduleChecker();
-      return () => {
+    });
+
+    return () => {
+      cancelled = true;
+      import("@/lib/notifications").then(({ default: NotificationService }) => {
         NotificationService.stopScheduleChecker();
-      };
-    }
+      });
+    };
   }, []);
 
   return (

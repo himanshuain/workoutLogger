@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { cn } from "@/lib/utils";
-import { exerciseImageUnoptimized, googleImagesSearchUrl } from "@/lib/exerciseMedia";
+import { exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 
 /**
  * Horizontal scroll-snap carousel for GIFs / thumbnails (touch-friendly).
@@ -64,44 +64,17 @@ export default function ExerciseMediaCarousel({
   );
 
   if (list.length === 0) {
-    const imagesUrl = googleImagesSearchUrl(alt);
     return (
       <div className={cn(ring, className)}>
-        {imagesUrl ? (
-          <a
-            href={imagesUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={alt ? `Search Google Images for ${alt}` : "Search Google Images"}
-            className={cn(
-              "flex h-full w-full flex-col items-center justify-center gap-2 px-3 py-4 text-center",
-              "rounded-card outline-none ring-1 ring-inset transition-colors focus-visible:ring-2 focus-visible:ring-offset-2",
-              isDarkMode
-                ? "bg-iron-900 text-iron-200 ring-white/15 hover:bg-iron-800 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-900"
-                : "bg-slate-100 text-slate-800 ring-black/10 hover:bg-slate-200/90 focus-visible:ring-workout-primary focus-visible:ring-offset-white",
-            )}
-          >
-            <ExerciseIcon name={alt} className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 opacity-90" color="currentColor" />
-            <span
-              className={cn(
-                "text-[11px] font-medium leading-snug text-balance",
-                isDarkMode ? "text-iron-400" : "text-slate-600",
-              )}
-            >
-              No image in catalog
-            </span>
-            <span
-              className={cn(
-                "text-xs font-semibold underline decoration-2 underline-offset-[3px]",
-                isDarkMode ? "text-lift-primary decoration-lift-primary/40" : "text-workout-primary decoration-workout-primary/40",
-              )}
-            >
-              Search Google Images
-            </span>
-          </a>
-        ) : (
-          <ExerciseIcon name={alt} className="w-24 h-24 sm:w-32 sm:h-32" color="currentColor" />
-        )}
+        <ExerciseIcon name={alt} className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 opacity-90" color="currentColor" />
+        <span
+          className={cn(
+            "absolute bottom-3 text-[11px] font-medium",
+            isDarkMode ? "text-iron-500" : "text-slate-500",
+          )}
+        >
+          No image in catalog
+        </span>
       </div>
     );
   }

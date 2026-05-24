@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useResolvedExerciseMediaSlides } from "@/hooks/useResolvedExerciseMedia";
 import ExerciseMediaCarousel from "@/components/exercises/ExerciseMediaCarousel";
+import ExerciseDrawerMediaActions from "@/components/exercises/ExerciseDrawerMediaActions";
 import RoutineDayPickerDialog from "@/components/exercises/RoutineDayPickerDialog";
 import { getExerciseEquipment } from "@/lib/exerciseMedia";
 import { addSessionExtra } from "@/lib/workoutSessionClient";
@@ -34,8 +35,11 @@ export default function ExercisePreviewPanel({
     getWorkoutSession,
     seedCompletedExerciseSetsForSession,
     appendExerciseToRoutine,
+    settings,
+    updateSettings,
   } = useWorkout();
-  const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises);
+  const mediaOverrides = settings?.exercise_media_overrides;
+  const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises, mediaOverrides);
   const equipmentLine = useMemo(() => getExerciseEquipment(exercise), [exercise]);
   const [session, setSession] = useState(null);
   const [routinePickerOpen, setRoutinePickerOpen] = useState(false);
@@ -224,6 +228,14 @@ export default function ExercisePreviewPanel({
         isDarkMode={isDarkMode}
         compact={isSheet}
         className={isSheet ? "shrink-0" : undefined}
+      />
+      <ExerciseDrawerMediaActions
+        exercise={exercise}
+        exerciseName={exercise.name}
+        isDarkMode={isDarkMode}
+        mediaOverrides={mediaOverrides}
+        updateSettings={updateSettings}
+        compact={isSheet}
       />
 
       {!hideHeading && (

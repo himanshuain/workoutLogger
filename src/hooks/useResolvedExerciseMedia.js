@@ -31,10 +31,10 @@ function dedupeConcat(local, remote) {
  *
  * Preview/detail only — not for long lists.
  */
-export function useResolvedExerciseMediaSlides(exercise, allExercises) {
+export function useResolvedExerciseMediaSlides(exercise, allExercises, overrides) {
   const staticUrls = useMemo(
-    () => collectExerciseMediaUrls(exercise, allExercises),
-    [exercise, allExercises]
+    () => collectExerciseMediaUrls(exercise, allExercises, overrides),
+    [exercise, allExercises, overrides]
   );
 
   const key = useMemo(() => (exercise ? cacheKey(exercise) : null), [exercise]);

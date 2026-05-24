@@ -1,8 +1,12 @@
+import { getExerciseMediaOverrideUrl } from "@/lib/exerciseMediaOverrides";
+
 /**
- * Prefer GIF (animated demo) when available; otherwise static image from catalog.
+ * Prefer user override, then GIF (animated demo), then static image from catalog.
  */
-export function exerciseMediaUrl(exercise) {
+export function exerciseMediaUrl(exercise, overrides) {
   if (!exercise) return null;
+  const custom = getExerciseMediaOverrideUrl(exercise, overrides);
+  if (custom) return custom;
   return exercise.gif_url || exercise.image_url || null;
 }
 
@@ -37,19 +41,40 @@ export function getExerciseEquipment(exercise) {
 /** Google Images SERP URL for reference photos (embedding google.com in iframes is blocked). */
 export function googleImagesSearchUrl(query) {
   if (typeof query !== "string") return null;
-  const q = query.trim();
-  if (!q) return null;
+  const base = query.trim();
+  if (!base) return null;
+  const q = /\bgif\b/i.test(base) ? base : `${base} gif`;
   return `https://www.google.com/search?tbm=isch&hl=en&q=${encodeURIComponent(q)}`;
 }
 
-/** Next/Image: skip optimizer for GIFs and known external hosts. */
+/** Hostnames configured in next.config `images.remotePatterns`. */
+const NEXT_IMAGE_ALLOWED_HOSTS = ["wger.de", "static.exercisedb.dev"];
+
+function isNextImageAllowedHost(url) {
+  try {
+    const host = new URL(url.trim()).hostname.toLowerCase();
+    return NEXT_IMAGE_ALLOWED_HOSTS.some(
+      allowed => host === allowed || host.endsWith(`.${allowed}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Next/Image: use unoptimized when the URL is a GIF, from catalog hosts that need it,
+ * or from any host not in next.config (e.g. user-pasted custom thumbnails).
+ */
 export function exerciseImageUnoptimized(url) {
   if (!url) return false;
-  return (
+  if (
     url.includes("wger.de") ||
     url.includes("exercisedb.dev") ||
     /\.gif(\?|#|$)/i.test(url)
-  );
+  ) {
+    return true;
+  }
+  return !isNextImageAllowedHost(url);
 }
 
 export function normalizeComparableMediaUrl(url) {
@@ -97,9 +122,11 @@ function normalizeExerciseNameForMerge(name) {
  * All unique media URLs for an exercise: this row plus other library rows with the same normalized name.
  * Uses only real columns (`gif_url`, `image_url`).
  */
-export function collectExerciseMediaUrls(exercise, allExercises) {
+export function collectExerciseMediaUrls(exercise, allExercises, overrides) {
   if (!exercise) return [];
+  const custom = getExerciseMediaOverrideUrl(exercise, overrides);
   const list = [];
+  if (custom) list.push(custom);
   list.push(...collectUrlsFromExerciseRow(exercise));
 
   const key = normalizeExerciseNameForMerge(exercise.name);

@@ -9,7 +9,7 @@ import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/mo
 import { cn } from "@/lib/utils";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getExerciseEquipment, exerciseMediaUrl, exerciseImageUnoptimized, googleImagesSearchUrl } from "@/lib/exerciseMedia";
+import { getExerciseEquipment, exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 import {
   PARENT_CHIPS,
   getSubcategoriesForParent,
@@ -44,9 +44,9 @@ const pillScrollerClass =
 const pillRowClass = "flex flex-nowrap items-center gap-1.5 w-max min-w-full";
 
 // Component to handle exercise thumbnails with proper error fallback
-function ExerciseThumbnail({ exercise, isDarkMode }) {
+function ExerciseThumbnail({ exercise, isDarkMode, mediaOverrides }) {
   const [imageError, setImageError] = useState(false);
-  const url = exerciseMediaUrl(exercise);
+  const url = exerciseMediaUrl(exercise, mediaOverrides);
   
   // Reset error state when URL changes
   useEffect(() => {
@@ -54,55 +54,18 @@ function ExerciseThumbnail({ exercise, isDarkMode }) {
   }, [url]);
   
   if (!url || imageError) {
-    const imagesUrl = googleImagesSearchUrl(typeof exercise?.name === "string" ? exercise.name : "");
-    if (imagesUrl) {
-      return (
-        <a
-          href={imagesUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()}
-          className={`flex h-full w-full flex-col items-center justify-center gap-2 px-3 py-4 text-center outline-none transition-colors ring-1 ring-inset focus-visible:ring-2 focus-visible:ring-offset-2 ${
-            isDarkMode
-              ? "bg-iron-800 text-iron-200 ring-white/10 hover:bg-iron-700/90 focus-visible:ring-lift-primary focus-visible:ring-offset-iron-900"
-              : "bg-slate-100 text-slate-700 ring-black/10 hover:bg-slate-200/90 focus-visible:ring-workout-primary focus-visible:ring-offset-white"
-          }`}
-          aria-label={`Search Google Images for ${exercise.name ?? "this exercise"}`}
-        >
-          <ExerciseIcon
-            name={exercise.name}
-            className="h-12 w-12 sm:h-14 sm:w-14"
-            color={isDarkMode ? "#d4d4d8" : "#64748b"}
-          />
-          <span className={`text-[11px] font-medium leading-snug ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
-            No image in catalog
-          </span>
-          <span
-            className={`text-xs font-semibold underline decoration-2 underline-offset-2 ${
-              isDarkMode ? "text-lift-primary decoration-lift-primary/40" : "text-workout-primary decoration-workout-primary/40"
-            }`}
-          >
-            Search photos →
-          </span>
-        </a>
-      );
-    }
     return (
       <div
-        className={`w-full h-full flex flex-col items-center justify-center gap-1 px-2 ${
-          isDarkMode ? "bg-iron-800" : "bg-slate-100"
+        className={`flex h-full w-full flex-col items-center justify-center gap-2 px-3 py-4 text-center ${
+          isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-500"
         }`}
       >
         <ExerciseIcon
           name={exercise.name}
-          className="w-10 h-10"
+          className="h-12 w-12 sm:h-14 sm:w-14"
           color={isDarkMode ? "#71717a" : "#94a3b8"}
         />
-        <span
-          className={`text-[10px] font-semibold uppercase tracking-wide ${
-            isDarkMode ? "text-iron-500" : "text-slate-400"
-          }`}
-        >
+        <span className={`text-[11px] font-medium leading-snug ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
           No image
         </span>
       </div>
@@ -125,7 +88,8 @@ function ExerciseThumbnail({ exercise, isDarkMode }) {
 export default function ExercisesSearchPage() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { user, exercises, routines, getRoutineForDay, updateRoutine, createRoutine } = useWorkout();
+  const { user, exercises, routines, getRoutineForDay, updateRoutine, createRoutine, settings } = useWorkout();
+  const mediaOverrides = settings?.exercise_media_overrides;
   const [q, setQ] = useState("");
   const [chip, setChip] = useState(null);
   const [subChip, setSubChip] = useState(null);
@@ -826,6 +790,7 @@ export default function ExercisesSearchPage() {
                       <ExerciseThumbnail 
                         exercise={ex} 
                         isDarkMode={isDarkMode}
+                        mediaOverrides={mediaOverrides}
                       />
                     </div>
                     <div className="p-3">
@@ -881,6 +846,7 @@ export default function ExercisesSearchPage() {
                     <ExerciseThumbnail 
                       exercise={ex} 
                       isDarkMode={isDarkMode}
+                      mediaOverrides={mediaOverrides}
                     />
                     
                     {/* Selection indicator overlay */}
@@ -973,7 +939,7 @@ export default function ExercisesSearchPage() {
                       : "hover:bg-slate-50 focus-visible:ring-workout-primary focus-visible:ring-offset-slate-50"
                   }`}
                 >
-                  <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
+                  <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} mediaOverrides={mediaOverrides} />
                   <div className="min-w-0 flex-1">
                     <p
                       className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}
@@ -1017,24 +983,18 @@ export default function ExercisesSearchPage() {
                   ),
                 )}
               >
-                {exerciseMediaUrl(ex) ? (
-                  <button
-                    type="button"
-                    onClick={() => openPreview(ex.id)}
-                    className={`shrink-0 m-3 rounded-card overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                      isDarkMode
-                        ? "focus-visible:ring-lift-primary ring-offset-iron-950"
-                        : "focus-visible:ring-workout-primary ring-offset-white"
-                    }`}
-                    aria-label={`Open preview: ${ex.name}`}
-                  >
-                    <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
-                  </button>
-                ) : (
-                  <div className="m-3 flex shrink-0 items-center justify-center rounded-card">
-                    <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} />
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={() => openPreview(ex.id)}
+                  className={`shrink-0 m-3 rounded-card overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    isDarkMode
+                      ? "focus-visible:ring-lift-primary ring-offset-iron-950"
+                      : "focus-visible:ring-workout-primary ring-offset-white"
+                  }`}
+                  aria-label={`Open preview: ${ex.name}`}
+                >
+                  <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} mediaOverrides={mediaOverrides} />
+                </button>
                 <button
                   type="button"
                   onClick={() => toggleSelect(ex.id)}

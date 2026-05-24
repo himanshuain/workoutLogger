@@ -454,44 +454,6 @@ input[type="number"] {
   display: none;
 }
 
-/* React Tooltip styles */
-.react-tooltip {
-  z-index: 9999 !important;
-  font-size: 12px !important;
-  border-radius: 8px !important;
-  padding: 6px 12px !important;
-}
-
-.dark .react-tooltip {
-  background-color: #1f2937 !important;
-  color: #f3f4f6 !important;
-}
-
-.light .react-tooltip {
-  background-color: #1e293b !important;
-  color: #f8fafc !important;
-}
-
-/* Activity Calendar custom styles */
-.react-activity-calendar {
-  overflow: visible !important;
-}
-
-.react-activity-calendar__scroll-container {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-.dark .react-activity-calendar text {
-  fill: #6b7280 !important;
-  font-size: 11px !important;
-}
-
-.light .react-activity-calendar text {
-  fill: #64748b !important;
-  font-size: 11px !important;
-}
-
 /* Workout session header gradient */
 .workout-header {
   background: linear-gradient(

@@ -6,7 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import EmptyState, { EmptyInline } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonLoader";
-import ActivityHeatmap from "@/components/ActivityHeatmap";
+import { LazyActivityHeatmap } from "@/components/charts/lazyCharts";
 import LongPressContextHint from "@/components/LongPressContextHint";
 import ExpandedLogInsightsTabs from "@/components/logging/ExpandedLogInsightsTabs";
 import EventExpandedInsightsGraph from "@/components/logging/EventExpandedInsightsGraph";
@@ -1128,7 +1128,7 @@ export default function LifeLog() {
                           insightsChildren={
                             <>
                               <div className="pb-1">
-                                <ActivityHeatmap
+                                <LazyActivityHeatmap
                                   data={eventHeatmapData[eventType.id] || []}
                                   type="habit"
                                   label=""
@@ -1489,7 +1489,7 @@ export default function LifeLog() {
                                   </button>
                                 }
                                 insightsChildren={
-                                  <ActivityHeatmap
+                                  <LazyActivityHeatmap
                                     data={habitHeatmapData[trackable.id] || []}
                                     type="habit"
                                     label=""

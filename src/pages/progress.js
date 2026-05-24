@@ -4,14 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
-import ActivityHeatmap from "@/components/ActivityHeatmap";
-import ProgressGraph from "@/components/ProgressGraph";
 import CollapsibleSection from "@/components/CollapsibleSection";
-import TrackingOverview from "@/components/TrackingOverview";
-import BodyWeightTracker from "@/components/BodyWeightTracker";
-import GoalsWidget from "@/components/GoalsWidget";
-import VolumeChart from "@/components/VolumeChart";
-import MuscleHeatmap from "@/components/MuscleHeatmap";
+import {
+  LazyActivityHeatmap,
+  LazyBodyWeightTracker,
+  LazyGoalsWidget,
+  LazyMuscleHeatmap,
+  LazyProgressGraph,
+  LazyTrackingOverview,
+  LazyVolumeChart,
+} from "@/components/charts/lazyCharts";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalBody } from "@/components/ui/modal";
 import { FadeIn } from "@/components/ui/fade-in";
 import { SkeletonHeatmap, SkeletonSection, SkeletonStats } from "@/components/SkeletonLoader";
@@ -696,7 +698,7 @@ export default function Progress() {
               <SkeletonSection isDarkMode={isDarkMode} grid rows={0} />
             ) : (
             <>
-            <TrackingOverview
+            <LazyTrackingOverview
               trackables={habitTrackables}
               habitDataByTrackable={habitDataByTrackable}
               todayEntries={todayEntries}
@@ -732,7 +734,7 @@ export default function Progress() {
           {isProgressLoading ? (
             <SkeletonHeatmap isDarkMode={isDarkMode} />
           ) : (
-          <ActivityHeatmap
+          <LazyActivityHeatmap
             data={workoutHeatmapData}
             type="workout"
             label="Workout Activity"
@@ -742,7 +744,7 @@ export default function Progress() {
           )}
 
           {/* Goals */}
-          <GoalsWidget
+          <LazyGoalsWidget
             isDarkMode={isDarkMode}
             workoutHeatmapData={workoutHeatmapData}
             habitHeatmapData={habitHeatmapData}
@@ -751,17 +753,17 @@ export default function Progress() {
           />
 
           {/* Body Weight Tracker */}
-          <BodyWeightTracker isDarkMode={isDarkMode} />
+          <LazyBodyWeightTracker isDarkMode={isDarkMode} />
 
           {/* Volume Chart */}
-          <VolumeChart
+          <LazyVolumeChart
             exerciseLogsByName={exerciseLogsByName}
             workoutHeatmapData={workoutHeatmapData}
             isDarkMode={isDarkMode}
           />
 
           {/* Muscle Heatmap */}
-          <MuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />
+          <LazyMuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />
 
           {/* Progressive Overload */}
           {Object.keys(exerciseLogsByName).length > 0 && (
@@ -779,7 +781,7 @@ export default function Progress() {
                 .sort((a, b) => b[1].length - a[1].length)
                 .slice(0, 15)
                 .map(([exerciseName, logs]) => (
-                  <ProgressGraph
+                  <LazyProgressGraph
                     key={exerciseName}
                     exerciseName={exerciseName}
                     exerciseCategory={logs[0]?.category}

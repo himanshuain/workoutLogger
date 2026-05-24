@@ -44,7 +44,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
-import ActivityHeatmap from "@/components/ActivityHeatmap";
+import { LazyActivityHeatmap } from "@/components/charts/lazyCharts";
 import LongPressContextHint from "@/components/LongPressContextHint";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
@@ -777,7 +777,7 @@ export default function Food() {
 
                       {isExpanded && (
                         <div className="px-4 pb-4">
-                          <ActivityHeatmap
+                          <LazyActivityHeatmap
                             data={itemHeatmap}
                             type="habit"
                             label=""
@@ -852,7 +852,7 @@ export default function Food() {
 
           {/* Overall Heatmap — tap a day to view or edit logs */}
           {foodItems.length > 0 && (
-            <ActivityHeatmap
+            <LazyActivityHeatmap
               data={overallHeatmap}
               type="habit"
               label="Food Tracking Activity"

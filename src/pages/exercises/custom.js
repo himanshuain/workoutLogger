@@ -25,6 +25,7 @@ export default function CustomExercisePage() {
     createRoutine,
     getWorkoutSession,
     seedCompletedExerciseSetsForSession,
+    appendExerciseToRoutine,
   } = useWorkout();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Chest");
@@ -88,15 +89,36 @@ export default function CustomExercisePage() {
       }
     }
 
-    addSessionExtra(sessionId, {
+    const routineRow = {
       exercise_id: null,
       exercise_name: trimmed,
       category: lowered,
-      equipment: equipment.trim(),
-    });
+      target_sets: 3,
+    };
 
-    const copy = getSessionAwareCopy(session);
-    toast.success(copy.addedMessage);
+    if (session?.routine_id) {
+      const result = await appendExerciseToRoutine(session.routine_id, routineRow);
+      if (result === null) {
+        toast.error("Could not add to routine");
+        return;
+      }
+      if (result === "exists") {
+        toast.message("Already in this routine");
+      } else {
+        const copy = getSessionAwareCopy(session);
+        toast.success(copy.addedMessage);
+      }
+    } else {
+      addSessionExtra(sessionId, {
+        exercise_id: null,
+        exercise_name: trimmed,
+        category: lowered,
+        equipment: equipment.trim(),
+      });
+      const copy = getSessionAwareCopy(session);
+      toast.success(copy.addedMessage);
+    }
+
     await router.replace(getPostAddExerciseNavigatePath(sessionId, router.query));
   };
 
@@ -147,6 +169,27 @@ export default function CustomExercisePage() {
 
   const handleAddToRoutine = async () => {
     if (!name.trim()) return;
+    const sessionId = router.query.sessionId;
+    if (typeof sessionId === "string" && session?.routine_id) {
+      const result = await appendExerciseToRoutine(session.routine_id, {
+        exercise_id: null,
+        exercise_name: name.trim(),
+        category: category.toLowerCase(),
+        target_sets: 3,
+      });
+      if (result === null) {
+        toast.error("Could not add to routine");
+        return;
+      }
+      if (result === "exists") {
+        toast.message("Already in this routine");
+      } else {
+        toast.success("Added to routine");
+      }
+      await router.replace(getPostAddExerciseNavigatePath(sessionId, router.query));
+      return;
+    }
+
     const day = router.query.routineDay;
     if (typeof day !== "string") {
       setRoutinePickerOpen(true);

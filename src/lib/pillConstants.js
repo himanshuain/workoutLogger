@@ -1,11 +1,32 @@
 /** Empty barbell — no added weight (stored as 0 kg). */
 export const BAR_WEIGHT_KG = 0;
 
-/** Weight pills: Bar, then 2.5–120 kg in 2.5 kg steps. */
-export const WEIGHT_PILLS_KG = [
-  BAR_WEIGHT_KG,
-  ...Array.from({ length: 48 }, (_, i) => 2.5 * (i + 1)),
+/**
+ * Plate-loaded machine stack (kg) — e.g. Hammer Strength / Life Fitness selector pin.
+ */
+export const MACHINE_STACK_WEIGHTS_KG = [
+  4, 8, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110,
 ];
+
+/** Barbell / free-weight pills: 2.5–120 kg in 2.5 kg steps. */
+export const BARBELL_WEIGHT_PILLS_KG = Array.from({ length: 48 }, (_, i) => 2.5 * (i + 1));
+
+function mergeWeightPills(...lists) {
+  const seen = new Set();
+  for (const list of lists) {
+    for (const v of list) {
+      seen.add(v);
+    }
+  }
+  return [...seen].sort((a, b) => a - b);
+}
+
+/** Weight pills: Bar, barbell 2.5 kg steps, plus machine stack plates. */
+export const WEIGHT_PILLS_KG = mergeWeightPills(
+  [BAR_WEIGHT_KG],
+  BARBELL_WEIGHT_PILLS_KG,
+  MACHINE_STACK_WEIGHTS_KG,
+);
 
 /** Reps pills: 4–30 (every rep). */
 export const REPS_PILLS = Array.from({ length: 27 }, (_, i) => i + 4);

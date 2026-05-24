@@ -33,6 +33,7 @@ export default function ExercisePreviewPanel({
     createRoutine,
     getWorkoutSession,
     seedCompletedExerciseSetsForSession,
+    appendExerciseToRoutine,
   } = useWorkout();
   const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises);
   const equipmentLine = useMemo(() => getExerciseEquipment(exercise), [exercise]);
@@ -88,16 +89,37 @@ export default function ExercisePreviewPanel({
       }
     }
 
-    addSessionExtra(sessionId, {
+    const routineRow = {
       exercise_id: exercise.id,
       exercise_name: exercise.name,
       category: exercise.category || "other",
-      equipment: getExerciseEquipment(exercise),
-      image_url: mediaUrls[0] ?? exercise.image_url ?? exercise.gif_url ?? null,
-    });
+      target_sets: 3,
+    };
 
-    const copy = getSessionAwareCopy(session);
-    toast.success(copy.addedMessage);
+    if (session?.routine_id) {
+      const result = await appendExerciseToRoutine(session.routine_id, routineRow);
+      if (result === null) {
+        toast.error("Could not add to routine");
+        return;
+      }
+      if (result === "exists") {
+        toast.message("Already in this routine");
+      } else {
+        const copy = getSessionAwareCopy(session);
+        toast.success(copy.addedMessage);
+      }
+    } else {
+      addSessionExtra(sessionId, {
+        exercise_id: exercise.id,
+        exercise_name: exercise.name,
+        category: exercise.category || "other",
+        equipment: getExerciseEquipment(exercise),
+        image_url: mediaUrls[0] ?? exercise.image_url ?? exercise.gif_url ?? null,
+      });
+      const copy = getSessionAwareCopy(session);
+      toast.success(copy.addedMessage);
+    }
+
     await router.replace(getPostAddExerciseNavigatePath(sessionId, router.query));
   };
 
@@ -147,6 +169,27 @@ export default function ExercisePreviewPanel({
   };
 
   const handleAddToRoutine = async () => {
+    const sessionId = router.query.sessionId;
+    if (typeof sessionId === "string" && session?.routine_id && exercise) {
+      const result = await appendExerciseToRoutine(session.routine_id, {
+        exercise_id: exercise.id,
+        exercise_name: exercise.name,
+        category: exercise.category || "other",
+        target_sets: 3,
+      });
+      if (result === null) {
+        toast.error("Could not add to routine");
+        return;
+      }
+      if (result === "exists") {
+        toast.message("Already in this routine");
+      } else {
+        toast.success("Added to routine");
+      }
+      await router.replace(getPostAddExerciseNavigatePath(sessionId, router.query));
+      return;
+    }
+
     const day = router.query.routineDay;
     if (typeof day !== "string") {
       setRoutinePickerOpen(true);

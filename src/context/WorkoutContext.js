@@ -382,6 +382,51 @@ export function WorkoutProvider({ children }) {
     [routines],
   );
 
+  /** Append one exercise to a saved routine (no-op if name already present). */
+  const appendExerciseToRoutine = useCallback(
+    async (routineId, row) => {
+      if (!user || !routineId || !row?.exercise_name?.trim()) return null;
+      const routine = routines.find(r => r.id === routineId);
+      if (!routine) return null;
+
+      const name = row.exercise_name.trim();
+      const existing = (routine.routine_exercises || []).map(ex => ({
+        exercise_id: ex.exercise_id,
+        exercise_name: ex.exercise_name,
+        category: ex.category || "other",
+        target_sets: ex.target_sets || 3,
+        notes:
+          ex.notes != null && String(ex.notes).trim()
+            ? String(ex.notes).trim().slice(0, 500)
+            : null,
+      }));
+
+      if (existing.some(e => e.exercise_name === name)) {
+        return "exists";
+      }
+
+      existing.push({
+        exercise_id: row.exercise_id ?? null,
+        exercise_name: name,
+        category: row.category || "other",
+        target_sets: row.target_sets ?? 3,
+        notes:
+          row.notes != null && String(row.notes).trim()
+            ? String(row.notes).trim().slice(0, 500)
+            : null,
+      });
+
+      await updateRoutine(routineId, {
+        name: routine.name,
+        day_of_week: routine.day_of_week,
+        color: routine.color || "#3b82f6",
+        exercises: existing,
+      });
+      return "added";
+    },
+    [user, routines, updateRoutine],
+  );
+
   // ============================================
   // WORKOUT SESSIONS
   // ============================================
@@ -2431,6 +2476,7 @@ export function WorkoutProvider({ children }) {
         deleteRoutine,
         getTodayRoutine,
         getRoutineForDay,
+        appendExerciseToRoutine,
         // New session functions
         startWorkoutSession,
         updateSetLog,

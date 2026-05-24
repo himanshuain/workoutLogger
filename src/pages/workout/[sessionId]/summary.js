@@ -34,7 +34,6 @@ export default function WorkoutSummaryPage() {
     user,
     getWorkoutSession,
     completeWorkoutSession,
-    getTodayRoutine,
     updateRoutine,
     routines,
     deleteSessionExerciseByName,
@@ -127,7 +126,10 @@ export default function WorkoutSummaryPage() {
       .sort((a, b) => (a.set_number || 0) - (b.set_number || 0));
   }, [session?.set_logs, editOpen, editOriginalName]);
 
-  const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine, routines]);
+  const sessionRoutine = useMemo(() => {
+    if (!session?.routine_id) return null;
+    return routines.find(r => r.id === session.routine_id) || null;
+  }, [session?.routine_id, routines]);
 
   const handleSaveWorkout = async () => {
     if (typeof sessionId !== "string") return;
@@ -145,11 +147,11 @@ export default function WorkoutSummaryPage() {
   };
 
   const handleAddExtrasToRoutine = async () => {
-    if (!todayRoutine?.id || extras.length === 0) {
-      toast.message("Nothing to add or no routine for today");
+    if (!sessionRoutine?.id || extras.length === 0) {
+      toast.message("Nothing to add or no routine linked to this workout");
       return;
     }
-    const existing = (todayRoutine.routine_exercises || []).map(ex => ({
+    const existing = (sessionRoutine.routine_exercises || []).map(ex => ({
       exercise_id: ex.exercise_id,
       exercise_name: ex.exercise_name,
       category: ex.category || "other",
@@ -166,10 +168,10 @@ export default function WorkoutSummaryPage() {
         target_sets: 3,
       });
     }
-    await updateRoutine(todayRoutine.id, {
-      name: todayRoutine.name,
-      day_of_week: todayRoutine.day_of_week,
-      color: todayRoutine.color || "#3b82f6",
+    await updateRoutine(sessionRoutine.id, {
+      name: sessionRoutine.name,
+      day_of_week: sessionRoutine.day_of_week,
+      color: sessionRoutine.color || "#3b82f6",
       exercises: existing,
     });
     toast.success("Added to your routine");

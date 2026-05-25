@@ -29,6 +29,7 @@ import {
   BarChart3,
   Check,
 } from "lucide-react";
+import { buildWorkoutHeatmapFromSessions } from "@/lib/workoutHeatmapData";
 
 export default function Progress() {
   const router = useRouter();
@@ -42,9 +43,7 @@ export default function Progress() {
     today,
     getExerciseLogs,
     getTrackingEntries,
-    getTodayExerciseLogs,
     getWorkoutSessions,
-    getTodaySetLogs,
     getFoodEntries,
   } = useWorkout();
 
@@ -68,36 +67,28 @@ export default function Progress() {
     queryKey: ["workoutSessions", user?.id, startDate, today],
     queryFn: async () => {
       const sessions = await getWorkoutSessions(startDate, today);
-      const workoutByDate = {};
       const exerciseLogsByName = {};
 
       sessions.forEach(session => {
-        if (session.status === "completed") {
-          // Count completed sets per date
-          const completedSets = (session.set_logs || []).filter(log => log.is_completed);
-          workoutByDate[session.date] = (workoutByDate[session.date] || 0) + completedSets.length;
+        if (session.status !== "completed") return;
 
-          // Group by exercise name
-          completedSets.forEach(log => {
-            if (!exerciseLogsByName[log.exercise_name]) {
-              exerciseLogsByName[log.exercise_name] = [];
-            }
-            exerciseLogsByName[log.exercise_name].push({
-              date: session.date,
-              weight: log.weight,
-              reps: log.reps,
-              exercise_name: log.exercise_name,
-              category: log.category,
-            });
+        const completedSets = (session.set_logs || []).filter(log => log.is_completed);
+        completedSets.forEach(log => {
+          if (!exerciseLogsByName[log.exercise_name]) {
+            exerciseLogsByName[log.exercise_name] = [];
+          }
+          exerciseLogsByName[log.exercise_name].push({
+            date: session.date,
+            weight: log.weight,
+            reps: log.reps,
+            exercise_name: log.exercise_name,
+            category: log.category,
           });
-        }
+        });
       });
 
       return {
-        workoutData: Object.entries(workoutByDate).map(([date, count]) => ({
-          date,
-          count,
-        })),
+        workoutData: buildWorkoutHeatmapFromSessions(sessions),
         exerciseLogsByName,
         allSessions: sessions,
       };
@@ -110,11 +101,9 @@ export default function Progress() {
     queryKey: ["exerciseLogs", user?.id, startDate, today],
     queryFn: async () => {
       const logs = await getExerciseLogs(startDate, today);
-      const workoutByDate = {};
       const byExerciseName = {};
 
       logs.forEach(log => {
-        workoutByDate[log.date] = (workoutByDate[log.date] || 0) + 1;
         if (!byExerciseName[log.exercise_name]) {
           byExerciseName[log.exercise_name] = [];
         }
@@ -122,10 +111,6 @@ export default function Progress() {
       });
 
       return {
-        workoutData: Object.entries(workoutByDate).map(([date, count]) => ({
-          date,
-          count,
-        })),
         exerciseLogsByName: byExerciseName,
         allLogs: logs,
       };
@@ -195,44 +180,13 @@ export default function Progress() {
     enabled: !!user,
   });
 
-  // TanStack Query for today's set logs
-  const { data: todaySetLogs = [], isPending: todaySetsPending } = useQuery({
-    queryKey: ["todaySetLogs", user?.id, today],
-    queryFn: () => getTodaySetLogs(),
-    enabled: !!user,
-  });
-
   const isProgressLoading =
-    sessionsPending || legacyPending || habitsPending || foodPending || todaySetsPending;
+    sessionsPending || legacyPending || habitsPending || foodPending;
 
-  // Merge workout data from both systems
-  const workoutHeatmapData = useMemo(() => {
-    const dataMap = new Map();
-
-    // Add legacy exercise logs
-    (legacyExerciseData?.workoutData || []).forEach(item => {
-      if (item.date !== today) {
-        dataMap.set(item.date, (dataMap.get(item.date) || 0) + item.count);
-      }
-    });
-
-    // Add new workout sessions
-    (workoutSessionData?.workoutData || []).forEach(item => {
-      if (item.date !== today) {
-        dataMap.set(item.date, (dataMap.get(item.date) || 0) + item.count);
-      }
-    });
-
-    // Add today's completed sets
-    if (todaySetLogs.length > 0) {
-      dataMap.set(today, todaySetLogs.length);
-    }
-
-    return Array.from(dataMap.entries()).map(([date, count]) => ({
-      date,
-      count,
-    }));
-  }, [legacyExerciseData?.workoutData, workoutSessionData?.workoutData, todaySetLogs, today]);
+  const workoutHeatmapData = useMemo(
+    () => workoutSessionData?.workoutData || [],
+    [workoutSessionData?.workoutData],
+  );
 
   // Merge exercise logs from both systems
   const exerciseLogsByName = useMemo(() => {

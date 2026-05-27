@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import {
   LazyActivityHeatmap,
@@ -511,10 +512,10 @@ export default function Progress() {
   return (
     <Layout>
       <FadeIn duration={0.5}>
-      <div className="px-4 py-4">
+      <PageContainer className="py-4">
         {/* Header - Sticky */}
         <div
-          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
+          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm lg:-mx-8 lg:px-8 ${
             isDarkMode ? "bg-iron-950/95" : "bg-surface-page/95"
           }`}
         >
@@ -728,27 +729,29 @@ export default function Progress() {
               defaultOpen={false}
               isDarkMode={isDarkMode}
             >
-              <p className={`text-xs mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              <p className={`text-xs mb-3 ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>
                 Track how your weights are increasing over time for each exercise.
               </p>
-              {Object.entries(exerciseLogsByName)
-                .sort((a, b) => b[1].length - a[1].length)
-                .slice(0, 15)
-                .map(([exerciseName, logs]) => (
-                  <LazyProgressGraph
-                    key={exerciseName}
-                    exerciseName={exerciseName}
-                    exerciseCategory={logs[0]?.category}
-                    data={logs}
-                    unit="kg"
-                    compact={true}
-                    isDarkMode={isDarkMode}
-                  />
-                ))}
+              <div className="flex flex-col gap-3">
+                {Object.entries(exerciseLogsByName)
+                  .sort((a, b) => b[1].length - a[1].length)
+                  .slice(0, 15)
+                  .map(([exerciseName, logs]) => (
+                    <LazyProgressGraph
+                      key={exerciseName}
+                      exerciseName={exerciseName}
+                      exerciseCategory={logs[0]?.category}
+                      data={logs}
+                      unit="kg"
+                      compact={true}
+                      isDarkMode={isDarkMode}
+                    />
+                  ))}
+              </div>
             </CollapsibleSection>
           )}
         </div>
-      </div>
+      </PageContainer>
       </FadeIn>
 
       {/* All-Time History Modal - Table Structure */}

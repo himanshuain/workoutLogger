@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -13,112 +13,243 @@ import {
 } from "@/components/charts/ChartChrome";
 import { cn } from "@/lib/utils";
 
-function LineGraph({ data, color = "#fbbf24", height = 140, isDarkMode = true }) {
+const GRAPH_HEIGHT = 156;
+const PADDING = { top: 18, bottom: 26, left: 36, right: 12 };
+
+function formatDate(dateStr) {
+  const date = new Date(dateStr + "T00:00:00");
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function buildPoints(data, width) {
+  const weights = data.map(d => d.weight);
+  const maxWeight = Math.max(...weights);
+  const minWeight = Math.min(...weights);
+  const range = maxWeight - minWeight || 1;
+  const plotWidth = width - PADDING.left - PADDING.right;
+  const plotHeight = GRAPH_HEIGHT - PADDING.top - PADDING.bottom;
+
+  const points = data.map((d, i) => {
+    const t = data.length === 1 ? 0.5 : i / (data.length - 1);
+    const x = PADDING.left + t * plotWidth;
+    const y = PADDING.top + plotHeight - ((d.weight - minWeight) / range) * plotHeight;
+    return { x, y, ...d };
+  });
+
+  return { points, maxWeight, minWeight, range, plotHeight };
+}
+
+function LineGraph({ data, color = "#fbbf24", isDarkMode = true }) {
+  const containerRef = useRef(null);
+  const [width, setWidth] = useState(0);
+  const [hoverIndex, setHoverIndex] = useState(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => setWidth(Math.max(0, Math.floor(el.getBoundingClientRect().width)));
+    update();
+
+    const ro = new ResizeObserver(() => update());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const nearestIndex = useCallback(
+    clientX => {
+      if (!containerRef.current || !data?.length || width <= 0) return null;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const plotLeft = (PADDING.left / width) * rect.width;
+      const plotRight = ((width - PADDING.right) / width) * rect.width;
+      const plotWidth = plotRight - plotLeft;
+      if (plotWidth <= 0) return 0;
+
+      const xInPlot = Math.min(Math.max(clientX - rect.left - plotLeft, 0), plotWidth);
+      const t = xInPlot / plotWidth;
+      const raw = t * (data.length - 1);
+      return Math.round(raw);
+    },
+    [data, width],
+  );
+
+  const handlePointerMove = useCallback(
+    e => {
+      const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+      if (clientX == null) return;
+      const idx = nearestIndex(clientX);
+      if (idx != null) setHoverIndex(idx);
+    },
+    [nearestIndex],
+  );
+
+  const clearHover = useCallback(() => setHoverIndex(null), []);
+
   if (!data || data.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center text-sm ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}
-        style={{ height }}
+        ref={containerRef}
+        className={`flex w-full items-center justify-center text-sm ${isDarkMode ? "text-iron-600" : "text-[color:var(--text-muted)]"}`}
+        style={{ height: GRAPH_HEIGHT }}
       >
         No data yet
       </div>
     );
   }
 
-  const weights = data.map((d) => d.weight);
-  const maxWeight = Math.max(...weights);
-  const minWeight = Math.min(...weights);
-  const range = maxWeight - minWeight || 1;
+  if (width <= 0) {
+    return <div ref={containerRef} className="w-full" style={{ height: GRAPH_HEIGHT }} />;
+  }
 
-  const padding = { top: 12, bottom: 22, left: 32, right: 10 };
-  const graphWidth = 300;
-  const graphHeight = height - padding.top - padding.bottom;
-
-  const points = data.map((d, i) => {
-    const x = padding.left + (i / (data.length - 1 || 1)) * (graphWidth - padding.left - padding.right);
-    const y = padding.top + graphHeight - ((d.weight - minWeight) / range) * graphHeight;
-    return { x, y, ...d };
-  });
-
+  const { points, maxWeight, minWeight, range, plotHeight } = buildPoints(data, width);
   const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const fillPath = `${pathD} L ${points[points.length - 1].x} ${padding.top + graphHeight} L ${padding.left} ${padding.top + graphHeight} Z`;
+  const fillPath = `${pathD} L ${points[points.length - 1].x} ${PADDING.top + plotHeight} L ${PADDING.left} ${PADDING.top + plotHeight} Z`;
 
-  const gridColor = isDarkMode ? "#27272a" : "#e2e8f0";
-  const textColor = isDarkMode ? "#71717a" : "#94a3b8";
+  const gridColor = isDarkMode ? "#27272a" : "#f2f2f2";
+  const textColor = isDarkMode ? "#71717a" : "#8e8e93";
+  const gradId = `pg-grad-${color.replace("#", "")}`;
 
   const gridCount = 3;
   const gridLines = Array.from({ length: gridCount }, (_, i) => {
     const val = minWeight + (range / (gridCount - 1)) * i;
-    const y = padding.top + graphHeight - ((val - minWeight) / range) * graphHeight;
+    const y = PADDING.top + plotHeight - ((val - minWeight) / range) * plotHeight;
     return { y, val: Math.round(val) };
   });
 
+  const active = hoverIndex != null ? points[hoverIndex] : null;
+  const plotLeftPx = (PADDING.left / width) * 100;
+  const plotWidthPx = ((width - PADDING.left - PADDING.right) / width) * 100;
+
   return (
-    <svg viewBox={`0 0 ${graphWidth} ${height}`} className="w-full" style={{ height }} preserveAspectRatio="xMidYMid meet">
-      <defs>
-        <linearGradient id={`pg-grad-${color.replace("#", "")}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
+    <div
+      ref={containerRef}
+      className="relative w-full touch-none"
+      onMouseMove={handlePointerMove}
+      onMouseLeave={clearHover}
+      onTouchStart={handlePointerMove}
+      onTouchMove={handlePointerMove}
+      onTouchEnd={clearHover}
+    >
+      <svg
+        width={width}
+        height={GRAPH_HEIGHT}
+        className="block w-full overflow-visible"
+        role="img"
+        aria-label="Weight progression chart"
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
 
-      {/* Horizontal grid lines with labels */}
-      {gridLines.map(({ y, val }) => (
-        <g key={val}>
-          <line x1={padding.left} y1={y} x2={graphWidth - padding.right} y2={y} stroke={gridColor} strokeWidth="1" strokeDasharray="3,3" />
-          <text x={padding.left - 6} y={y + 3} textAnchor="end" fill={textColor} fontSize="9">{val}</text>
-        </g>
-      ))}
+        {gridLines.map(({ y, val }) => (
+          <g key={val}>
+            <line
+              x1={PADDING.left}
+              y1={y}
+              x2={width - PADDING.right}
+              y2={y}
+              stroke={gridColor}
+              strokeWidth="1"
+            />
+            <text x={PADDING.left - 8} y={y + 3} textAnchor="end" fill={textColor} fontSize="10">
+              {val}
+            </text>
+          </g>
+        ))}
 
-      {/* Fill area */}
-      <path d={fillPath} fill={`url(#pg-grad-${color.replace("#", "")})`} />
+        <path d={fillPath} fill={`url(#${gradId})`} />
+        <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-      {/* Main line */}
-      <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((p, i) => {
+          const isHovered = hoverIndex === i;
+          const isLast = i === points.length - 1;
+          const showLabel = hoverIndex == null && (i === 0 || isLast || (p.weight === maxWeight && data.length > 2));
+          return (
+            <g key={i}>
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={isHovered ? 6 : 4}
+                fill={isDarkMode ? "#18181b" : "#ffffff"}
+                stroke={color}
+                strokeWidth={isHovered ? 2.5 : 2}
+              />
+              {showLabel && (
+                <text
+                  x={p.x}
+                  y={p.y - 10}
+                  textAnchor="middle"
+                  fill={isDarkMode ? "#d4d4d8" : "#2d3436"}
+                  fontSize="10"
+                  fontWeight="600"
+                >
+                  {p.weight}
+                </text>
+              )}
+            </g>
+          );
+        })}
 
-      {/* Data points */}
-      {points.map((p, i) => {
-        const isFirst = i === 0;
-        const isLast = i === points.length - 1;
-        const isMax = p.weight === maxWeight && data.length > 2;
-        const showLabel = isFirst || isLast || isMax;
-        return (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r={showLabel ? 5 : 3} fill={isDarkMode ? "#18181b" : "#ffffff"} stroke={color} strokeWidth={showLabel ? 2.5 : 1.5} />
-            {showLabel && (
-              <text x={p.x} y={p.y - 10} textAnchor="middle" fill={isMax && !isLast ? (isDarkMode ? "#fbbf24" : "#dc2626") : (isDarkMode ? "#d4d4d8" : "#475569")} fontSize="10" fontWeight="600">
-                {p.weight}
+        {active && (
+          <>
+            <line
+              x1={active.x}
+              y1={PADDING.top}
+              x2={active.x}
+              y2={PADDING.top + plotHeight}
+              stroke={color}
+              strokeWidth="1"
+              strokeDasharray="4,3"
+              opacity="0.55"
+            />
+            <circle cx={active.x} cy={active.y} r={6} fill={color} fillOpacity="0.15" stroke={color} strokeWidth="2" />
+          </>
+        )}
+
+        {points.length > 0 && (
+          <>
+            <text x={PADDING.left} y={GRAPH_HEIGHT - 8} textAnchor="start" fill={textColor} fontSize="10">
+              {formatDate(points[0].date)}
+            </text>
+            {points.length > 1 && (
+              <text x={width - PADDING.right} y={GRAPH_HEIGHT - 8} textAnchor="end" fill={textColor} fontSize="10">
+                {formatDate(points[points.length - 1].date)}
               </text>
             )}
-          </g>
-        );
-      })}
+          </>
+        )}
+      </svg>
 
-      {/* X-axis date labels */}
-      {points.length > 0 && (
-        <>
-          <text x={padding.left} y={height - 6} textAnchor="start" fill={textColor} fontSize="9">
-            {formatDate(points[0].date)}
-          </text>
-          {points.length > 1 && (
-            <text x={graphWidth - padding.right} y={height - 6} textAnchor="end" fill={textColor} fontSize="9">
-              {formatDate(points[points.length - 1].date)}
-            </text>
+      {/* Full-width hover capture over plot area */}
+      <div
+        className="absolute inset-y-0 cursor-crosshair"
+        style={{ left: `${plotLeftPx}%`, width: `${plotWidthPx}%` }}
+        aria-hidden
+      />
+
+      {active && (
+        <div
+          className={cn(
+            "pointer-events-none absolute z-10 rounded-card px-2.5 py-1.5 text-xs shadow-md",
+            isDarkMode ? "border border-iron-700 bg-iron-900/95 text-iron-100" : "border border-surface-subtle bg-white text-[color:var(--text-primary)]",
           )}
-          {points.length > 4 && (
-            <text x={(padding.left + graphWidth - padding.right) / 2} y={height - 6} textAnchor="middle" fill={textColor} fontSize="9">
-              {formatDate(points[Math.floor(points.length / 2)].date)}
-            </text>
-          )}
-        </>
+          style={{
+            left: Math.min(Math.max(active.x - 48, 4), width - 100),
+            top: Math.max(active.y - 52, 4),
+          }}
+        >
+          <p className="font-semibold">{active.weight} kg</p>
+          <p className={isDarkMode ? "text-iron-400" : "text-[color:var(--text-muted)]"}>
+            {formatDate(active.date)} · {active.reps} reps
+          </p>
+        </div>
       )}
-    </svg>
+    </div>
   );
-}
-
-function formatDate(dateStr) {
-  const date = new Date(dateStr + "T00:00:00");
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function ProgressGraph({
@@ -134,7 +265,7 @@ export default function ProgressGraph({
   const graphData = useMemo(() => {
     if (!data || data.length === 0) return [];
     const byDate = {};
-    data.forEach((log) => {
+    data.forEach(log => {
       const date = log.date;
       if (!byDate[date] || log.weight > byDate[date].weight) {
         byDate[date] = { date, weight: log.weight, reps: log.reps, sets: log.sets };
@@ -156,7 +287,7 @@ export default function ProgressGraph({
     const first = graphData[0].weight;
     const last = graphData[graphData.length - 1].weight;
     const change = last - first;
-    const maxWeight = Math.max(...graphData.map((d) => d.weight));
+    const maxWeight = Math.max(...graphData.map(d => d.weight));
 
     const latestEntry = graphData[graphData.length - 1];
     const e1rm = Math.round(latestEntry.weight * (1 + (latestEntry.reps || 1) / 30));
@@ -176,29 +307,36 @@ export default function ProgressGraph({
   const TrendIcon = stats.trend === "up" ? TrendingUp : stats.trend === "down" ? TrendingDown : Minus;
 
   const trendColor = stats.trend === "up"
-    ? isDarkMode ? "text-green-400" : "text-green-500"
+    ? isDarkMode ? "text-green-400" : "text-[#2e7d32]"
     : stats.trend === "down"
       ? "text-red-400"
-      : isDarkMode ? "text-iron-400" : "text-slate-400";
+      : isDarkMode ? "text-iron-400" : "text-[color:var(--text-muted)]";
 
   const trendBg = stats.trend === "up"
-    ? "bg-green-500/15"
+    ? isDarkMode ? "bg-green-500/15" : "bg-[#e8f5e9]"
     : stats.trend === "down"
       ? "bg-red-500/15"
       : isDarkMode ? "bg-iron-800" : "chart-panel-inner";
 
-  const accentColor = isDarkMode ? "#fbbf24" : "#2563eb";
+  const accentColor = isDarkMode ? "#fbbf24" : "#3b82f6";
+
+  const statTiles = [
+    ["Current", stats.currentWeight || stats.maxWeight || 0, isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"],
+    ["Best", stats.maxWeight || 0, isDarkMode ? "text-lift-primary" : "text-[color:var(--text-primary)]"],
+    ["Est. 1RM", stats.e1rm || 0, isDarkMode ? "text-orange-400" : "text-[#f97316]"],
+    ["Sessions", stats.totalSessions || 0, isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"],
+  ];
 
   if (compact) {
     return (
-      <ChartSection isDarkMode={isDarkMode}>
+      <ChartSection isDarkMode={isDarkMode} className="w-full">
         <ChartCollapsibleHeader
           isDarkMode={isDarkMode}
           leading={
             <ExerciseIcon
               name={exerciseName}
               className="h-7 w-7 shrink-0 rounded-card"
-              color={isDarkMode ? "#6b7280" : "#64748b"}
+              color={isDarkMode ? "#6b7280" : "#8e8e93"}
             />
           }
           label={exerciseName}
@@ -207,7 +345,7 @@ export default function ProgressGraph({
           onToggle={() => setIsExpanded(!isExpanded)}
           trailing={
             stats.change > 0 ? (
-              <span className={cn("flex shrink-0 items-center gap-0.5 rounded-pill px-1.5 py-0.5 text-[10px] font-semibold", trendBg, trendColor)}>
+              <span className={cn("flex shrink-0 items-center gap-0.5 rounded-pill px-2 py-0.5 text-[10px] font-semibold", trendBg, trendColor)}>
                 <TrendIcon className="h-2.5 w-2.5" />
                 {stats.changeRaw > 0 ? "+" : ""}{stats.changeRaw}{unit}
               </span>
@@ -216,29 +354,31 @@ export default function ProgressGraph({
         />
 
         {isExpanded && (
-          <ChartBody isDarkMode={isDarkMode}>
-            <LineGraph data={graphData} height={132} color={accentColor} isDarkMode={isDarkMode} />
+          <ChartBody isDarkMode={isDarkMode} className="pt-3">
+            <div className="-mx-1 w-[calc(100%+0.5rem)]">
+              <LineGraph data={graphData} color={accentColor} isDarkMode={isDarkMode} />
+            </div>
 
-            <div className="mt-2 flex gap-1.5 border-t border-surface-subtle pt-2">
-              {[
-                ["Current", stats.currentWeight || 0, isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"],
-                ["Best", stats.maxWeight || 0, isDarkMode ? "text-lift-primary" : "text-[color:var(--text-primary)]"],
-                ["Est. 1RM", stats.e1rm || 0, isDarkMode ? "text-orange-400" : "text-orange-600"],
-                ["Sessions", stats.totalSessions, isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"],
-              ].map(([lbl, val, colorClass]) => (
-                <div key={lbl} className={cn("flex-1 rounded-card p-1.5 text-center", chartPanelInnerClass(isDarkMode))}>
+            <div className="mt-3 grid grid-cols-4 gap-2 border-t border-surface-subtle pt-3">
+              {statTiles.map(([lbl, val, colorClass]) => (
+                <div key={lbl} className={cn("rounded-card px-1 py-2 text-center", chartPanelInnerClass(isDarkMode))}>
                   <p className="text-metadata">{lbl}</p>
-                  <p className={cn("text-sm font-bold", colorClass)}>{val}{lbl !== "Sessions" ? unit : ""}</p>
+                  <p className={cn("text-sm font-bold", colorClass)}>
+                    {val}{lbl !== "Sessions" ? unit : ""}
+                  </p>
                 </div>
               ))}
             </div>
 
             {graphData.length > 0 && (
-              <div className="mt-2 border-t border-surface-subtle pt-2">
-                <p className="text-section-header mb-1">Recent sessions</p>
-                <div className="space-y-0.5">
+              <div className="mt-3 border-t border-surface-subtle pt-3">
+                <p className="text-section-header mb-2">Recent sessions</p>
+                <div className="space-y-1">
                   {graphData.slice(-4).reverse().map(d => (
-                    <div key={d.date} className={`flex items-center justify-between py-0.5 text-xs ${isDarkMode ? "text-iron-400" : "text-[color:var(--text-secondary)]"}`}>
+                    <div
+                      key={d.date}
+                      className={`flex items-center justify-between py-0.5 text-xs ${isDarkMode ? "text-iron-400" : "text-[color:var(--text-secondary)]"}`}
+                    >
                       <span>{formatDate(d.date)}</span>
                       <span className={`font-medium ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>
                         {d.weight}{unit} × {d.reps} reps
@@ -255,7 +395,7 @@ export default function ProgressGraph({
   }
 
   return (
-    <ChartSection isDarkMode={isDarkMode}>
+    <ChartSection isDarkMode={isDarkMode} className="w-full">
       <div className="px-3 pt-3 pb-2">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -275,18 +415,13 @@ export default function ProgressGraph({
       </div>
 
       <div className="px-3 pb-3">
-        <LineGraph data={graphData} height={148} color={accentColor} isDarkMode={isDarkMode} />
+        <LineGraph data={graphData} color={accentColor} isDarkMode={isDarkMode} />
 
-        <div className="mt-2 grid grid-cols-4 gap-1.5">
-          {[
-            ["Current", stats.currentWeight || 0],
-            ["Best", stats.maxWeight || 0],
-            ["Est. 1RM", stats.e1rm || 0],
-            ["Sessions", stats.totalSessions],
-          ].map(([lbl, val]) => (
-            <div key={lbl} className={cn("rounded-card p-1.5 text-center", chartPanelInnerClass(isDarkMode))}>
+        <div className="mt-3 grid grid-cols-4 gap-2">
+          {statTiles.map(([lbl, val, colorClass]) => (
+            <div key={lbl} className={cn("rounded-card px-1 py-2 text-center", chartPanelInnerClass(isDarkMode))}>
               <p className="text-metadata">{lbl}</p>
-              <p className={`text-sm font-bold ${isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"}`}>
+              <p className={cn("text-sm font-bold", colorClass)}>
                 {val}{lbl !== "Sessions" ? unit : ""}
               </p>
             </div>

@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS food_items (
   unit TEXT DEFAULT 'servings',
   default_quantity DECIMAL(6,2) DEFAULT 1,
   quantity_whole_numbers BOOLEAN DEFAULT false,
+  log_directly BOOLEAN DEFAULT false,
   category TEXT DEFAULT 'other',
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()

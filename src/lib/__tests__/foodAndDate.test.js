@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeFoodQuantity } from "@/lib/foodQuantity";
+import { normalizeFoodQuantity, initialFoodQuantity, foodLogsDirectly } from "@/lib/foodQuantity";
 import { localDateStr, addDaysStr, formatChipLabel } from "@/lib/dateLogUtils";
 
 describe("foodQuantity", () => {
@@ -11,6 +11,12 @@ describe("foodQuantity", () => {
   it("snaps to half increments by default", () => {
     expect(normalizeFoodQuantity(1.3, {})).toBe(1.5);
     expect(normalizeFoodQuantity(0.1, {})).toBe(0.5);
+  });
+
+  it("uses default quantity for direct logging", () => {
+    expect(initialFoodQuantity({ default_quantity: 2, quantity_whole_numbers: true })).toBe(2);
+    expect(foodLogsDirectly({ log_directly: true })).toBe(true);
+    expect(foodLogsDirectly({ log_directly: false })).toBe(false);
   });
 });
 

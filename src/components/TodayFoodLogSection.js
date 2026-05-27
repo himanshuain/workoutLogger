@@ -5,7 +5,7 @@ import SectionManageButton from "@/components/SectionManageButton";
 import SectionHeader from "@/components/SectionHeader";
 import SectionSurface from "@/components/SectionSurface";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
-import { normalizeFoodQuantity } from "@/lib/foodQuantity";
+import { normalizeFoodQuantity, initialFoodQuantity, foodLogsDirectly } from "@/lib/foodQuantity";
 import EmptyState from "@/components/EmptyState";
 import { hapticLight, touchPressCard } from "@/lib/touchFeedback";
 import { cn } from "@/lib/utils";
@@ -61,12 +61,15 @@ export default function TodayFoodLogSection({
           queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, logForDate] });
           queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
         }
+      } else if (foodLogsDirectly(item)) {
+        await updateFoodEntryQuantity(item.id, initialFoodQuantity(item), logForDate);
+        queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+        if (userId) {
+          queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, logForDate] });
+          queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
+        }
       } else {
-        const def = item.default_quantity ?? 1;
-        const initial = item.quantity_whole_numbers
-          ? Math.max(1, Math.round(Number(def)))
-          : Number(def) || 1;
-        openQuantity(item, initial, logForDate);
+        openQuantity(item, initialFoodQuantity(item), logForDate);
       }
       hapticLight();
       return;
@@ -74,17 +77,17 @@ export default function TodayFoodLogSection({
     if (consumed) {
       await toggleFoodEntry(item.id);
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+    } else if (foodLogsDirectly(item)) {
+      await updateFoodEntryQuantity(item.id, initialFoodQuantity(item));
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
     } else {
-      const def = item.default_quantity ?? 1;
-      const initial = item.quantity_whole_numbers
-        ? Math.max(1, Math.round(Number(def)))
-        : Number(def) || 1;
-      openQuantity(item, initial);
+      openQuantity(item, initialFoodQuantity(item));
     }
     hapticLight();
   };
 
   const handleChangeAmountToday = item => {
+    if (foodLogsDirectly(item)) return;
     const q = entryMap[item.id]?.quantity ?? item.default_quantity ?? 1;
     if (isPastDayMode && logForDate) openQuantity(item, q, logForDate);
     else openQuantity(item, q);
@@ -169,32 +172,38 @@ export default function TodayFoodLogSection({
             </p>
             <p className={`mt-1 text-[10px] leading-snug ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               {consumed ? (
-                <>
+                foodLogsDirectly(item) ? (
                   <span className={isDarkMode ? "text-lift-primary" : "text-amber-600"}>
                     {displayQty} {item.unit || "units"}
                   </span>
-                  {" · "}
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onChangeAmount(item);
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
+                ) : (
+                  <>
+                    <span className={isDarkMode ? "text-lift-primary" : "text-amber-600"}>
+                      {displayQty} {item.unit || "units"}
+                    </span>
+                    {" · "}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={e => {
                         e.stopPropagation();
                         onChangeAmount(item);
-                      }
-                    }}
-                    className={`font-medium underline-offset-2 hover:underline ${
-                      isDarkMode ? "text-iron-400" : "text-slate-600"
-                    }`}
-                  >
-                    Change
-                  </span>
-                </>
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onChangeAmount(item);
+                        }
+                      }}
+                      className={`font-medium underline-offset-2 hover:underline ${
+                        isDarkMode ? "text-iron-400" : "text-slate-600"
+                      }`}
+                    >
+                      Change
+                    </span>
+                  </>
+                )
               ) : (
                 "Tap to log"
               )}

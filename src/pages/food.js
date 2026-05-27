@@ -25,7 +25,7 @@ import {
   ModalFooter,
 } from "@/components/ui/modal";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
-import { normalizeFoodQuantity } from "@/lib/foodQuantity";
+import { normalizeFoodQuantity, initialFoodQuantity, foodLogsDirectly } from "@/lib/foodQuantity";
 import {
   Plus,
   Check,
@@ -111,6 +111,7 @@ export default function Food() {
     unit: "servings",
     default_quantity: 1,
     quantity_whole_numbers: false,
+    log_directly: false,
     category: "protein",
   });
 
@@ -299,6 +300,9 @@ export default function Food() {
     if (isConsumed) {
       await toggleFoodEntry(foodItem.id);
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+    } else if (foodLogsDirectly(foodItem)) {
+      await updateFoodEntryQuantity(foodItem.id, initialFoodQuantity(foodItem), today);
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
     } else {
       openQuantityModal(foodItem, foodItem.default_quantity || 1);
     }
@@ -323,12 +327,11 @@ export default function Food() {
     if (consumed) {
       await toggleFoodEntry(item.id, { date: dayNudgeDate });
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+    } else if (foodLogsDirectly(item)) {
+      await updateFoodEntryQuantity(item.id, initialFoodQuantity(item), dayNudgeDate);
+      queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
     } else {
-      const def = item.default_quantity ?? 1;
-      const initial = item.quantity_whole_numbers
-        ? Math.max(1, Math.round(Number(def)))
-        : Number(def) || 1;
-      openQuantityForPastDay(item, initial, dayNudgeDate);
+      openQuantityForPastDay(item, initialFoodQuantity(item), dayNudgeDate);
     }
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
   };
@@ -360,6 +363,7 @@ export default function Food() {
         unit: "servings",
         default_quantity: 1,
         quantity_whole_numbers: false,
+        log_directly: false,
         category: "protein",
       });
     } catch {
@@ -376,6 +380,7 @@ export default function Food() {
       unit: item.unit || "servings",
       default_quantity: item.default_quantity || 1,
       quantity_whole_numbers: Boolean(item.quantity_whole_numbers),
+      log_directly: Boolean(item.log_directly),
       category: item.category || "protein",
     });
     setShowAddModal(true);
@@ -475,6 +480,7 @@ export default function Food() {
                 unit: "servings",
                 default_quantity: 1,
                 quantity_whole_numbers: false,
+                log_directly: false,
                 category: "protein",
               });
               setShowAddModal(true);
@@ -750,7 +756,7 @@ export default function Food() {
                           </p>
                         </button>
 
-                        {isConsumed && (
+                        {isConsumed && !item.log_directly && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1035,6 +1041,30 @@ export default function Food() {
                 <span className="font-medium">Whole numbers only</span>
                 <span className={`block text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                   For items counted in whole units (eggs, bars, pills). No halves like 1.5.
+                </span>
+              </span>
+            </label>
+
+            <label
+              className={`flex items-start gap-3 cursor-pointer rounded-card p-3 ${
+                isDarkMode ? "bg-iron-800/50" : "bg-slate-50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={newFood.log_directly}
+                onChange={e =>
+                  setNewFood(prev => ({
+                    ...prev,
+                    log_directly: e.target.checked,
+                  }))
+                }
+                className="mt-1 h-4 w-4 rounded border-slate-500"
+              />
+              <span className={`text-sm ${isDarkMode ? "text-iron-300" : "text-slate-700"}`}>
+                <span className="font-medium">Log directly</span>
+                <span className={`block text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                  Skip the servings drawer — one tap logs the default quantity.
                 </span>
               </span>
             </label>

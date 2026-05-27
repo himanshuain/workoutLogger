@@ -24,7 +24,6 @@ import {
   Moon,
   RotateCcw,
   Loader2,
-  Check,
 } from "lucide-react";
 import {
   actionDestructiveGhost,
@@ -353,6 +352,9 @@ export default function RoutinePlannerPage() {
           updateRoutine={updateRoutine}
           restMap={restByDay}
           onRestMapChange={handleRestMapCommit}
+          onAddDay={day =>
+            router.push(`/exercises?routineDay=${day}&returnTo=plan&day=${day}`)
+          }
         />
 
         <div className="mt-6 space-y-2">
@@ -434,18 +436,20 @@ export default function RoutinePlannerPage() {
               Add exercise
             </button>
 
-            <button
-              type="button"
-              onClick={handleClear}
-              className={`mt-2 inline-flex w-full items-center justify-center gap-2 py-3 text-sm font-medium ${actionDestructiveGhost(isDarkMode)}`}
-            >
-              <RotateCcw className="w-4 h-4 shrink-0" aria-hidden />
-              Clear day
-            </button>
+            {list.length > 0 ? (
+              <button
+                type="button"
+                onClick={handleClear}
+                className={`mt-2 inline-flex w-full items-center justify-center gap-2 py-3 text-sm font-medium ${actionDestructiveGhost(isDarkMode)}`}
+              >
+                <RotateCcw className="w-4 h-4 shrink-0" aria-hidden />
+                Clear day
+              </button>
+            ) : null}
           </>
         )}
 
-        {listReady && user ? (
+        {listReady && user && (saveStatus === "saving" || saveStatus === "pending" || saveStatus === "error" || isDirty) ? (
           <p
             className={`mt-6 flex items-center justify-center gap-1.5 text-xs font-medium ${
               saveStatus === "error"
@@ -465,13 +469,8 @@ export default function RoutinePlannerPage() {
               </>
             ) : saveStatus === "error" ? (
               "Could not save — check connection"
-            ) : isDirty ? (
-              "Unsaved changes"
             ) : (
-              <>
-                <Check className="h-3.5 w-3.5" aria-hidden />
-                Saved
-              </>
+              "Unsaved changes"
             )}
           </p>
         ) : null}

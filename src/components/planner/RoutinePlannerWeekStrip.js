@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { actionPrimary, actionSecondary } from "@/lib/actionButtonStyles";
-import { ArrowRightLeft, X } from "lucide-react";
+import { ArrowRightLeft, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 /**
@@ -45,6 +45,7 @@ export default function RoutinePlannerWeekStrip({
   updateRoutine,
   restMap,
   onRestMapChange,
+  onAddDay,
 }) {
   const [movePickerFrom, setMovePickerFrom] = useState(null);
   const [swapConfirm, setSwapConfirm] = useState(null);
@@ -146,21 +147,34 @@ export default function RoutinePlannerWeekStrip({
         {PLANNER_DAYS.map(d => {
           const active = selectedDay === d.value;
           const r = getRoutineForDay(d.value);
+          const isRest = !!restMap[d.value];
+          const hasPlan =
+            isRest ||
+            Boolean(r?.name?.trim()) ||
+            (r?.routine_exercises?.length ?? 0) > 0;
+          const isEmpty = !hasPlan;
           const subtitle = routineSubtitleForDay({
-            markedRest: !!restMap[d.value],
+            markedRest: isRest,
             routine: r,
           });
           const canMove = !!r;
 
-          const pillBase =
-            "flex flex-col gap-2 rounded-card border px-3 py-3 outline-none cursor-pointer transition-[color,background-color,border-color,box-shadow] " +
-            (isDarkMode
+          const pillBase = cn(
+            "flex flex-col gap-2 rounded-card px-3 py-3 outline-none cursor-pointer transition-[color,background-color,border-color,box-shadow]",
+            isEmpty
               ? active
-                ? "border-lift-primary/45 bg-surface-selected text-iron-100 ring-2 ring-inset ring-lift-primary/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lift-primary/70 "
-                : "border-surface-subtle bg-surface-section text-iron-300 ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iron-500 "
-              : active
-                ? "accent-soft-surface border border-red-100 shadow-sm focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-200/80 "
-                : "border-surface-subtle bg-surface-section shadow-sm ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300/60 ");
+                ? isDarkMode
+                  ? "border-lift-primary/45 bg-surface-selected text-iron-100 ring-2 ring-inset ring-lift-primary/55"
+                  : "accent-soft-surface border border-red-100 shadow-sm ring-2 ring-inset ring-red-200/80"
+                : "border-transparent bg-transparent shadow-none ring-0 hover:bg-surface-interactive/60"
+              : isDarkMode
+                ? active
+                  ? "border-lift-primary/45 bg-surface-selected text-iron-100 ring-2 ring-inset ring-lift-primary/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lift-primary/70"
+                  : "border-surface-subtle bg-surface-section text-iron-300 ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-iron-500"
+                : active
+                  ? "accent-soft-surface border border-red-100 shadow-sm focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-200/80"
+                  : "border-surface-subtle bg-surface-section shadow-sm ring-0 ring-transparent hover:bg-surface-interactive focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300/60",
+          );
 
           const dayBadgeCls =
             `text-[10px] font-semibold tracking-wide [font-variant:small-caps] ` +
@@ -178,7 +192,9 @@ export default function RoutinePlannerWeekStrip({
                 role="button"
                 tabIndex={0}
                 aria-pressed={active}
-                aria-label={`${d.label}, ${subtitle}`}
+                aria-label={
+                  isEmpty ? `Add workout for ${d.label}` : `${d.label}, ${subtitle}`
+                }
                 data-state={active ? "active" : "inactive"}
                 onClick={() => onDaySelect(d.value)}
                 onKeyDown={e => {
@@ -187,13 +203,33 @@ export default function RoutinePlannerWeekStrip({
                     onDaySelect(d.value);
                   }
                 }}
-                className={`${pillBase} min-h-[6.125rem]`}
+                className={cn(pillBase, "min-h-[6.125rem]")}
               >
                 <span className={`${dayBadgeCls} block truncate`}>{d.short}</span>
 
-                <p className={`${subtitleBodyCls(active)} flex-1`} title={subtitle}>
-                  {subtitle}
-                </p>
+                {isEmpty ? (
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      onDaySelect(d.value);
+                      onAddDay?.(d.value);
+                    }}
+                    className={cn(
+                      "flex flex-1 w-full min-h-[2.875rem] items-center justify-center transition-colors",
+                      isDarkMode
+                        ? "text-iron-400 hover:text-iron-200"
+                        : "text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]",
+                    )}
+                    aria-label={`Add workout for ${d.label}`}
+                  >
+                    <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+                  </button>
+                ) : (
+                  <p className={`${subtitleBodyCls(active)} flex-1`} title={subtitle}>
+                    {subtitle}
+                  </p>
+                )}
               </div>
             </div>
           );

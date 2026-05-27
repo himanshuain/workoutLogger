@@ -9,7 +9,7 @@ export function actionPrimary(isDarkMode, className) {
     press,
     isDarkMode
       ? "bg-lift-primary text-iron-950 hover:bg-lift-primary/90 active:bg-lift-primary/85"
-      : "bg-workout-primary text-white hover:bg-workout-secondary active:bg-workout-secondary shadow-[0_2px_8px_rgba(220,38,38,0.14)] hover:shadow-[0_4px_12px_rgba(220,38,38,0.18)]",
+      : "bg-workout-primary text-white hover:bg-workout-secondary active:bg-workout-secondary shadow-[0_2px_8px_rgba(217,26,17,0.16)] hover:shadow-[0_4px_12px_rgba(217,26,17,0.22)]",
     className,
   );
 }

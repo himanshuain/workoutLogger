@@ -23,7 +23,17 @@ module.exports = {
           900: '#1c1c1e',
           950: '#0a0a0b',
         },
-        // Spiderman Light Mode - Slate colors
+        // Sync light theme — cream, forest, ink
+        sync: {
+          cream: '#f2efe6',
+          'cream-light': '#faf8f3',
+          'cream-pressed': '#e8e4d9',
+          forest: '#004236',
+          ink: '#1a1a1a',
+          red: '#d91a11',
+          'red-dark': '#b01510',
+          mint: '#90ee90',
+        },
         slate: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -42,22 +52,21 @@ module.exports = {
           secondary: '#f59e0b',
           accent: '#fcd34d',
         },
-        // Spiderman theme - Red/Blue for light mode
+        // Sync light theme accents
         workout: {
-          primary: '#dc2626',
-          secondary: '#b91c1c',
-          light: '#f87171',
-          blue: '#2563eb',
-          'blue-light': '#3b82f6',
+          primary: '#d91a11',
+          secondary: '#b01510',
+          light: '#e84a42',
+          blue: '#004236',
+          'blue-light': '#0a5c4d',
         },
-        // Spiderman Red
         spider: {
-          red: '#dc2626',
-          'red-light': '#ef4444',
-          'red-dark': '#b91c1c',
-          blue: '#2563eb',
-          'blue-light': '#3b82f6',
-          'blue-dark': '#1d4ed8',
+          red: '#d91a11',
+          'red-light': '#e84a42',
+          'red-dark': '#b01510',
+          blue: '#004236',
+          'blue-light': '#0a5c4d',
+          'blue-dark': '#003329',
         },
         // Batman Yellow/Gold
         bat: {

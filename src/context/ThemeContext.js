@@ -28,7 +28,7 @@ export function ThemeProvider({ children, initialDarkMode = true }) {
 
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute("content", isDarkMode ? "#18181b" : "#f8fafc");
+      metaTheme.setAttribute("content", isDarkMode ? "#18181b" : "#f2efe6");
     }
 
     localStorage.setItem("theme", isDarkMode ? "dark" : "light");

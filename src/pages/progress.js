@@ -766,7 +766,7 @@ export default function Progress() {
         }}
       >
         <ModalContent
-          className={`max-w-[95vw] w-full max-h-[85vh] overflow-hidden ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle shadow-[var(--shadow-elevation-section)]"}`}
+          className={`max-w-[min(95vw,72rem)] max-h-[85vh] overflow-hidden ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle shadow-[var(--shadow-elevation-section)]"}`}
         >
           <ModalHeader className="pb-3 border-b border-iron-800/50">
             <div className="flex flex-col gap-3 w-full pr-8">

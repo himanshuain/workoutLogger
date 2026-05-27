@@ -46,7 +46,7 @@ const ModalContent = React.forwardRef(
         <Drawer.Content
           ref={ref}
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[96vh] min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
+            "fixed inset-x-0 bottom-0 z-50 mx-auto mt-24 flex h-auto w-full max-h-[96vh] min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
             className,
           )}
           {...props}

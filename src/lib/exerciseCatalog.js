@@ -80,6 +80,18 @@ export function dedupeExercisesForPicker(exercises) {
       continue;
     }
 
+    // User-created exercises win over catalog rows with the same name.
+    const exIsUser = Boolean(ex.user_id);
+    const prevIsUser = Boolean(prev.user_id);
+    if (exIsUser && !prevIsUser) {
+      bestByName.set(key, mergeLosersMetadata(ex, prev));
+      continue;
+    }
+    if (prevIsUser && !exIsUser) {
+      bestByName.set(key, mergeLosersMetadata(prev, ex));
+      continue;
+    }
+
     const diff = catalogRichnessScore(ex) - catalogRichnessScore(prev);
     if (diff > 0) {
       bestByName.set(key, mergeLosersMetadata(ex, prev));

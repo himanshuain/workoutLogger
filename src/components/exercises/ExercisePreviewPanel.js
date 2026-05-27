@@ -29,6 +29,7 @@ export default function ExercisePreviewPanel({
   exercise,
   isDarkMode,
   hideHeading = false,
+  hideActions = false,
   variant = "default",
   onOpenExercise,
 }) {
@@ -300,6 +301,7 @@ export default function ExercisePreviewPanel({
         </div>
       ) : null}
 
+      {!hideActions ? (
       <div
         className={`shrink-0 ${hideHeading ? (isSheet ? "mt-2" : "mt-6") : "mt-10"} ${isSheet ? "space-y-2" : "space-y-3"}`}
       >
@@ -326,6 +328,7 @@ export default function ExercisePreviewPanel({
           Add to routine
         </button>
       </div>
+      ) : null}
 
       <RoutineDayPickerDialog
         open={routinePickerOpen}

@@ -78,6 +78,7 @@ function WorkoutProviderInner({ children }) {
     getExerciseLogs,
     getTodayExerciseLogs,
     deleteExerciseLog,
+    createCustomExercise,
   } = useWorkoutExercises(user, today, setExercises, exerciseHistory, setExerciseHistory, setSettings, queryClient);
 
   const {
@@ -312,6 +313,7 @@ function WorkoutProviderInner({ children }) {
       startWorkoutSessionForDate,
       getTodaySetLogs,
       deleteExerciseLog,
+      createCustomExercise,
       createTrackable,
       updateTrackable,
       deleteTrackable,
@@ -368,6 +370,7 @@ function WorkoutProviderInner({ children }) {
       startWorkoutSessionForDate,
       getTodaySetLogs,
       deleteExerciseLog,
+      createCustomExercise,
       createTrackable,
       updateTrackable,
       deleteTrackable,

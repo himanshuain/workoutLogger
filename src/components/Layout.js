@@ -89,28 +89,22 @@ export default function Layout({ children }) {
 
   const currentIndex = swipeTabs.findIndex(t => t.id === activeTab);
 
-  // Detect keyboard
+  // Hide bottom nav only when the on-screen keyboard actually reduces viewport height.
   useEffect(() => {
-    const handleFocusIn = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-        setIsKeyboardVisible(true);
-      }
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      const keyboardGap = window.innerHeight - vv.height;
+      setIsKeyboardVisible(keyboardGap > 120);
     };
-    const handleFocusOut = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-        setTimeout(() => {
-          const activeEl = document.activeElement;
-          if (activeEl?.tagName !== 'INPUT' && activeEl?.tagName !== 'TEXTAREA' && activeEl?.tagName !== 'SELECT') {
-            setIsKeyboardVisible(false);
-          }
-        }, 100);
-      }
-    };
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
+
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
     return () => {
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
     };
   }, []);
 

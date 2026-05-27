@@ -16,6 +16,8 @@ import {
   resolveRestMap,
 } from "@/lib/routinePlanner";
 import RoutinePlannerWeekStrip from "@/components/planner/RoutinePlannerWeekStrip";
+import ExerciseLibraryPanel from "@/components/planner/ExerciseLibraryPanel";
+import { PageContainer } from "@/components/layout/PageContainer";
 import {
   Plus,
   Trash2,
@@ -338,7 +340,7 @@ export default function RoutinePlannerPage() {
 
   return (
     <Layout>
-      <div className="px-5 pt-8 pb-28 max-w-lg mx-auto">
+      <PageContainer className="pt-8 pb-28">
         <h1 className="text-screen-title">
           Workout Planner
         </h1>
@@ -473,7 +475,13 @@ export default function RoutinePlannerPage() {
             )}
           </p>
         ) : null}
-      </div>
+
+        <ExerciseLibraryPanel
+          exercises={exercises}
+          isDarkMode={isDarkMode}
+          mediaOverrides={mediaOverrides}
+        />
+      </PageContainer>
     </Layout>
   );
 }

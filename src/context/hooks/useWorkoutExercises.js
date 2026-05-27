@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { prepareExerciseCatalog } from "@/lib/exerciseCatalog";
+import { prepareExerciseCatalog, normalizeExerciseName } from "@/lib/exerciseCatalog";
 import { reconcileExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
 
 /** Exercise catalog, history, and legacy logging extracted from WorkoutContext. */
@@ -183,6 +183,91 @@ export function useWorkoutExercises(
     [user],
   );
 
+  const createCustomExercise = useCallback(
+    async ({ name, category = "other", equipment = "" }) => {
+      if (!user) return null;
+
+      const trimmed = String(name || "").trim();
+      if (!trimmed) return null;
+
+      const normalizedCategory = String(category || "other").toLowerCase();
+      const equipmentDisplay = String(equipment || "").trim();
+      const metadata = equipmentDisplay ? { equipment_display: equipmentDisplay } : {};
+
+      try {
+        const { data: userRows, error: fetchError } = await supabase
+          .from("exercises")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_predefined", false);
+
+        if (fetchError) {
+          console.error("Error loading custom exercises:", fetchError);
+          return null;
+        }
+
+        const nameKey = normalizeExerciseName(trimmed);
+        const existing = (userRows || []).find(
+          row => normalizeExerciseName(row.name) === nameKey,
+        );
+
+        if (existing) {
+          const needsUpdate =
+            existing.category !== normalizedCategory ||
+            (equipmentDisplay &&
+              existing.metadata?.equipment_display !== equipmentDisplay);
+
+          if (needsUpdate) {
+            const { data: updated, error: updateError } = await supabase
+              .from("exercises")
+              .update({
+                category: normalizedCategory,
+                metadata: { ...(existing.metadata || {}), ...metadata },
+              })
+              .eq("id", existing.id)
+              .eq("user_id", user.id)
+              .select()
+              .single();
+
+            if (updateError) {
+              console.error("Error updating custom exercise:", updateError);
+              return existing;
+            }
+
+            await loadExercises();
+            return updated;
+          }
+
+          return existing;
+        }
+
+        const { data, error } = await supabase
+          .from("exercises")
+          .insert({
+            user_id: user.id,
+            name: trimmed,
+            category: normalizedCategory,
+            is_predefined: false,
+            metadata,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Error creating custom exercise:", error);
+          return null;
+        }
+
+        await loadExercises();
+        return data;
+      } catch (err) {
+        console.error("Error creating custom exercise:", err);
+        return null;
+      }
+    },
+    [user, loadExercises],
+  );
+
   return {
     loadExercises,
     loadExerciseHistory,
@@ -191,5 +276,6 @@ export function useWorkoutExercises(
     getExerciseLogs,
     getTodayExerciseLogs,
     deleteExerciseLog,
+    createCustomExercise,
   };
 }

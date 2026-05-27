@@ -26,6 +26,7 @@ export default function CustomExercisePage() {
     getWorkoutSession,
     seedCompletedExerciseSetsForSession,
     appendExerciseToRoutine,
+    createCustomExercise,
   } = useWorkout();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("Chest");
@@ -58,6 +59,20 @@ export default function CustomExercisePage() {
       : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400"
   }`;
 
+  const saveToCatalog = async () => {
+    if (!name.trim()) return null;
+    const saved = await createCustomExercise({
+      name: name.trim(),
+      category: category.toLowerCase(),
+      equipment: equipment.trim(),
+    });
+    if (!saved) {
+      toast.error("Could not save exercise to your library");
+      return null;
+    }
+    return saved;
+  };
+
   const handleAddToToday = async () => {
     const sessionId = router.query.sessionId;
     if (typeof sessionId !== "string") {
@@ -67,15 +82,18 @@ export default function CustomExercisePage() {
     }
     if (!name.trim()) return;
 
-    const trimmed = name.trim();
-    const lowered = category.toLowerCase();
+    const saved = await saveToCatalog();
+    if (!saved) return;
+
+    const trimmed = saved.name;
+    const lowered = saved.category || category.toLowerCase();
 
     const addReturn = getQueryParamString(router.query, "addReturn").trim().toLowerCase();
     if (addReturn === "summary") {
       const seeded = await seedCompletedExerciseSetsForSession({
         sessionId,
         exercise: {
-          id: null,
+          id: saved.id,
           name: trimmed,
           category: lowered,
           equipment: equipment.trim(),
@@ -90,7 +108,7 @@ export default function CustomExercisePage() {
     }
 
     const routineRow = {
-      exercise_id: null,
+      exercise_id: saved.id,
       exercise_name: trimmed,
       category: lowered,
       target_sets: 3,
@@ -110,7 +128,7 @@ export default function CustomExercisePage() {
       }
     } else {
       addSessionExtra(sessionId, {
-        exercise_id: null,
+        exercise_id: saved.id,
         exercise_name: trimmed,
         category: lowered,
         equipment: equipment.trim(),
@@ -126,11 +144,14 @@ export default function CustomExercisePage() {
 
   const addCustomExerciseToRoutineDay = async dayNum => {
     if (Number.isNaN(dayNum) || !name.trim()) return false;
-    const trimmed = name.trim();
+
+    const saved = await saveToCatalog();
+    if (!saved) return false;
+
     const row = {
-      exercise_id: null,
-      exercise_name: trimmed,
-      category: category.toLowerCase(),
+      exercise_id: saved.id,
+      exercise_name: saved.name,
+      category: saved.category || category.toLowerCase(),
       target_sets: 3,
     };
 
@@ -152,7 +173,7 @@ export default function CustomExercisePage() {
       category: ex.category || "other",
       target_sets: ex.target_sets || 3,
     }));
-    if (existing.some(e => e.exercise_name === trimmed)) {
+    if (existing.some(e => e.exercise_name === saved.name)) {
       toast.message("Already in routine");
       return false;
     }
@@ -169,12 +190,16 @@ export default function CustomExercisePage() {
 
   const handleAddToRoutine = async () => {
     if (!name.trim()) return;
+
+    const saved = await saveToCatalog();
+    if (!saved) return;
+
     const sessionId = router.query.sessionId;
     if (typeof sessionId === "string" && session?.routine_id) {
       const result = await appendExerciseToRoutine(session.routine_id, {
-        exercise_id: null,
-        exercise_name: name.trim(),
-        category: category.toLowerCase(),
+        exercise_id: saved.id,
+        exercise_name: saved.name,
+        category: saved.category || category.toLowerCase(),
         target_sets: 3,
       });
       if (result === null) {
@@ -225,7 +250,7 @@ export default function CustomExercisePage() {
         Custom exercise
       </h1>
       <p className={`mt-1 text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-        Lightweight entry — saved with your workout or routine.
+        Saved to your exercise library and added to your workout or routine.
       </p>
 
       <div className="mt-8 space-y-4">

@@ -698,28 +698,6 @@ export default function Progress() {
           />
           )}
 
-          {/* Goals */}
-          <LazyGoalsWidget
-            isDarkMode={isDarkMode}
-            workoutHeatmapData={workoutHeatmapData}
-            habitHeatmapData={habitHeatmapData}
-            trackables={habitTrackables}
-            todayEntries={todayEntries}
-          />
-
-          {/* Body Weight Tracker */}
-          <LazyBodyWeightTracker isDarkMode={isDarkMode} />
-
-          {/* Volume Chart */}
-          <LazyVolumeChart
-            exerciseLogsByName={exerciseLogsByName}
-            workoutHeatmapData={workoutHeatmapData}
-            isDarkMode={isDarkMode}
-          />
-
-          {/* Muscle Heatmap */}
-          <LazyMuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />
-
           {/* Progressive Overload */}
           {Object.keys(exerciseLogsByName).length > 0 && (
             <CollapsibleSection
@@ -750,6 +728,28 @@ export default function Progress() {
               </div>
             </CollapsibleSection>
           )}
+
+          {/* Goals */}
+          <LazyGoalsWidget
+            isDarkMode={isDarkMode}
+            workoutHeatmapData={workoutHeatmapData}
+            habitHeatmapData={habitHeatmapData}
+            trackables={habitTrackables}
+            todayEntries={todayEntries}
+          />
+
+          {/* Body Weight Tracker */}
+          <LazyBodyWeightTracker isDarkMode={isDarkMode} />
+
+          {/* Volume Chart */}
+          <LazyVolumeChart
+            exerciseLogsByName={exerciseLogsByName}
+            workoutHeatmapData={workoutHeatmapData}
+            isDarkMode={isDarkMode}
+          />
+
+          {/* Muscle Heatmap */}
+          <LazyMuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />
         </div>
       </PageContainer>
       </FadeIn>

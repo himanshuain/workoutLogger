@@ -4,7 +4,10 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
-import ExerciseIcon from "@/components/ExerciseIcon";
+import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
+import { useWorkout } from "@/context/WorkoutContext";
+import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
+import { findCatalogExerciseByName } from "@/lib/exerciseMedia";
 import {
   ChartBody,
   ChartCollapsibleHeader,
@@ -261,6 +264,13 @@ export default function ProgressGraph({
   isDarkMode = true,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { exercises } = useWorkout();
+  const mediaOverrides = useExerciseMediaOverrides();
+
+  const catalogExercise = useMemo(
+    () => findCatalogExerciseByName(exercises, exerciseName) ?? { name: exerciseName },
+    [exercises, exerciseName],
+  );
 
   const graphData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -333,10 +343,10 @@ export default function ProgressGraph({
         <ChartCollapsibleHeader
           isDarkMode={isDarkMode}
           leading={
-            <ExerciseIcon
-              name={exerciseName}
-              className="h-7 w-7 shrink-0 rounded-card"
-              color={isDarkMode ? "#6b7280" : "#8e8e93"}
+            <ExerciseListThumbnail
+              exercise={catalogExercise}
+              isDarkMode={isDarkMode}
+              mediaOverrides={mediaOverrides}
             />
           }
           label={exerciseName}
@@ -399,7 +409,11 @@ export default function ProgressGraph({
       <div className="px-3 pt-3 pb-2">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ExerciseIcon name={exerciseName} className="h-8 w-8" color={accentColor} />
+            <ExerciseListThumbnail
+              exercise={catalogExercise}
+              isDarkMode={isDarkMode}
+              mediaOverrides={mediaOverrides}
+            />
             <div>
               <h3 className={`text-card-title ${isDarkMode ? "text-iron-100" : ""}`}>{exerciseName}</h3>
               <p className="text-metadata capitalize">{exerciseCategory}</p>

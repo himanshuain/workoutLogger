@@ -27,3 +27,49 @@ export function writeAreaCollapse(storageKey, collapsedAreas) {
     /* quota / private mode */
   }
 }
+
+/**
+ * Hydrate or sync collapsed areas when group list changes.
+ * When `knownAreas` is null, restores from storage (first collapsible render after navigation).
+ * Otherwise only adds genuinely new areas — never treats an empty in-memory set as "all known".
+ *
+ * @param {object} opts
+ * @param {Set<string> | null} opts.knownAreas — areas seen on last sync; null = hydrate
+ * @param {Set<string>} opts.currentAreas
+ * @param {Set<string>} opts.prevCollapsed
+ * @param {Set<string> | null} opts.stored
+ * @param {boolean} opts.defaultExpanded
+ */
+export function resolveAreaCollapseAfterGroupChange({
+  knownAreas,
+  currentAreas,
+  prevCollapsed,
+  stored,
+  defaultExpanded,
+}) {
+  if (knownAreas == null) {
+    const collapsed =
+      stored ?? (defaultExpanded ? new Set() : new Set(currentAreas));
+    return { collapsed, knownAreas: new Set(currentAreas), changed: true };
+  }
+
+  let changed = false;
+  const next = new Set();
+  for (const area of prevCollapsed) {
+    if (currentAreas.has(area)) next.add(area);
+    else changed = true;
+  }
+  if (!defaultExpanded) {
+    for (const area of currentAreas) {
+      if (!knownAreas.has(area)) {
+        next.add(area);
+        changed = true;
+      }
+    }
+  }
+  return {
+    collapsed: changed ? next : prevCollapsed,
+    knownAreas: new Set(currentAreas),
+    changed,
+  };
+}

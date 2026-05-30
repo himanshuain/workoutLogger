@@ -206,6 +206,33 @@ export default function ExercisePreviewPanel({
       return;
     }
 
+    const routineId =
+      typeof router.query.routineId === "string"
+        ? router.query.routineId
+        : Array.isArray(router.query.routineId)
+          ? router.query.routineId[0]
+          : "";
+    if (routineId) {
+      const result = await appendExerciseToRoutine(routineId, {
+        exercise_id: exercise.id,
+        exercise_name: exercise.name,
+        category: exercise.category || "other",
+        target_sets: 3,
+      });
+      if (result === null) {
+        toast.error("Could not add to split");
+        return;
+      }
+      if (result === "exists") {
+        toast.message("Already in this split");
+      } else {
+        toast.success("Added to split");
+      }
+      const href = getRoutinePlannerReturnHref(router.query);
+      if (href) await router.replace(href);
+      return;
+    }
+
     const day = router.query.routineDay;
     if (typeof day !== "string") {
       setRoutinePickerOpen(true);

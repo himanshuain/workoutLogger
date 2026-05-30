@@ -15,7 +15,7 @@ const LazyInstallPrompt = dynamic(() => import("@/components/InstallPrompt"), {
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
-  { id: "plan", href: "/plan", icon: ListChecks, label: "Plan" },
+  { id: "plan", href: "/plan", icon: ListChecks, label: "Splits" },
   { id: "checklists", href: "/checklists", icon: ClipboardList, label: "Checklists" },
   { id: "progress", href: "/progress", icon: TrendingUp, label: "Progress" },
 ];

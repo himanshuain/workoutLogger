@@ -5,7 +5,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { WEIGHT_PILLS_KG, REPS_PILLS, nearestPill, formatWeightPill, formatWeightDisplay, isBarWeight } from "@/lib/pillConstants";
 import { isSessionToday } from "@/lib/workoutNavigation";
 import PillRail from "@/components/workout/PillRail";
-import { Trash2, X } from "lucide-react";
+import { Trash2, ArrowLeft } from "lucide-react";
+import { actionSecondary } from "@/lib/actionButtonStyles";
+import { cn } from "@/lib/utils";
 
 export default function ExerciseLoggerPage() {
   const router = useRouter();
@@ -167,39 +169,27 @@ export default function ExerciseLoggerPage() {
   return (
     <div
       className={`min-h-screen flex flex-col ${isDarkMode ? "bg-iron-950" : "bg-slate-50"}`}
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <header
-        className={`shrink-0 flex items-start justify-between gap-4 px-5 pt-6 pb-4 border-b ${
+        className={`shrink-0 px-5 pt-6 pb-4 border-b ${
           isDarkMode ? "border-iron-800/90 bg-iron-950/95" : "border-slate-200 bg-white/80"
         }`}
       >
-        <div className="min-w-0 flex-1">
-          <h1
-            className={`text-xl font-semibold tracking-tight leading-tight ${
-              isDarkMode ? "text-iron-50" : "text-slate-900"
-            }`}
-          >
-            {title}
-          </h1>
-          <p
-            className={`text-sm mt-1 capitalize ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
-          >
-            {category && category !== "other" ? category : "General"}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleClose}
-          className={`shrink-0 w-11 h-11 rounded-card flex items-center justify-center ${
-            isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
+        <h1
+          className={`text-xl font-semibold tracking-tight leading-tight ${
+            isDarkMode ? "text-iron-50" : "text-slate-900"
           }`}
-          aria-label="Done"
         >
-          <X className="w-5 h-5" />
-        </button>
+          {title}
+        </h1>
+        <p
+          className={`text-sm mt-1 capitalize ${
+            isDarkMode ? "text-iron-500" : "text-slate-500"
+          }`}
+        >
+          {category && category !== "other" ? category : "General"}
+        </p>
       </header>
 
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8">
@@ -292,6 +282,26 @@ export default function ExerciseLoggerPage() {
           </div>
         </div>
       </div>
+
+      <footer
+        className={cn(
+          "shrink-0 border-t px-5 pt-3",
+          isDarkMode ? "border-iron-800 bg-iron-950" : "border-slate-200 bg-slate-50",
+        )}
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
+        <button
+          type="button"
+          onClick={handleClose}
+          className={cn(
+            actionSecondary(isDarkMode),
+            "w-full py-3.5 rounded-card font-semibold text-sm inline-flex items-center justify-center gap-2",
+          )}
+        >
+          <ArrowLeft className="w-5 h-5 shrink-0" aria-hidden />
+          {isSessionToday(effectiveSession) ? "Back to workout" : "Back"}
+        </button>
+      </footer>
     </div>
   );
 }

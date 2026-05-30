@@ -26,10 +26,10 @@ export default function HomeRoutineSelectorModal({
         <ModalHeader>
           <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
             {routineSelectorMode === "markDone"
-              ? "Mark done — pick a routine"
+              ? "Mark done — pick a split"
               : isViewingToday
-                ? "Choose a Routine"
-                : `Choose routine for ${formatChipLabel(viewingDate, today)}`}
+                ? "Which split today?"
+                : `Choose split for ${formatChipLabel(viewingDate, today)}`}
           </ModalTitle>
         </ModalHeader>
         <ModalBody className="space-y-2">

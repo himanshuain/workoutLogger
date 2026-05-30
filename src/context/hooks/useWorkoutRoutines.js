@@ -113,15 +113,39 @@ export function useWorkoutRoutines(user, routines, setRoutines) {
     [user, loadRoutines],
   );
 
-  const getTodayRoutine = useCallback(() => {
-    const dayOfWeek = new Date().getDay();
-    return routines.find(r => r.day_of_week === dayOfWeek) || null;
-  }, [routines]);
+  /** @deprecated Day-based planning removed; always null. Use routine picker on Today. */
+  const getTodayRoutine = useCallback(() => null, []);
 
-  /** @param {number} dayOfWeek 0=Sun … 6=Sat */
+  /** @param {number} dayOfWeek 0=Sun … 6=Sat — legacy routines only */
   const getRoutineForDay = useCallback(
     dayOfWeek => routines.find(r => r.day_of_week === dayOfWeek) || null,
     [routines],
+  );
+
+  const getRoutineById = useCallback(
+    routineId => (routineId ? routines.find(r => r.id === routineId) ?? null : null),
+    [routines],
+  );
+
+  const deleteRoutine = useCallback(
+    async routineId => {
+      if (!user || !routineId) return false;
+
+      const { error } = await supabase
+        .from("workout_routines")
+        .delete()
+        .eq("id", routineId)
+        .eq("user_id", user.id);
+
+      if (error) {
+        console.error("Error deleting routine:", error);
+        return false;
+      }
+
+      setRoutines(prev => prev.filter(r => r.id !== routineId));
+      return true;
+    },
+    [user, setRoutines],
   );
 
   const appendExerciseToRoutine = useCallback(
@@ -172,8 +196,10 @@ export function useWorkoutRoutines(user, routines, setRoutines) {
     loadRoutines,
     createRoutine,
     updateRoutine,
+    deleteRoutine,
     getTodayRoutine,
     getRoutineForDay,
+    getRoutineById,
     appendExerciseToRoutine,
   };
 }

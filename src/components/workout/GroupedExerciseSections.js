@@ -4,6 +4,7 @@ import ExerciseAreaGroupHeader from "@/components/workout/ExerciseAreaGroupHeade
 import {
   readAreaCollapse,
   writeAreaCollapse,
+  resolveAreaCollapseAfterGroupChange,
 } from "@/lib/exerciseAreaCollapseStorage";
 
 function initialCollapsed(groups, defaultExpanded, storageKey) {
@@ -45,46 +46,44 @@ export default function GroupedExerciseSections({
   const headers = showHeaders ?? groups.length > 1;
   const canCollapse = collapsible && headers;
   const areaKeys = useMemo(() => groups.map(g => g.area).join("\0"), [groups]);
+  const currentAreas = useMemo(() => new Set(groups.map(g => g.area)), [groups]);
 
   const [collapsedAreas, setCollapsedAreas] = useState(() =>
     canCollapse ? initialCollapsed(groups, defaultExpanded, collapseStorageKey) : new Set(),
   );
 
   const storageKeyRef = useRef(collapseStorageKey);
+  /** @type {React.MutableRefObject<Set<string> | null>} null = needs hydrate from storage */
+  const knownAreasRef = useRef(canCollapse ? new Set(groups.map(g => g.area)) : null);
+
   useEffect(() => {
-    if (storageKeyRef.current === collapseStorageKey) return;
-    storageKeyRef.current = collapseStorageKey;
+    if (storageKeyRef.current !== collapseStorageKey) {
+      storageKeyRef.current = collapseStorageKey;
+      knownAreasRef.current = null;
+    }
+  }, [collapseStorageKey]);
+
+  useEffect(() => {
     if (!canCollapse) {
-      setCollapsedAreas(new Set());
+      knownAreasRef.current = null;
       return;
     }
-    setCollapsedAreas(initialCollapsed(groups, defaultExpanded, collapseStorageKey));
-  }, [collapseStorageKey, canCollapse, defaultExpanded, groups]);
 
-  // Drop collapsed flags for removed areas; new areas follow defaultExpanded (do not reset user toggles).
-  useEffect(() => {
-    if (!canCollapse) return;
-    const current = new Set(groups.map(g => g.area));
     setCollapsedAreas(prev => {
-      let changed = false;
-      const next = new Set();
-      for (const area of prev) {
-        if (current.has(area)) next.add(area);
-        else changed = true;
-      }
-      if (!defaultExpanded) {
-        for (const area of current) {
-          if (!prev.has(area)) {
-            next.add(area);
-            changed = true;
-          }
-        }
-      }
+      const stored = readAreaCollapse(collapseStorageKey);
+      const { collapsed, knownAreas, changed } = resolveAreaCollapseAfterGroupChange({
+        knownAreas: knownAreasRef.current,
+        currentAreas,
+        prevCollapsed: prev,
+        stored,
+        defaultExpanded,
+      });
+      knownAreasRef.current = knownAreas;
       if (!changed) return prev;
-      writeAreaCollapse(collapseStorageKey, next);
-      return next;
+      writeAreaCollapse(collapseStorageKey, collapsed);
+      return collapsed;
     });
-  }, [areaKeys, canCollapse, defaultExpanded, collapseStorageKey, groups]);
+  }, [areaKeys, canCollapse, defaultExpanded, collapseStorageKey, currentAreas]);
 
   const isExpanded = useCallback(
     area => !collapsedAreas.has(area),

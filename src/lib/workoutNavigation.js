@@ -110,14 +110,13 @@ export function isSessionToday(session) {
 }
 
 /**
- * When exercises are opened from the routine planner (`returnTo`) and exercises are saved
- * to a routine, navigate back here so `day` restores the weekday on /plan.
- * Returns null unless `returnTo` is `plan` or `routine` (legacy) and a weekday 0–6 is known.
+ * When exercises are opened from the planner (`returnTo=plan`), navigate back to the selected split.
+ * Supports `routineId` (preferred) or legacy `day` / `routineDay` (0–6).
  *
  * @param {Record<string, string | string[] | undefined>} query - `router.query`
- * @param {number} [pickedDay] - Day from RoutineDayPickerDialog when URL has no routineDay/day
+ * @param {string} [pickedRoutineId] - When URL has no routineId yet
  */
-export function getRoutinePlannerReturnHref(query, pickedDay) {
+export function getRoutinePlannerReturnHref(query, pickedRoutineId) {
   const returnToRaw = typeof query.returnTo === "string" ? query.returnTo.trim() : "";
   if (returnToRaw !== "plan" && returnToRaw !== "routine") return null;
 
@@ -127,14 +126,18 @@ export function getRoutinePlannerReturnHref(query, pickedDay) {
     return t === "" ? null : t;
   };
 
+  let routineId = pickStr(Array.isArray(query.routineId) ? query.routineId[0] : query.routineId);
+  if (!routineId && typeof pickedRoutineId === "string" && pickedRoutineId.trim()) {
+    routineId = pickedRoutineId.trim();
+  }
+  if (routineId) {
+    return `/plan?routine=${encodeURIComponent(routineId)}`;
+  }
+
   let dayRaw = pickStr(Array.isArray(query.day) ? query.day[0] : query.day);
   if (dayRaw == null) dayRaw = pickStr(Array.isArray(query.routineDay) ? query.routineDay[0] : query.routineDay);
 
   let dayNum = typeof dayRaw === "string" ? Number.parseInt(dayRaw, 10) : NaN;
-  if (Number.isNaN(dayNum)) {
-    if (typeof pickedDay === "number" && Number.isInteger(pickedDay)) dayNum = pickedDay;
-    else dayNum = NaN;
-  }
   if (Number.isNaN(dayNum) || dayNum < 0 || dayNum > 6) return null;
 
   return `/plan?day=${encodeURIComponent(String(dayNum))}`;

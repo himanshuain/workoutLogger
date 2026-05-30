@@ -58,6 +58,9 @@ export default function ExerciseLibraryPanel({
   isDarkMode,
   mediaOverrides,
   className,
+  embedded = false,
+  previewId: previewIdProp,
+  onPreviewIdChange,
 }) {
   const [open, setOpen] = useState(true);
   const [q, setQ] = useState("");
@@ -65,7 +68,17 @@ export default function ExerciseLibraryPanel({
   const [subChip, setSubChip] = useState(null);
   const [equipmentFilter, setEquipmentFilter] = useState(null);
   const [viewMode, setViewMode] = useState("card");
-  const [previewId, setPreviewId] = useState(null);
+  const [previewIdInternal, setPreviewIdInternal] = useState(null);
+
+  const previewControlled = embedded && onPreviewIdChange != null;
+  const previewId = previewControlled ? (previewIdProp ?? null) : previewIdInternal;
+  const setPreviewId = useCallback(
+    id => {
+      if (previewControlled) onPreviewIdChange(id);
+      else setPreviewIdInternal(id);
+    },
+    [previewControlled, onPreviewIdChange],
+  );
 
   const subcategories = useMemo(
     () => (chip && chip !== "Full Body" ? getSubcategoriesForParent(chip) : []),
@@ -97,8 +110,8 @@ export default function ExerciseLibraryPanel({
     [previewId, exercises],
   );
 
-  const openPreview = useCallback(id => setPreviewId(id), []);
-  const closePreview = useCallback(() => setPreviewId(null), []);
+  const openPreview = useCallback(id => setPreviewId(id), [setPreviewId]);
+  const closePreview = useCallback(() => setPreviewId(null), [setPreviewId]);
 
   const cardShell = cn(
     "overflow-hidden rounded-card border text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
@@ -107,34 +120,18 @@ export default function ExerciseLibraryPanel({
       : "border-surface-subtle bg-surface-section shadow-sm hover:bg-surface-interactive focus-visible:ring-workout-primary focus-visible:ring-offset-[color:var(--surface-page)]",
   );
 
-  return (
-    <section className={cn("mt-10", className)}>
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className={cn(
-          "flex w-full items-center justify-between gap-3 rounded-card border px-4 py-3 text-left",
-          isDarkMode ? "border-surface-subtle bg-surface-section" : "border-surface-subtle bg-surface-section shadow-sm",
-        )}
-      >
-        <div>
-          <p className="text-section-header">Exercise library</p>
-          <p className={`mt-0.5 text-sm ${isDarkMode ? "text-iron-400" : "text-[color:var(--text-secondary)]"}`}>
-            Browse {exercises.length} exercises — tap to preview
-          </p>
-        </div>
-        {open ? (
-          <ChevronUp className={`h-5 w-5 shrink-0 ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`} />
-        ) : (
-          <ChevronDown className={`h-5 w-5 shrink-0 ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`} />
-        )}
-      </button>
-
-      {open ? (
+  const libraryBody = (
         <div
           className={cn(
-            "mt-3 space-y-3 rounded-card border p-4",
-            isDarkMode ? "border-surface-subtle bg-surface-section/60" : "border-surface-subtle bg-surface-section shadow-sm",
+            "space-y-3",
+            embedded
+              ? ""
+              : cn(
+                  "mt-3 rounded-card border p-4",
+                  isDarkMode
+                    ? "border-surface-subtle bg-surface-section/60"
+                    : "border-surface-subtle bg-surface-section shadow-sm",
+                ),
           )}
         >
           <div className="relative">
@@ -289,7 +286,8 @@ export default function ExerciseLibraryPanel({
 
           <div
             className={cn(
-              "max-h-[min(52vh,520px)] overflow-y-auto scrollbar-thin pr-0.5",
+              "overflow-y-auto scrollbar-thin pr-0.5",
+              embedded ? "max-h-[min(68vh,640px)]" : "max-h-[min(52vh,520px)]",
               viewMode === "card" ? "grid grid-cols-2 gap-3 lg:grid-cols-3" : "space-y-2",
             )}
           >
@@ -343,7 +341,38 @@ export default function ExerciseLibraryPanel({
             })}
           </div>
         </div>
-      ) : null}
+  );
+
+  return (
+    <section className={cn(embedded ? "" : "mt-10", className)}>
+      {!embedded ? (
+        <button
+          type="button"
+          onClick={() => setOpen(v => !v)}
+          className={cn(
+            "flex w-full items-center justify-between gap-3 rounded-card border px-4 py-3 text-left",
+            isDarkMode ? "border-surface-subtle bg-surface-section" : "border-surface-subtle bg-surface-section shadow-sm",
+          )}
+        >
+          <div>
+            <p className="text-section-header">Exercise library</p>
+            <p className={`mt-0.5 text-sm ${isDarkMode ? "text-iron-400" : "text-[color:var(--text-secondary)]"}`}>
+              Browse {exercises.length} exercises — tap to preview
+            </p>
+          </div>
+          {open ? (
+            <ChevronUp className={`h-5 w-5 shrink-0 ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`} />
+          ) : (
+            <ChevronDown className={`h-5 w-5 shrink-0 ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`} />
+          )}
+        </button>
+      ) : (
+        <p className={`mb-3 text-sm ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+          Browse {exercises.length} exercises — tap to preview
+        </p>
+      )}
+
+      {open || embedded ? libraryBody : null}
 
       <Modal open={Boolean(previewExercise)} onOpenChange={v => !v && closePreview()}>
         <ModalContent

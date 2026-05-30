@@ -315,11 +315,8 @@ export default function Home() {
     enabled: Boolean(user && viewingDate && !isViewingToday),
   });
 
-  const routineForViewingDay = useMemo(() => {
-    if (!viewingDate) return null;
-    const dayOfWeek = new Date(viewingDate + "T12:00:00").getDay();
-    return getRoutineForDay(dayOfWeek);
-  }, [viewingDate, getRoutineForDay]);
+  /** Splits are chosen at log time, not assigned to weekdays. */
+  const routineForViewingDay = null;
 
   const hasLifeLogThisDay = useCallback((et, dateStr) => (et.event_logs || []).some(l => l.date === dateStr), []);
 

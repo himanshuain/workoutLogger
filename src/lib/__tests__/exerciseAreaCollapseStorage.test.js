@@ -3,6 +3,7 @@ import {
   areaCollapseStorageKey,
   readAreaCollapse,
   writeAreaCollapse,
+  resolveAreaCollapseAfterGroupChange,
 } from "@/lib/exerciseAreaCollapseStorage";
 
 describe("exerciseAreaCollapseStorage", () => {
@@ -32,5 +33,49 @@ describe("exerciseAreaCollapseStorage", () => {
     const key = areaCollapseStorageKey("sess-1");
     writeAreaCollapse(key, new Set(["arms", "legs"]));
     expect(readAreaCollapse(key)).toEqual(new Set(["arms", "legs"]));
+  });
+
+  it("hydrates from storage when groups first become collapsible", () => {
+    const current = new Set(["chest", "back", "legs"]);
+    const stored = new Set(["back", "legs"]);
+    const { collapsed, knownAreas, changed } = resolveAreaCollapseAfterGroupChange({
+      knownAreas: null,
+      currentAreas: current,
+      prevCollapsed: new Set(),
+      stored,
+      defaultExpanded: false,
+    });
+    expect(changed).toBe(true);
+    expect(collapsed).toEqual(stored);
+    expect(knownAreas).toEqual(current);
+  });
+
+  it("does not collapse all areas when prev is empty but storage has expanded chest", () => {
+    const current = new Set(["chest", "back", "legs"]);
+    const stored = new Set(["back", "legs"]);
+    const { collapsed } = resolveAreaCollapseAfterGroupChange({
+      knownAreas: null,
+      currentAreas: current,
+      prevCollapsed: new Set(),
+      stored,
+      defaultExpanded: false,
+    });
+    expect(collapsed.has("chest")).toBe(false);
+    expect(collapsed.has("back")).toBe(true);
+  });
+
+  it("only collapses genuinely new areas after hydration", () => {
+    const known = new Set(["chest", "back"]);
+    const current = new Set(["chest", "back", "legs"]);
+    const prev = new Set(["back"]);
+    const { collapsed, changed } = resolveAreaCollapseAfterGroupChange({
+      knownAreas: known,
+      currentAreas: current,
+      prevCollapsed: prev,
+      stored: null,
+      defaultExpanded: false,
+    });
+    expect(changed).toBe(true);
+    expect(collapsed).toEqual(new Set(["back", "legs"]));
   });
 });

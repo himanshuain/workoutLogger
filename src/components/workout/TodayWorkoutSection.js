@@ -12,12 +12,9 @@ import {
   Plus,
   CheckCircle2,
   Circle,
-  Play,
-  Calendar,
   Dumbbell,
   ChevronRight,
   Edit3,
-  ClipboardList,
   RefreshCw,
   RotateCw,
   Trash2,
@@ -32,6 +29,9 @@ import { areaCollapseStorageKey } from "@/lib/exerciseAreaCollapseStorage";
 import ExerciseSessionResetButton, {
   exerciseHasLoggedSets,
 } from "@/components/workout/ExerciseSessionResetButton";
+import ExercisePreviewButton, {
+  libraryEyeOverlayClass,
+} from "@/components/planner/ExercisePreviewButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,7 +80,6 @@ export default function TodayWorkoutSection({
     user,
     routines,
     activeSession,
-    getTodayRoutine,
     startWorkoutSession,
     markTodayWorkoutDone,
     undoTodayWorkoutDone,
@@ -91,7 +90,6 @@ export default function TodayWorkoutSection({
   } = useWorkout();
   const mediaOverrides = useExerciseMediaOverrides();
 
-  const [starting, setStarting] = useState(false);
   const [markingDone, setMarkingDone] = useState(false);
   const [undoingDone, setUndoingDone] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -110,16 +108,10 @@ export default function TodayWorkoutSection({
     bumpExtras();
   }, [router.asPath, bumpExtras]);
 
-  const todayRoutine = useMemo(() => getTodayRoutine(), [getTodayRoutine, routines]);
-
-  /** When user starts a session from "Choose routine" on a day with no template, exercises come from the session's routine_id. */
   const templateRoutine = useMemo(() => {
-    if (activeSession?.routine_id) {
-      const r = routines.find(x => x.id === activeSession.routine_id);
-      if (r) return r;
-    }
-    return getTodayRoutine();
-  }, [activeSession?.routine_id, routines, getTodayRoutine]);
+    if (!activeSession?.routine_id) return null;
+    return routines.find(x => x.id === activeSession.routine_id) ?? null;
+  }, [activeSession?.routine_id, routines]);
 
   const extras = useMemo(() => {
     if (!activeSession?.id) return [];
@@ -163,17 +155,6 @@ export default function TodayWorkoutSection({
     return () => window.removeEventListener("focus", onFocus);
   }, [bumpExtras]);
 
-  const handleStartOrResume = async () => {
-    if (!todayRoutine) return;
-    setStarting(true);
-    try {
-      await startWorkoutSession(todayRoutine);
-      await loadActiveSession();
-    } finally {
-      setStarting(false);
-    }
-  };
-
   const handleUndoMarkDone = async (sessionId = completedTodaySession?.id) => {
     if (!sessionId) return;
     setUndoingDone(true);
@@ -193,7 +174,7 @@ export default function TodayWorkoutSection({
   };
 
   const handleMarkDone = async () => {
-    const routine = todayRoutine || templateRoutine;
+    const routine = templateRoutine;
     if (!routine && !activeSession?.id) return;
     setMarkingDone(true);
     try {
@@ -284,9 +265,7 @@ export default function TodayWorkoutSection({
 
   const hasSession = activeSession && activeSession.status === "active";
   const routineTitle =
-    templateRoutine?.name || activeSession?.routine_name || todayRoutine?.name || "Workout";
-
-  const getDayName = () => new Date().toLocaleDateString("en-US", { weekday: "long" });
+    templateRoutine?.name || activeSession?.routine_name || "Workout";
 
   if (completedTodaySession && !hasSession) {
     const doneSets = (completedTodaySession.set_logs || []).filter(s => s.is_completed).length;
@@ -341,19 +320,15 @@ export default function TodayWorkoutSection({
     );
   }
 
-  if (!hasSession && !todayRoutine && routines.length > 0) {
-    const todayDow = new Date().getDay();
+  if (!hasSession && routines.length > 0) {
     return (
       <div className="max-w-lg mx-auto">
         <div className="card-hero !p-3 sm:!p-4">
-          <div
-            className={`flex items-center gap-2 text-sm mb-2 ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
+          <p
+            className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
           >
-            <Calendar className="w-4 h-4 shrink-0" />
-            No workout assigned for {getDayName()}
-          </div>
+            Choose which split you&apos;re training today.
+          </p>
 
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[1fr_auto] gap-2">
@@ -375,21 +350,13 @@ export default function TodayWorkoutSection({
                 {markingDone ? "…" : "Mark done"}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => router.push(`/plan?day=${todayDow}`)}
-              className={`w-full rounded-card py-3 font-semibold flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
-            >
-              <ClipboardList className="w-5 h-5" />
-              Plan this day
-            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!hasSession && !todayRoutine && routines.length === 0) {
+  if (!hasSession && routines.length === 0) {
     return (
       <div className="max-w-lg mx-auto">
         <button
@@ -421,7 +388,7 @@ export default function TodayWorkoutSection({
               Create your first routine
             </p>
             <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-              Plan your workouts for each day
+              Create splits like Push, Pull, or Legs
             </p>
           </div>
           <span
@@ -505,34 +472,7 @@ export default function TodayWorkoutSection({
             </p>
           ) : null}
 
-          {!hasSession ? (
-            <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-              <button
-                type="button"
-                onClick={handleStartOrResume}
-                disabled={starting || markingDone || !todayRoutine}
-                className={`flex min-h-[44px] items-center justify-center gap-2 rounded-card py-3.5 text-sm font-bold disabled:pointer-events-none disabled:opacity-50 ${actionPrimary(isDarkMode)}`}
-              >
-                {starting ? (
-                  <span className="animate-pulse">Starting…</span>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" fill="currentColor" />
-                    Start workout
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleMarkDone}
-                disabled={starting || markingDone || !todayRoutine}
-                className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-card px-3 py-3.5 text-xs font-semibold disabled:pointer-events-none disabled:opacity-50 ${actionMarkDone(isDarkMode)}`}
-              >
-                <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
-                {markingDone ? "…" : "Mark done"}
-              </button>
-            </div>
-          ) : (
+          {hasSession ? (
             <>
               <div
                 className={`mt-3 pt-3 border-t ${
@@ -551,12 +491,13 @@ export default function TodayWorkoutSection({
                       const showReset = hasLogs && hasSession;
                       const media = resolveExerciseMedia(ex.exercise_name);
                       const showPlaceholder = !media || thumbFailed[ex.exercise_name];
+                      const hasTrash = ex.added_today;
                       const cardPadRight =
-                        ex.added_today && showReset
-                          ? "pr-[4.25rem]"
-                          : ex.added_today || showReset
+                        hasTrash && showReset
+                          ? "pr-[6.75rem]"
+                          : hasTrash || showReset
                             ? "pr-12"
-                            : "";
+                            : "pr-10";
                       return (
                         <StaggerItem key={ex.exercise_name}>
                           <div
@@ -656,6 +597,17 @@ export default function TodayWorkoutSection({
                                 </div>
                               </button>
                             </PressableScale>
+                            <ExercisePreviewButton
+                              exerciseName={ex.exercise_name}
+                              exerciseId={ex.exercise_id}
+                              exercises={exercises}
+                              isDarkMode={isDarkMode}
+                              variant="overlay"
+                              overlayOffset={libraryEyeOverlayClass({
+                                hasTrash,
+                                hasReset: showReset,
+                              })}
+                            />
                             {showReset ? (
                               <ExerciseSessionResetButton
                                 exerciseName={ex.exercise_name}
@@ -663,10 +615,10 @@ export default function TodayWorkoutSection({
                                 compact
                                 disabled={resettingExercise === ex.exercise_name}
                                 onClick={handleResetExercise}
-                                className={ex.added_today ? "right-10" : undefined}
+                                className={hasTrash ? "right-10" : undefined}
                               />
                             ) : null}
-                            {ex.added_today ? (
+                            {hasTrash ? (
                               <button
                                 type="button"
                                 onClick={e => {
@@ -727,7 +679,7 @@ export default function TodayWorkoutSection({
                 </div>
               </div>
             </>
-          )}
+          ) : null}
       </div>
 
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>

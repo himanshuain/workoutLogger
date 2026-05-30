@@ -129,14 +129,24 @@ export default function ExercisesSearchPage() {
     }
   }, []);
 
+  const routineIdStr =
+    typeof router.query.routineId === "string"
+      ? router.query.routineId
+      : Array.isArray(router.query.routineId)
+        ? router.query.routineId[0]
+        : "";
   const routineDayStr = router.query.routineDay;
   const routineDayNum = typeof routineDayStr === "string" ? parseInt(routineDayStr, 10) : NaN;
-  const isRoutinePicker = !Number.isNaN(routineDayNum) && routineDayNum >= 0 && routineDayNum <= 6;
+  const isRoutineById = Boolean(routineIdStr);
+  const isRoutineByDay =
+    !isRoutineById && !Number.isNaN(routineDayNum) && routineDayNum >= 0 && routineDayNum <= 6;
+  const isRoutinePicker = isRoutineById || isRoutineByDay;
 
-  const uiStorageKey = useMemo(
-    () => `wl_exercises_${isRoutinePicker && routineDayStr ? String(routineDayStr) : "browse"}`,
-    [isRoutinePicker, routineDayStr]
-  );
+  const uiStorageKey = useMemo(() => {
+    if (isRoutineById) return `wl_exercises_rid_${routineIdStr}`;
+    if (isRoutineByDay && routineDayStr) return `wl_exercises_${String(routineDayStr)}`;
+    return "wl_exercises_browse";
+  }, [isRoutineById, isRoutineByDay, routineIdStr, routineDayStr]);
 
   useEffect(() => {
     setUiHydrated(false);
@@ -223,19 +233,18 @@ export default function ExercisesSearchPage() {
   const getRoutinePickerBackHref = useCallback(() => {
     const fromNav = getRoutinePlannerReturnHref(router.query);
     if (fromNav) return fromNav;
-    const day = routineDayNum;
-    if (Number.isNaN(day) || day < 0 || day > 6) return "/plan";
-    return `/plan?day=${encodeURIComponent(String(day))}`;
-  }, [router.query, routineDayNum]);
+    return "/plan";
+  }, [router.query]);
 
-  const routineForDay = useMemo(
-    () => (isRoutinePicker ? getRoutineForDay(routineDayNum) : null),
-    [isRoutinePicker, routineDayNum, getRoutineForDay, routines],
-  );
+  const pickerRoutine = useMemo(() => {
+    if (isRoutineById) return routines.find(r => r.id === routineIdStr) ?? null;
+    if (isRoutineByDay) return getRoutineForDay(routineDayNum);
+    return null;
+  }, [isRoutineById, isRoutineByDay, routineIdStr, routineDayNum, getRoutineForDay, routines]);
 
   const savedRoutineExercises = useMemo(
-    () => routineForDay?.routine_exercises || [],
-    [routineForDay],
+    () => pickerRoutine?.routine_exercises || [],
+    [pickerRoutine],
   );
 
   const savedRoutineNameSet = useMemo(
@@ -401,8 +410,12 @@ export default function ExercisesSearchPage() {
         target_sets: 3,
       }));
 
-      const routine = getRoutineForDay(routineDayNum);
-      if (!routine) {
+      let routine = pickerRoutine;
+      if (!routine && isRoutineById) {
+        toast.error("Split not found — open it again from the planner");
+        return;
+      }
+      if (!routine && isRoutineByDay) {
         await createRoutine({
           name: `${DAY_NAMES[routineDayNum] ?? "Day"} workout`,
           day_of_week: routineDayNum,
@@ -483,7 +496,8 @@ export default function ExercisesSearchPage() {
         </div>
         {isRoutinePicker && (
           <p className={`mt-1.5 text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-            Green = saved · gold = new picks for {DAY_NAMES[routineDayNum]}
+            Green = saved · gold = new picks
+            {pickerRoutine?.name ? ` for ${pickerRoutine.name}` : isRoutineByDay ? ` for ${DAY_NAMES[routineDayNum]}` : ""}
           </p>
         )}
 
@@ -511,7 +525,7 @@ export default function ExercisesSearchPage() {
               >
                 <p className={`min-w-0 text-xs font-medium truncate ${isDarkMode ? "text-iron-200" : "text-slate-800"}`}>
                   <span className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
-                    {DAY_NAMES[routineDayNum]} plan ·{" "}
+                    {pickerRoutine?.name?.trim() || (isRoutineByDay ? `${DAY_NAMES[routineDayNum]} plan` : "Split")} ·{" "}
                   </span>
                   {savedRoutineExercises.length} saved
                   {!pinnedSavedOpen ? (
@@ -1072,7 +1086,8 @@ export default function ExercisesSearchPage() {
             if (router.query.returnTo) p.set("returnTo", String(router.query.returnTo));
             if (router.query.day) p.set("day", String(router.query.day));
             if (router.query.sessionId) p.set("sessionId", String(router.query.sessionId));
-            if (router.query.routineDay) p.set("routineDay", String(router.query.routineDay));
+            if (router.query.routineId) p.set("routineId", String(router.query.routineId));
+            else if (router.query.routineDay) p.set("routineDay", String(router.query.routineDay));
             const addReturn = getQueryParamString(router.query, "addReturn");
             if (addReturn) p.set("addReturn", addReturn);
             router.push(`/exercises/custom?${p.toString()}`);

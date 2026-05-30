@@ -1,14 +1,13 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, memo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import DragReorderList from "@/components/DragReorderList";
 import RoutineExerciseThumb from "@/components/planner/RoutineExerciseThumb";
 import ExerciseAreaGroupHeader from "@/components/workout/ExerciseAreaGroupHeader";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
-import { groupExercisesByArea, mergeAreaReorder } from "@/lib/exerciseAreaGroups";
+import { groupExercisesByArea } from "@/lib/exerciseAreaGroups";
 import { toast } from "sonner";
 import {
   PLANNER_DAYS,
@@ -31,7 +30,7 @@ import {
 } from "@/lib/actionButtonStyles";
 import { SkeletonRoutineExercises } from "@/components/SkeletonLoader";
 
-const AUTOSAVE_MS = 700;
+const AUTOSAVE_MS = 1200;
 
 function listToPayload(list) {
   return list.map(ex => ({
@@ -74,6 +73,52 @@ function draftSnapshot({ title, list, restDay }) {
   });
 }
 
+const RoutineExerciseRow = memo(function RoutineExerciseRow({
+  item,
+  thumbUrl,
+  isDarkMode,
+  onNotesChange,
+  onRemove,
+}) {
+  return (
+    <div className="card-secondary flex items-center gap-3">
+      <RoutineExerciseThumb
+        exerciseName={item.exercise_name}
+        thumbUrl={thumbUrl}
+        isDarkMode={isDarkMode}
+      />
+      <div className="min-w-0 flex-1 space-y-1">
+        <p className={`font-medium truncate ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
+          {item.exercise_name}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
+          <input
+            type="text"
+            value={item.notes ?? ""}
+            maxLength={500}
+            onChange={(e) => onNotesChange(item.key, e.target.value)}
+            placeholder="Note (optional)"
+            className={`min-w-0 flex-1 basis-[6rem] text-xs bg-transparent border-0 p-0 outline-none ring-0 focus:ring-0 ${
+              isDarkMode
+                ? "text-iron-300 placeholder:text-iron-600"
+                : "text-slate-700 placeholder:text-slate-400"
+            }`}
+            aria-label={`Note for ${item.exercise_name}`}
+          />
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onRemove(item.key)}
+        className={`rounded-card p-2 ${actionDestructiveGhost(isDarkMode)}`}
+        aria-label={`Remove ${item.exercise_name}`}
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+});
+
 function serverSnapshot({ routine, restDay, selectedDay }) {
   if (restDay) {
     return JSON.stringify({
@@ -115,7 +160,21 @@ export default function RoutinePlannerPage() {
   const [restByDay, setRestByDay] = useState({});
   const [saveStatus, setSaveStatus] = useState("idle");
   const savingRef = useRef(false);
+  const getRoutineForDayRef = useRef(getRoutineForDay);
+  getRoutineForDayRef.current = getRoutineForDay;
   const restDay = !!restByDay[selectedDay];
+
+  const hydrateDayForm = useCallback((day) => {
+    const r = getRoutineForDayRef.current(day);
+    if (r) {
+      setTitle(r.name || "");
+      setList(routineToList(r, day));
+    } else {
+      setTitle("");
+      setList([]);
+    }
+    setListReady(true);
+  }, []);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -142,30 +201,21 @@ export default function RoutinePlannerPage() {
     });
   }, [user?.id, updateSettings]);
 
+  // Hydrate form only when switching days — not when routines refresh after autosave.
   useEffect(() => {
+    if (!user) return;
     setListReady(false);
-  }, [selectedDay]);
+    hydrateDayForm(selectedDay);
+  }, [selectedDay, user, hydrateDayForm]);
 
+  // First fetch: routines may arrive after the day effect ran with empty data.
+  const initialRoutinesHydratedRef = useRef(false);
   useEffect(() => {
-    const r = getRoutineForDay(selectedDay);
-    if (r) {
-      setTitle(r.name || "");
-      setList(
-        (r.routine_exercises || []).map((ex, i) => ({
-          key: ex.id || `re-${selectedDay}-${i}-${ex.exercise_name}`,
-          exercise_id: ex.exercise_id,
-          exercise_name: ex.exercise_name,
-          category: ex.category || "other",
-          target_sets: ex.target_sets || 3,
-          notes: ex.notes != null ? String(ex.notes) : "",
-        })),
-      );
-    } else {
-      setTitle("");
-      setList([]);
-    }
-    setListReady(true);
-  }, [selectedDay, getRoutineForDay, routines]);
+    if (!user || initialRoutinesHydratedRef.current) return;
+    if (routines.length === 0) return;
+    initialRoutinesHydratedRef.current = true;
+    hydrateDayForm(selectedDay);
+  }, [user, routines.length, selectedDay, hydrateDayForm]);
 
   const areaGroups = useMemo(
     () => groupExercisesByArea(list, ex => ex.category),
@@ -182,6 +232,12 @@ export default function RoutinePlannerPage() {
     [routine, restDay, selectedDay],
   );
   const isDirty = listReady && draftKey !== serverKey;
+
+  // Pick up server changes when idle (e.g. return from exercise picker) — never while typing.
+  useEffect(() => {
+    if (!user || !listReady || isDirty) return;
+    hydrateDayForm(selectedDay);
+  }, [routines, user, listReady, isDirty, selectedDay, hydrateDayForm]);
 
   const defaultTitle = useMemo(
     () => `${PLANNER_DAYS.find(d => d.value === selectedDay)?.label ?? "Day"} workout`,
@@ -286,48 +342,13 @@ export default function RoutinePlannerPage() {
     setTitle("");
   };
 
-  const renderRoutineExerciseItem = item => (
-    <div className="card-secondary flex items-center gap-3">
-      <RoutineExerciseThumb
-        exerciseName={item.exercise_name}
-        thumbUrl={thumb(item.exercise_name)}
-        isDarkMode={isDarkMode}
-      />
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className={`font-medium truncate ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
-          {item.exercise_name}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
-          <input
-            type="text"
-            value={item.notes ?? ""}
-            maxLength={500}
-            onChange={(e) => {
-              const v = e.target.value;
-              setList((prev) =>
-                prev.map((x) => (x.key === item.key ? { ...x, notes: v } : x)),
-              );
-            }}
-            placeholder="Note (optional)"
-            className={`min-w-0 flex-1 basis-[6rem] text-xs bg-transparent border-0 p-0 outline-none ring-0 focus:ring-0 ${
-              isDarkMode
-                ? "text-iron-300 placeholder:text-iron-600"
-                : "text-slate-700 placeholder:text-slate-400"
-            }`}
-            aria-label={`Note for ${item.exercise_name}`}
-          />
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={() => setList((prev) => prev.filter((x) => x.key !== item.key))}
-        className={`rounded-card p-2 ${actionDestructiveGhost(isDarkMode)}`}
-        aria-label={`Remove ${item.exercise_name}`}
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  );
+  const handleNotesChange = useCallback((key, notes) => {
+    setList((prev) => prev.map((x) => (x.key === key ? { ...x, notes } : x)));
+  }, []);
+
+  const handleRemoveExercise = useCallback((key) => {
+    setList((prev) => prev.filter((x) => x.key !== key));
+  }, []);
 
   if (!user) {
     return (
@@ -349,6 +370,7 @@ export default function RoutinePlannerPage() {
           onDaySelect={handleDaySelect}
           isDarkMode={isDarkMode}
           getRoutineForDay={getRoutineForDay}
+          createRoutine={createRoutine}
           updateRoutine={updateRoutine}
           restMap={restByDay}
           onRestMapChange={handleRestMapCommit}
@@ -402,17 +424,18 @@ export default function RoutinePlannerPage() {
                           isDarkMode={isDarkMode}
                         />
                       ) : null}
-                      <DragReorderList
-                        items={group.exercises}
-                        onReorder={next =>
-                          setList(prev =>
-                            mergeAreaReorder(prev, group.area, next, ex => ex.category),
-                          )
-                        }
-                        keyExtractor={item => item.key}
-                        isDarkMode={isDarkMode}
-                        renderItem={renderRoutineExerciseItem}
-                      />
+                      <div className="space-y-2">
+                        {group.exercises.map(item => (
+                          <RoutineExerciseRow
+                            key={item.key}
+                            item={item}
+                            thumbUrl={thumb(item.exercise_name)}
+                            isDarkMode={isDarkMode}
+                            onNotesChange={handleNotesChange}
+                            onRemove={handleRemoveExercise}
+                          />
+                        ))}
+                      </div>
                     </div>
                   ))}
                 </div>

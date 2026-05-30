@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 import GroupedExerciseSections from "@/components/workout/GroupedExerciseSections";
+import { areaCollapseStorageKey } from "@/lib/exerciseAreaCollapseStorage";
 
 // Helper functions for exercise management
 function exerciseStatus(name, setLogs) {
@@ -120,6 +121,7 @@ export default function WorkoutSessionView({
             <GroupedExerciseSections
               exercises={plannedExercises}
               isDarkMode={isDarkMode}
+              collapseStorageKey={areaCollapseStorageKey(session?.id)}
               listClassName="space-y-3"
               renderExercise={ex => {
                 const st = exerciseStatus(ex.exercise_name, setLogs);

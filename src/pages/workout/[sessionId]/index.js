@@ -30,6 +30,7 @@ import {
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 import GroupedExerciseSections from "@/components/workout/GroupedExerciseSections";
+import { areaCollapseStorageKey } from "@/lib/exerciseAreaCollapseStorage";
 import ExerciseSessionResetButton, {
   exerciseHasLoggedSets,
 } from "@/components/workout/ExerciseSessionResetButton";
@@ -354,6 +355,7 @@ export default function WorkoutSessionPage() {
               <GroupedExerciseSections
                 exercises={plannedExercises}
                 isDarkMode={isDarkMode}
+                collapseStorageKey={areaCollapseStorageKey(sessionId)}
                 listClassName="space-y-3"
                 renderExercise={ex => {
                   const st = exerciseStatus(ex.exercise_name, setLogs);

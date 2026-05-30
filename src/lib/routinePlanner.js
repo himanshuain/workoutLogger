@@ -69,3 +69,33 @@ export function bareRoutineFields(routine, day_of_week) {
     color: routine.color || "#3b82f6",
   };
 }
+
+/** Exercise rows for create/update when copying a routine to another day. */
+export function routineExercisesForCopy(routine) {
+  return (routine?.routine_exercises || []).map(ex => ({
+    exercise_id: ex.exercise_id,
+    exercise_name: ex.exercise_name,
+    category: ex.category || "other",
+    target_sets: ex.target_sets || 3,
+    notes:
+      ex.notes != null && String(ex.notes).trim()
+        ? String(ex.notes).trim().slice(0, 500)
+        : null,
+  }));
+}
+
+/** Full payload to create or replace a routine on `targetDay` from `sourceRoutine`. */
+export function buildRoutineCopyPayload(sourceRoutine, targetDay) {
+  return {
+    name: sourceRoutine?.name?.trim() || "Workout",
+    day_of_week: targetDay,
+    color: sourceRoutine?.color || "#3b82f6",
+    exercises: routineExercisesForCopy(sourceRoutine),
+  };
+}
+
+export function restMapClearDay(map, day) {
+  const next = { ...map };
+  delete next[day];
+  return next;
+}

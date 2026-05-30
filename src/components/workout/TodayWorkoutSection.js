@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
 import GroupedExerciseSections from "@/components/workout/GroupedExerciseSections";
+import { areaCollapseStorageKey } from "@/lib/exerciseAreaCollapseStorage";
 import ExerciseSessionResetButton, {
   exerciseHasLoggedSets,
 } from "@/components/workout/ExerciseSessionResetButton";
@@ -542,6 +543,7 @@ export default function TodayWorkoutSection({
                   <GroupedExerciseSections
                     exercises={plannedExercises}
                     isDarkMode={isDarkMode}
+                    collapseStorageKey={areaCollapseStorageKey(activeSession?.id)}
                     listClassName="space-y-2"
                     renderExercise={ex => {
                       const st = exerciseStatus(ex.exercise_name, setLogs);

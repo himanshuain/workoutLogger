@@ -5,6 +5,8 @@ import {
   swapRestMarkers,
   restMapAfterMove,
   bareRoutineFields,
+  buildRoutineCopyPayload,
+  restMapClearDay,
 } from "@/lib/routinePlanner";
 import {
   ContextMenu,
@@ -31,7 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { actionPrimary, actionSecondary } from "@/lib/actionButtonStyles";
-import { ArrowRightLeft, Plus, X } from "lucide-react";
+import { ArrowRightLeft, Copy, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 /**
@@ -42,13 +44,16 @@ export default function RoutinePlannerWeekStrip({
   onDaySelect,
   isDarkMode,
   getRoutineForDay,
+  createRoutine,
   updateRoutine,
   restMap,
   onRestMapChange,
   onAddDay,
 }) {
   const [movePickerFrom, setMovePickerFrom] = useState(null);
+  const [copyPickerFrom, setCopyPickerFrom] = useState(null);
   const [swapConfirm, setSwapConfirm] = useState(null);
+  const [copyOverwriteConfirm, setCopyOverwriteConfirm] = useState(null);
 
   const execMove = useCallback(
     async (fromDay, toDay) => {
@@ -100,6 +105,54 @@ export default function RoutinePlannerWeekStrip({
   );
 
   const openMovePicker = day => setMovePickerFrom(day);
+  const openCopyPicker = day => setCopyPickerFrom(day);
+
+  const execCopy = useCallback(
+    async (fromDay, toDay) => {
+      const source = getRoutineForDay(fromDay);
+      if (!source) return;
+
+      const target = getRoutineForDay(toDay);
+      const payload = buildRoutineCopyPayload(source, toDay);
+
+      try {
+        if (target) {
+          await updateRoutine(target.id, payload);
+        } else {
+          await createRoutine(payload);
+        }
+        onRestMapChange(prev => restMapClearDay(prev, toDay));
+        const dayShort = PLANNER_DAYS.find(d => d.value === toDay)?.short ?? "day";
+        toast.success(`Copied to ${dayShort}`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Could not copy routine — try again");
+      }
+    },
+    [createRoutine, getRoutineForDay, onRestMapChange, updateRoutine],
+  );
+
+  const handlePickCopyTargetDay = useCallback(
+    toDay => {
+      const fromDay = copyPickerFrom;
+      if (fromDay == null || fromDay === toDay) return;
+      const source = getRoutineForDay(fromDay);
+      if (!source) return;
+      setCopyPickerFrom(null);
+      const target = getRoutineForDay(toDay);
+      if (target) {
+        setCopyOverwriteConfirm({
+          fromDay,
+          toDay,
+          sourceName: source.name?.trim() || "Untitled",
+          targetName: target.name?.trim() || "Untitled",
+        });
+        return;
+      }
+      void execCopy(fromDay, toDay);
+    },
+    [copyPickerFrom, execCopy, getRoutineForDay],
+  );
 
   const ctxMenuCls = isDarkMode
     ? "border-iron-700 bg-iron-900 text-iron-100"
@@ -119,19 +172,21 @@ export default function RoutinePlannerWeekStrip({
           : "text-slate-600",
     );
 
-  const moveSourceBanner =
-    movePickerFrom !== null
+  const pickerSourceBanner = fromDay =>
+    fromDay != null
       ? (() => {
-          const r = getRoutineForDay(movePickerFrom);
+          const r = getRoutineForDay(fromDay);
           const subtitle = routineSubtitleForDay({
-            markedRest: !!restMap[movePickerFrom],
+            markedRest: !!restMap[fromDay],
             routine: r,
           });
-          const dayLabel =
-            PLANNER_DAYS.find(x => x.value === movePickerFrom)?.label ?? "Selected day";
+          const dayLabel = PLANNER_DAYS.find(x => x.value === fromDay)?.label ?? "Selected day";
           return { subtitle, dayLabel };
         })()
       : null;
+
+  const moveSourceBanner = pickerSourceBanner(movePickerFrom);
+  const copySourceBanner = pickerSourceBanner(copyPickerFrom);
 
   return (
     <>
@@ -247,6 +302,15 @@ export default function RoutinePlannerWeekStrip({
                   <ArrowRightLeft className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
                   Move split…
                 </ContextMenuItem>
+                <ContextMenuItem
+                  className={cn(ctxItemCls, "gap-2")}
+                  onSelect={() => {
+                    requestAnimationFrame(() => openCopyPicker(d.value));
+                  }}
+                >
+                  <Copy className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
+                  Copy split…
+                </ContextMenuItem>
               </ContextMenuContent>
             </ContextMenu>
           ) : (
@@ -256,18 +320,32 @@ export default function RoutinePlannerWeekStrip({
       </div>
 
       {getRoutineForDay(selectedDay) ? (
-        <button
-          type="button"
-          onClick={() => openMovePicker(selectedDay)}
-          className={`mt-1 inline-flex items-center gap-1.5 text-xs font-medium ${
-            isDarkMode
-              ? "text-iron-500 hover:text-iron-300"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          <ArrowRightLeft className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden />
-          Move split to another day
-        </button>
+        <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <button
+            type="button"
+            onClick={() => openMovePicker(selectedDay)}
+            className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+              isDarkMode
+                ? "text-iron-500 hover:text-iron-300"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden />
+            Move split
+          </button>
+          <button
+            type="button"
+            onClick={() => openCopyPicker(selectedDay)}
+            className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+              isDarkMode
+                ? "text-iron-500 hover:text-iron-300"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Copy className="w-3.5 h-3.5 shrink-0 opacity-80" aria-hidden />
+            Copy split
+          </button>
+        </div>
       ) : null}
 
       <Dialog open={movePickerFrom !== null} onOpenChange={open => !open && setMovePickerFrom(null)}>
@@ -312,6 +390,83 @@ export default function RoutinePlannerWeekStrip({
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={copyPickerFrom !== null} onOpenChange={open => !open && setCopyPickerFrom(null)}>
+        <DialogContent className={`max-w-sm ${isDarkMode ? "!bg-iron-900 !border-iron-700" : "!bg-white !border-slate-200"}`}>
+          <DialogHeader>
+            <DialogTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>Copy routine</DialogTitle>
+            <DialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
+              Pick a day. The original day keeps its workout.
+            </DialogDescription>
+          </DialogHeader>
+          {copySourceBanner ? (
+            <div
+              className={`rounded-card border px-4 py-3 text-sm ${
+                isDarkMode
+                  ? "border-iron-700 bg-iron-950/70 text-iron-50"
+                  : "border-slate-200 bg-slate-50 text-slate-900"
+              }`}
+            >
+              <p className="font-semibold leading-snug">{copySourceBanner.subtitle}</p>
+              <p
+                className={
+                  isDarkMode ? "mt-1.5 text-[11px] text-iron-400" : "mt-1.5 text-[11px] text-slate-500"
+                }
+              >
+                Copy from <span className="font-medium">{copySourceBanner.dayLabel}</span>
+              </p>
+            </div>
+          ) : null}
+          <div className="grid grid-cols-4 gap-2.5 gap-y-3 py-4 pt-2">
+            {PLANNER_DAYS.filter(d => d.value !== copyPickerFrom).map(d => (
+              <button
+                key={d.value}
+                type="button"
+                className={`py-2.5 rounded-card text-xs font-semibold ${
+                  isDarkMode ? "bg-iron-800 text-iron-200 hover:bg-iron-700" : "bg-slate-100 text-slate-800 hover:bg-slate-200"
+                }`}
+                onClick={() => handlePickCopyTargetDay(d.value)}
+              >
+                {d.short}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!copyOverwriteConfirm} onOpenChange={open => !open && setCopyOverwriteConfirm(null)}>
+        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className={isDarkMode ? "text-iron-50" : ""}>Replace routine?</AlertDialogTitle>
+            <AlertDialogDescription className={isDarkMode ? "text-iron-400" : ""}>
+              {copyOverwriteConfirm
+                ? `${PLANNER_DAYS.find(x => x.value === copyOverwriteConfirm.toDay)?.label} already has “${copyOverwriteConfirm.targetName}”. Replace with a copy of “${copyOverwriteConfirm.sourceName}”?`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className={`inline-flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
+            >
+              <X className="w-4 h-4 shrink-0 opacity-70" aria-hidden />
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={e => {
+                e.preventDefault();
+                const payload = copyOverwriteConfirm;
+                setCopyOverwriteConfirm(null);
+                if (!payload) return;
+                void execCopy(payload.fromDay, payload.toDay);
+              }}
+              className={`inline-flex items-center justify-center gap-2 border-0 ${actionPrimary(isDarkMode)}`}
+            >
+              <Copy className="w-4 h-4 shrink-0" aria-hidden />
+              Replace
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!swapConfirm} onOpenChange={open => !open && setSwapConfirm(null)}>
         <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>

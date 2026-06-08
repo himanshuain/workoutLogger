@@ -1,8 +1,9 @@
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/router";
-import { Utensils, Check } from "lucide-react";
+import { Utensils, Check, CalendarDays } from "lucide-react";
 import SectionManageButton from "@/components/SectionManageButton";
 import SectionHeader from "@/components/SectionHeader";
+import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
 import SectionSurface from "@/components/SectionSurface";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity, initialFoodQuantity, foodLogsDirectly } from "@/lib/foodQuantity";
@@ -224,6 +225,18 @@ export default function TodayFoodLogSection({
             meta={foodMeta}
             isDarkMode={isDarkMode}
           >
+            <button
+              type="button"
+              onClick={() => router.push("/macro-planner")}
+              aria-label="Open macro planner"
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
+                actionSecondaryCompact(isDarkMode),
+              )}
+            >
+              <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} aria-hidden />
+              Plan
+            </button>
             <SectionManageButton
               isDarkMode={isDarkMode}
               onClick={() => router.push("/food")}
@@ -254,6 +267,18 @@ export default function TodayFoodLogSection({
           meta={foodMeta}
           isDarkMode={isDarkMode}
         >
+          <button
+            type="button"
+            onClick={() => router.push("/macro-planner")}
+            aria-label="Open macro planner"
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
+              actionSecondaryCompact(isDarkMode),
+            )}
+          >
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} aria-hidden />
+            Plan
+          </button>
           <SectionManageButton
             isDarkMode={isDarkMode}
             onClick={() => router.push("/food")}

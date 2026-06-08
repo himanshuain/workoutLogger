@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/modal";
 import FoodQuantityModal from "@/components/FoodQuantityModal";
 import { normalizeFoodQuantity, initialFoodQuantity, foodLogsDirectly } from "@/lib/foodQuantity";
+import Link from "next/link";
 import {
   Plus,
   Check,
@@ -36,6 +37,7 @@ import {
   History,
   Calendar,
   TrendingUp,
+  Beef,
 } from "lucide-react";
 import {
   ContextMenu,
@@ -49,6 +51,8 @@ import LongPressContextHint from "@/components/LongPressContextHint";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
+import NutritionLookupPanel from "@/components/macros/NutritionLookupPanel";
+import { applyLookupToFood } from "@/lib/nutritionLookup";
 
 const FOOD_ICONS = [
   "🥚",
@@ -104,7 +108,7 @@ export default function Food() {
   const [quantityTargetDate, setQuantityTargetDate] = useState(null);
   const nudgeResumeDateRef = useRef(null);
 
-  const [newFood, setNewFood] = useState({
+  const EMPTY_FOOD = {
     name: "",
     icon: "🥚",
     color: "#f59e0b",
@@ -113,7 +117,13 @@ export default function Food() {
     quantity_whole_numbers: false,
     log_directly: false,
     category: "protein",
-  });
+    protein_g: 0,
+    carbs_g: 0,
+    fat_g: 0,
+    calories: 0,
+  };
+
+  const [newFood, setNewFood] = useState({ ...EMPTY_FOOD });
 
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -356,16 +366,7 @@ export default function Food() {
 
       setShowAddModal(false);
       setEditingItem(null);
-      setNewFood({
-        name: "",
-        icon: "🥚",
-        color: "#f59e0b",
-        unit: "servings",
-        default_quantity: 1,
-        quantity_whole_numbers: false,
-        log_directly: false,
-        category: "protein",
-      });
+      setNewFood({ ...EMPTY_FOOD });
     } catch {
       toast.error("Failed to save");
     }
@@ -382,6 +383,10 @@ export default function Food() {
       quantity_whole_numbers: Boolean(item.quantity_whole_numbers),
       log_directly: Boolean(item.log_directly),
       category: item.category || "protein",
+      protein_g: Number(item.protein_g) || 0,
+      carbs_g: Number(item.carbs_g) || 0,
+      fat_g: Number(item.fat_g) || 0,
+      calories: Number(item.calories) || 0,
     });
     setShowAddModal(true);
   };
@@ -470,30 +475,33 @@ export default function Food() {
               {todayStats.consumed}/{todayStats.total} consumed today
             </p>
           </div>
-          <button
-            onClick={() => {
-              setEditingItem(null);
-              setNewFood({
-                name: "",
-                icon: "🥚",
-                color: "#f59e0b",
-                unit: "servings",
-                default_quantity: 1,
-                quantity_whole_numbers: false,
-                log_directly: false,
-                category: "protein",
-              });
-              setShowAddModal(true);
-            }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-card font-medium ${
-              isDarkMode
-                ? "bg-lift-primary/20 text-lift-primary"
-                : "bg-amber-100 text-amber-600"
-            }`}
-          >
-            <Plus className="w-4 h-4" />
-            Add Food
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard"
+              className={`flex items-center gap-1 px-2.5 py-2 rounded-card text-sm font-medium ${
+                isDarkMode
+                  ? "bg-pink-500/15 text-pink-400"
+                  : "bg-pink-50 text-pink-700"
+              }`}
+            >
+              <Beef className="w-4 h-4" />
+            </Link>
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                setNewFood({ ...EMPTY_FOOD });
+                setShowAddModal(true);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-card font-medium ${
+                isDarkMode
+                  ? "bg-lift-primary/20 text-lift-primary"
+                  : "bg-amber-100 text-amber-600"
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              Add Food
+            </button>
+          </div>
         </div>
 
         <div className="space-y-6 mt-4">
@@ -973,6 +981,16 @@ export default function Food() {
               />
             </div>
 
+            {newFood.name.trim().length >= 2 && (
+              <NutritionLookupPanel
+                query={newFood.name}
+                isDarkMode={isDarkMode}
+                onSelect={result =>
+                  setNewFood(prev => applyLookupToFood(result, prev))
+                }
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
@@ -1091,6 +1109,43 @@ export default function Food() {
                 presets={FOOD_COLORS}
                 isDarkMode={isDarkMode}
               />
+            </div>
+
+            <div>
+              <p className={`text-sm font-medium mb-2 ${isDarkMode ? "text-iron-300" : "text-slate-700"}`}>
+                Macros per {newFood.unit || "serving"}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: "protein_g", label: "Protein (g)" },
+                  { key: "carbs_g", label: "Carbs (g)" },
+                  { key: "fat_g", label: "Fat (g)" },
+                  { key: "calories", label: "Calories" },
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <label className={`block text-xs mb-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                      {label}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={newFood[key]}
+                      onChange={e =>
+                        setNewFood(prev => ({
+                          ...prev,
+                          [key]: Math.max(0, Number(e.target.value) || 0),
+                        }))
+                      }
+                      className={`w-full h-11 px-3 rounded-card outline-none focus:ring-2 ${
+                        isDarkMode
+                          ? "bg-iron-800 text-iron-100 focus:ring-lift-primary/50"
+                          : "bg-slate-100 text-slate-800 focus:ring-amber-500/50"
+                      }`}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>

@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS user_settings (
   unit TEXT DEFAULT 'kg' CHECK (unit IN ('kg', 'lb')),
   dark_mode BOOLEAN DEFAULT true,
   goals JSONB DEFAULT '[]'::jsonb,
+  macro_targets JSONB DEFAULT '{"protein_g":150,"carbs_g":200,"fat_g":65,"calories":2200}'::jsonb,
+  macro_plans JSONB DEFAULT '{"plans":{}}'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -102,6 +104,10 @@ CREATE TABLE IF NOT EXISTS food_items (
   quantity_whole_numbers BOOLEAN DEFAULT false,
   log_directly BOOLEAN DEFAULT false,
   category TEXT DEFAULT 'other',
+  protein_g DECIMAL(8,2) DEFAULT 0,
+  carbs_g DECIMAL(8,2) DEFAULT 0,
+  fat_g DECIMAL(8,2) DEFAULT 0,
+  calories DECIMAL(8,2) DEFAULT 0,
   order_index INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -219,7 +219,7 @@ export function useWorkoutFood(user, today, foodItems, setFoodItems, todayFoodEn
 
       const { data, error } = await supabase
         .from("food_entries")
-        .select("*, food_items(name, icon, color)")
+        .select("*, food_items(name, icon, color, protein_g, carbs_g, fat_g, calories, unit)")
         .eq("user_id", user.id)
         .gte("date", startDate)
         .lte("date", endDate);

@@ -17,7 +17,7 @@ const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
   { id: "plan", href: "/plan", icon: ListChecks, label: "Splits" },
   { id: "checklists", href: "/checklists", icon: ClipboardList, label: "Checklists" },
-  { id: "progress", href: "/progress", icon: TrendingUp, label: "Progress" },
+  { id: "progress", href: "/dashboard", icon: TrendingUp, label: "Dashboard" },
 ];
 
 const DEFAULT_NAV_CONFIG = { order: null, hidden: [], labels: {} };

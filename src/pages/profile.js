@@ -2,7 +2,7 @@ import Link from "next/link";
 import Layout from "@/components/Layout";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import { User, Settings, LogOut, Utensils, Activity } from "lucide-react";
+import { User, Settings, LogOut, Utensils, Activity, LayoutDashboard, Beef, CalendarDays } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, signOut } = useWorkout();
@@ -40,6 +40,33 @@ export default function ProfilePage() {
             Settings & navigation
           </Link>
           <Link
+            href="/dashboard"
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
+              isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
+            }`}
+          >
+            <LayoutDashboard className="w-5 h-5 opacity-70" />
+            Dashboard
+          </Link>
+          <Link
+            href="/dashboard"
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
+              isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
+            }`}
+          >
+            <Beef className="w-5 h-5 opacity-70" />
+            Macro tracker
+          </Link>
+          <Link
+            href="/macro-planner"
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
+              isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
+            }`}
+          >
+            <CalendarDays className="w-5 h-5 opacity-70" />
+            Macro planner
+          </Link>
+          <Link
             href="/food"
             className={`flex items-center gap-3 px-4 py-3.5 rounded-card ${
               isDarkMode ? "bg-iron-900/70 border border-iron-800 text-iron-100" : "bg-white border border-slate-200 text-slate-800 shadow-sm"
@@ -55,7 +82,7 @@ export default function ProfilePage() {
             }`}
           >
             <Activity className="w-5 h-5 opacity-70" />
-            Progress
+            Progress (classic)
           </Link>
         </nav>
 

@@ -31,8 +31,12 @@ jobs:
         run: npm run test:e2e -- --grep-invert @auth
 
       - name: E2E tests (authenticated)
-        if: ${{ secrets.E2E_TEST_EMAIL != '' }}
-        run: npm run test:e2e -- --grep @auth
+        run: |
+          if [ -z "$E2E_TEST_EMAIL" ] || [ -z "$E2E_TEST_PASSWORD" ]; then
+            echo "Skipping authenticated E2E — E2E_TEST_EMAIL / E2E_TEST_PASSWORD not configured"
+            exit 0
+          fi
+          npm run test:e2e -- --grep @auth
         env:
           E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
           E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}

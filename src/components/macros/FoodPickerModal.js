@@ -223,8 +223,6 @@ export default function FoodPickerModal({
                 <NutritionLookupPanel
                   query={manual.name}
                   isDarkMode={isDarkMode}
-                  autoSearch={false}
-                  minimal
                   onSelect={result => setManual(prev => applyLookupToFood(result, prev))}
                 />
               )}

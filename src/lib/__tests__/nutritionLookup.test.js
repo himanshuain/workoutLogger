@@ -42,7 +42,7 @@ describe("nutritionLookup", () => {
     expect(results[0].preview).toContain("6.2g protein");
     expect(results[0].unit).toBe("egg");
     expect(results[0].macroLine).toContain("6.2g P");
-    expect(results[0].typeLabel).toBe("USDA Foundation");
+    expect(results[0].typeLabel).toBe("Whole");
   });
 
   it("ranks whole egg above branded duplicates", () => {

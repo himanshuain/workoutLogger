@@ -48,7 +48,7 @@ export default function TodayMacroFoodList({
         )}
       >
         <p className={cn("text-sm", isDarkMode ? "text-iron-500" : "text-slate-500")}>
-          No food items yet. Add items on the Food page — macros auto-fill from USDA.
+          No food items yet. Add items on the Food page.
         </p>
       </div>
     );
@@ -95,7 +95,7 @@ export default function TodayMacroFoodList({
                         {consumed && ` · ${qty} ${item.unit}`}
                       </>
                     ) : (
-                      "Tap ✨ to look up nutrition"
+                      "Tap ✨ to find macros"
                     )}
                   </p>
                 </div>
@@ -129,7 +129,8 @@ export default function TodayMacroFoodList({
                         ? "bg-iron-800 border-iron-700 text-iron-400"
                         : "bg-slate-100 border-slate-200 text-slate-500",
                   )}
-                  aria-label={`Look up nutrition for ${item.name}`}
+                  aria-label={`Find macros for ${item.name}`}
+                  title="Find macros"
                 >
                   <Sparkles className="w-4 h-4" />
                 </button>

@@ -95,10 +95,10 @@ export function suggestServing(food) {
 const DATA_TYPE_RANK = { Foundation: 0, "SR Legacy": 1, Branded: 2 };
 
 function dataTypeLabel(dataType) {
-  if (dataType === "Foundation") return "USDA Foundation";
-  if (dataType === "SR Legacy") return "USDA Legacy";
-  if (dataType === "Branded") return "Branded";
-  return dataType || "USDA";
+  if (dataType === "Foundation") return "Whole";
+  if (dataType === "SR Legacy") return "Classic";
+  if (dataType === "Branded") return "Brand";
+  return "Food";
 }
 
 /** Rank foods so whole/generic entries appear before noisy branded duplicates. */

@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       console.error("USDA FDC error:", r.status, text);
       const isAuth = r.status === 403 || text.includes("api_key");
       return res.status(502).json({
-        error: isAuth ? "Invalid FDC API key — check FDC_API_KEY in .env.local" : "Nutrition lookup failed",
+        error: isAuth ? "Food search not set up" : "Search failed",
         results: [],
       });
     }
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     const hint =
       code === "SELF_SIGNED_CERT_IN_CHAIN"
         ? "Network SSL issue (VPN/proxy). Restart dev server after pull, or set FDC_TLS_INSECURE=0 to disable bypass."
-        : "Lookup unavailable — check network and FDC_API_KEY";
+        : "Search unavailable";
     return res.status(500).json({ error: hint, results: [] });
   }
 }

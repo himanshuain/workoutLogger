@@ -112,15 +112,17 @@ export function topExercisesForChart(exerciseLogsByName, limit = 5) {
   return counts.slice(0, limit);
 }
 
-/** Build multi-series data for top exercise weight progression. */
-export function exerciseProgressSeries(topExercises) {
+import { exercisesForMuscleGroup } from "@/lib/exerciseCategories";
+
+/** Build multi-series data for exercise weight progression. */
+export function exerciseProgressSeries(exercises) {
   const dateSet = new Set();
-  topExercises.forEach(({ logs }) => logs.forEach(l => dateSet.add(l.date)));
+  exercises.forEach(({ logs }) => logs.forEach(l => dateSet.add(l.date)));
   const dates = [...dateSet].sort();
 
   return dates.map(date => {
     const point = { date, label: formatShortDate(date) };
-    topExercises.forEach(({ name, logs }) => {
+    exercises.forEach(({ name, logs }) => {
       const dayLogs = logs.filter(l => l.date === date);
       if (dayLogs.length > 0) {
         const maxWeight = Math.max(...dayLogs.map(l => l.weight || 0));
@@ -130,6 +132,8 @@ export function exerciseProgressSeries(topExercises) {
     return point;
   });
 }
+
+export { exercisesForMuscleGroup };
 
 /** Habit completion rate per week (last N weeks). */
 export function weeklyHabitSeries(trackingEntries, trackables, weeks = 8) {

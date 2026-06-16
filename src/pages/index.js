@@ -596,7 +596,22 @@ export default function Home() {
   const showHistoryScroll = historySessions.length > 0;
   const scrollToWorkoutHistory = useCallback(() => {
     hapticLight();
-    workoutHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const el = workoutHistoryRef.current;
+    if (!el) return;
+
+    const main = el.closest("main");
+    if (main) {
+      const offset = 12;
+      const top =
+        main.scrollTop +
+        el.getBoundingClientRect().top -
+        main.getBoundingClientRect().top -
+        offset;
+      main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      return;
+    }
+
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   if (!user) {
@@ -834,21 +849,22 @@ export default function Home() {
           </>
         )}
 
-        <LazyHomeWorkoutHistory
-          ref={workoutHistoryRef}
-          isDarkMode={isDarkMode}
-          historySessions={historySessions}
-          todaySession={todaySession}
-          isViewingToday={isViewingToday}
-          today={today}
-          expandedSession={expandedSession}
-          setExpandedSession={setExpandedSession}
-          editingSet={editingSet}
-          setEditingSet={setEditingSet}
-          setDeleteConfirm={setDeleteConfirm}
-          updateSetLogData={updateSetLogData}
-          handleUndoTodayWorkout={handleUndoTodayWorkout}
-        />
+        <div ref={workoutHistoryRef} id="home-workout-history" className="scroll-mt-20">
+          <LazyHomeWorkoutHistory
+            isDarkMode={isDarkMode}
+            historySessions={historySessions}
+            todaySession={todaySession}
+            isViewingToday={isViewingToday}
+            today={today}
+            expandedSession={expandedSession}
+            setExpandedSession={setExpandedSession}
+            editingSet={editingSet}
+            setEditingSet={setEditingSet}
+            setDeleteConfirm={setDeleteConfirm}
+            updateSetLogData={updateSetLogData}
+            handleUndoTodayWorkout={handleUndoTodayWorkout}
+          />
+        </div>
       </div>
 
       {showRoutineSelector ? (

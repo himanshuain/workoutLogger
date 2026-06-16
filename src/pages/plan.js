@@ -19,11 +19,13 @@ import {
   Trash2,
   RotateCcw,
   Loader2,
+  FileText,
 } from "lucide-react";
 import {
   actionDestructiveGhost,
   actionDestructive,
   actionSecondary,
+  actionSecondaryCompact,
   actionPrimary,
 } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  buildSplitsExportPayload,
+  downloadSplitsPdf,
+  splitsExportFilename,
+} from "@/lib/splitExport";
 
 const AUTOSAVE_MS = 1200;
 const PLANNER_VIEW_SPLITS = "splits";
@@ -171,6 +178,7 @@ export default function RoutinePlannerPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [plannerView, setPlannerView] = useState(PLANNER_VIEW_SPLITS);
+  const [exportingSplits, setExportingSplits] = useState(false);
   const savingRef = useRef(false);
 
   const routine = useMemo(
@@ -406,6 +414,33 @@ export default function RoutinePlannerPage() {
         ? null
         : null;
 
+  const handleExportSplits = useCallback(async () => {
+    if (exportingSplits) return;
+    if (!routines.length) {
+      toast.error("No splits to export");
+      return;
+    }
+
+    setExportingSplits(true);
+    try {
+      const draftOverride =
+        isDirty && routine?.id
+          ? {
+              id: routine.id,
+              name: title.trim() || routine.name,
+              exercises: listToPayload(list),
+            }
+          : null;
+      const payload = buildSplitsExportPayload(routines, { draftOverride });
+      await downloadSplitsPdf(payload, splitsExportFilename());
+      toast.success("PDF downloaded");
+    } catch (err) {
+      toast.error(err.message || "Export failed");
+    } finally {
+      setExportingSplits(false);
+    }
+  }, [exportingSplits, routines, isDirty, routine, title, list]);
+
   if (!user) {
     return (
       <Layout>
@@ -445,9 +480,29 @@ export default function RoutinePlannerPage() {
           </TabsList>
 
           <TabsContent value={PLANNER_VIEW_SPLITS} className="mt-4 focus-visible:outline-none">
-            <p className={`mb-4 text-sm ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}>
-              Build named routines. On Today, pick which split you&apos;re logging.
-            </p>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}>
+                Build named routines. On Today, pick which split you&apos;re logging.
+              </p>
+              {routines.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={exportingSplits}
+                  onClick={() => void handleExportSplits()}
+                  className={cn(
+                    "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-pill px-3 disabled:opacity-50",
+                    actionSecondaryCompact(isDarkMode),
+                  )}
+                >
+                  {exportingSplits ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  )}
+                  <span className="text-[11px] font-semibold whitespace-nowrap">Export all splits PDF</span>
+                </button>
+              ) : null}
+            </div>
 
             <PlannerSplitTabs
               routines={routines}

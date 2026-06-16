@@ -733,6 +733,22 @@ input[type="number"] {
   padding-top: 0.5rem;
 }
 
+/* Recharts draws a focusable wrapper — hide the click/focus outline */
+.recharts-responsive-container,
+.recharts-wrapper,
+.recharts-surface {
+  outline: none;
+}
+
+.recharts-responsive-container:focus,
+.recharts-responsive-container:focus-visible,
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none;
+}
+
 /* Pale red selected chip — pills, tabs, nav (light mode) */
 .light .accent-soft-surface {
   background: var(--accent-soft);

@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -32,15 +32,14 @@ import {
   weeklyWorkoutSeries,
   weeklyVolumeSeries,
   weeklyHabitSeries,
-  topExercisesForChart,
-  exerciseProgressSeries,
   volumeByCategory,
 } from "@/lib/dashboardData";
 import { getMacroTargets } from "@/lib/macroCalculations";
 import CollapsibleSection from "@/components/CollapsibleSection";
-import { Beef, BarChart3, CalendarDays, Utensils } from "lucide-react";
+import { Beef, BarChart3, CalendarDays, Download, Utensils } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
+import WorkoutExportModal from "@/components/dashboard/WorkoutExportModal";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -49,6 +48,7 @@ export default function Dashboard() {
   const analytics = useAnalyticsData();
   const macroTargets = getMacroTargets(settings);
   const unit = settings?.unit || "kg";
+  const [exportOpen, setExportOpen] = useState(false);
 
   const {
     user,
@@ -84,13 +84,7 @@ export default function Dashboard() {
     () => weeklyHabitSeries(trackingEntries, habitTrackables, 8),
     [trackingEntries, habitTrackables],
   );
-  const topExercises = useMemo(() => topExercisesForChart(exerciseLogsByName, 5), [exerciseLogsByName]);
-  const exerciseSeries = useMemo(
-    () => exerciseProgressSeries(topExercises),
-    [topExercises],
-  );
   const categoryData = useMemo(() => volumeByCategory(exerciseLogsByName), [exerciseLogsByName]);
-  const exerciseNames = topExercises.map(e => e.name);
 
   const habitDataByTrackable = useMemo(() => {
     const byTrackable = {};
@@ -177,17 +171,32 @@ export default function Dashboard() {
                 Progress & insights
               </p>
             </div>
-            <Link
-              href="/macro-planner"
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
-                actionSecondaryCompact(isDarkMode),
-              )}
-            >
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} />
-              Plan
-            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setExportOpen(true)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
+                  actionSecondaryCompact(isDarkMode),
+                )}
+              >
+                <Download className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} />
+                Export
+              </button>
+              <Link
+                href="/macro-planner"
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
+                  actionSecondaryCompact(isDarkMode),
+                )}
+              >
+                <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} />
+                Plan
+              </Link>
+            </div>
           </div>
+
+          <WorkoutExportModal open={exportOpen} onOpenChange={setExportOpen} isDarkMode={isDarkMode} />
 
           {isLoading ? (
             <div className="space-y-4">
@@ -258,8 +267,7 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 gap-4">
                     <LazyHabitConsistencyChart data={habitTrend} isDarkMode={isDarkMode} />
                     <LazyExerciseProgressChart
-                      data={exerciseSeries}
-                      exercises={exerciseNames}
+                      exerciseLogsByName={exerciseLogsByName}
                       isDarkMode={isDarkMode}
                       unit={unit}
                     />

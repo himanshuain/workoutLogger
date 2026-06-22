@@ -29,14 +29,16 @@ import {
 } from "@/components/charts/ChartChrome";
 import { cn } from "@/lib/utils";
 
-function MiniLineChart({ data, width = 280, height = 100, isDarkMode }) {
+function MiniLineChart({ data, isDarkMode }) {
   if (!data || data.length < 2) return null;
 
-  const values = data.map((d) => d.value);
+  const values = data.map(d => d.value);
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
-  const padding = { top: 8, bottom: 18, left: 0, right: 0 };
+  const width = 320;
+  const height = 132;
+  const padding = { top: 12, bottom: 28, left: 8, right: 8 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
 
@@ -46,57 +48,41 @@ function MiniLineChart({ data, width = 280, height = 100, isDarkMode }) {
     ...d,
   }));
 
-  const pathD = points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-    .join(" ");
-
+  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
   const areaD = `${pathD} L ${points[points.length - 1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`;
-
   const accentColor = isDarkMode ? "#fbbf24" : "#dc2626";
+  const labelEvery = data.length > 14 ? Math.ceil(data.length / 6) : data.length > 7 ? 2 : 1;
 
   return (
-    <svg width={width} height={height} className="w-full">
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[132px]">
       <defs>
         <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={accentColor} stopOpacity="0.3" />
+          <stop offset="0%" stopColor={accentColor} stopOpacity="0.28" />
           <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={areaD} fill="url(#weightGradient)" />
-      <path d={pathD} fill="none" stroke={accentColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      {points.map((p, i) => (
-        <g key={i}>
-          {(i === 0 || i === points.length - 1) && (
-            <>
-              <circle cx={p.x} cy={p.y} r="4" fill={accentColor} />
-              <text
-                x={p.x}
-                y={padding.top + chartH + 14}
-                textAnchor={i === 0 ? "start" : "end"}
-                className={`text-[10px] ${isDarkMode ? "fill-iron-500" : "fill-slate-500"}`}
-              >
-                {p.value}{" "}
-              </text>
-            </>
-          )}
-        </g>
-      ))}
-      {/* Min / Max labels */}
+      <path d={pathD} fill="none" stroke={accentColor} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((p, i) =>
+        i === 0 || i === points.length - 1 || i % labelEvery === 0 ? (
+          <circle key={p.date} cx={p.x} cy={p.y} r="3" fill={accentColor} />
+        ) : null,
+      )}
       <text
-        x={width - 2}
-        y={padding.top + 4}
-        textAnchor="end"
-        className={`text-[9px] ${isDarkMode ? "fill-iron-600" : "fill-slate-400"}`}
+        x={points[0].x}
+        y={height - 8}
+        textAnchor="start"
+        className={`text-[9px] ${isDarkMode ? "fill-iron-500" : "fill-slate-500"}`}
       >
-        {max.toFixed(1)}
+        {points[0].value} kg
       </text>
       <text
-        x={width - 2}
-        y={padding.top + chartH - 2}
+        x={points[points.length - 1].x}
+        y={height - 8}
         textAnchor="end"
-        className={`text-[9px] ${isDarkMode ? "fill-iron-600" : "fill-slate-400"}`}
+        className={`text-[9px] font-semibold ${isDarkMode ? "fill-iron-300" : "fill-slate-700"}`}
       >
-        {min.toFixed(1)}
+        {points[points.length - 1].value} kg
       </text>
     </svg>
   );
@@ -280,9 +266,11 @@ export default function BodyWeightTracker({ isDarkMode }) {
       {isExpanded && (
         <ChartBody isDarkMode={isDarkMode}>
           {chartData.length >= 2 ? (
-            <div>
-              <MiniLineChart data={chartData} width={300} height={100} isDarkMode={isDarkMode} />
-              <p className="text-metadata mt-1 text-center">Last {chartData.length} entries</p>
+            <div className="space-y-2">
+              <MiniLineChart data={chartData} isDarkMode={isDarkMode} />
+              <p className={`text-[10px] text-center ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
+                Last {chartData.length} weigh-ins
+              </p>
             </div>
           ) : (
             <p className={`py-4 text-center text-sm ${isDarkMode ? "text-iron-600" : "text-[color:var(--text-muted)]"}`}>
@@ -291,7 +279,7 @@ export default function BodyWeightTracker({ isDarkMode }) {
           )}
 
           {stats && (
-            <div className="mt-2 flex gap-1.5 border-t border-surface-subtle pt-2">
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-surface-subtle pt-3">
               <div className={cn("flex-1 rounded-card p-2 text-center", chartPanelInnerClass(isDarkMode))}>
                 <p className="text-metadata">Start</p>
                 <p className={`font-bold ${isDarkMode ? "text-iron-200" : "text-[color:var(--text-primary)]"}`}>{stats.oldest.value}</p>
@@ -321,9 +309,9 @@ export default function BodyWeightTracker({ isDarkMode }) {
           )}
 
           {weightHistory.length > 0 && (
-            <div className="mt-2 border-t border-surface-subtle pt-2">
-              <h4 className="text-section-header mb-1">Recent</h4>
-              <div className="space-y-1">
+            <div className="mt-3 border-t border-surface-subtle pt-3">
+              <h4 className="text-section-header mb-2">Recent</h4>
+              <div className="space-y-1 max-h-36 overflow-y-auto">
                 {weightHistory.slice(-5).reverse().map((entry) => (
                   <div key={entry.date} className={`flex items-center py-1.5 px-2 rounded-lg gap-2 ${isDarkMode ? "hover:bg-iron-800/30" : "hover:bg-slate-50"}`}>
                     <span className={`text-xs flex-shrink-0 ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}>

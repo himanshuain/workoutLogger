@@ -1,31 +1,36 @@
-import { useMemo } from "react";
-import { Check, Dumbbell, CalendarRange } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, Dumbbell, CalendarRange, ChevronDown } from "lucide-react";
 import {
   ChartSection,
   ChartSectionHeader,
   chartSelectedColumnClass,
 } from "@/components/charts/ChartChrome";
+import { ChartPinSlot } from "@/components/dashboard/ChartPinContext";
 import { cn } from "@/lib/utils";
 
-export default function TrackingOverview({
-  trackables = [],
-  habitDataByTrackable = {},
-  todayEntries = {},
-  exerciseLogsByName = {},
-  workoutData = [],
-  foodItems = [],
-  foodDataByItem = {},
-  todayFoodEntries = {},
-  today,
-  days = 7,
-  isDarkMode = true,
-}) {
-  const habits = useMemo(() => trackables.filter(t => t.name !== "Body Weight"), [trackables]);
+function monthKeyFromDate(dateStr) {
+  return dateStr.slice(0, 7);
+}
 
-  const dateRange = useMemo(() => {
+function buildMonthRangeOptions(today) {
+  const options = [{ id: "week", label: "Last 7 days" }];
+  const anchor = new Date(`${today}T12:00:00`);
+  for (let i = 0; i < 18; i += 1) {
+    const d = new Date(anchor.getFullYear(), anchor.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    options.push({
+      id: key,
+      label: d.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    });
+  }
+  return options;
+}
+
+function buildTrackingDateRange({ rangeId, today, days = 7 }) {
+  if (rangeId === "week" || !rangeId) {
     const dates = [];
-    for (let i = 0; i < days; i++) {
-      const d = new Date();
+    for (let i = 0; i < days; i += 1) {
+      const d = new Date(`${today}T12:00:00`);
       d.setDate(d.getDate() - i);
       const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
       dates.push({
@@ -35,8 +40,51 @@ export default function TrackingOverview({
         isToday: dateStr === today,
       });
     }
-    return dates;
-  }, [days, today]);
+    return dates.reverse();
+  }
+
+  const [year, month] = rangeId.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  const endDay = monthKeyFromDate(today) === rangeId
+    ? Number(today.slice(8, 10))
+    : lastDay;
+  const dates = [];
+  for (let day = 1; day <= endDay; day += 1) {
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const d = new Date(`${dateStr}T12:00:00`);
+    dates.push({
+      date: dateStr,
+      dayName: d.toLocaleDateString("en-US", { weekday: "short" }),
+      dayNum: day,
+      isToday: dateStr === today,
+    });
+  }
+  return dates;
+}
+
+export default function TrackingOverview({
+  trackables = [],
+  habitDataByTrackable = {},
+  todayEntries = {},
+  exerciseLogsByName = {},
+  workoutSplitsByDate = {},
+  foodItems = [],
+  foodDataByItem = {},
+  todayFoodEntries = {},
+  today,
+  days = 7,
+  isDarkMode = true,
+}) {
+  const [rangeId, setRangeId] = useState("week");
+  const rangeOptions = useMemo(() => buildMonthRangeOptions(today), [today]);
+  const rangeLabel = rangeOptions.find(o => o.id === rangeId)?.label ?? "Last 7 days";
+
+  const habits = useMemo(() => trackables.filter(t => t.name !== "Body Weight"), [trackables]);
+
+  const dateRange = useMemo(
+    () => buildTrackingDateRange({ rangeId, today, days }),
+    [rangeId, today, days],
+  );
 
   const habitsByDate = useMemo(() => {
     const result = {};
@@ -58,11 +106,10 @@ export default function TrackingOverview({
   const workoutsByDate = useMemo(() => {
     const result = {};
     dateRange.forEach(({ date }) => {
-      const dayData = workoutData.find(d => d.date === date);
-      result[date] = dayData?.count || 0;
+      result[date] = workoutSplitsByDate[date] || [];
     });
     return result;
-  }, [dateRange, workoutData]);
+  }, [dateRange, workoutSplitsByDate]);
 
   const foodByDate = useMemo(() => {
     const result = {};
@@ -81,34 +128,45 @@ export default function TrackingOverview({
     return result;
   }, [dateRange, foodItems, foodDataByItem, todayFoodEntries, today]);
 
-  const habitCompletionCounts = useMemo(() => {
-    const counts = {};
-    habits.forEach(t => {
-      counts[t.id] = dateRange.filter(d => habitsByDate[d.date]?.[t.id]).length;
-    });
-    return counts;
-  }, [habits, dateRange, habitsByDate]);
-
-  const workoutDaysCount = useMemo(() => {
-    return dateRange.filter(d => workoutsByDate[d.date] > 0).length;
-  }, [dateRange, workoutsByDate]);
-
-  const foodCompletionCounts = useMemo(() => {
-    const counts = {};
-    foodItems.forEach(item => {
-      counts[item.id] = dateRange.filter(d => foodByDate[d.date]?.[item.id]).length;
-    });
-    return counts;
-  }, [foodItems, dateRange, foodByDate]);
-
   return (
     <ChartSection isDarkMode={isDarkMode}>
-      <ChartSectionHeader
-        icon={CalendarRange}
-        label="Weekly Overview"
-        meta={`Last ${days} days`}
-        isDarkMode={isDarkMode}
-      />
+      <div className="flex items-start justify-between gap-2 px-3 pt-3 pb-2">
+        <ChartSectionHeader
+          icon={CalendarRange}
+          label="Weekly Overview"
+          meta={rangeLabel}
+          isDarkMode={isDarkMode}
+          showPin={false}
+          className="flex-1 px-0 pt-0 pb-0"
+        />
+        <div className="relative flex shrink-0 items-center gap-1.5 mt-0.5">
+          <ChartPinSlot />
+          <select
+            value={rangeId}
+            onChange={e => setRangeId(e.target.value)}
+            className={cn(
+              "appearance-none rounded-card py-1.5 pl-2.5 pr-7 text-[11px] font-semibold outline-none",
+              isDarkMode
+                ? "bg-iron-800 text-iron-200 border border-iron-700"
+                : "bg-white text-slate-700 border border-slate-200",
+            )}
+            aria-label="Overview time range"
+          >
+            {rangeOptions.map(option => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className={cn(
+              "pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2",
+              isDarkMode ? "text-iron-500" : "text-slate-400",
+            )}
+            aria-hidden
+          />
+        </div>
+      </div>
 
       {/* Table Container */}
       <div className="overflow-x-auto thin-scrollbar">
@@ -159,7 +217,6 @@ export default function TrackingOverview({
                   </div>
                 </th>
               ))}
-              <th className="min-w-[44px] p-2 text-center text-section-header">Done</th>
             </tr>
           </thead>
 
@@ -188,44 +245,45 @@ export default function TrackingOverview({
                   </span>
                 </div>
               </td>
-              {dateRange.map(({ date, isToday }) => (
-                <td
-                  key={date}
-                  className={cn(
-                    "p-1.5 text-center",
-                    isToday && chartSelectedColumnClass(isDarkMode),
-                  )}
-                >
-                  {workoutsByDate[date] > 0 ? (
-                    <span
-                      className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold text-xs ${
-                        isDarkMode
-                          ? "bg-lift-primary/20 text-lift-primary"
-                          : "bg-workout-primary/20 text-workout-primary"
-                      }`}
-                    >
-                      {workoutsByDate[date]}
-                    </span>
-                  ) : (
-                    <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
-                  )}
-                </td>
-              ))}
-              <td className="p-2 text-center">
-                <span
-                  className={`text-xs font-bold ${
-                    workoutDaysCount >= Math.ceil(days * 0.7)
-                      ? "text-green-400"
-                      : workoutDaysCount >= Math.ceil(days * 0.4)
-                        ? "text-amber-400"
-                        : isDarkMode
-                          ? "text-iron-500"
-                          : "text-slate-500"
-                  }`}
-                >
-                  {workoutDaysCount}/{days}
-                </span>
-              </td>
+              {dateRange.map(({ date, isToday }) => {
+                const splits = workoutsByDate[date] || [];
+                const accent = isDarkMode ? "text-lift-primary" : "text-workout-primary";
+                const accentBg = isDarkMode ? "bg-lift-primary/20" : "bg-workout-primary/20";
+
+                return (
+                  <td
+                    key={date}
+                    className={cn(
+                      "min-w-[44px] p-1.5 text-center align-top whitespace-nowrap",
+                      isToday && chartSelectedColumnClass(isDarkMode),
+                    )}
+                  >
+                    {splits.length > 0 ? (
+                      <div className="inline-flex flex-col items-center gap-0.5 px-0.5">
+                        <span
+                          className={cn(
+                            "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                            accentBg,
+                          )}
+                        >
+                          <Check className={cn("h-4 w-4", accent)} />
+                        </span>
+                        <span
+                          className={cn(
+                            "text-[7px] font-medium leading-none whitespace-nowrap",
+                            isDarkMode ? "text-iron-300" : "text-slate-600",
+                          )}
+                          title={splits.join(", ")}
+                        >
+                          {splits.join(" · ")}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className={isDarkMode ? "text-iron-700" : "text-slate-300"}>—</span>
+                    )}
+                  </td>
+                );
+              })}
             </tr>
 
             {/* Habits Rows */}
@@ -271,21 +329,6 @@ export default function TrackingOverview({
                     )}
                   </td>
                 ))}
-                <td className="p-2 text-center">
-                  <span
-                    className={`text-xs font-bold ${
-                      habitCompletionCounts[habit.id] >= Math.ceil(days * 0.7)
-                        ? "text-green-400"
-                        : habitCompletionCounts[habit.id] >= Math.ceil(days * 0.4)
-                          ? "text-amber-400"
-                          : isDarkMode
-                            ? "text-iron-500"
-                            : "text-slate-500"
-                    }`}
-                  >
-                    {habitCompletionCounts[habit.id]}/{days}
-                  </span>
-                </td>
               </tr>
             ))}
 
@@ -332,21 +375,6 @@ export default function TrackingOverview({
                     )}
                   </td>
                 ))}
-                <td className="p-2 text-center">
-                  <span
-                    className={`text-xs font-bold ${
-                      foodCompletionCounts[food.id] >= Math.ceil(days * 0.7)
-                        ? "text-green-400"
-                        : foodCompletionCounts[food.id] >= Math.ceil(days * 0.4)
-                          ? "text-amber-400"
-                          : isDarkMode
-                            ? "text-iron-500"
-                            : "text-slate-500"
-                    }`}
-                  >
-                    {foodCompletionCounts[food.id]}/{days}
-                  </span>
-                </td>
               </tr>
             ))}
           </tbody>

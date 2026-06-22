@@ -4,7 +4,7 @@ import { hapticLight, touchPress } from "@/lib/touchFeedback";
 import { cn } from "@/lib/utils";
 
 /**
- * Single horizontal row of pills (no wrap). Scrollable on overflow.
+ * Single horizontal row of pills. Scrollable on overflow — no visible scrollbar handle.
  */
 export default function PillRail({
   label,
@@ -36,12 +36,8 @@ export default function PillRail({
       </p>
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin scrollbar-thumb-transparent"
-        style={{
-          WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "thin",
-          maskImage: "linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%)",
-        }}
+        className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: "touch" }}
       >
         {values.map((v) => {
           const active =

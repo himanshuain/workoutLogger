@@ -4,6 +4,7 @@ import { surfaceSection, surfaceSelected } from "@/lib/surfaceStyles";
 import { segmentSelected, segmentUnselected } from "@/lib/actionButtonStyles";
 import { touchPress, touchPressCard } from "@/lib/touchFeedback";
 import SectionHeader from "@/components/SectionHeader";
+import { ChartPinSlot } from "@/components/dashboard/ChartPinContext";
 
 /** Outer chart card — matches SectionSurface elevation. */
 export function chartSectionClass(isDarkMode, className) {
@@ -25,11 +26,12 @@ export function ChartSection({ isDarkMode, className, children }) {
   return <div className={chartSectionClass(isDarkMode, className)}>{children}</div>;
 }
 
-export function ChartSectionHeader({ icon, label, meta, isDarkMode, className, children }) {
+export function ChartSectionHeader({ icon, label, meta, isDarkMode, className, children, showPin = true }) {
   return (
     <div className={cn("px-3 pt-3 pb-2", className)}>
       <SectionHeader icon={icon} label={label} meta={meta} isDarkMode={isDarkMode} className="mb-0">
         {children}
+        {showPin ? <ChartPinSlot /> : null}
       </SectionHeader>
     </div>
   );
@@ -69,13 +71,16 @@ export function ChartCollapsibleHeader({
         />
         {trailing}
       </div>
-      <Chevron
-        className={cn(
-          "h-4 w-4 shrink-0",
-          isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]",
-        )}
-        aria-hidden
-      />
+      <div className="flex shrink-0 items-center gap-1">
+        <ChartPinSlot />
+        <Chevron
+          className={cn(
+            "h-4 w-4 shrink-0",
+            isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]",
+          )}
+          aria-hidden
+        />
+      </div>
     </button>
   );
 }

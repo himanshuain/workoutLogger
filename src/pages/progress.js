@@ -30,7 +30,7 @@ import {
   BarChart3,
   Check,
 } from "lucide-react";
-import { buildWorkoutHeatmapFromSessions } from "@/lib/workoutHeatmapData";
+import { buildWorkoutHeatmapFromSessions, buildWorkoutSplitsByDate } from "@/lib/workoutHeatmapData";
 
 export default function Progress() {
   const router = useRouter();
@@ -187,6 +187,11 @@ export default function Progress() {
   const workoutHeatmapData = useMemo(
     () => workoutSessionData?.workoutData || [],
     [workoutSessionData?.workoutData],
+  );
+
+  const workoutSplitsByDate = useMemo(
+    () => buildWorkoutSplitsByDate(workoutSessionData?.allSessions || []),
+    [workoutSessionData?.allSessions],
   );
 
   // Merge exercise logs from both systems
@@ -658,7 +663,7 @@ export default function Progress() {
               habitDataByTrackable={habitDataByTrackable}
               todayEntries={todayEntries}
               exerciseLogsByName={exerciseLogsByName}
-              workoutData={workoutHeatmapData}
+              workoutSplitsByDate={workoutSplitsByDate}
               foodItems={foodItems}
               foodDataByItem={foodDataByItem}
               todayFoodEntries={todayFoodEntries}

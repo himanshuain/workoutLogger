@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildWorkoutHeatmapFromSessions } from "@/lib/workoutHeatmapData";
+import { buildWorkoutHeatmapFromSessions, buildWorkoutSplitsByDate } from "@/lib/workoutHeatmapData";
 
 describe("buildWorkoutHeatmapFromSessions", () => {
   it("includes only completed sessions", () => {
@@ -34,5 +34,22 @@ describe("buildWorkoutHeatmapFromSessions", () => {
       },
     ]);
     expect(data).toEqual([{ date: "2026-05-23", count: 1 }]);
+  });
+});
+
+describe("buildWorkoutSplitsByDate", () => {
+  it("maps completed sessions to split names by date", () => {
+    const splits = buildWorkoutSplitsByDate([
+      { date: "2026-06-01", status: "completed", routine_name: "Push" },
+      { date: "2026-06-01", status: "completed", routine_name: "Pull" },
+      { date: "2026-06-02", status: "completed", routine_name: "Push" },
+      { date: "2026-06-03", status: "active", routine_name: "Legs" },
+      { date: "2026-06-04", status: "completed", routine_name: "" },
+    ]);
+    expect(splits).toEqual({
+      "2026-06-01": ["Push", "Pull"],
+      "2026-06-02": ["Push"],
+      "2026-06-04": ["Workout"],
+    });
   });
 });

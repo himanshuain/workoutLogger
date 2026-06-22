@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/context-menu";
 import LongPressContextHint from "@/components/LongPressContextHint";
 import { ChartSection, ChartSectionHeader } from "@/components/charts/ChartChrome";
+import { ChartPinSlot } from "@/components/dashboard/ChartPinContext";
 import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import { Target, Plus, Trash2, Trophy, ChevronRight, ChevronDown, Minus, Check, Pencil } from "lucide-react";
@@ -291,6 +292,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                 : `${goalProgress.filter(g => g.progress >= 100).length}/${goals.length} completed`
             }
             isDarkMode={isDarkMode}
+            showPin={false}
             className="pointer-events-none min-w-0 flex-1 px-0 pt-0 pb-0"
           />
           <ChevronDown
@@ -302,14 +304,17 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
             aria-hidden
           />
         </button>
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className={cn("shrink-0 rounded-card p-2", actionSecondaryCompact(isDarkMode))}
-          aria-label="Add goal"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <ChartPinSlot />
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className={cn("rounded-card p-2", actionSecondaryCompact(isDarkMode))}
+            aria-label="Add goal"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Goals List */}

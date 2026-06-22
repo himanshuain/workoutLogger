@@ -57,10 +57,12 @@ export default function RichChartTooltip({
               </span>
             </div>
             <div className="text-right shrink-0">
-              <span className={cn("font-semibold tabular-nums", isDarkMode ? "text-iron-50" : "text-slate-800")}>
-                {row.value}
-              </span>
-              {row.sub && (
+              {row.valueNode ?? (
+                <span className={cn("font-semibold tabular-nums", isDarkMode ? "text-iron-50" : "text-slate-800")}>
+                  {row.value}
+                </span>
+              )}
+              {row.sub && !row.valueNode && (
                 <p className={cn("text-[10px] mt-0.5", isDarkMode ? "text-iron-500" : "text-slate-400")}>
                   {row.sub}
                 </p>

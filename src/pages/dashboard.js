@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -7,7 +7,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import Layout from "@/components/Layout";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { FadeIn } from "@/components/ui/fade-in";
-import { SkeletonSection, SkeletonStats } from "@/components/SkeletonLoader";
+import { SkeletonSection } from "@/components/SkeletonLoader";
 import {
   LazyActivityHeatmap,
   LazyBodyWeightTracker,
@@ -16,10 +16,7 @@ import {
   LazyTrackingOverview,
 } from "@/components/charts/lazyCharts";
 import {
-  LazyDashboardStatCards,
-  LazyWorkoutTrendChart,
   LazyVolumeTrendChart,
-  LazyHabitConsistencyChart,
   LazyExerciseProgressChart,
   LazyCategoryVolumeChart,
 } from "@/components/dashboard/lazyDashboard";
@@ -29,17 +26,23 @@ import { LazyMacroTrendChart } from "@/components/macros/lazyMacros";
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import {
   computeDashboardStats,
-  weeklyWorkoutSeries,
   weeklyVolumeSeries,
-  weeklyHabitSeries,
   volumeByCategory,
 } from "@/lib/dashboardData";
+import { buildWorkoutSplitsByDate } from "@/lib/workoutHeatmapData";
 import { getMacroTargets } from "@/lib/macroCalculations";
+import {
+  readPinnedCharts,
+  writePinnedCharts,
+  togglePinnedChart,
+} from "@/lib/dashboardPins";
 import CollapsibleSection from "@/components/CollapsibleSection";
-import { Beef, BarChart3, CalendarDays, Download, Utensils } from "lucide-react";
+import PinnableChart from "@/components/dashboard/PinnableChart";
+import { Beef, BarChart3, CalendarDays, Download, Pin, Utensils } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
 import WorkoutExportModal from "@/components/dashboard/WorkoutExportModal";
+import FoodTrackingActivity from "@/components/food/FoodTrackingActivity";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -49,6 +52,21 @@ export default function Dashboard() {
   const macroTargets = getMacroTargets(settings);
   const unit = settings?.unit || "kg";
   const [exportOpen, setExportOpen] = useState(false);
+  const [pinnedCharts, setPinnedCharts] = useState([]);
+
+  useEffect(() => {
+    setPinnedCharts(readPinnedCharts());
+  }, []);
+
+  const handleTogglePin = useCallback(chartId => {
+    setPinnedCharts(prev => {
+      const next = togglePinnedChart(prev, chartId);
+      writePinnedCharts(next);
+      return next;
+    });
+  }, []);
+
+  const isPinned = useCallback(chartId => pinnedCharts.includes(chartId), [pinnedCharts]);
 
   const {
     user,
@@ -63,7 +81,14 @@ export default function Dashboard() {
     todayFoodEntries,
     todayMacros,
     macroSeries,
+    allSessions,
+    foodHistory,
   } = analytics;
+
+  const workoutSplitsByDate = useMemo(
+    () => buildWorkoutSplitsByDate(allSessions),
+    [allSessions],
+  );
 
   const stats = useMemo(
     () =>
@@ -78,12 +103,7 @@ export default function Dashboard() {
     [workoutHeatmapData, todayEntries, habitTrackables, todayFoodEntries, foodItems, todayMacros],
   );
 
-  const workoutTrend = useMemo(() => weeklyWorkoutSeries(workoutHeatmapData, 12), [workoutHeatmapData]);
   const volumeTrend = useMemo(() => weeklyVolumeSeries(exerciseLogsByName, 12), [exerciseLogsByName]);
-  const habitTrend = useMemo(
-    () => weeklyHabitSeries(trackingEntries, habitTrackables, 8),
-    [trackingEntries, habitTrackables],
-  );
   const categoryData = useMemo(() => volumeByCategory(exerciseLogsByName), [exerciseLogsByName]);
 
   const habitDataByTrackable = useMemo(() => {
@@ -139,6 +159,94 @@ export default function Dashboard() {
     });
     return Object.entries(byDate).map(([date, count]) => ({ date, count }));
   }, [trackingEntries]);
+
+  const trackingOverviewProps = {
+    trackables: habitTrackables,
+    habitDataByTrackable,
+    todayEntries,
+    exerciseLogsByName,
+    workoutSplitsByDate,
+    foodItems,
+    foodDataByItem,
+    todayFoodEntries,
+    today,
+    isDarkMode,
+  };
+
+  const renderChart = chartId => {
+    switch (chartId) {
+      case "macro_trend":
+        return (
+          <LazyMacroTrendChart data={macroSeries} isDarkMode={isDarkMode} macroTargets={macroTargets} />
+        );
+      case "volume":
+        return <LazyVolumeTrendChart data={volumeTrend} isDarkMode={isDarkMode} />;
+      case "exercise_progress":
+        return (
+          <LazyExerciseProgressChart
+            exerciseLogsByName={exerciseLogsByName}
+            isDarkMode={isDarkMode}
+            unit={unit}
+          />
+        );
+      case "category_volume":
+        return <LazyCategoryVolumeChart data={categoryData} isDarkMode={isDarkMode} />;
+      case "tracking_overview":
+        return <LazyTrackingOverview {...trackingOverviewProps} />;
+      case "activity_heatmap":
+        return (
+          <LazyActivityHeatmap
+            data={workoutHeatmapData}
+            type="workout"
+            label="Workout Activity"
+            subtitle={`${stats.workoutsThisMonth} workout${stats.workoutsThisMonth !== 1 ? "s" : ""} this month`}
+            isDarkMode={isDarkMode}
+          />
+        );
+      case "food_activity":
+        return foodItems.length > 0 ? (
+          <FoodTrackingActivity
+            foodItems={foodItems}
+            foodHistory={foodHistory}
+            todayFoodEntries={todayFoodEntries}
+            today={today}
+            isDarkMode={isDarkMode}
+          />
+        ) : null;
+      case "goals":
+        return (
+          <LazyGoalsWidget
+            isDarkMode={isDarkMode}
+            workoutHeatmapData={workoutHeatmapData}
+            habitHeatmapData={habitHeatmapData}
+            trackables={habitTrackables}
+            todayEntries={todayEntries}
+          />
+        );
+      case "body_weight":
+        return <LazyBodyWeightTracker isDarkMode={isDarkMode} />;
+      case "muscle_heatmap":
+        return <LazyMuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />;
+      default:
+        return null;
+    }
+  };
+
+  const wrapChart = (chartId, node) => {
+    if (!node) return null;
+    return (
+      <PinnableChart
+        chartId={chartId}
+        isPinned={isPinned(chartId)}
+        onTogglePin={handleTogglePin}
+        isDarkMode={isDarkMode}
+      >
+        {node}
+      </PinnableChart>
+    );
+  };
+
+  const showChart = chartId => !isPinned(chartId);
 
   if (!user) {
     return (
@@ -200,12 +308,24 @@ export default function Dashboard() {
 
           {isLoading ? (
             <div className="space-y-4">
-              <SkeletonStats />
               <SkeletonSection />
             </div>
           ) : (
             <div className="space-y-4 pb-6">
-              <LazyDashboardStatCards stats={stats} isDarkMode={isDarkMode} />
+              {pinnedCharts.length > 0 ? (
+                <CollapsibleSection
+                  title="Pinned"
+                  icon={Pin}
+                  defaultOpen
+                  isDarkMode={isDarkMode}
+                >
+                  <div className="space-y-4">
+                    {pinnedCharts.map(chartId => (
+                      <div key={`pinned-${chartId}`}>{wrapChart(chartId, renderChart(chartId))}</div>
+                    ))}
+                  </div>
+                </CollapsibleSection>
+              ) : null}
 
               <CollapsibleSection
                 title="Macro Tracker"
@@ -236,21 +356,16 @@ export default function Dashboard() {
                     targets={macroTargets}
                     isDarkMode={isDarkMode}
                   />
-                  <LazyMacroTrendChart
-                    data={macroSeries}
-                    isDarkMode={isDarkMode}
-                    macroTargets={macroTargets}
-                  />
-                  <p className={`text-xs text-center ${isDarkMode ? "text-iron-600" : "text-slate-400"}`}>
-                    Log food on{" "}
-                    <Link href="/food" className="underline">
-                      Food
-                    </Link>{" "}
-                    or plan on{" "}
-                    <Link href="/macro-planner" className="underline">
-                      Planner
-                    </Link>
-                  </p>
+                  {showChart("macro_trend")
+                    ? wrapChart(
+                        "macro_trend",
+                        <LazyMacroTrendChart
+                          data={macroSeries}
+                          isDarkMode={isDarkMode}
+                          macroTargets={macroTargets}
+                        />,
+                      )
+                    : null}
                 </div>
               </CollapsibleSection>
 
@@ -261,57 +376,81 @@ export default function Dashboard() {
                 isDarkMode={isDarkMode}
               >
                 <div className="space-y-4">
-                  <LazyWorkoutTrendChart data={workoutTrend} isDarkMode={isDarkMode} />
-                  <LazyVolumeTrendChart data={volumeTrend} isDarkMode={isDarkMode} />
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <LazyHabitConsistencyChart data={habitTrend} isDarkMode={isDarkMode} />
-                    <LazyExerciseProgressChart
-                      exerciseLogsByName={exerciseLogsByName}
-                      isDarkMode={isDarkMode}
-                      unit={unit}
-                    />
-                  </div>
-
-                  <LazyCategoryVolumeChart data={categoryData} isDarkMode={isDarkMode} />
+                  {showChart("volume")
+                    ? wrapChart("volume", <LazyVolumeTrendChart data={volumeTrend} isDarkMode={isDarkMode} />)
+                    : null}
+                  {showChart("exercise_progress")
+                    ? wrapChart(
+                        "exercise_progress",
+                        <LazyExerciseProgressChart
+                          exerciseLogsByName={exerciseLogsByName}
+                          isDarkMode={isDarkMode}
+                          unit={unit}
+                        />,
+                      )
+                    : null}
+                  {showChart("category_volume")
+                    ? wrapChart(
+                        "category_volume",
+                        <LazyCategoryVolumeChart data={categoryData} isDarkMode={isDarkMode} />,
+                      )
+                    : null}
                 </div>
               </CollapsibleSection>
 
-              <LazyTrackingOverview
-                trackables={habitTrackables}
-                habitDataByTrackable={habitDataByTrackable}
-                todayEntries={todayEntries}
-                exerciseLogsByName={exerciseLogsByName}
-                workoutData={workoutHeatmapData}
-                foodItems={foodItems}
-                foodDataByItem={foodDataByItem}
-                todayFoodEntries={todayFoodEntries}
-                today={today}
-                isDarkMode={isDarkMode}
-              />
+              {showChart("tracking_overview")
+                ? wrapChart("tracking_overview", <LazyTrackingOverview {...trackingOverviewProps} />)
+                : null}
 
-              <LazyActivityHeatmap
-                data={workoutHeatmapData}
-                type="workout"
-                label="Workout Activity"
-                subtitle={`${stats.workoutsThisMonth} workout${stats.workoutsThisMonth !== 1 ? "s" : ""} this month`}
-                isDarkMode={isDarkMode}
-              />
+              {showChart("activity_heatmap")
+                ? wrapChart(
+                    "activity_heatmap",
+                    <LazyActivityHeatmap
+                      data={workoutHeatmapData}
+                      type="workout"
+                      label="Workout Activity"
+                      subtitle={`${stats.workoutsThisMonth} workout${stats.workoutsThisMonth !== 1 ? "s" : ""} this month`}
+                      isDarkMode={isDarkMode}
+                    />,
+                  )
+                : null}
 
-              <LazyGoalsWidget
-                isDarkMode={isDarkMode}
-                workoutHeatmapData={workoutHeatmapData}
-                habitHeatmapData={habitHeatmapData}
-                trackables={habitTrackables}
-                todayEntries={todayEntries}
-              />
+              {showChart("food_activity") && foodItems.length > 0
+                ? wrapChart(
+                    "food_activity",
+                    <FoodTrackingActivity
+                      foodItems={foodItems}
+                      foodHistory={foodHistory}
+                      todayFoodEntries={todayFoodEntries}
+                      today={today}
+                      isDarkMode={isDarkMode}
+                    />,
+                  )
+                : null}
 
-              <LazyBodyWeightTracker isDarkMode={isDarkMode} />
+              {showChart("goals")
+                ? wrapChart(
+                    "goals",
+                    <LazyGoalsWidget
+                      isDarkMode={isDarkMode}
+                      workoutHeatmapData={workoutHeatmapData}
+                      habitHeatmapData={habitHeatmapData}
+                      trackables={habitTrackables}
+                      todayEntries={todayEntries}
+                    />,
+                  )
+                : null}
 
-              <LazyMuscleHeatmap
-                exerciseLogsByName={exerciseLogsByName}
-                isDarkMode={isDarkMode}
-              />
+              {showChart("body_weight")
+                ? wrapChart("body_weight", <LazyBodyWeightTracker isDarkMode={isDarkMode} />)
+                : null}
+
+              {showChart("muscle_heatmap")
+                ? wrapChart(
+                    "muscle_heatmap",
+                    <LazyMuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />,
+                  )
+                : null}
             </div>
           )}
         </PageContainer>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
+import { Minus, Plus } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import CompletionToggle from "@/components/CompletionToggle";
-import SlidingNumberPicker from "@/components/SlidingNumberPicker";
 
 const REP_SUGGESTIONS = [6, 8, 10, 12, 15];
 
@@ -85,6 +85,31 @@ function FieldBlock({ title, hint, children, isDarkMode, accent }) {
         ) : null}
       </div>
       {children}
+    </div>
+  );
+}
+
+function StepperControl({ value, onChange, min, max, step, format = v => String(v), isDarkMode }) {
+  const adjust = delta => {
+    const next = Math.min(max, Math.max(min, value + delta));
+    if (Math.abs(next - value) > 1e-9) onChange(next);
+  };
+
+  const btnClass = isDarkMode
+    ? "w-10 h-10 rounded-card bg-iron-700 flex items-center justify-center active:bg-iron-600"
+    : "w-10 h-10 rounded-card bg-slate-100 border border-slate-200 flex items-center justify-center active:bg-slate-200";
+
+  return (
+    <div className="flex items-center justify-center gap-3">
+      <button type="button" onClick={() => adjust(-step)} className={btnClass} aria-label="Decrease">
+        <Minus className={`w-4 h-4 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
+      </button>
+      <span className={`min-w-[4rem] text-center text-2xl font-bold tabular-nums ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
+        {format(value)}
+      </span>
+      <button type="button" onClick={() => adjust(step)} className={btnClass} aria-label="Increase">
+        <Plus className={`w-4 h-4 ${isDarkMode ? "text-iron-300" : "text-slate-600"}`} />
+      </button>
     </div>
   );
 }
@@ -225,14 +250,12 @@ export default function SetCard({
 
       <div className="p-3 space-y-3">
         <FieldBlock title="Reps" isDarkMode={isDarkMode} accent="reps">
-          <SlidingNumberPicker
+          <StepperControl
             value={localReps}
             min={1}
             max={100}
             step={1}
             isDarkMode={isDarkMode}
-            accent="reps"
-            unitLabel="reps"
             onChange={n => {
               setLocalReps(n);
               onRepsChange(n);
@@ -261,15 +284,13 @@ export default function SetCard({
           isDarkMode={isDarkMode}
           accent="weight"
         >
-          <SlidingNumberPicker
+          <StepperControl
             value={localWeight}
             min={0}
             max={500}
             step={weightStep}
-            isDarkMode={isDarkMode}
-            accent="weight"
-            unitLabel={unit}
             format={formatWeightDisplay}
+            isDarkMode={isDarkMode}
             onChange={w => {
               setLocalWeight(w);
               onWeightChange(w);

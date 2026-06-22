@@ -17,3 +17,18 @@ export function buildWorkoutHeatmapFromSessions(sessions) {
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
+/** Completed split names per date (deduped, order preserved). */
+export function buildWorkoutSplitsByDate(sessions) {
+  const byDate = new Map();
+
+  for (const session of sessions || []) {
+    if (session.status !== "completed") continue;
+    const name = (session.routine_name || "").trim() || "Workout";
+    if (!byDate.has(session.date)) byDate.set(session.date, []);
+    const names = byDate.get(session.date);
+    if (!names.includes(name)) names.push(name);
+  }
+
+  return Object.fromEntries(byDate.entries());
+}

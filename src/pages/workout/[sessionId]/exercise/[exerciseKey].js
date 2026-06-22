@@ -172,27 +172,40 @@ export default function ExerciseLoggerPage() {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <header
-        className={`shrink-0 px-5 pt-6 pb-4 border-b ${
+        className={`shrink-0 px-4 pt-4 pb-3 border-b flex items-start gap-3 ${
           isDarkMode ? "border-iron-800/90 bg-iron-950/95" : "border-slate-200 bg-white/80"
         }`}
       >
-        <h1
-          className={`text-xl font-semibold tracking-tight leading-tight ${
-            isDarkMode ? "text-iron-50" : "text-slate-900"
-          }`}
+        <button
+          type="button"
+          onClick={handleClose}
+          className={cn(
+            actionSecondary(isDarkMode),
+            "mt-0.5 shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-card p-0",
+          )}
+          aria-label={isSessionToday(effectiveSession) ? "Back to workout" : "Back"}
         >
-          {title}
-        </h1>
-        <p
-          className={`text-sm mt-1 capitalize ${
-            isDarkMode ? "text-iron-500" : "text-slate-500"
-          }`}
-        >
-          {category && category !== "other" ? category : "General"}
-        </p>
+          <ArrowLeft className="w-5 h-5 shrink-0" aria-hidden />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1
+            className={`text-xl font-semibold tracking-tight leading-tight ${
+              isDarkMode ? "text-iron-50" : "text-slate-900"
+            }`}
+          >
+            {title}
+          </h1>
+          <p
+            className={`text-sm mt-1 capitalize ${
+              isDarkMode ? "text-iron-500" : "text-slate-500"
+            }`}
+          >
+            {category && category !== "other" ? category : "General"}
+          </p>
+        </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-8">
+      <div className="flex-1 overflow-y-auto px-5 py-6 pb-8 space-y-8">
         <PillRail
           label="Weight"
           values={WEIGHT_PILLS_KG}
@@ -282,26 +295,6 @@ export default function ExerciseLoggerPage() {
           </div>
         </div>
       </div>
-
-      <footer
-        className={cn(
-          "shrink-0 border-t px-5 pt-3",
-          isDarkMode ? "border-iron-800 bg-iron-950" : "border-slate-200 bg-slate-50",
-        )}
-        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-      >
-        <button
-          type="button"
-          onClick={handleClose}
-          className={cn(
-            actionSecondary(isDarkMode),
-            "w-full py-3.5 rounded-card font-semibold text-sm inline-flex items-center justify-center gap-2",
-          )}
-        >
-          <ArrowLeft className="w-5 h-5 shrink-0" aria-hidden />
-          {isSessionToday(effectiveSession) ? "Back to workout" : "Back"}
-        </button>
-      </footer>
     </div>
   );
 }

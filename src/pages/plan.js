@@ -14,13 +14,7 @@ import ExerciseLibraryPanel from "@/components/planner/ExerciseLibraryPanel";
 import ExercisePreviewButton from "@/components/planner/ExercisePreviewButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { getRoutineById, NEW_SPLIT_ID, sortRoutinesByName } from "@/lib/routineSplits";
-import {
-  Plus,
-  Trash2,
-  RotateCcw,
-  Loader2,
-  FileText,
-} from "lucide-react";
+import { Plus, Trash2, RotateCcw, Loader2, FileText } from "lucide-react";
 import {
   actionDestructiveGhost,
   actionDestructive,
@@ -58,9 +52,7 @@ function listToPayload(list) {
     category: ex.category || "other",
     target_sets: ex.target_sets || 3,
     notes:
-      ex.notes != null && String(ex.notes).trim()
-        ? String(ex.notes).trim().slice(0, 500)
-        : null,
+      ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim().slice(0, 500) : null,
   }));
 }
 
@@ -104,7 +96,9 @@ const RoutineExerciseRow = memo(function RoutineExerciseRow({
         isDarkMode={isDarkMode}
       />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className={`font-medium leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
+        <p
+          className={`font-medium leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}
+        >
           {item.exercise_name}
         </p>
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">
@@ -112,7 +106,7 @@ const RoutineExerciseRow = memo(function RoutineExerciseRow({
             type="text"
             value={item.notes ?? ""}
             maxLength={500}
-            onChange={(e) => onNotesChange(item.key, e.target.value)}
+            onChange={e => onNotesChange(item.key, e.target.value)}
             placeholder="Note (optional)"
             className={`min-w-0 flex-1 basis-[6rem] text-xs bg-transparent border-0 p-0 outline-none ring-0 focus:ring-0 ${
               isDarkMode
@@ -126,6 +120,8 @@ const RoutineExerciseRow = memo(function RoutineExerciseRow({
       <ExercisePreviewButton
         exerciseName={item.exercise_name}
         exerciseId={item.exercise_id}
+        category={item.category}
+        notes={item.notes}
         exercises={exercises}
         isDarkMode={isDarkMode}
         variant="inline"
@@ -183,21 +179,24 @@ export default function RoutinePlannerPage() {
 
   const routine = useMemo(
     () => getRoutineById(routines, selectedRoutineId),
-    [routines, selectedRoutineId],
+    [routines, selectedRoutineId]
   );
   const isNewSplit = selectedRoutineId === NEW_SPLIT_ID;
 
-  const hydrateForm = useCallback((routineId) => {
-    const r = getRoutineById(routines, routineId);
-    if (r) {
-      setTitle(r.name || "");
-      setList(routineToList(r, r.id));
-    } else {
-      setTitle("");
-      setList([]);
-    }
-    setListReady(true);
-  }, [routines]);
+  const hydrateForm = useCallback(
+    routineId => {
+      const r = getRoutineById(routines, routineId);
+      if (r) {
+        setTitle(r.name || "");
+        setList(routineToList(r, r.id));
+      } else {
+        setTitle("");
+        setList([]);
+      }
+      setListReady(true);
+    },
+    [routines]
+  );
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -224,7 +223,7 @@ export default function RoutinePlannerPage() {
       else delete query.view;
       void router.replace({ pathname: "/plan", query }, undefined, { shallow: true });
     },
-    [router],
+    [router]
   );
 
   const libraryPreviewId = useMemo(() => {
@@ -240,7 +239,7 @@ export default function RoutinePlannerPage() {
       else delete query.preview;
       void router.replace({ pathname: "/plan", query }, undefined, { shallow: true });
     },
-    [router],
+    [router]
   );
 
   useEffect(() => {
@@ -265,10 +264,7 @@ export default function RoutinePlannerPage() {
     hydrateForm(isNewSplit ? null : selectedRoutineId);
   }, [user, routines.length, selectedRoutineId, hydrateForm, isNewSplit]);
 
-  const areaGroups = useMemo(
-    () => groupExercisesByArea(list, ex => ex.category),
-    [list],
-  );
+  const areaGroups = useMemo(() => groupExercisesByArea(list, ex => ex.category), [list]);
   const routineExercisesLoading = isLoading || !listReady;
 
   const draftKey = useMemo(() => draftSnapshot({ title, list }), [title, list]);
@@ -312,7 +308,17 @@ export default function RoutinePlannerPage() {
     } finally {
       savingRef.current = false;
     }
-  }, [user, title, list, routine, isNewSplit, selectedRoutineId, createRoutine, updateRoutine, router]);
+  }, [
+    user,
+    title,
+    list,
+    routine,
+    isNewSplit,
+    selectedRoutineId,
+    createRoutine,
+    updateRoutine,
+    router,
+  ]);
 
   const persistRef = useRef(persistRoutine);
   persistRef.current = persistRoutine;
@@ -334,13 +340,10 @@ export default function RoutinePlannerPage() {
       if (routineId === selectedRoutineId) return;
       if (isDirty) await persistRef.current();
       setSelectedRoutineId(routineId);
-      const q =
-        routineId === NEW_SPLIT_ID
-          ? "new"
-          : encodeURIComponent(routineId);
+      const q = routineId === NEW_SPLIT_ID ? "new" : encodeURIComponent(routineId);
       void router.replace(`/plan?routine=${q}`, undefined, { shallow: true });
     },
-    [selectedRoutineId, isDirty, router],
+    [selectedRoutineId, isDirty, router]
   );
 
   const thumb = name => resolveExerciseMediaUrl(exercises, name, mediaOverrides);
@@ -351,21 +354,18 @@ export default function RoutinePlannerPage() {
   };
 
   const handleNotesChange = useCallback((key, notes) => {
-    setList((prev) => prev.map((x) => (x.key === key ? { ...x, notes } : x)));
+    setList(prev => prev.map(x => (x.key === key ? { ...x, notes } : x)));
   }, []);
 
-  const handleRemoveExercise = useCallback((key) => {
-    setList((prev) => prev.filter((x) => x.key !== key));
+  const handleRemoveExercise = useCallback(key => {
+    setList(prev => prev.filter(x => x.key !== key));
   }, []);
 
   const confirmDeleteSplit = useCallback(async () => {
     if (!routine?.id || deleting) return;
     setDeleting(true);
     try {
-      if (
-        activeSession?.status === "active" &&
-        activeSession.routine_id === routine.id
-      ) {
+      if (activeSession?.status === "active" && activeSession.routine_id === routine.id) {
         toast.error("Finish or reset today’s workout before deleting this split");
         setShowDeleteConfirm(false);
         return;
@@ -397,15 +397,7 @@ export default function RoutinePlannerPage() {
     } finally {
       setDeleting(false);
     }
-  }, [
-    routine?.id,
-    deleting,
-    activeSession,
-    deleteRoutine,
-    routines,
-    hydrateForm,
-    router,
-  ]);
+  }, [routine?.id, deleting, activeSession, deleteRoutine, routines, hydrateForm, router]);
 
   const addExercisesHref =
     selectedRoutineId && !isNewSplit
@@ -451,25 +443,41 @@ export default function RoutinePlannerPage() {
 
   const plannerTabListCls = cn(
     "grid h-11 w-full grid-cols-2 gap-1 rounded-card p-1",
-    isDarkMode ? "bg-iron-900/90 text-iron-400" : "bg-slate-100 text-slate-500",
+    isDarkMode ? "bg-iron-900/90 text-iron-400" : "bg-slate-100 text-slate-500"
   );
 
   const plannerTabTriggerCls = cn(
     "rounded-lg py-2.5 text-sm font-semibold",
     isDarkMode &&
-      "data-[state=inactive]:text-iron-400 data-[state=active]:bg-lift-primary data-[state=active]:text-iron-950",
+      "data-[state=inactive]:text-iron-400 data-[state=active]:bg-lift-primary data-[state=active]:text-iron-950"
   );
 
   return (
     <Layout>
       <PageContainer className="pt-8 pb-28">
-        <h1 className="text-screen-title">Planner</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-screen-title">Planner</h1>
+          {plannerView === PLANNER_VIEW_SPLITS && routines.length > 0 ? (
+            <button
+              type="button"
+              disabled={exportingSplits}
+              onClick={() => void handleExportSplits()}
+              className={cn(
+                "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-pill px-3 disabled:opacity-50",
+                actionSecondaryCompact(isDarkMode),
+              )}
+            >
+              {exportingSplits ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              )}
+              <span className="text-[11px] font-semibold whitespace-nowrap">Export PDF</span>
+            </button>
+          ) : null}
+        </div>
 
-        <Tabs
-          value={plannerView}
-          onValueChange={setPlannerViewWithUrl}
-          className="mt-4"
-        >
+        <Tabs value={plannerView} onValueChange={setPlannerViewWithUrl} className="mt-4">
           <TabsList className={plannerTabListCls}>
             <TabsTrigger value={PLANNER_VIEW_SPLITS} className={plannerTabTriggerCls}>
               Workout splits
@@ -480,30 +488,6 @@ export default function RoutinePlannerPage() {
           </TabsList>
 
           <TabsContent value={PLANNER_VIEW_SPLITS} className="mt-4 focus-visible:outline-none">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-600"}`}>
-                Build named routines. On Today, pick which split you&apos;re logging.
-              </p>
-              {routines.length > 0 ? (
-                <button
-                  type="button"
-                  disabled={exportingSplits}
-                  onClick={() => void handleExportSplits()}
-                  className={cn(
-                    "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-pill px-3 disabled:opacity-50",
-                    actionSecondaryCompact(isDarkMode),
-                  )}
-                >
-                  {exportingSplits ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                  ) : (
-                    <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  )}
-                  <span className="text-[11px] font-semibold whitespace-nowrap">Export all splits PDF</span>
-                </button>
-              ) : null}
-            </div>
-
             <PlannerSplitTabs
               routines={routines}
               selectedRoutineId={selectedRoutineId}
@@ -513,193 +497,193 @@ export default function RoutinePlannerPage() {
               className="mt-0"
             />
 
-        {selectedRoutineId != null ? (
-          <>
-            <div className="mt-4 space-y-2">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Push, Pull, Legs"
-                className={`w-full text-xl font-semibold tracking-tight rounded-card border px-4 py-3 outline-none ${
-                  isDarkMode
-                    ? "border-surface-subtle bg-surface-interactive text-iron-50 placeholder:text-iron-600"
-                    : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
-                }`}
-              />
-            </div>
-
-            <div className="mt-6">
-              {routineExercisesLoading ? (
-                <SkeletonRoutineExercises isDarkMode={isDarkMode} count={4} />
-              ) : areaGroups.length === 0 ? (
-                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                  No exercises yet — add some below.
-                </p>
-              ) : (
-                <div className="space-y-5">
-                  {areaGroups.map(group => (
-                    <div key={group.area}>
-                      {areaGroups.length > 1 ? (
-                        <ExerciseAreaGroupHeader
-                          label={group.label}
-                          count={group.exercises.length}
-                          isDarkMode={isDarkMode}
-                        />
-                      ) : null}
-                      <div className="space-y-2">
-                        {group.exercises.map(item => (
-                          <RoutineExerciseRow
-                            key={item.key}
-                            item={item}
-                            thumbUrl={thumb(item.exercise_name)}
-                            isDarkMode={isDarkMode}
-                            exercises={exercises}
-                            onNotesChange={handleNotesChange}
-                            onRemove={handleRemoveExercise}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+            {selectedRoutineId != null ? (
+              <>
+                <div className="mt-4 space-y-2">
+                  <input
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
+                    placeholder="e.g. Push, Pull, Legs"
+                    className={`w-full text-xl font-semibold tracking-tight rounded-card border px-4 py-3 outline-none ${
+                      isDarkMode
+                        ? "border-surface-subtle bg-surface-interactive text-iron-50 placeholder:text-iron-600"
+                        : "bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
+                    }`}
+                  />
                 </div>
-              )}
-            </div>
 
-            <div
-              className={cn(
-                "mt-6 space-y-3 border-t pt-5",
-                isDarkMode ? "border-iron-800/80" : "border-slate-200",
-              )}
-            >
-              {listReady &&
-              user &&
-              (saveStatus === "saving" ||
-                saveStatus === "pending" ||
-                saveStatus === "error" ||
-                isDirty) ? (
-                <p
-                  className={cn(
-                    "flex items-center justify-center gap-1.5 text-xs font-medium",
-                    saveStatus === "error"
-                      ? isDarkMode
-                        ? "text-red-400"
-                        : "text-red-600"
-                      : isDarkMode
-                        ? "text-iron-500"
-                        : "text-slate-500",
-                  )}
-                  aria-live="polite"
-                >
-                  {saveStatus === "saving" || saveStatus === "pending" ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      Saving…
-                    </>
-                  ) : saveStatus === "error" ? (
-                    "Could not save — check connection"
+                <div className="mt-6">
+                  {routineExercisesLoading ? (
+                    <SkeletonRoutineExercises isDarkMode={isDarkMode} count={4} />
+                  ) : areaGroups.length === 0 ? (
+                    <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                      No exercises yet — add some below.
+                    </p>
                   ) : (
-                    "Unsaved changes"
+                    <div className="space-y-5">
+                      {areaGroups.map(group => (
+                        <div key={group.area}>
+                          {areaGroups.length > 1 ? (
+                            <ExerciseAreaGroupHeader
+                              label={group.label}
+                              count={group.exercises.length}
+                              isDarkMode={isDarkMode}
+                            />
+                          ) : null}
+                          <div className="space-y-2">
+                            {group.exercises.map(item => (
+                              <RoutineExerciseRow
+                                key={item.key}
+                                item={item}
+                                thumbUrl={thumb(item.exercise_name)}
+                                isDarkMode={isDarkMode}
+                                exercises={exercises}
+                                onNotesChange={handleNotesChange}
+                                onRemove={handleRemoveExercise}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </p>
-              ) : null}
+                </div>
 
-              <button
-                type="button"
-                disabled={isNewSplit && !title.trim()}
-                onClick={async () => {
-                  if (isNewSplit) {
-                    if (savingRef.current) return;
-                    savingRef.current = true;
-                    try {
-                      const created = await createRoutine({
-                        name: title.trim(),
-                        day_of_week: null,
-                        color: "#3b82f6",
-                        exercises: listToPayload(list),
-                      });
-                      if (created?.id) {
-                        setSelectedRoutineId(created.id);
-                        await router.replace(`/plan?routine=${created.id}`, undefined, {
-                          shallow: true,
-                        });
-                        router.push(
-                          `/exercises?routineId=${encodeURIComponent(created.id)}&returnTo=plan`,
-                        );
-                      }
-                    } catch {
-                      toast.error("Could not save split");
-                    } finally {
-                      savingRef.current = false;
-                    }
-                    return;
-                  }
-                  if (addExercisesHref) router.push(addExercisesHref);
-                }}
-                className={cn(
-                  "flex w-full min-h-[44px] items-center justify-center gap-2 rounded-card py-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50",
-                  isNewSplit ? actionPrimary(isDarkMode) : actionSecondary(isDarkMode),
-                )}
-              >
-                <Plus className="h-5 w-5 shrink-0" aria-hidden />
-                {isNewSplit ? "Save split & add exercises" : "Add exercise"}
-              </button>
-
-              {!isNewSplit && routine ? (
                 <div
                   className={cn(
-                    "rounded-card border px-3 py-3",
-                    isDarkMode
-                      ? "border-iron-800/90 bg-iron-950/50"
-                      : "border-slate-200 bg-slate-50",
+                    "mt-6 space-y-3 border-t pt-5",
+                    isDarkMode ? "border-iron-800/80" : "border-slate-200"
                   )}
                 >
-                  <p
-                    className={cn(
-                      "mb-2.5 text-[11px] font-semibold uppercase tracking-wide",
-                      isDarkMode ? "text-iron-500" : "text-slate-500",
-                    )}
-                  >
-                    Manage split
-                  </p>
-                  <div
-                    className={cn(
-                      "grid gap-2",
-                      list.length > 0 ? "grid-cols-2" : "grid-cols-1",
-                    )}
-                  >
-                    {list.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={handleClear}
-                        className={cn(
-                          "inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-card px-2 py-2.5 text-xs font-semibold",
-                          actionDestructiveGhost(isDarkMode),
-                          isDarkMode ? "bg-iron-900/60" : "bg-white",
-                        )}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        Clear list
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm(true)}
+                  {listReady &&
+                  user &&
+                  (saveStatus === "saving" ||
+                    saveStatus === "pending" ||
+                    saveStatus === "error" ||
+                    isDirty) ? (
+                    <p
                       className={cn(
-                        "inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-card px-2 py-2.5 text-xs font-semibold",
-                        actionDestructiveGhost(isDarkMode),
-                        isDarkMode ? "bg-iron-900/60" : "bg-white",
-                        list.length === 0 && "w-full",
+                        "flex items-center justify-center gap-1.5 text-xs font-medium",
+                        saveStatus === "error"
+                          ? isDarkMode
+                            ? "text-red-400"
+                            : "text-red-600"
+                          : isDarkMode
+                            ? "text-iron-500"
+                            : "text-slate-500"
+                      )}
+                      aria-live="polite"
+                    >
+                      {saveStatus === "saving" || saveStatus === "pending" ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                          Saving…
+                        </>
+                      ) : saveStatus === "error" ? (
+                        "Could not save — check connection"
+                      ) : (
+                        "Unsaved changes"
+                      )}
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    disabled={isNewSplit && !title.trim()}
+                    onClick={async () => {
+                      if (isNewSplit) {
+                        if (savingRef.current) return;
+                        savingRef.current = true;
+                        try {
+                          const created = await createRoutine({
+                            name: title.trim(),
+                            day_of_week: null,
+                            color: "#3b82f6",
+                            exercises: listToPayload(list),
+                          });
+                          if (created?.id) {
+                            setSelectedRoutineId(created.id);
+                            await router.replace(`/plan?routine=${created.id}`, undefined, {
+                              shallow: true,
+                            });
+                            router.push(
+                              `/exercises?routineId=${encodeURIComponent(created.id)}&returnTo=plan`
+                            );
+                          }
+                        } catch {
+                          toast.error("Could not save split");
+                        } finally {
+                          savingRef.current = false;
+                        }
+                        return;
+                      }
+                      if (addExercisesHref) router.push(addExercisesHref);
+                    }}
+                    className={cn(
+                      "flex w-full min-h-[44px] items-center justify-center gap-2 rounded-card py-3 text-sm font-semibold disabled:pointer-events-none disabled:opacity-50",
+                      isNewSplit ? actionPrimary(isDarkMode) : actionSecondary(isDarkMode)
+                    )}
+                  >
+                    <Plus className="h-5 w-5 shrink-0" aria-hidden />
+                    {isNewSplit ? "Save split & add exercises" : "Add exercise"}
+                  </button>
+
+                  {!isNewSplit && routine ? (
+                    <div
+                      className={cn(
+                        "rounded-card border px-3 py-3",
+                        isDarkMode
+                          ? "border-iron-800/90 bg-iron-950/50"
+                          : "border-slate-200 bg-slate-50"
                       )}
                     >
-                      <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      Delete split
-                    </button>
-                  </div>
+                      <p
+                        className={cn(
+                          "mb-2.5 text-[11px] font-semibold uppercase tracking-wide",
+                          isDarkMode ? "text-iron-500" : "text-slate-500"
+                        )}
+                      >
+                        Manage split
+                      </p>
+                      <div
+                        className={cn(
+                          "grid gap-2",
+                          list.length > 0 ? "grid-cols-2" : "grid-cols-1"
+                        )}
+                      >
+                        {list.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={handleClear}
+                            className={cn(
+                              "inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-card px-2 py-2.5 text-xs font-semibold",
+                              actionDestructiveGhost(isDarkMode),
+                              isDarkMode ? "bg-iron-900/60" : "bg-white"
+                            )}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            Clear list
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className={cn(
+                            "inline-flex min-h-[40px] items-center justify-center gap-1.5 rounded-card px-2 py-2.5 text-xs font-semibold",
+                            actionDestructiveGhost(isDarkMode),
+                            isDarkMode ? "bg-iron-900/60" : "bg-white",
+                            list.length === 0 && "w-full"
+                          )}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          Delete split
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          </>
-        ) : null}
+              </>
+            ) : null}
           </TabsContent>
 
           <TabsContent value={PLANNER_VIEW_LIBRARY} className="mt-4 focus-visible:outline-none">
@@ -727,10 +711,7 @@ export default function RoutinePlannerPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel
-                className={actionSecondary(isDarkMode)}
-                disabled={deleting}
-              >
+              <AlertDialogCancel className={actionSecondary(isDarkMode)} disabled={deleting}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction

@@ -36,9 +36,9 @@ import {
   writePinnedCharts,
   togglePinnedChart,
 } from "@/lib/dashboardPins";
-import CollapsibleSection from "@/components/CollapsibleSection";
+import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import PinnableChart from "@/components/dashboard/PinnableChart";
-import { Beef, BarChart3, CalendarDays, Download, Pin, Utensils } from "lucide-react";
+import { Beef, BarChart3, CalendarDays, Download, Pin, Target, Utensils } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
 import WorkoutExportModal from "@/components/dashboard/WorkoutExportModal";
@@ -53,18 +53,34 @@ export default function Dashboard() {
   const unit = settings?.unit || "kg";
   const [exportOpen, setExportOpen] = useState(false);
   const [pinnedCharts, setPinnedCharts] = useState([]);
+  const [activeTab, setActiveTab] = useState("macros");
 
   useEffect(() => {
-    setPinnedCharts(readPinnedCharts());
+    const pins = readPinnedCharts();
+    setPinnedCharts(pins);
+    if (pins.length > 0) {
+      setActiveTab("pinned");
+    }
   }, []);
 
   const handleTogglePin = useCallback(chartId => {
     setPinnedCharts(prev => {
       const next = togglePinnedChart(prev, chartId);
       writePinnedCharts(next);
+      if (!prev.includes(chartId)) {
+        setActiveTab("pinned");
+      }
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "pinned" && pinnedCharts.length === 0) {
+      setActiveTab("macros");
+    } else if (activeTab === "activity") {
+      setActiveTab("charts");
+    }
+  }, [activeTab, pinnedCharts.length]);
 
   const isPinned = useCallback(chartId => pinnedCharts.includes(chartId), [pinnedCharts]);
 
@@ -311,147 +327,159 @@ export default function Dashboard() {
               <SkeletonSection />
             </div>
           ) : (
-            <div className="space-y-4 pb-6">
-              {pinnedCharts.length > 0 ? (
-                <CollapsibleSection
-                  title="Pinned"
-                  icon={Pin}
-                  defaultOpen
-                  isDarkMode={isDarkMode}
-                >
-                  <div className="space-y-4">
-                    {pinnedCharts.map(chartId => (
-                      <div key={`pinned-${chartId}`}>{wrapChart(chartId, renderChart(chartId))}</div>
-                    ))}
-                  </div>
-                </CollapsibleSection>
-              ) : null}
-
-              <CollapsibleSection
-                title="Macro Tracker"
-                icon={Beef}
-                defaultOpen={false}
-                isDarkMode={isDarkMode}
-              >
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    <MacroTargetsEditor
-                      targets={macroTargets}
-                      onSave={handleSaveTargets}
-                      isDarkMode={isDarkMode}
-                    />
-                    <Link
-                      href="/food"
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
-                        actionSecondaryCompact(isDarkMode),
-                      )}
-                    >
-                      <Utensils className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} />
-                      Food
-                    </Link>
-                  </div>
-                  <MacroProgressRings
-                    totals={todayMacros.totals}
-                    targets={macroTargets}
-                    isDarkMode={isDarkMode}
-                  />
-                  {showChart("macro_trend")
-                    ? wrapChart(
-                        "macro_trend",
-                        <LazyMacroTrendChart
-                          data={macroSeries}
+            <DashboardSectionTabs
+              isDarkMode={isDarkMode}
+              value={activeTab}
+              onValueChange={setActiveTab}
+              tabs={[
+                {
+                  value: "pinned",
+                  label: "Pinned",
+                  icon: Pin,
+                  badge: pinnedCharts.length || null,
+                  hidden: pinnedCharts.length === 0,
+                  content: (
+                    <>
+                      {pinnedCharts.map(chartId => (
+                        <div key={`pinned-${chartId}`}>{wrapChart(chartId, renderChart(chartId))}</div>
+                      ))}
+                    </>
+                  ),
+                },
+                {
+                  value: "macros",
+                  label: "Macros",
+                  icon: Beef,
+                  content: (
+                    <>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <MacroTargetsEditor
+                          targets={macroTargets}
+                          onSave={handleSaveTargets}
                           isDarkMode={isDarkMode}
-                          macroTargets={macroTargets}
-                        />,
-                      )
-                    : null}
-                </div>
-              </CollapsibleSection>
-
-              <CollapsibleSection
-                title="Charts"
-                icon={BarChart3}
-                defaultOpen={false}
-                isDarkMode={isDarkMode}
-              >
-                <div className="space-y-4">
-                  {showChart("volume")
-                    ? wrapChart("volume", <LazyVolumeTrendChart data={volumeTrend} isDarkMode={isDarkMode} />)
-                    : null}
-                  {showChart("exercise_progress")
-                    ? wrapChart(
-                        "exercise_progress",
-                        <LazyExerciseProgressChart
-                          exerciseLogsByName={exerciseLogsByName}
-                          isDarkMode={isDarkMode}
-                          unit={unit}
-                        />,
-                      )
-                    : null}
-                  {showChart("category_volume")
-                    ? wrapChart(
-                        "category_volume",
-                        <LazyCategoryVolumeChart data={categoryData} isDarkMode={isDarkMode} />,
-                      )
-                    : null}
-                </div>
-              </CollapsibleSection>
-
-              {showChart("tracking_overview")
-                ? wrapChart("tracking_overview", <LazyTrackingOverview {...trackingOverviewProps} />)
-                : null}
-
-              {showChart("activity_heatmap")
-                ? wrapChart(
-                    "activity_heatmap",
-                    <LazyActivityHeatmap
-                      data={workoutHeatmapData}
-                      type="workout"
-                      label="Workout Activity"
-                      subtitle={`${stats.workoutsThisMonth} workout${stats.workoutsThisMonth !== 1 ? "s" : ""} this month`}
-                      isDarkMode={isDarkMode}
-                    />,
-                  )
-                : null}
-
-              {showChart("food_activity") && foodItems.length > 0
-                ? wrapChart(
-                    "food_activity",
-                    <FoodTrackingActivity
-                      foodItems={foodItems}
-                      foodHistory={foodHistory}
-                      todayFoodEntries={todayFoodEntries}
-                      today={today}
-                      isDarkMode={isDarkMode}
-                    />,
-                  )
-                : null}
-
-              {showChart("goals")
-                ? wrapChart(
-                    "goals",
-                    <LazyGoalsWidget
-                      isDarkMode={isDarkMode}
-                      workoutHeatmapData={workoutHeatmapData}
-                      habitHeatmapData={habitHeatmapData}
-                      trackables={habitTrackables}
-                      todayEntries={todayEntries}
-                    />,
-                  )
-                : null}
-
-              {showChart("body_weight")
-                ? wrapChart("body_weight", <LazyBodyWeightTracker isDarkMode={isDarkMode} />)
-                : null}
-
-              {showChart("muscle_heatmap")
-                ? wrapChart(
-                    "muscle_heatmap",
-                    <LazyMuscleHeatmap exerciseLogsByName={exerciseLogsByName} isDarkMode={isDarkMode} />,
-                  )
-                : null}
-            </div>
+                        />
+                        <Link
+                          href="/food"
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-card px-3 py-2 text-xs font-semibold",
+                            actionSecondaryCompact(isDarkMode),
+                          )}
+                        >
+                          <Utensils className="h-3.5 w-3.5 shrink-0 opacity-90" strokeWidth={2.25} />
+                          Food
+                        </Link>
+                      </div>
+                      <MacroProgressRings
+                        totals={todayMacros.totals}
+                        targets={macroTargets}
+                        isDarkMode={isDarkMode}
+                      />
+                      {showChart("macro_trend")
+                        ? wrapChart(
+                            "macro_trend",
+                            <LazyMacroTrendChart
+                              data={macroSeries}
+                              isDarkMode={isDarkMode}
+                              macroTargets={macroTargets}
+                            />,
+                          )
+                        : null}
+                    </>
+                  ),
+                },
+                {
+                  value: "charts",
+                  label: "Charts",
+                  icon: BarChart3,
+                  content: (
+                    <>
+                      {showChart("volume")
+                        ? wrapChart(
+                            "volume",
+                            <LazyVolumeTrendChart data={volumeTrend} isDarkMode={isDarkMode} />,
+                          )
+                        : null}
+                      {showChart("exercise_progress")
+                        ? wrapChart(
+                            "exercise_progress",
+                            <LazyExerciseProgressChart
+                              exerciseLogsByName={exerciseLogsByName}
+                              isDarkMode={isDarkMode}
+                              unit={unit}
+                            />,
+                          )
+                        : null}
+                      {showChart("category_volume")
+                        ? wrapChart(
+                            "category_volume",
+                            <LazyCategoryVolumeChart data={categoryData} isDarkMode={isDarkMode} />,
+                          )
+                        : null}
+                      {showChart("tracking_overview")
+                        ? wrapChart("tracking_overview", <LazyTrackingOverview {...trackingOverviewProps} />)
+                        : null}
+                      {showChart("activity_heatmap")
+                        ? wrapChart(
+                            "activity_heatmap",
+                            <LazyActivityHeatmap
+                              data={workoutHeatmapData}
+                              type="workout"
+                              label="Workout Activity"
+                              subtitle={`${stats.workoutsThisMonth} workout${stats.workoutsThisMonth !== 1 ? "s" : ""} this month`}
+                              isDarkMode={isDarkMode}
+                            />,
+                          )
+                        : null}
+                      {showChart("food_activity") && foodItems.length > 0
+                        ? wrapChart(
+                            "food_activity",
+                            <FoodTrackingActivity
+                              foodItems={foodItems}
+                              foodHistory={foodHistory}
+                              todayFoodEntries={todayFoodEntries}
+                              today={today}
+                              isDarkMode={isDarkMode}
+                            />,
+                          )
+                        : null}
+                    </>
+                  ),
+                },
+                {
+                  value: "goals",
+                  label: "Goals",
+                  icon: Target,
+                  content: (
+                    <>
+                      {showChart("goals")
+                        ? wrapChart(
+                            "goals",
+                            <LazyGoalsWidget
+                              isDarkMode={isDarkMode}
+                              workoutHeatmapData={workoutHeatmapData}
+                              habitHeatmapData={habitHeatmapData}
+                              trackables={habitTrackables}
+                              todayEntries={todayEntries}
+                            />,
+                          )
+                        : null}
+                      {showChart("body_weight")
+                        ? wrapChart("body_weight", <LazyBodyWeightTracker isDarkMode={isDarkMode} />)
+                        : null}
+                      {showChart("muscle_heatmap")
+                        ? wrapChart(
+                            "muscle_heatmap",
+                            <LazyMuscleHeatmap
+                              exerciseLogsByName={exerciseLogsByName}
+                              isDarkMode={isDarkMode}
+                            />,
+                          )
+                        : null}
+                    </>
+                  ),
+                },
+              ]}
+            />
           )}
         </PageContainer>
       </FadeIn>

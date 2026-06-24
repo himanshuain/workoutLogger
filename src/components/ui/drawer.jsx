@@ -21,7 +21,7 @@ const DrawerOverlay = React.forwardRef(({ className, ...props }, ref) => (
 DrawerOverlay.displayName = "DrawerOverlay";
 
 const DrawerContent = React.forwardRef(
-  ({ className, children, ...props }, ref) => {
+  ({ className, overlayClassName, children, ...props }, ref) => {
     const [isInputFocused, setIsInputFocused] = React.useState(false);
     const contentRef = React.useRef(null);
 
@@ -56,7 +56,7 @@ const DrawerContent = React.forwardRef(
 
     return (
       <DrawerPortal>
-        <DrawerOverlay />
+        <DrawerOverlay className={overlayClassName} />
         <DialogPrimitive.Content
           ref={(node) => {
             contentRef.current = node;

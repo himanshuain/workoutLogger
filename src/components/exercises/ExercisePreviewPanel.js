@@ -48,6 +48,10 @@ export default function ExercisePreviewPanel({
   const mediaOverrides = useExerciseMediaOverrides();
   const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises, mediaOverrides);
   const equipmentLine = useMemo(() => getExerciseEquipment(exercise), [exercise]);
+  const plannerNotes =
+    typeof exercise?.metadata?.planner_notes === "string"
+      ? exercise.metadata.planner_notes.trim()
+      : "";
   const catalogByName = useMemo(() => buildExerciseCatalogByName(exercises), [exercises]);
   const variations = useMemo(
     () => resolveCatalogVariations(exercise, catalogByName),
@@ -255,7 +259,7 @@ export default function ExercisePreviewPanel({
     <div
       className={
         isSheet
-          ? "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+          ? "flex flex-col gap-4 pb-2"
           : hideHeading
             ? "pb-2"
             : "pb-6"
@@ -271,6 +275,7 @@ export default function ExercisePreviewPanel({
       <ExerciseDrawerMediaActions
         exercise={exercise}
         exerciseName={exercise.name}
+        allExercises={exercises}
         isDarkMode={isDarkMode}
         mediaOverrides={mediaOverrides}
         updateSettings={updateSettings}
@@ -288,12 +293,19 @@ export default function ExercisePreviewPanel({
       )}
       <p
         className={`text-sm shrink-0 ${
-          hideHeading ? (isSheet ? "mt-1" : "mt-4") : "mt-2"
+          hideHeading ? (isSheet ? "mt-0" : "mt-4") : "mt-2"
         } ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
       >
         <span className="capitalize">{exercise.category || "General"}</span>
         {equipmentLine ? ` · ${equipmentLine}` : ""}
       </p>
+      {plannerNotes ? (
+        <p
+          className={`text-sm shrink-0 mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+        >
+          {plannerNotes}
+        </p>
+      ) : null}
 
       {variations.length > 0 ? (
         <div className={`shrink-0 ${hideHeading ? (isSheet ? "mt-2" : "mt-4") : "mt-6"}`}>

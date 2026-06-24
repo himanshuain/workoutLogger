@@ -387,7 +387,7 @@ export default function ExerciseLibraryPanel({
               {previewExercise?.name ?? "Exercise"}
             </ModalTitle>
           </ModalHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-1">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
             {previewExercise ? (
               <ExercisePreviewPanel
                 exercise={previewExercise}

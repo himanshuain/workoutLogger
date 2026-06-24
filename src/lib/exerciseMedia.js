@@ -127,6 +127,13 @@ export function collectUrlsFromExerciseRow(exercise) {
   };
   push(exercise.gif_url);
   push(exercise.image_url);
+  const eapi = exercise.metadata?.exerciseapi;
+  if (Array.isArray(eapi?.images)) {
+    for (const img of eapi.images) {
+      if (typeof img === "string") push(img);
+      else if (img?.url) push(img.url);
+    }
+  }
   /** @type {Set<string>} */
   const seen = new Set();
   return out.filter(u => {

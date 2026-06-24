@@ -3,7 +3,7 @@ import { Eye } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { actionGhost } from "@/lib/actionButtonStyles";
-import { resolveExerciseFromCatalog } from "@/lib/plannerLibraryNavigation";
+import { resolveExerciseForPreview } from "@/lib/plannerLibraryNavigation";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
 
@@ -13,6 +13,8 @@ import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/mo
 export default function ExercisePreviewButton({
   exerciseName,
   exerciseId,
+  category,
+  notes,
   exercises,
   isDarkMode,
   variant = "inline",
@@ -28,7 +30,12 @@ export default function ExercisePreviewButton({
     e => {
       e.stopPropagation();
       e.preventDefault();
-      const ex = resolveExerciseFromCatalog(exercises, { exerciseId, exerciseName });
+      const ex = resolveExerciseForPreview(exercises, {
+        exerciseId,
+        exerciseName,
+        category,
+        notes,
+      });
       if (!ex) {
         toast.message("Exercise not found in catalog");
         return;
@@ -36,7 +43,7 @@ export default function ExercisePreviewButton({
       setPreviewExercise(ex);
       setOpen(true);
     },
-    [exercises, exerciseId, exerciseName],
+    [exercises, exerciseId, exerciseName, category, notes],
   );
 
   const handleOpenChange = useCallback(next => {
@@ -78,7 +85,7 @@ export default function ExercisePreviewButton({
               {previewExercise?.name ?? exerciseName ?? "Exercise"}
             </ModalTitle>
           </ModalHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-1">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
             {previewExercise ? (
               <ExercisePreviewPanel
                 exercise={previewExercise}

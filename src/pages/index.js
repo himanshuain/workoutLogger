@@ -30,14 +30,14 @@ import { toast } from "sonner";
 import {
   Dumbbell,
   Sparkles,
-  RefreshCw,
   History,
   Settings,
+  ClipboardList,
+  ListChecks,
 } from "lucide-react";
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
 import {
   actionPrimary,
-  actionSecondaryCompact,
   actionDestructive,
 } from "@/lib/actionButtonStyles";
 import {
@@ -53,6 +53,7 @@ import SectionSurface from "@/components/SectionSurface";
 import HorizontalDateStrip from "@/components/logging/HorizontalDateStrip";
 import PastDayScrollPill from "@/components/logging/PastDayScrollPill";
 import DayHabitsLifeLogCard from "@/components/logging/DayHabitsLifeLogCard";
+import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import {
   addDaysStr,
   formatChipLabel,
@@ -66,6 +67,10 @@ import {
   mergeEventTypesWithLifelogSettings,
   LIFELOG_EVENT_SETTINGS_CHANGED,
 } from "@/lib/lifelogEventSettings";
+
+const HOME_TAB_LOG = "log";
+const HOME_TAB_LIFELOG = "lifelog";
+const HOME_TAB_HISTORY = "history";
 
 export default function Home() {
   const router = useRouter();
@@ -104,8 +109,8 @@ export default function Home() {
     isLoading: isBootstrapping,
   } = useWorkout();
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewingDate, setViewingDate] = useState(today);
+  const [homeSectionTab, setHomeSectionTab] = useState(HOME_TAB_LOG);
   const [stripPastDaysLoaded, setStripPastDaysLoaded] = useState(STRIP_INITIAL_DAYS);
   const [showAddHabitDrawer, setShowAddHabitDrawer] = useState(false);
   const [isStartingWorkout, setIsStartingWorkout] = useState(false);
@@ -162,7 +167,6 @@ export default function Home() {
 
   const [lifeLogSettingsNonce, setLifeLogSettingsNonce] = useState(0);
   const dateStripRef = useRef(null);
-  const workoutHistoryRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -320,6 +324,11 @@ export default function Home() {
 
   const hasLifeLogThisDay = useCallback((et, dateStr) => (et.event_logs || []).some(l => l.date === dateStr), []);
 
+  const lifeLoggedCount = useMemo(() => {
+    if (!viewingDate) return 0;
+    return sortedLifeEvents.filter(et => hasLifeLogThisDay(et, viewingDate)).length;
+  }, [sortedLifeEvents, viewingDate, hasLifeLogThisDay]);
+
   const getLifeLogForDay = useCallback((et, dateStr) => (et.event_logs || []).find(l => l.date === dateStr) || null, []);
 
   const closeViewingLifeLogSheet = useCallback(() => {
@@ -465,26 +474,6 @@ export default function Home() {
     }
   };
 
-  // Refresh function
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      await queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip"] });
-      if (user?.id && viewingDate) {
-        await queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", user.id, viewingDate] });
-        await queryClient.invalidateQueries({ queryKey: ["trackingEntriesForDate", user.id, viewingDate] });
-        await queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id, viewingDate] });
-      }
-      toast.success("Updated");
-    } finally {
-      if (window.navigator?.vibrate) {
-        window.navigator.vibrate(10);
-      }
-      setTimeout(() => setIsRefreshing(false), 500);
-    }
-  };
-
   const handleUndoTodayWorkout = async sessionId => {
     const result = await undoTodayWorkoutDone(sessionId);
     if (!result) {
@@ -593,27 +582,6 @@ export default function Home() {
     );
   }, [recentSessions, viewingDate, isViewingToday, workoutSessionsForViewing]);
 
-  const showHistoryScroll = historySessions.length > 0;
-  const scrollToWorkoutHistory = useCallback(() => {
-    hapticLight();
-    const el = workoutHistoryRef.current;
-    if (!el) return;
-
-    const main = el.closest("main");
-    if (main) {
-      const offset = 12;
-      const top =
-        main.scrollTop +
-        el.getBoundingClientRect().top -
-        main.getBoundingClientRect().top -
-        offset;
-      main.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-      return;
-    }
-
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
-
   if (!user) {
     return (
       <Layout>
@@ -667,37 +635,6 @@ export default function Home() {
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            {showHistoryScroll ? (
-              <button
-                type="button"
-                onClick={scrollToWorkoutHistory}
-                className={cn(
-                  "inline-flex h-9 items-center gap-1.5 rounded-pill px-3",
-                  actionSecondaryCompact(isDarkMode),
-                )}
-              >
-                <History className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="text-[11px] font-semibold whitespace-nowrap">Workout history</span>
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => {
-                hapticLight();
-                handleRefresh();
-              }}
-              disabled={isRefreshing}
-              aria-label="Refresh"
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-pill disabled:opacity-50",
-                actionGhost(isDarkMode),
-              )}
-            >
-              <RefreshCw
-                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-                aria-hidden
-              />
-            </button>
             <button
               type="button"
               onClick={() => {
@@ -743,128 +680,156 @@ export default function Home() {
           isDarkMode={isDarkMode}
         />
 
-        {/* Today's Workout — new board, logger, and routine CTAs */}
-        {isViewingToday ? (
-        <section className="section-spacing">
-          <LazyTodayWorkoutSection
-            completedTodaySession={
-              hasCompletedSession && !hasActiveSession ? todaySession : null
-            }
-            onChooseRoutine={() => {
-              setRoutineSelectorMode("start");
-              setShowRoutineSelector(true);
-            }}
-            onMarkDonePickRoutine={() => {
-              setRoutineSelectorMode("markDone");
-              setShowRoutineSelector(true);
-            }}
-          />
-        </section>
-        ) : (
-        <section className="section-spacing">
-          <LazyLogDayWorkoutPanel
-            isDarkMode={isDarkMode}
-            pastLogDate={viewingDate}
-            todayStr={today}
-            workoutSessions={workoutSessionsForViewing}
-            routines={routines}
-            routineForSelectedDay={routineForViewingDay}
-            startingRoutine={isStartingWorkout}
-            onPickRoutine={() => setShowRoutineSelector(true)}
-            onStartWorkout={handleStartWorkoutForViewingDate}
-            onNavigateSession={navigateToWorkoutSession}
-          />
-        </section>
-        )}
-
-        {/* Habits */}
-        {isViewingToday ? (
-        <section className="section-spacing">
-          <SectionSurface isDarkMode={isDarkMode}>
-            <SectionHeader
-              icon={Sparkles}
-              label="Habits"
-              meta={todayHabitsMeta}
-              isDarkMode={isDarkMode}
-            >
-              <SectionManageButton
-                isDarkMode={isDarkMode}
-                onClick={() => router.push("/lifelog")}
-                ariaLabel="Manage habits"
-              />
-            </SectionHeader>
-            <HabitPills
-              trackables={todayHabitTrackables}
-              entries={todayEntries}
-              onToggle={handleToggleHabit}
-              onAddNew={() => setShowAddHabitDrawer(true)}
-            />
-          </SectionSurface>
-        </section>
-        ) : (
-        <section className="section-spacing">
-          <DayHabitsLifeLogCard
-            isDarkMode={isDarkMode}
-            selectedDate={viewingDate}
-            habitList={habitListForViewing}
-            trackingForDay={trackingForDay}
-            onHabitToggle={handleHabitToggleList}
-            sortedLifeEvents={sortedLifeEvents}
-            hasLifeLogThisDay={hasLifeLogThisDay}
-            onQuickLifeLog={handleQuickLifeLog}
-            onManageLifelog={() => router.push("/lifelog")}
-            showHabits
-            showLifeLog={false}
-          />
-        </section>
-        )}
-
-        <TodayFoodLogSection
+        <DashboardSectionTabs
           isDarkMode={isDarkMode}
-          foodItems={foodItems}
-          todayFoodEntries={todayFoodEntries}
-          toggleFoodEntry={toggleFoodEntry}
-          updateFoodEntryQuantity={updateFoodEntryQuantity}
-          queryClient={queryClient}
-          logForDate={!isViewingToday ? viewingDate : null}
-          foodEntriesMap={!isViewingToday ? viewingFoodEntries : null}
-          userId={user?.id}
-        />
+          value={homeSectionTab}
+          onValueChange={setHomeSectionTab}
+          equalWidth
+          className="mt-1"
+          tabs={[
+            {
+              value: HOME_TAB_LOG,
+              label: "Log",
+              icon: ClipboardList,
+              content: (
+                <>
+                  {isViewingToday ? (
+                    <section className="section-spacing">
+                      <LazyTodayWorkoutSection
+                        completedTodaySession={
+                          hasCompletedSession && !hasActiveSession ? todaySession : null
+                        }
+                        onChooseRoutine={() => {
+                          setRoutineSelectorMode("start");
+                          setShowRoutineSelector(true);
+                        }}
+                        onMarkDonePickRoutine={() => {
+                          setRoutineSelectorMode("markDone");
+                          setShowRoutineSelector(true);
+                        }}
+                      />
+                    </section>
+                  ) : (
+                    <section className="section-spacing">
+                      <LazyLogDayWorkoutPanel
+                        isDarkMode={isDarkMode}
+                        pastLogDate={viewingDate}
+                        todayStr={today}
+                        workoutSessions={workoutSessionsForViewing}
+                        routines={routines}
+                        routineForSelectedDay={routineForViewingDay}
+                        startingRoutine={isStartingWorkout}
+                        onPickRoutine={() => setShowRoutineSelector(true)}
+                        onStartWorkout={handleStartWorkoutForViewingDate}
+                        onNavigateSession={navigateToWorkoutSession}
+                      />
+                    </section>
+                  )}
 
-        <section className="section-spacing">
-          <DayHabitsLifeLogCard
-            isDarkMode={isDarkMode}
-            selectedDate={viewingDate}
-            habitList={[]}
-            trackingForDay={{}}
-            onHabitToggle={() => {}}
-            sortedLifeEvents={sortedLifeEvents}
-            hasLifeLogThisDay={hasLifeLogThisDay}
-            onQuickLifeLog={handleQuickLifeLog}
-            onManageLifelog={() => router.push("/lifelog")}
-            showHabits={false}
-            showLifeLog
-          />
-        </section>
+                  {isViewingToday ? (
+                    <section className="section-spacing">
+                      <SectionSurface isDarkMode={isDarkMode}>
+                        <SectionHeader
+                          icon={Sparkles}
+                          label="Habits"
+                          meta={todayHabitsMeta}
+                          isDarkMode={isDarkMode}
+                        >
+                          <SectionManageButton
+                            isDarkMode={isDarkMode}
+                            onClick={() => router.push("/lifelog")}
+                            ariaLabel="Manage habits"
+                          />
+                        </SectionHeader>
+                        <HabitPills
+                          trackables={todayHabitTrackables}
+                          entries={todayEntries}
+                          onToggle={handleToggleHabit}
+                          onAddNew={() => setShowAddHabitDrawer(true)}
+                        />
+                      </SectionSurface>
+                    </section>
+                  ) : (
+                    <section className="section-spacing">
+                      <DayHabitsLifeLogCard
+                        isDarkMode={isDarkMode}
+                        selectedDate={viewingDate}
+                        habitList={habitListForViewing}
+                        trackingForDay={trackingForDay}
+                        onHabitToggle={handleHabitToggleList}
+                        sortedLifeEvents={sortedLifeEvents}
+                        hasLifeLogThisDay={hasLifeLogThisDay}
+                        onQuickLifeLog={handleQuickLifeLog}
+                        onManageLifelog={() => router.push("/lifelog")}
+                        showHabits
+                        showLifeLog={false}
+                      />
+                    </section>
+                  )}
+
+                  <TodayFoodLogSection
+                    isDarkMode={isDarkMode}
+                    foodItems={foodItems}
+                    todayFoodEntries={todayFoodEntries}
+                    toggleFoodEntry={toggleFoodEntry}
+                    updateFoodEntryQuantity={updateFoodEntryQuantity}
+                    queryClient={queryClient}
+                    logForDate={!isViewingToday ? viewingDate : null}
+                    foodEntriesMap={!isViewingToday ? viewingFoodEntries : null}
+                    userId={user?.id}
+                  />
+                </>
+              ),
+            },
+            {
+              value: HOME_TAB_LIFELOG,
+              label: "Life log",
+              icon: ListChecks,
+              badge: lifeLoggedCount > 0 ? lifeLoggedCount : null,
+              content: (
+                <section className="section-spacing">
+                  <DayHabitsLifeLogCard
+                    isDarkMode={isDarkMode}
+                    selectedDate={viewingDate}
+                    habitList={[]}
+                    trackingForDay={{}}
+                    onHabitToggle={() => {}}
+                    sortedLifeEvents={sortedLifeEvents}
+                    hasLifeLogThisDay={hasLifeLogThisDay}
+                    onQuickLifeLog={handleQuickLifeLog}
+                    onManageLifelog={() => router.push("/lifelog")}
+                    showHabits={false}
+                    showLifeLog
+                  />
+                </section>
+              ),
+            },
+            {
+              value: HOME_TAB_HISTORY,
+              label: "History",
+              icon: History,
+              badge: historySessions.length > 0 ? historySessions.length : null,
+              content: (
+                <LazyHomeWorkoutHistory
+                  isDarkMode={isDarkMode}
+                  historySessions={historySessions}
+                  todaySession={todaySession}
+                  isViewingToday={isViewingToday}
+                  today={today}
+                  expandedSession={expandedSession}
+                  setExpandedSession={setExpandedSession}
+                  editingSet={editingSet}
+                  setEditingSet={setEditingSet}
+                  setDeleteConfirm={setDeleteConfirm}
+                  updateSetLogData={updateSetLogData}
+                  handleUndoTodayWorkout={handleUndoTodayWorkout}
+                />
+              ),
+            },
+          ]}
+        />
           </>
         )}
-
-        <div ref={workoutHistoryRef} id="home-workout-history" className="scroll-mt-20">
-          <LazyHomeWorkoutHistory
-            isDarkMode={isDarkMode}
-            historySessions={historySessions}
-            todaySession={todaySession}
-            isViewingToday={isViewingToday}
-            today={today}
-            expandedSession={expandedSession}
-            setExpandedSession={setExpandedSession}
-            editingSet={editingSet}
-            setEditingSet={setEditingSet}
-            setDeleteConfirm={setDeleteConfirm}
-            updateSetLogData={updateSetLogData}
-            handleUndoTodayWorkout={handleUndoTodayWorkout}
-          />
-        </div>
       </div>
 
       {showRoutineSelector ? (

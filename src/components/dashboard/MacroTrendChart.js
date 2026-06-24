@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { ChartBody, ChartSection, ChartSectionHeader } from "@/components/charts/ChartChrome";
+import { ChartBody, ChartSection, ChartSectionHeader, chartPanelInnerClass } from "@/components/charts/ChartChrome";
 import RichChartTooltip from "@/components/charts/RichChartTooltip";
 import ChartInsightFooter from "@/components/charts/ChartInsightFooter";
 import { getChartColors } from "@/lib/chartTheme";
@@ -28,16 +28,15 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function TooltipValueRing({ value, target, color, isDarkMode, display }) {
-  const size = 40;
-  const strokeWidth = 3;
+function TooltipValueRing({ value, target, color, isDarkMode, display, size = 40 }) {
+  const strokeWidth = size <= 32 ? 2.5 : 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const pct = target ? Math.min(100, Math.max(0, (value / target) * 100)) : 0;
   const offset = circumference - (pct / 100) * circumference;
 
   return (
-    <div className="relative inline-flex" style={{ width: size, height: size }}>
+    <div className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -63,7 +62,8 @@ function TooltipValueRing({ value, target, color, isDarkMode, display }) {
       </svg>
       <span
         className={cn(
-          "absolute inset-0 flex items-center justify-center text-[10px] font-semibold tabular-nums leading-none px-0.5 text-center",
+          "absolute inset-0 flex items-center justify-center font-semibold tabular-nums leading-none px-0.5 text-center",
+          size <= 32 ? "text-[9px]" : "text-[10px]",
           isDarkMode ? "text-iron-50" : "text-slate-800",
         )}
       >
@@ -157,6 +157,84 @@ function MacroTooltip({ active, payload, macroTargets, isDarkMode }) {
       rows={rows}
       insight={proteinInsight(protein, macroTargets?.protein_g) || (protein >= 30 ? "Solid protein day" : "Low protein — add a protein source")}
     />
+  );
+}
+
+function MacroDailyTable({ rows, macroTargets, isDarkMode }) {
+  const proteinTarget = macroTargets?.protein_g;
+  const proteinColor = isDarkMode ? "#f472b6" : "#db2777";
+  const sorted = useMemo(() => [...rows].reverse(), [rows]);
+
+  if (!sorted.length) return null;
+
+  const thClass = cn(
+    "px-3 py-2 font-medium",
+    isDarkMode ? "text-iron-500" : "text-slate-500",
+  );
+
+  return (
+    <div className={cn("mt-4 overflow-hidden", chartPanelInnerClass(isDarkMode))}>
+      <div className="max-h-52 overflow-auto">
+        <table className="w-full text-xs">
+          <thead className={cn("sticky top-0 z-10", isDarkMode ? "bg-iron-900/95" : "bg-white/95")}>
+            <tr>
+              <th className={cn(thClass, "text-left")}>Date</th>
+              <th className={cn(thClass, "text-right")}>Protein</th>
+              <th className={cn(thClass, "text-right")}>Calories</th>
+              {proteinTarget ? <th className={cn(thClass, "text-right w-14")}>Target</th> : null}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(row => {
+              const protein = Math.round(row.protein_g || 0);
+              const calories = Math.round(row.calories || 0);
+              const pct = proteinTarget ? Math.round((protein / proteinTarget) * 100) : null;
+
+              return (
+                <tr
+                  key={row.date}
+                  className={cn("border-t", isDarkMode ? "border-iron-800/50" : "border-slate-100")}
+                >
+                  <td className={cn("px-3 py-2 font-medium", isDarkMode ? "text-iron-200" : "text-slate-700")}>
+                    {formatFullDate(row.date)}
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2 text-right tabular-nums font-semibold",
+                      isDarkMode ? "text-pink-400" : "text-pink-600",
+                    )}
+                  >
+                    {protein}g
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2 text-right tabular-nums",
+                      isDarkMode ? "text-iron-300" : "text-slate-600",
+                    )}
+                  >
+                    {calories.toLocaleString()}
+                  </td>
+                  {proteinTarget ? (
+                    <td className="px-2 py-1.5">
+                      <div className="flex justify-end">
+                        <TooltipValueRing
+                          value={protein}
+                          target={proteinTarget}
+                          color={proteinColor}
+                          isDarkMode={isDarkMode}
+                          display={`${pct}%`}
+                          size={32}
+                        />
+                      </div>
+                    </td>
+                  ) : null}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -276,6 +354,7 @@ export default function MacroTrendChart({ data, isDarkMode, macroTargets }) {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
+        <MacroDailyTable rows={chartData} macroTargets={macroTargets} isDarkMode={isDarkMode} />
         <ChartInsightFooter
           isDarkMode={isDarkMode}
           takeaway={summary || undefined}

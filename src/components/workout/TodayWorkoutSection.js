@@ -600,6 +600,8 @@ export default function TodayWorkoutSection({
                             <ExercisePreviewButton
                               exerciseName={ex.exercise_name}
                               exerciseId={ex.exercise_id}
+                              category={ex.category}
+                              notes={ex.notes}
                               exercises={exercises}
                               isDarkMode={isDarkMode}
                               variant="overlay"

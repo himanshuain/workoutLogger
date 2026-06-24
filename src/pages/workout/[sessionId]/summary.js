@@ -107,13 +107,7 @@ export default function WorkoutSummaryPage() {
     const logs = (session?.set_logs || []).filter(l => l.is_completed);
     const names = [...new Set(logs.map(l => l.exercise_name))];
     const addedTodayNames = new Set(extras.map(e => e.exercise_name));
-    const completedExercises = names.length;
-    const addedToday = extras.length;
-    const totalSets = logs.length;
     return {
-      completedExercises,
-      addedToday,
-      totalSets,
       exerciseNames: names,
       addedTodayNames,
     };
@@ -307,27 +301,7 @@ export default function WorkoutSummaryPage() {
         {session?.routine_name || "Session"}
       </p>
 
-      <div className="mt-8 space-y-3">
-        {[
-          { label: "Completed exercises", value: stats.completedExercises },
-          { label: "Added today", value: stats.addedToday },
-          { label: "Total sets", value: stats.totalSets },
-        ].map(row => (
-          <div
-            key={row.label}
-            className={`flex justify-between items-center py-3 px-4 rounded-card ${
-              isDarkMode ? "bg-iron-900/70 border border-iron-800" : "bg-white border border-slate-200 shadow-sm"
-            }`}
-          >
-            <span className={isDarkMode ? "text-iron-400" : "text-slate-600"}>{row.label}</span>
-            <span className={`font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
-              {row.value}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8">
+      <div className="mt-6">
         <div className="flex items-end justify-between gap-3 mb-3">
           <p
             className={`text-[11px] font-semibold uppercase tracking-widest ${

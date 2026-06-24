@@ -331,6 +331,7 @@ export default function Dashboard() {
               isDarkMode={isDarkMode}
               value={activeTab}
               onValueChange={setActiveTab}
+              equalWidth
               tabs={[
                 {
                   value: "pinned",

@@ -90,9 +90,7 @@ export default function Home() {
     undoTodayWorkoutDone,
     loadActiveSession,
     getWorkoutSessions,
-    deleteSetLog,
     deleteWorkoutSession,
-    updateSetLogData,
     foodItems,
     todayFoodEntries,
     toggleFoodEntry,
@@ -157,8 +155,7 @@ export default function Home() {
   );
 
   const [expandedSession, setExpandedSession] = useState(null);
-  const [editingSet, setEditingSet] = useState(null); // { id, weight, reps }
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { type: "set"|"session", id, label }
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   /** Life log on Home: sheet when selected day’s event needs value/notes (same as /lifelog). */
   const [viewingLifeLogSheet, setViewingLifeLogSheet] = useState(null);
@@ -818,10 +815,7 @@ export default function Home() {
                   today={today}
                   expandedSession={expandedSession}
                   setExpandedSession={setExpandedSession}
-                  editingSet={editingSet}
-                  setEditingSet={setEditingSet}
                   setDeleteConfirm={setDeleteConfirm}
-                  updateSetLogData={updateSetLogData}
                   handleUndoTodayWorkout={handleUndoTodayWorkout}
                 />
               ),
@@ -867,12 +861,10 @@ export default function Home() {
         <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
-              Delete {deleteConfirm?.type === "session" ? "Workout" : "Set"}
+              Delete workout
             </AlertDialogTitle>
             <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
-              {deleteConfirm?.type === "session"
-                ? `This will permanently delete "${deleteConfirm?.label}" and all its sets.`
-                : `Delete ${deleteConfirm?.label}?`}
+              This will permanently delete &ldquo;{deleteConfirm?.label}&rdquo; and all its sets.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -882,15 +874,10 @@ export default function Home() {
             <AlertDialogAction
               onClick={async () => {
                 if (!deleteConfirm) return;
-                if (deleteConfirm.type === "session") {
-                  const ok = await deleteWorkoutSession(deleteConfirm.id);
-                  if (ok) {
-                    toast.success("Workout deleted");
-                    if (expandedSession === deleteConfirm.id) setExpandedSession(null);
-                  }
-                } else {
-                  const ok = await deleteSetLog(deleteConfirm.id);
-                  if (ok) toast.success("Set deleted");
+                const ok = await deleteWorkoutSession(deleteConfirm.id);
+                if (ok) {
+                  toast.success("Workout deleted");
+                  if (expandedSession === deleteConfirm.id) setExpandedSession(null);
                 }
                 setDeleteConfirm(null);
               }}

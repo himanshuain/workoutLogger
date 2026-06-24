@@ -45,7 +45,7 @@ export default function DashboardSectionTabs({
                 key={tab.value}
                 value={tab.value}
                 className={cn(
-                  "gap-1.5 py-2.5 text-xs font-semibold sm:text-sm",
+                  "group gap-1.5 py-2.5 text-xs font-semibold sm:text-sm",
                   equalWidth ? "w-full min-w-0 justify-center px-2" : "shrink-0 px-3",
                   "data-[state=active]:shadow-sm",
                   isDarkMode &&
@@ -55,7 +55,17 @@ export default function DashboardSectionTabs({
                 {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
                 <span>{tab.label}</span>
                 {tab.badge != null ? (
-                  <span className="tabular-nums text-[10px] font-medium opacity-70">{tab.badge}</span>
+                  <span
+                    className={cn(
+                      "inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums leading-none",
+                      isDarkMode
+                        ? "bg-iron-700/90 text-iron-100 group-data-[state=active]:bg-iron-950/15 group-data-[state=active]:text-iron-950"
+                        : "bg-slate-200/90 text-slate-600 group-data-[state=active]:bg-white/95 group-data-[state=active]:text-slate-800",
+                    )}
+                    aria-label={`${tab.badge} items`}
+                  >
+                    {tab.badge}
+                  </span>
                 ) : null}
               </TabsTrigger>
             );

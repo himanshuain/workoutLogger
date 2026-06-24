@@ -104,7 +104,7 @@ function HomeWorkoutHistory(
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={`text-sm font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
                             >
@@ -112,7 +112,7 @@ function HomeWorkoutHistory(
                             </span>
                             {session.routine_name && (
                               <span
-                                className={`max-w-[7rem] truncate rounded-pill px-2 py-0.5 text-[10px] ${
+                                className={`rounded-pill px-2 py-0.5 text-[10px] ${
                                   isDarkMode
                                     ? "bg-lift-primary/15 text-lift-primary"
                                     : "bg-workout-primary/10 text-workout-primary"
@@ -191,7 +191,7 @@ function HomeWorkoutHistory(
                                       />
                                     </div>
                                     <p
-                                      className={`text-sm font-semibold truncate flex-1 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                                      className={`min-w-0 flex-1 text-sm font-semibold leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
                                     >
                                       {name}
                                     </p>

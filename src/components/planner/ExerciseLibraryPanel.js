@@ -328,7 +328,7 @@ export default function ExerciseLibraryPanel({
                 >
                   <ExerciseListThumbnail exercise={ex} isDarkMode={isDarkMode} mediaOverrides={mediaOverrides} />
                   <div className="min-w-0 flex-1 text-left">
-                    <p className={`truncate font-semibold ${isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"}`}>
+                    <p className={`font-semibold leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]"}`}>
                       {ex.name}
                     </p>
                     <p className={`mt-0.5 text-xs capitalize ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>

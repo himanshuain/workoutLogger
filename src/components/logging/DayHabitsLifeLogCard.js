@@ -136,7 +136,7 @@ export default function DayHabitsLifeLogCard({
                           {done ? <Check className="h-5 w-5 text-white" strokeWidth={2.5} /> : t.icon}
                         </button>
                         <div className="min-w-0 flex-1 text-left">
-                          <p className="text-card-subtitle truncate">{t.name}</p>
+                          <p className="text-card-subtitle leading-snug line-clamp-2 break-words">{t.name}</p>
                           <p className="text-metadata">
                             {done
                               ? "Done this day"
@@ -195,7 +195,7 @@ export default function DayHabitsLifeLogCard({
                           {et.icon || "📌"}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-card-subtitle truncate">{et.name}</p>
+                          <p className="text-card-subtitle leading-snug line-clamp-2 break-words">{et.name}</p>
                           {done ? (
                             <p className={`text-xs ${isDarkMode ? "text-emerald-400" : "text-emerald-600"}`}>
                               Logged · tap icon to remove

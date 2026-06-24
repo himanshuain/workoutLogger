@@ -214,12 +214,12 @@ export default function History() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <h3 className={`font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                               {formatDate(date)}
                             </h3>
                             {routineNames.length > 0 && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full truncate max-w-[140px] ${
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
                                 isDarkMode ? "bg-lift-primary/15 text-lift-primary" : "bg-workout-primary/10 text-workout-primary"
                               }`}>
                                 {routineNames.join(", ")}
@@ -281,7 +281,7 @@ export default function History() {
                                     <div className={`w-8 h-8 rounded-card flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-700/70" : "bg-slate-100"}`}>
                                       <ExerciseIcon name={exerciseName} className="w-5 h-5" color={isDarkMode ? "#a1a1aa" : "#64748b"} />
                                     </div>
-                                    <p className={`text-sm font-semibold truncate flex-1 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                                    <p className={`min-w-0 flex-1 text-sm font-semibold leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                                       {exerciseName}
                                     </p>
                                     <span className={`text-[11px] flex-shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>
@@ -431,7 +431,7 @@ export default function History() {
                                 <div className={`w-8 h-8 rounded-card flex items-center justify-center flex-shrink-0 ${isDarkMode ? "bg-iron-700/70" : "bg-slate-100"}`}>
                                   <ExerciseIcon name={log.exercise_name} className="w-5 h-5" color={isDarkMode ? "#a1a1aa" : "#64748b"} />
                                 </div>
-                                <p className={`text-sm font-semibold truncate flex-1 ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
+                                <p className={`min-w-0 flex-1 text-sm font-semibold leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
                                   {log.exercise_name}
                                 </p>
                                 <span className={`text-[11px] flex-shrink-0 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}>

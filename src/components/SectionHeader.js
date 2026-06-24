@@ -15,15 +15,15 @@ export default function SectionHeader({
   as: Tag = "h3",
 }) {
   return (
-    <div className={cn("mb-3 flex items-center justify-between gap-2", className)}>
+    <div className={cn("mb-3 flex items-start justify-between gap-2", className)}>
       <Tag
         className={cn(
-          "text-section-header flex min-w-0 items-center gap-2",
+          "text-section-header flex min-w-0 flex-1 items-start gap-2",
           isDarkMode && "text-iron-200",
         )}
       >
-        {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
-        <span className="truncate">
+        {Icon ? <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
+        <span className="min-w-0 break-words leading-snug">
           {label}
           {meta ? (
             <span
@@ -38,7 +38,7 @@ export default function SectionHeader({
           ) : null}
         </span>
       </Tag>
-      {children ? <div className="flex shrink-0 items-center gap-2">{children}</div> : null}
+      {children ? <div className="flex shrink-0 items-center gap-2 pt-0.5">{children}</div> : null}
     </div>
   );
 }

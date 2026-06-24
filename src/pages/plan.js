@@ -104,7 +104,7 @@ const RoutineExerciseRow = memo(function RoutineExerciseRow({
         isDarkMode={isDarkMode}
       />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className={`font-medium truncate ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
+        <p className={`font-medium leading-snug line-clamp-2 break-words ${isDarkMode ? "text-iron-100" : "text-slate-900"}`}>
           {item.exercise_name}
         </p>
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 min-w-0">

@@ -69,7 +69,7 @@ export default function LogDayWorkoutPanel({
                   <Dumbbell className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-card-subtitle">{session.routine_name || "Custom workout"}</p>
+                  <p className="text-card-subtitle leading-snug line-clamp-2 break-words">{session.routine_name || "Custom workout"}</p>
                   <p className="text-metadata">{meta}</p>
                 </div>
                 <button
@@ -105,7 +105,7 @@ export default function LogDayWorkoutPanel({
                     : "border border-sky-200 bg-sky-50 text-sky-950",
                 )}
               >
-                <span className="truncate">{routineForSelectedDay.name}</span>
+                <span>{routineForSelectedDay.name}</span>
               </p>
               {exerciseCount > 0 ? (
                 <p className="text-metadata mt-1.5">

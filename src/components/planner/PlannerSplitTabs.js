@@ -75,7 +75,7 @@ export default function PlannerSplitTabs({
                   style={{ backgroundColor: routine.color || "#3b82f6" }}
                   aria-hidden
                 />
-                <span className="max-w-[7rem] truncate sm:max-w-[9rem]">{label}</span>
+                <span>{label}</span>
                 <span
                   className={cn(
                     "tabular-nums text-[10px] font-medium opacity-70",

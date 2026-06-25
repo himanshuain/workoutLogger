@@ -27,7 +27,9 @@ const HorizontalDateStrip = forwardRef(function HorizontalDateStrip(
     glanceDays,
     selectedDate,
     todayStr,
-    foodCountByDate,
+    habitLoggedByDate = {},
+    activityLoggedByDate,
+    workoutLoggedByDate = {},
     onPickDate,
     stripScrollAnchorDate,
     onNearPastEdge,
@@ -139,6 +141,8 @@ const HorizontalDateStrip = forwardRef(function HorizontalDateStrip(
     });
   }, [onNearPastEdge, canLoadMorePast, updateScrollContext]);
 
+  const showActivityDotByDate = activityLoggedByDate ?? habitLoggedByDate;
+
   const shellGradient = isViewingToday
     ? isDarkMode
       ? "border-emerald-800/70 bg-gradient-to-b from-emerald-950/95 via-emerald-900/55 to-iron-950 shadow-inner shadow-black/25"
@@ -179,7 +183,8 @@ const HorizontalDateStrip = forwardRef(function HorizontalDateStrip(
           )}
         >
           {glanceDays.map((d, i) => {
-            const c = foodCountByDate[d] || 0;
+            const hasActivity = Boolean(showActivityDotByDate[d]);
+            const hasWorkout = Boolean(workoutLoggedByDate[d]);
             const active = selectedDate === d;
             const isToday = d === todayStr;
             const prevDay = i > 0 ? glanceDays[i - 1] : null;
@@ -281,23 +286,34 @@ const HorizontalDateStrip = forwardRef(function HorizontalDateStrip(
                     {new Date(d + "T12:00:00").getDate()}
                   </span>
 
-                  <span className="flex h-1 w-full items-center justify-center">
-                    {c > 0 ? (
+                  <span className="flex h-1 w-full items-center justify-center gap-0.5">
+                    {hasActivity ? (
                       <span
                         className={cn(
                           "h-1 w-1 shrink-0 rounded-full",
                           isViewingToday
                             ? isDarkMode
-                              ? "bg-emerald-400"
-                              : "bg-emerald-500"
+                              ? "bg-sky-400"
+                              : "bg-sky-500"
                             : isDarkMode
                               ? "bg-sky-400"
                               : "bg-sky-500",
                         )}
+                        aria-hidden
                       />
-                    ) : (
+                    ) : null}
+                    {hasWorkout ? (
+                      <span
+                        className={cn(
+                          "h-1 w-1 shrink-0 rounded-full",
+                          isDarkMode ? "bg-emerald-400" : "bg-emerald-500",
+                        )}
+                        aria-hidden
+                      />
+                    ) : null}
+                    {!hasActivity && !hasWorkout ? (
                       <span className="h-1 w-1 shrink-0" aria-hidden />
-                    )}
+                    ) : null}
                   </span>
                 </button>
               </div>

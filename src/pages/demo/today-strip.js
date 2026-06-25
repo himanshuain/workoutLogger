@@ -43,13 +43,21 @@ export default function TodayStripDemoPage() {
     );
   }, []);
 
-  const mockFood = useMemo(() => {
+  const mockActivityLogged = useMemo(() => {
     const m = {};
     glanceDays.forEach((d, i) => {
-      if (i % 4 === 0 || d === todayStr) m[d] = (i % 3) + 1;
+      if (i % 3 === 0 || d === todayStr) m[d] = true;
     });
     return m;
   }, [glanceDays, todayStr]);
+
+  const mockWorkoutLogged = useMemo(() => {
+    const m = {};
+    glanceDays.forEach((d, i) => {
+      if (i % 5 === 1) m[d] = true;
+    });
+    return m;
+  }, [glanceDays]);
 
   return (
     <>
@@ -63,7 +71,7 @@ export default function TodayStripDemoPage() {
           </p>
           <h1 className="text-center text-2xl font-bold mb-1">Today date strip</h1>
           <p className="text-center text-sm text-iron-400 mb-6">
-            Mock dots = food logged. Scroll left to load older days.{" "}
+            Mock dots: blue = food or habit logged, green = workout logged. Scroll left to load older days.{" "}
             <Link href="/" className="text-amber-400 underline underline-offset-2 font-semibold">
               Today
             </Link>{" "}
@@ -75,7 +83,8 @@ export default function TodayStripDemoPage() {
             glanceDays={glanceDays}
             selectedDate={selected}
             todayStr={todayStr}
-            foodCountByDate={mockFood}
+            activityLoggedByDate={mockActivityLogged}
+            workoutLoggedByDate={mockWorkoutLogged}
             onPickDate={iso => {
               if (iso <= todayStr) setSelected(iso);
             }}

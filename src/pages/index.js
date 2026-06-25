@@ -221,18 +221,35 @@ export default function Home() {
 
   const stripScrollAnchorDate = today;
 
-  const { data: foodCountByDate = {} } = useQuery({
-    queryKey: ["pastModalFoodStrip", user?.id, glanceDays[0], glanceDays[glanceDays.length - 1]],
+  const invalidateDateStrip = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["homeDateStrip", user?.id] });
+  }, [queryClient, user?.id]);
+
+  const { data: dateStripIndicators = { activityLogged: {}, workoutLogged: {} } } = useQuery({
+    queryKey: ["homeDateStrip", user?.id, glanceDays[0], glanceDays[glanceDays.length - 1]],
     queryFn: async () => {
-      if (!user || glanceDays.length === 0) return {};
+      if (!user || glanceDays.length === 0) {
+        return { activityLogged: {}, workoutLogged: {} };
+      }
       const start = glanceDays[0];
       const end = glanceDays[glanceDays.length - 1];
-      const entries = await getFoodEntries(start, end);
-      const counts = {};
-      for (const e of entries) {
-        counts[e.date] = (counts[e.date] || 0) + 1;
+      const [trackingEntries, sessions, foodEntries] = await Promise.all([
+        getTrackingEntries(start, end),
+        getWorkoutSessions(start, end),
+        getFoodEntries(start, end),
+      ]);
+      const activityLogged = {};
+      for (const entry of trackingEntries) {
+        if (entry.is_completed) activityLogged[entry.date] = true;
       }
-      return counts;
+      for (const foodEntry of foodEntries) {
+        if (foodEntry.date) activityLogged[foodEntry.date] = true;
+      }
+      const workoutLogged = {};
+      for (const session of sessions) {
+        if (session.status === "completed") workoutLogged[session.date] = true;
+      }
+      return { activityLogged, workoutLogged };
     },
     enabled: Boolean(user && glanceDays.length > 0),
   });
@@ -410,6 +427,7 @@ export default function Home() {
     await toggleTrackingEntryForDate(t.id, viewingDate, !completed, existing?.value ?? null);
     queryClient.invalidateQueries({ queryKey: ["trackingEntriesForDate", user?.id, viewingDate] });
     queryClient.invalidateQueries({ queryKey: ["trackingEntries"] });
+    invalidateDateStrip();
     if (window.navigator?.vibrate) window.navigator.vibrate(10);
   };
 
@@ -479,6 +497,8 @@ export default function Home() {
     }
     await loadActiveSession();
     setExpandedSession(null);
+    await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+    invalidateDateStrip();
     toast.success(result.deleted ? "Mark done undone" : "Workout reopened");
   };
 
@@ -493,6 +513,7 @@ export default function Home() {
       }
       await loadActiveSession();
       await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      invalidateDateStrip();
       toast.success("Workout marked done", {
         action: {
           label: "Undo",
@@ -543,6 +564,7 @@ export default function Home() {
 
   const handleToggleHabit = async (trackableId, isCompleted, value) => {
     await toggleTrackingEntry(trackableId, isCompleted, value);
+    invalidateDateStrip();
   };
 
   const handleSaveHabit = async () => {
@@ -660,7 +682,8 @@ export default function Home() {
             glanceDays={glanceDays}
             selectedDate={viewingDate}
             todayStr={today}
-            foodCountByDate={foodCountByDate}
+            activityLoggedByDate={dateStripIndicators.activityLogged}
+            workoutLoggedByDate={dateStripIndicators.workoutLogged}
             onPickDate={pickViewingDate}
             stripScrollAnchorDate={stripScrollAnchorDate}
             onNearPastEdge={loadMoreStripPast}
@@ -878,6 +901,8 @@ export default function Home() {
                 if (ok) {
                   toast.success("Workout deleted");
                   if (expandedSession === deleteConfirm.id) setExpandedSession(null);
+                  await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+                  invalidateDateStrip();
                 }
                 setDeleteConfirm(null);
               }}

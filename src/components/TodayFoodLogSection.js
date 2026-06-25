@@ -61,6 +61,7 @@ export default function TodayFoodLogSection({
         if (userId) {
           queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, logForDate] });
           queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
+          queryClient.invalidateQueries({ queryKey: ["homeDateStrip", userId] });
         }
       } else if (foodLogsDirectly(item)) {
         await updateFoodEntryQuantity(item.id, initialFoodQuantity(item), logForDate);
@@ -68,6 +69,7 @@ export default function TodayFoodLogSection({
         if (userId) {
           queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, logForDate] });
           queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
+          queryClient.invalidateQueries({ queryKey: ["homeDateStrip", userId] });
         }
       } else {
         openQuantity(item, initialFoodQuantity(item), logForDate);
@@ -78,9 +80,11 @@ export default function TodayFoodLogSection({
     if (consumed) {
       await toggleFoodEntry(item.id);
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+      if (userId) queryClient.invalidateQueries({ queryKey: ["homeDateStrip", userId] });
     } else if (foodLogsDirectly(item)) {
       await updateFoodEntryQuantity(item.id, initialFoodQuantity(item));
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+      if (userId) queryClient.invalidateQueries({ queryKey: ["homeDateStrip", userId] });
     } else {
       openQuantity(item, initialFoodQuantity(item));
     }
@@ -104,10 +108,12 @@ export default function TodayFoodLogSection({
       if (userId) {
         queryClient.invalidateQueries({ queryKey: ["foodEntriesForDate", userId, target] });
         queryClient.invalidateQueries({ queryKey: ["pastModalFoodStrip", userId] });
+        queryClient.invalidateQueries({ queryKey: ["homeDateStrip", userId] });
       }
     } else {
       await updateFoodEntryQuantity(qtyItem.id, q);
       queryClient.invalidateQueries({ queryKey: ["foodHistory"] });
+      if (userId) queryClient.invalidateQueries({ queryKey: ["homeDateStrip", userId] });
     }
     setQtyItem(null);
     setQtyTargetDate(null);

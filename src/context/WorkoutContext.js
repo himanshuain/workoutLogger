@@ -113,6 +113,7 @@ function WorkoutProviderInner({ children }) {
     updateSessionExerciseIndex,
     getWorkoutSessions,
     getWorkoutSessionsForDate,
+    getExerciseSetHistory,
     startWorkoutSessionForDate,
     getTodaySetLogs,
   } = useWorkoutSessions({
@@ -312,6 +313,7 @@ function WorkoutProviderInner({ children }) {
       getTodayExerciseLogs,
       getWorkoutSessions,
       getWorkoutSessionsForDate,
+      getExerciseSetHistory,
       startWorkoutSessionForDate,
       getTodaySetLogs,
       deleteExerciseLog,
@@ -371,6 +373,7 @@ function WorkoutProviderInner({ children }) {
       getTodayExerciseLogs,
       getWorkoutSessions,
       getWorkoutSessionsForDate,
+      getExerciseSetHistory,
       startWorkoutSessionForDate,
       getTodaySetLogs,
       deleteExerciseLog,

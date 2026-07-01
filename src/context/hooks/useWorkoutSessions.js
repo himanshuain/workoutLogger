@@ -740,6 +740,40 @@ export function useWorkoutSessions({
     [getWorkoutSessions],
   );
 
+  const getExerciseSetHistory = useCallback(
+    async (exerciseName, { lookbackDays = 365, excludeSessionId = null } = {}) => {
+      if (!user || !exerciseName) return [];
+
+      const endDate = today;
+      const start = new Date(`${today}T12:00:00`);
+      start.setDate(start.getDate() - lookbackDays);
+      const startDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+
+      const sessions = await getWorkoutSessions(startDate, endDate);
+      const entries = [];
+
+      for (const session of sessions) {
+        if (excludeSessionId && session.id === excludeSessionId) continue;
+        const sets = (session.set_logs || [])
+          .filter(log => log.exercise_name === exerciseName && log.is_completed)
+          .sort((a, b) => (a.set_number || 0) - (b.set_number || 0));
+        if (sets.length === 0) continue;
+        entries.push({
+          sessionId: session.id,
+          date: session.date,
+          routineName: session.routine_name || null,
+          sets: sets.map(set => ({
+            weight: Number(set.weight) || 0,
+            reps: Number(set.reps) || 0,
+          })),
+        });
+      }
+
+      return entries.sort((a, b) => b.date.localeCompare(a.date));
+    },
+    [user, today, getWorkoutSessions],
+  );
+
   const startWorkoutSessionForDate = useCallback(
     async (dateStr, routine) => {
       if (!user || !dateStr) return null;
@@ -849,6 +883,7 @@ export function useWorkoutSessions({
     updateSessionExerciseIndex,
     getWorkoutSessions,
     getWorkoutSessionsForDate,
+    getExerciseSetHistory,
     startWorkoutSessionForDate,
     getTodaySetLogs,
   };

@@ -5,7 +5,8 @@ import { useTheme } from "@/context/ThemeContext";
 import { WEIGHT_PILLS_KG, REPS_PILLS, nearestPill, formatWeightPill, formatWeightDisplay, isBarWeight } from "@/lib/pillConstants";
 import { isSessionToday } from "@/lib/workoutNavigation";
 import PillRail from "@/components/workout/PillRail";
-import { Trash2, ArrowLeft } from "lucide-react";
+import ExercisePastSetsDrawer from "@/components/workout/ExercisePastSetsDrawer";
+import { Trash2, ArrowLeft, History } from "lucide-react";
 import { actionSecondary } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export default function ExerciseLoggerPage() {
     updateSetLog,
     deleteSetLog,
     loadActiveSession,
+    getExerciseSetHistory,
   } = useWorkout();
 
   const categoryFromQuery =
@@ -77,6 +79,7 @@ export default function ExerciseLoggerPage() {
   const [weight, setWeight] = useState(20);
   const [reps, setReps] = useState(15);
   const [removingSetId, setRemovingSetId] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const lastLogged = setsForExercise[setsForExercise.length - 1];
   const hasLoggedSets = setsForExercise.length > 0;
@@ -203,7 +206,29 @@ export default function ExerciseLoggerPage() {
             {category && category !== "other" ? category : "General"}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          className={cn(
+            actionSecondary(isDarkMode),
+            "mt-0.5 shrink-0 inline-flex h-10 items-center gap-1.5 rounded-card px-3",
+          )}
+          aria-label="View past sets history"
+        >
+          <History className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="text-sm font-semibold">History</span>
+        </button>
       </header>
+
+      <ExercisePastSetsDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        isDarkMode={isDarkMode}
+        exerciseName={exerciseName}
+        excludeSessionId={typeof sessionId === "string" ? sessionId : null}
+        getExerciseSetHistory={getExerciseSetHistory}
+        userId={user?.id}
+      />
 
       <div className="flex-1 overflow-y-auto px-5 py-6 pb-8 space-y-8">
         <PillRail

@@ -1,12 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { getAuthRedirectUrl } from "@/lib/authRedirect";
+import { readCachedAuthUser } from "@/lib/authSessionCache";
 
 /** Auth session + sign-in/out helpers extracted from WorkoutContext. */
 export function useWorkoutAuth(onSignOut) {
   const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
+
     const setUserStable = newUser => {
       setUser(prev => {
         const prevId = prev?.id ?? null;
@@ -16,17 +20,29 @@ export function useWorkoutAuth(onSignOut) {
       });
     };
 
+    const cached = readCachedAuthUser();
+    if (cached) {
+      setUserStable(cached);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setUserStable(session?.user ?? null);
+      setAuthReady(true);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
       setUserStable(session?.user ?? null);
+      setAuthReady(true);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = useCallback(async (email, password) => {
@@ -95,6 +111,7 @@ export function useWorkoutAuth(onSignOut) {
 
   return {
     user,
+    authReady,
     setUser,
     signIn,
     signUp,

@@ -39,7 +39,7 @@ function isPrivateLanHostname(hostname) {
 export default function Auth() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
-  const { signIn, signUp, resetPassword, updatePassword, user } = useWorkout();
+  const { signIn, signUp, resetPassword, updatePassword, user, authReady } = useWorkout();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -52,8 +52,6 @@ export default function Auth() {
   const [lanSupabaseHints, setLanSupabaseHints] = useState(null);
   /** True after email recovery link establishes session (PKCE) or hash type=recovery (implicit). */
   const [recoveryMode, setRecoveryMode] = useState(false);
-  /** First auth event processed — avoids redirecting before PASSWORD_RECOVERY is handled. */
-  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,13 +63,10 @@ export default function Auth() {
 
   // Password recovery: Supabase redirects to /auth with PKCE ?code=... or hash type=recovery
   useEffect(() => {
-    const fallback = setTimeout(() => setSessionReady(true), 2500);
     const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
       if (event === "PASSWORD_RECOVERY") {
         setRecoveryMode(true);
       }
-      setSessionReady(true);
-      clearTimeout(fallback);
     });
     if (typeof window !== "undefined") {
       const hash = window.location.hash?.substring(1) ?? "";
@@ -80,10 +75,7 @@ export default function Auth() {
         setRecoveryMode(true);
       }
     }
-    return () => {
-      clearTimeout(fallback);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   // OAuth / PKCE failures land on /auth?error=...&error_description=...
@@ -109,13 +101,10 @@ export default function Auth() {
 
   // Logged-in users go home, except during password recovery (must set new password first)
   useEffect(() => {
-    if (!sessionReady || !router.isReady) return;
+    if (!authReady || !router.isReady) return;
     if (!user || recoveryMode) return;
-    const t = setTimeout(() => {
-      router.replace("/");
-    }, 400);
-    return () => clearTimeout(t);
-  }, [sessionReady, router.isReady, user, recoveryMode, router]);
+    router.replace("/");
+  }, [authReady, router.isReady, user, recoveryMode, router]);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -175,7 +164,7 @@ export default function Auth() {
     }
   };
 
-  if (!sessionReady) {
+  if (!authReady || (user && !recoveryMode)) {
     return (
       <div
         className={`min-h-screen flex flex-col items-center justify-center p-6 ${

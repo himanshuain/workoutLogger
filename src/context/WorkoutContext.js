@@ -13,6 +13,7 @@ import { useLifeLog } from "@/context/hooks/useLifeLog";
 import { useStepCards } from "@/context/hooks/useStepCards";
 import { useWorkoutInit } from "@/context/hooks/useWorkoutInit";
 import { getLocalDateStr } from "@/context/utils/getLocalDateStr";
+import AuthBootstrapGate from "@/components/AuthBootstrapGate";
 import { WorkoutAuthProvider, useWorkoutAuthContext } from "@/context/contexts/WorkoutAuthContext";
 import { WorkoutFoodProvider, useWorkoutFoodContext } from "@/context/contexts/WorkoutFoodContext";
 import { LifeLogProvider, useLifeLogContext } from "@/context/contexts/LifeLogContext";
@@ -54,6 +55,7 @@ function WorkoutProviderInner({ children }) {
 
   const {
     user,
+    authReady,
     signIn,
     signUp,
     resetPassword,
@@ -200,6 +202,7 @@ function WorkoutProviderInner({ children }) {
   const authValue = useMemo(
     () => ({
       user,
+      authReady,
       isLoading,
       signIn,
       signInWithGoogle,
@@ -208,7 +211,7 @@ function WorkoutProviderInner({ children }) {
       updatePassword,
       signOut,
     }),
-    [user, isLoading, signIn, signInWithGoogle, signUp, resetPassword, updatePassword, signOut],
+    [user, authReady, isLoading, signIn, signInWithGoogle, signUp, resetPassword, updatePassword, signOut],
   );
 
   const foodValue = useMemo(
@@ -418,7 +421,9 @@ function WorkoutProviderInner({ children }) {
       <WorkoutFoodProvider value={foodValue}>
         <LifeLogProvider value={lifeLogValue}>
           <StepCardsProvider value={stepCardsValue}>
-            <WorkoutContext.Provider value={coreValue}>{children}</WorkoutContext.Provider>
+            <WorkoutContext.Provider value={coreValue}>
+              <AuthBootstrapGate>{children}</AuthBootstrapGate>
+            </WorkoutContext.Provider>
           </StepCardsProvider>
         </LifeLogProvider>
       </WorkoutFoodProvider>

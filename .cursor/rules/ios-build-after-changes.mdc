@@ -1,0 +1,30 @@
+---
+description: Build and fix native iOS compile errors after every Swift/Xcode change
+alwaysApply: true
+---
+
+# Native iOS build verification
+
+After any change under `ios/Logbook/`, `ios/Logbook.xcodeproj/`, or `scripts/ios-*.sh`:
+
+1. **Run a terminal build** before reporting the task done:
+   ```bash
+   cd /Users/himanshu.jain/Desktop/workout-logger && \
+   xcodebuild -project ios/Logbook.xcodeproj -scheme Logbook -sdk iphoneos \
+     -configuration Debug -derivedDataPath ios/DerivedData CODE_SIGNING_ALLOWED=NO build \
+     2>&1 | tee ios/last-device-build.log
+   ```
+
+2. **If the build fails**, parse Swift errors and fix them in the same turn:
+   ```bash
+   rg "\.swift:[0-9]+:[0-9]+: error:" ios/last-device-build.log
+   ```
+   Do not stop at reporting errors — resolve missing files, wrong signatures, access control, and Xcode project membership issues.
+
+3. **Re-run the build** after fixes until there are no Swift compiler errors.
+
+4. **Claim success only when** the log contains `BUILD SUCCEEDED`. Simulator-service / asset-catalog environment failures are separate from source errors; still fix all `.swift:` errors.
+
+5. **Keep WARP off** for device/simulator scripts: use `ios_warp_off_if_needed` from `scripts/ios-build-common.sh` (do not re-enable WARP after `logsim` / `logios`).
+
+6. **Xcode project hygiene**: new Swift files must be added to `ios/Logbook.xcodeproj/project.pbxproj` (PBXFileReference, group, PBXBuildFile, Sources phase).

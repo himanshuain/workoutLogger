@@ -112,6 +112,7 @@ export default function CustomExercisePage() {
       exercise_name: trimmed,
       category: lowered,
       target_sets: 3,
+      is_pinned: false,
     };
 
     if (session?.routine_id) {
@@ -153,6 +154,7 @@ export default function CustomExercisePage() {
       exercise_name: saved.name,
       category: saved.category || category.toLowerCase(),
       target_sets: 3,
+      is_pinned: false,
     };
 
     const routine = getRoutineForDay(dayNum);
@@ -172,6 +174,7 @@ export default function CustomExercisePage() {
       exercise_name: ex.exercise_name,
       category: ex.category || "other",
       target_sets: ex.target_sets || 3,
+      is_pinned: Boolean(ex.is_pinned),
     }));
     if (existing.some(e => e.exercise_name === saved.name)) {
       toast.message("Already in routine");
@@ -201,6 +204,7 @@ export default function CustomExercisePage() {
         exercise_name: saved.name,
         category: saved.category || category.toLowerCase(),
         target_sets: 3,
+        is_pinned: false,
       });
       if (result === null) {
         toast.error("Could not add to routine");

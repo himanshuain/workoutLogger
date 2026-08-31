@@ -5,6 +5,7 @@ export function buildRoutineExercisesJson(routineExercises) {
     exercise_name: ex.exercise_name,
     category: ex.category || "other",
     target_sets: ex.target_sets || 3,
+    is_pinned: Boolean(ex.is_pinned),
     notes:
       ex.notes != null && String(ex.notes).trim()
         ? String(ex.notes).trim().slice(0, 500)

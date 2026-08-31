@@ -51,6 +51,7 @@ function listToPayload(list) {
     exercise_name: ex.exercise_name,
     category: ex.category || "other",
     target_sets: ex.target_sets || 3,
+    is_pinned: Boolean(ex.is_pinned),
     notes:
       ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim().slice(0, 500) : null,
   }));
@@ -63,6 +64,7 @@ function routineToList(r, routineId) {
     exercise_name: ex.exercise_name,
     category: ex.category || "other",
     target_sets: ex.target_sets || 3,
+    is_pinned: Boolean(ex.is_pinned),
     notes: ex.notes != null ? String(ex.notes) : "",
   }));
 }
@@ -70,11 +72,12 @@ function routineToList(r, routineId) {
 function draftSnapshot({ title, list }) {
   return JSON.stringify({
     title: title.trim(),
-    list: list.map(({ exercise_id, exercise_name, category, target_sets, notes }) => ({
+    list: list.map(({ exercise_id, exercise_name, category, target_sets, notes, is_pinned }) => ({
       exercise_id,
       exercise_name,
       category: category || "other",
       target_sets: target_sets || 3,
+      is_pinned: Boolean(is_pinned),
       notes: notes != null ? String(notes).trim() : "",
     })),
   });

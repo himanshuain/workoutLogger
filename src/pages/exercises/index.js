@@ -408,6 +408,7 @@ export default function ExercisesSearchPage() {
         exercise_name: ex.name,
         category: ex.category || "other",
         target_sets: 3,
+        is_pinned: false,
       }));
 
       let routine = pickerRoutine;
@@ -433,6 +434,7 @@ export default function ExercisesSearchPage() {
         exercise_name: ex.exercise_name,
         category: ex.category || "other",
         target_sets: ex.target_sets || 3,
+        is_pinned: Boolean(ex.is_pinned),
         notes: ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim().slice(0, 500) : null,
       }));
       const existingNames = new Set(existing.map(e => e.exercise_name));

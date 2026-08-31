@@ -41,7 +41,8 @@ BEGIN
       category,
       target_sets,
       order_index,
-      notes
+      notes,
+      is_pinned
     )
     SELECT
       p_routine_id,
@@ -54,7 +55,8 @@ BEGIN
       COALESCE(nullif(trim(e->>'category'), ''), 'other'),
       COALESCE((e->>'target_sets')::integer, 3),
       (t.ord - 1)::integer,
-      NULLIF(trim(e->>'notes'), '')
+      NULLIF(trim(e->>'notes'), ''),
+      COALESCE((e->>'is_pinned')::boolean, false)
     FROM jsonb_array_elements(p_exercises) WITH ORDINALITY AS t(e, ord);
   END IF;
 END;

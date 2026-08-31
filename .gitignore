@@ -36,3 +36,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# iOS / Xcode
+ios/DerivedData/
+ios/build.log
+ios/last-sim-build.log
+ios/last-device-build.log
+*.xcuserstate
+*.xcuserdata/
+

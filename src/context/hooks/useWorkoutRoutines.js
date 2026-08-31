@@ -160,6 +160,7 @@ export function useWorkoutRoutines(user, routines, setRoutines) {
         exercise_name: ex.exercise_name,
         category: ex.category || "other",
         target_sets: ex.target_sets || 3,
+        is_pinned: Boolean(ex.is_pinned),
         notes:
           ex.notes != null && String(ex.notes).trim()
             ? String(ex.notes).trim().slice(0, 500)
@@ -175,6 +176,7 @@ export function useWorkoutRoutines(user, routines, setRoutines) {
         exercise_name: name,
         category: row.category || "other",
         target_sets: row.target_sets ?? 3,
+        is_pinned: Boolean(row.is_pinned),
         notes:
           row.notes != null && String(row.notes).trim()
             ? String(row.notes).trim().slice(0, 500)

@@ -1,11 +1,75 @@
 -- ============================================
--- Migration V13: Optional notes per routine exercise
+-- Migration V19: Routine exercise pinning
 -- ============================================
 
 ALTER TABLE routine_exercises
-  ADD COLUMN IF NOT EXISTS notes TEXT;
+  ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN NOT NULL DEFAULT false;
 
--- Keep init RPC in sync (routine_exercises must include `notes`)
+COMMENT ON COLUMN routine_exercises.is_pinned IS
+  'When true, exercise appears in pinned section at top of split before order_index sort within each group.';
+
+CREATE INDEX IF NOT EXISTS idx_routine_exercises_pinned_order
+  ON routine_exercises (routine_id, is_pinned DESC, order_index ASC);
+
+CREATE OR REPLACE FUNCTION replace_routine_exercises(
+  p_routine_id UUID,
+  p_exercises JSONB
+) RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid UUID := auth.uid();
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM workout_routines
+    WHERE id = p_routine_id AND user_id = v_uid
+  ) THEN
+    RAISE EXCEPTION 'Routine not found';
+  END IF;
+
+  DELETE FROM routine_exercises WHERE routine_id = p_routine_id;
+
+  IF p_exercises IS NOT NULL
+     AND jsonb_typeof(p_exercises) = 'array'
+     AND jsonb_array_length(p_exercises) > 0
+  THEN
+    INSERT INTO routine_exercises (
+      routine_id,
+      exercise_id,
+      exercise_name,
+      category,
+      target_sets,
+      order_index,
+      notes,
+      is_pinned
+    )
+    SELECT
+      p_routine_id,
+      CASE
+        WHEN nullif(trim(e->>'exercise_id'), '') IS NOT NULL
+          THEN (nullif(trim(e->>'exercise_id'), ''))::uuid
+        ELSE NULL
+      END,
+      e->>'exercise_name',
+      COALESCE(nullif(trim(e->>'category'), ''), 'other'),
+      COALESCE((e->>'target_sets')::integer, 3),
+      (t.ord - 1)::integer,
+      NULLIF(trim(e->>'notes'), ''),
+      COALESCE((e->>'is_pinned')::boolean, false)
+    FROM jsonb_array_elements(p_exercises) WITH ORDINALITY AS t(e, ord);
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION replace_routine_exercises(UUID, JSONB) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION replace_routine_exercises(UUID, JSONB) TO authenticated;
+
 DROP FUNCTION IF EXISTS get_user_init_data(TEXT);
 
 CREATE OR REPLACE FUNCTION get_user_init_data(p_today TEXT)

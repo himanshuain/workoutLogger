@@ -85,6 +85,7 @@ function routineToSplitExport(routine) {
     exercise_name: ex.exercise_name,
     category: ex.category || "other",
     target_sets: ex.target_sets || 3,
+    is_pinned: Boolean(ex.is_pinned),
     notes: ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim() : null,
   }));
 
@@ -107,6 +108,7 @@ export function buildSplitsExportPayload(routines, { draftOverride } = {}) {
           exercise_name: ex.exercise_name,
           category: ex.category || "other",
           target_sets: ex.target_sets || 3,
+          is_pinned: Boolean(ex.is_pinned),
           notes: ex.notes != null && String(ex.notes).trim() ? String(ex.notes).trim() : null,
         })),
       };
@@ -138,7 +140,7 @@ function appendSplitExerciseRows(doc, parent, exercises) {
     const row = doc.createElement("tr");
     const nameCell = doc.createElement("td");
     nameCell.className = "name";
-    nameCell.textContent = ex.exercise_name || "Exercise";
+    nameCell.textContent = `${ex.is_pinned ? "Pinned · " : ""}${ex.exercise_name || "Exercise"}`;
     const notesCell = doc.createElement("td");
     notesCell.className = "notes";
     notesCell.textContent = ex.notes || "—";

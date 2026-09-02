@@ -8,6 +8,11 @@ struct SettingsView: View {
     @State private var selectedUnit: WeightUnit = .kg
     @State private var cardSize = ExerciseCardPreferences.cardSize
     @State private var navTabs = NavConfig.defaults
+    @State private var isHydratingNavTabs = false
+
+    private var navConfigSignature: String {
+        navTabs.map { "\($0.id):\($0.visible)" }.joined(separator: "|")
+    }
 
     var body: some View {
         NavigationStack {
@@ -87,31 +92,59 @@ struct SettingsView: View {
                     LabeledContent("Data", value: workoutStore.usesLiveData ? "Live" : "Preview")
                 }
 
-                Section("Navigation") {
+                Section {
                     ForEach($navTabs) { $tab in
-                        Toggle(tab.label, isOn: $tab.visible)
+                        if tab.id == NavTabConfig.settings.id {
+                            HStack {
+                                Label(tab.label, systemImage: NavTabConfig.settings.systemImage)
+                                Spacer()
+                                Image(systemName: "lock.fill")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Toggle(isOn: $tab.visible) {
+                                Label(tab.label, systemImage: tab.systemImage)
+                            }
+                        }
                     }
-                    Text("At least two tabs must stay visible.")
+                    .onMove(perform: moveNavTab)
+                    .environment(\.editMode, .constant(.active))
+
+                    Text("Drag to reorder tabs. At least two tabs must stay visible.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button("Save tab layout") {
-                        let visible = navTabs.filter(\.visible)
-                        guard visible.count >= 2 else { return }
-                        navConfigJSON = NavConfig.save(navTabs)
-                        HapticFeedback.success()
-                    }
+
                     Button("Reset tabs to default", role: .destructive) {
                         navTabs = NavConfig.defaults
-                        navConfigJSON = ""
+                        persistNavTabs()
                     }
+                } header: {
+                    Text("Navigation")
                 }
             }
             .navigationTitle("Settings")
             .onAppear {
+                isHydratingNavTabs = true
                 selectedUnit = workoutStore.weightUnit
                 cardSize = ExerciseCardPreferences.cardSize
                 navTabs = navConfigJSON.isEmpty ? NavConfig.defaults : NavConfig.load(from: navConfigJSON)
+                isHydratingNavTabs = false
+            }
+            .onChange(of: navConfigSignature) { _, _ in
+                guard !isHydratingNavTabs else { return }
+                persistNavTabs()
             }
         }
+    }
+
+    private func moveNavTab(from source: IndexSet, to destination: Int) {
+        navTabs.move(fromOffsets: source, toOffset: destination)
+    }
+
+    private func persistNavTabs() {
+        let visible = navTabs.filter(\.visible)
+        guard visible.count >= 2 else { return }
+        navConfigJSON = NavConfig.save(navTabs)
     }
 }

@@ -978,6 +978,10 @@ struct WorkoutDataService {
         )
     }
 
+    func deleteTrackingEntry(accessToken: String, id: UUID) async throws {
+        try await client.delete("tracking_entries", query: "id=eq.\(id.uuidString)", accessToken: accessToken)
+    }
+
     // MARK: - Session extras
 
     func patchSessionClientMeta(accessToken: String, sessionID: UUID, meta: SessionClientMeta) async throws -> ActiveSessionDTO {

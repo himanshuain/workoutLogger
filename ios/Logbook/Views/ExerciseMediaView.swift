@@ -14,10 +14,15 @@ enum ExerciseMediaContentMode {
     }
 }
 
+enum ExerciseMediaPlayback {
+    case staticThumbnail
+    case animated
+}
+
 final class ExerciseMediaCache {
     static let shared = ExerciseMediaCache()
-    private let cache = NSCache<NSURL, UIImage>()
-    private var inFlight: [URL: [(UIImage?) -> Void]] = [:]
+    private let cache = NSCache<NSString, UIImage>()
+    private var inFlight: [String: [(UIImage?) -> Void]] = [:]
     private let lock = NSLock()
 
     private init() {
@@ -25,31 +30,32 @@ final class ExerciseMediaCache {
         cache.totalCostLimit = 64 * 1024 * 1024
     }
 
-    func image(for url: URL, completion: @escaping (UIImage?) -> Void) {
-        let key = url as NSURL
-        if let cached = cache.object(forKey: key) {
+    func image(for url: URL, animated: Bool = true, completion: @escaping (UIImage?) -> Void) {
+        let flightKey = "\(url.absoluteString)|\(animated)"
+        let cacheKey = (animated ? url.absoluteString : "\(url.absoluteString)#static") as NSString
+        if let cached = cache.object(forKey: cacheKey) {
             completion(cached)
             return
         }
 
         lock.lock()
-        if inFlight[url] != nil {
-            inFlight[url]?.append(completion)
+        if inFlight[flightKey] != nil {
+            inFlight[flightKey]?.append(completion)
             lock.unlock()
             return
         }
-        inFlight[url] = [completion]
+        inFlight[flightKey] = [completion]
         lock.unlock()
 
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
             guard let self else { return }
-            let image = data.flatMap(Self.decodeImage)
+            let image = data.flatMap { Self.decodeImage(from: $0, animated: animated) }
             if let image {
-                self.cache.setObject(image, forKey: url as NSURL, cost: data?.count ?? 0)
+                self.cache.setObject(image, forKey: cacheKey, cost: data?.count ?? 0)
             }
 
             self.lock.lock()
-            let callbacks = self.inFlight.removeValue(forKey: url) ?? []
+            let callbacks = self.inFlight.removeValue(forKey: flightKey) ?? []
             self.lock.unlock()
 
             DispatchQueue.main.async {
@@ -58,12 +64,12 @@ final class ExerciseMediaCache {
         }.resume()
     }
 
-    private static func decodeImage(from data: Data) -> UIImage? {
+    private static func decodeImage(from data: Data, animated: Bool) -> UIImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let count = CGImageSourceGetCount(source)
         guard count > 0 else { return nil }
 
-        if count == 1 {
+        if !animated || count == 1 {
             guard let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else { return nil }
             return UIImage(cgImage: cgImage)
         }
@@ -94,6 +100,7 @@ struct ExerciseMediaView: View {
     let tint: Color
     var contentMode: ExerciseMediaContentMode = .fit
     var cornerRadius: CGFloat = 10
+    var playback: ExerciseMediaPlayback = .animated
 
     var body: some View {
         ZStack {
@@ -101,18 +108,18 @@ struct ExerciseMediaView: View {
                 .fill(Color(.tertiarySystemFill))
 
             if let url {
-                if isGIF(url) {
+                if playback == .animated, isGIF(url) {
                     AnimatedGIFView(url: url, contentMode: contentMode.imageContentMode)
                         .padding(4)
                 } else {
-                    RemoteExerciseImage(url: url, contentMode: contentMode)
+                    RemoteExerciseImage(url: url, contentMode: contentMode, animated: playback == .animated)
                         .padding(4)
                 }
             } else {
                 fallbackSymbol(size: 40)
             }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .aspectRatio(playback == .staticThumbnail ? nil : 1, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 
@@ -132,6 +139,7 @@ struct ExerciseMediaView: View {
 private struct RemoteExerciseImage: View {
     let url: URL
     let contentMode: ExerciseMediaContentMode
+    var animated = true
     @State private var image: UIImage?
 
     var body: some View {
@@ -142,13 +150,16 @@ private struct RemoteExerciseImage: View {
                     .modifier(MediaScaling(mode: contentMode))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Color(.tertiarySystemFill)
             }
         }
-        .onAppear {
-            ExerciseMediaCache.shared.image(for: url) { loaded in
-                image = loaded
+        .task(id: url) {
+            image = nil
+            await withCheckedContinuation { continuation in
+                ExerciseMediaCache.shared.image(for: url, animated: animated) { loaded in
+                    image = loaded
+                    continuation.resume()
+                }
             }
         }
     }
@@ -193,7 +204,7 @@ private struct AnimatedGIFView: UIViewRepresentable {
             guard loadedURL != url else { return }
             loadedURL = url
             imageView.image = nil
-            ExerciseMediaCache.shared.image(for: url) { image in
+            ExerciseMediaCache.shared.image(for: url, animated: true) { image in
                 imageView.image = image
             }
         }

@@ -38,7 +38,8 @@ enum NavConfig {
     }
 
     static func save(_ tabs: [NavTabConfig]) -> String {
-        guard let data = try? JSONEncoder().encode(tabs) else { return "" }
+        let normalized = normalize(tabs)
+        guard let data = try? JSONEncoder().encode(normalized) else { return "" }
         return String(data: data, encoding: .utf8) ?? ""
     }
 
@@ -47,7 +48,26 @@ enum NavConfig {
     }
 
     private static func mergeWithDefaults(_ saved: [NavTabConfig]) -> [NavTabConfig] {
-        let byID = Dictionary(uniqueKeysWithValues: saved.map { ($0.id, $0) })
-        return defaults.map { byID[$0.id] ?? $0 }
+        var ordered: [NavTabConfig] = []
+        var seen = Set<String>()
+
+        for tab in saved where defaults.contains(where: { $0.id == tab.id }) {
+            ordered.append(tab)
+            seen.insert(tab.id)
+        }
+        for tab in defaults where !seen.contains(tab.id) {
+            ordered.append(tab)
+        }
+        return normalize(ordered)
+    }
+
+    /// Settings must stay visible so users cannot lock themselves out of the app.
+    private static func normalize(_ tabs: [NavTabConfig]) -> [NavTabConfig] {
+        tabs.map { tab in
+            guard tab.id == NavTabConfig.settings.id else { return tab }
+            var settingsTab = tab
+            settingsTab.visible = true
+            return settingsTab
+        }
     }
 }

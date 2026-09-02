@@ -1019,6 +1019,265 @@ struct HabitLogSheet: View {
     }
 }
 
+// MARK: - Body weight log
+
+struct BodyWeightLogSheet: View {
+    @ObservedObject var workoutStore: WorkoutStore
+    let recentEntries: [BodyWeightHistoryEntry]
+    let onDismiss: () -> Void
+    var onChanged: (() -> Void)? = nil
+
+    @State private var value: Double = 70
+    @State private var isSaving = false
+    @State private var deletingID: UUID?
+    @AppStorage("body_weight_goal") private var goalWeight: Double = 0
+
+    private var unit: WeightUnit { workoutStore.weightUnit }
+    private var accent: Color { Color(red: 0.22, green: 0.86, blue: 0.42) }
+
+    private var sliderRange: ClosedRange<Double> {
+        let center = value > 0 ? value : 70
+        return max(30, center - 40)...(center + 40)
+    }
+
+    private var todayLabel: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, d MMM"
+        return "Today, \(formatter.string(from: Date()))"
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Log body weight")
+                            .font(.title2.bold())
+                        Text(todayLabel)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    weightInputCard
+
+                    quickAdjustPills
+
+                    Slider(
+                        value: $value,
+                        in: sliderRange,
+                        step: unit == .kg ? 0.1 : 0.2
+                    )
+                    .tint(accent)
+
+                    goalSection
+
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        Text("Save")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(accent)
+                            .foregroundStyle(.black)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(isSaving)
+
+                    if !recentEntries.isEmpty {
+                        recentSection
+                    }
+                }
+                .padding(20)
+            }
+            .background(Color(.systemGroupedBackground))
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done", action: onDismiss)
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .onAppear {
+            if let last = recentEntries.last {
+                value = last.value
+            } else if let trackable = workoutStore.bodyWeightTrackable,
+                      let today = workoutStore.trackingEntries[trackable.id]?.value {
+                value = today
+            }
+        }
+    }
+
+    private var goalSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("Set a goal weight", isOn: Binding(
+                get: { goalWeight > 0 },
+                set: { enabled in
+                    if enabled {
+                        goalWeight = max(value, unit == .kg ? 50 : 110)
+                    } else {
+                        goalWeight = 0
+                    }
+                }
+            ))
+            .font(.subheadline.weight(.semibold))
+
+            if goalWeight > 0 {
+                HStack {
+                    Text("Goal")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(WorkoutCalculations.formatWeight(goalWeight, unit: unit))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.yellow)
+                }
+                Slider(
+                    value: $goalWeight,
+                    in: (unit == .kg ? 40...150 : 90...330),
+                    step: unit == .kg ? 0.5 : 1
+                )
+                .tint(.yellow)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var weightInputCard: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Button {
+                adjust(-stepSize)
+            } label: {
+                Image(systemName: "minus")
+                    .font(.title2.weight(.semibold))
+                    .frame(width: 52, height: 52)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+
+            VStack(spacing: 2) {
+                Text(formattedWeight(value))
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                Text(unit.rawValue)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+
+            Button {
+                adjust(stepSize)
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.semibold))
+                    .frame(width: 52, height: 52)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var quickAdjustPills: some View {
+        HStack(spacing: 8) {
+            ForEach(quickSteps, id: \.self) { step in
+                Button {
+                    adjust(step)
+                } label: {
+                    Text(stepLabel(step))
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.tertiarySystemFill))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var recentSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Recent weigh-ins")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            ForEach(recentEntries.reversed().prefix(8)) { entry in
+                HStack {
+                    Text(WorkoutDate.displayLabel(for: entry.date))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(WorkoutCalculations.formatWeight(entry.value, unit: unit))
+                        .font(.subheadline.weight(.semibold))
+                    Button {
+                        Task { await deleteEntry(entry) }
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(deletingID == entry.id)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    private var stepSize: Double { unit == .kg ? 0.5 : 1 }
+
+    private var quickSteps: [Double] {
+        unit == .kg ? [-1, -0.5, 0.5, 1] : [-2, -1, 1, 2]
+    }
+
+    private func stepLabel(_ step: Double) -> String {
+        let sign = step > 0 ? "+" : ""
+        if step.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(sign)\(Int(step))"
+        }
+        return "\(sign)\(step)"
+    }
+
+    private func formattedWeight(_ weight: Double) -> String {
+        weight.truncatingRemainder(dividingBy: 1) == 0
+            ? String(Int(weight))
+            : String(format: "%.1f", weight)
+    }
+
+    private func adjust(_ delta: Double) {
+        let next = value + delta
+        value = min(max(next, sliderRange.lowerBound), sliderRange.upperBound)
+    }
+
+    private func save() async {
+        isSaving = true
+        defer { isSaving = false }
+        await workoutStore.logBodyWeight(value)
+        onDismiss()
+    }
+
+    private func deleteEntry(_ entry: BodyWeightHistoryEntry) async {
+        deletingID = entry.id
+        defer { deletingID = nil }
+        await workoutStore.deleteBodyWeightEntry(id: entry.id)
+        onChanged?()
+    }
+}
+
+struct BodyWeightHistoryEntry: Identifiable, Equatable {
+    let id: UUID
+    let date: String
+    let value: Double
+    let dateLabel: String
+}
+
 struct LifeLogEntrySheet: View {
     let event: EventTypeDTO
     var existingLog: EventLogDTO?

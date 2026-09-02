@@ -4,22 +4,11 @@ struct HistoryView: View {
     @ObservedObject var workoutStore: WorkoutStore
     @Binding var selectedTab: String
     @State private var deleteTarget: HistorySessionItem?
+    @State private var selectedHeatmapDate: HistoryDaySheetDate?
 
     var body: some View {
         NavigationStack {
-            Group {
-                if workoutStore.isLoadingHistory && workoutStore.historyGroups.isEmpty {
-                    HistoryListSkeleton()
-                } else if workoutStore.historyGroups.isEmpty {
-                    ContentUnavailableView(
-                        "No history yet",
-                        systemImage: "clock.arrow.circlepath",
-                        description: Text("Completed workouts will appear here.")
-                    )
-                } else {
-                    historyList
-                }
-            }
+            historyList
             .navigationTitle("History")
             .blockingLoadingOverlay(
                 workoutStore.isLoadingHistory && workoutStore.historyGroups.isEmpty,
@@ -29,6 +18,13 @@ struct HistoryView: View {
                 if workoutStore.historyGroups.isEmpty {
                     await workoutStore.loadHistory()
                 }
+            }
+            .sheet(item: $selectedHeatmapDate) { selection in
+                HistoryDayLogsSheet(
+                    date: selection.date,
+                    workoutStore: workoutStore,
+                    selectedTab: $selectedTab
+                )
             }
             .confirmationDialog(
                 "Delete this workout?",
@@ -51,7 +47,41 @@ struct HistoryView: View {
 
     private var historyList: some View {
         List {
-            ForEach(workoutStore.historyGroups) { group in
+            Section {
+                ActivityHeatmapView(
+                    activeDates: workoutStore.workoutLoggedDates,
+                    title: "Workout activity",
+                    selectedDate: selectedHeatmapDate?.date,
+                    onDateSelected: { date in
+                        selectedHeatmapDate = HistoryDaySheetDate(date: date)
+                        HapticFeedback.light()
+                    }
+                )
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Color.clear)
+            }
+
+            if workoutStore.isLoadingHistory && workoutStore.historyGroups.isEmpty {
+                ForEach(0..<5, id: \.self) { _ in
+                    Section {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(.tertiarySystemFill))
+                            .frame(height: 72)
+                            .redacted(reason: .placeholder)
+                    }
+                }
+            } else if workoutStore.historyGroups.isEmpty {
+                Section {
+                    ContentUnavailableView(
+                        "No history yet",
+                        systemImage: "clock.arrow.circlepath",
+                        description: Text("Completed workouts will appear here.")
+                    )
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                }
+            } else {
+                ForEach(workoutStore.historyGroups) { group in
                 Section {
                     ForEach(group.sessions) { session in
                         NavigationLink {
@@ -92,21 +122,6 @@ struct HistoryView: View {
                 } header: {
                     HistorySectionHeader(date: group.date)
                 }
-            }
-        }
-        .listStyle(.insetGrouped)
-    }
-}
-
-private struct HistoryListSkeleton: View {
-    var body: some View {
-        List {
-            ForEach(0..<5, id: \.self) { _ in
-                Section {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(.tertiarySystemFill))
-                        .frame(height: 72)
-                        .redacted(reason: .placeholder)
                 }
             }
         }

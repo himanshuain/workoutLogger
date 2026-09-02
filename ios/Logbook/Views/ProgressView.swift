@@ -3,6 +3,7 @@ import SwiftUI
 
 private struct BodyWeightPoint: Identifiable {
     let id: String
+    let entryID: UUID?
     let date: Date
     let dateLabel: String
     let value: Double
@@ -15,6 +16,7 @@ private struct ExportDocument: Identifiable {
 
 struct WorkoutProgressView: View {
     @ObservedObject var workoutStore: WorkoutStore
+    @Binding var selectedTab: String
     @State private var bodyWeightHistory: [BodyWeightPoint] = []
     @State private var isLoadingBodyWeight = false
     @State private var exportDocument: ExportDocument?
@@ -27,20 +29,32 @@ struct WorkoutProgressView: View {
     @State private var isOverloadChartActive = false
     @State private var isBodyWeightChartActive = false
     @State private var isWeekChartActive = false
+    @State private var showBodyWeightLog = false
+    @State private var selectedActivityDate: HistoryDaySheetDate?
+    @AppStorage("body_weight_goal") private var goalWeight: Double = 0
+
+    private let bodyWeightAccent = Color(red: 0.22, green: 0.86, blue: 0.42)
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    statsSection
-                    macroSection
-                    ActivityHeatmapView(activeDates: workoutStore.workoutLoggedDates, title: "Workout activity")
+                    ActivityHeatmapView(
+                        activeDates: workoutStore.workoutLoggedDates,
+                        title: "Workout activity",
+                        selectedDate: selectedActivityDate?.date,
+                        onDateSelected: { date in
+                            selectedActivityDate = HistoryDaySheetDate(date: date)
+                            HapticFeedback.light()
+                        }
+                    )
                     workoutTrendSection
                     progressiveOverloadSection
                     bodyWeightSection
                     recentHistorySection
                     exportSection
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
             }
             .background(Color(.systemGroupedBackground))
@@ -50,16 +64,41 @@ struct WorkoutProgressView: View {
                     await workoutStore.loadHistory()
                 }
                 await loadBodyWeightHistory()
-                if workoutStore.foodHistoryDates.isEmpty {
-                    await workoutStore.loadFoodAndLifeLogHistory()
-                }
             }
             .blockingLoadingOverlay(
                 workoutStore.isLoadingHistory && workoutStore.exerciseOverloadPoints.isEmpty,
                 message: "Loading dashboard…"
             )
+            .sheet(item: $selectedActivityDate) { selection in
+                HistoryDayLogsSheet(
+                    date: selection.date,
+                    workoutStore: workoutStore,
+                    selectedTab: $selectedTab
+                )
+            }
             .sheet(item: $exportDocument) { document in
                 ShareSheet(items: [document.url])
+            }
+            .sheet(isPresented: $showBodyWeightLog) {
+                BodyWeightLogSheet(
+                    workoutStore: workoutStore,
+                    recentEntries: bodyWeightHistory.compactMap { point in
+                        guard let entryID = point.entryID else { return nil }
+                        return BodyWeightHistoryEntry(
+                            id: entryID,
+                            date: point.id,
+                            value: point.value,
+                            dateLabel: point.dateLabel
+                        )
+                    },
+                    onDismiss: {
+                        showBodyWeightLog = false
+                        Task { await loadBodyWeightHistory() }
+                    },
+                    onChanged: {
+                        Task { await loadBodyWeightHistory() }
+                    }
+                )
             }
             .alert("Export failed", isPresented: Binding(
                 get: { exportError != nil },
@@ -79,6 +118,7 @@ struct WorkoutProgressView: View {
             guard let date = WorkoutDate.date(from: row.date) else { return nil }
             return BodyWeightPoint(
                 id: row.date,
+                entryID: row.id,
                 date: date,
                 dateLabel: WorkoutDate.displayLabel(for: row.date),
                 value: row.value
@@ -86,51 +126,6 @@ struct WorkoutProgressView: View {
         }
         .sorted { $0.date < $1.date }
         isLoadingBodyWeight = false
-    }
-
-    private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Overview").font(.title3.bold())
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ProgressStatCard(
-                    value: "\(workoutStore.profileStats.workoutStreak)",
-                    label: "Day streak",
-                    icon: "flame.fill"
-                )
-                ProgressStatCard(
-                    value: "\(workoutStore.profileStats.workoutsThisMonth)",
-                    label: "This month",
-                    icon: "calendar"
-                )
-                ProgressStatCard(
-                    value: "\(workoutStore.profileStats.weeklyWorkouts)",
-                    label: "This week",
-                    icon: "figure.strengthtraining.traditional"
-                )
-                ProgressStatCard(
-                    value: "\(workoutStore.profileStats.personalBestCount)",
-                    label: "Personal bests",
-                    icon: "trophy.fill"
-                )
-            }
-        }
-    }
-
-    private var macroSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Today's macros").font(.title3.bold())
-                Spacer()
-                NavigationLink("Planner") {
-                    MacroPlannerView(workoutStore: workoutStore)
-                }
-                .font(.subheadline.weight(.semibold))
-            }
-            MacroRingsRow(totals: workoutStore.todayMacroTotals, targets: workoutStore.macroTargets)
-                .padding(14)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
     }
 
     private var workoutTrendSection: some View {
@@ -301,25 +296,13 @@ struct WorkoutProgressView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
 
-                    FlowLayout(spacing: 8) {
-                        ForEach(exercises, id: \.self) { name in
-                            let isSelected = selectedOverloadExercise == name
-                            Button {
-                                selectedOverloadExercise = name
-                                selectedOverloadDate = nil
-                            } label: {
-                                Text(name)
-                                    .font(.caption.weight(.semibold))
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(isSelected ? Color.orange : Color(.tertiarySystemFill))
-                                    .foregroundStyle(isSelected ? .white : .primary)
-                                    .clipShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
-                        }
+                    CollapsiblePillRow(
+                        items: exercises,
+                        selected: selectedOverloadExercise,
+                        collapsedLimit: 5
+                    ) { name in
+                        selectedOverloadExercise = name
+                        selectedOverloadDate = nil
                     }
                 }
             }
@@ -458,8 +441,32 @@ struct WorkoutProgressView: View {
     @ViewBuilder
     private var bodyWeightSection: some View {
         if workoutStore.bodyWeightTrackable != nil {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Body weight").font(.title3.bold())
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .center, spacing: 8) {
+                    Text("Body weight")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    if goalWeight > 0 {
+                        Label {
+                            Text(formattedBodyWeight(goalWeight))
+                                .font(.caption.weight(.semibold))
+                        } icon: {
+                            Image(systemName: "target")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(.yellow)
+                    }
+                    Button {
+                        showBodyWeightLog = true
+                    } label: {
+                        Label("Log", systemImage: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(bodyWeightAccent)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 if isLoadingBodyWeight {
                     HStack(spacing: 8) {
                         NativeActivityIndicator()
@@ -467,116 +474,158 @@ struct WorkoutProgressView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 } else if bodyWeightHistory.isEmpty {
-                    Text("Log body weight from Today to see your trend.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                } else {
-                    let yDomain = bodyWeightYDomain
-                    let selectedPoint = isBodyWeightChartActive
-                        ? selectedChartPoint(in: bodyWeightHistory, date: selectedBodyWeightDate)
-                        : nil
-
-                    Chart {
-                        ForEach(bodyWeightHistory) { point in
-                            AreaMark(
-                                x: .value("Date", point.date),
-                                yStart: .value("Baseline", yDomain.lowerBound),
-                                yEnd: .value("Weight", point.value)
-                            )
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color.blue.opacity(0.28), Color.blue.opacity(0.04)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .interpolationMethod(.linear)
-
-                            LineMark(
-                                x: .value("Date", point.date),
-                                y: .value("Weight", point.value)
-                            )
-                            .foregroundStyle(Color.blue)
-                            .lineStyle(StrokeStyle(lineWidth: 3))
-
-                            PointMark(
-                                x: .value("Date", point.date),
-                                y: .value("Weight", point.value)
-                            )
-                            .foregroundStyle(Color.blue)
-                            .symbolSize(selectedPoint?.id == point.id ? 100 : 40)
-                        }
-
-                        if let selectedPoint {
-                            RuleMark(x: .value("Date", selectedPoint.date))
-                                .foregroundStyle(Color.blue.opacity(0.45))
-                                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                        }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("—")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                        Text("Tap Log to record your first weigh-in.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                    .chartDateScrubTooltip(
-                        selectedDate: $selectedBodyWeightDate,
-                        isActive: $isBodyWeightChartActive,
-                        dates: bodyWeightHistory.map(\.date),
-                        accent: .blue,
-                        yValue: { date in
-                            selectedChartPoint(in: bodyWeightHistory, date: date)?.value ?? 0
-                        },
-                        tooltip: { date in
-                            let point = selectedChartPoint(in: bodyWeightHistory, date: date)
-                            return ChartTooltipBadge(
-                                title: point?.dateLabel ?? "",
-                                value: point.map {
-                                    WorkoutCalculations.formatWeight($0.value, unit: workoutStore.weightUnit)
-                                } ?? "",
-                                accent: .blue
-                            )
-                        }
+                } else if let latest = bodyWeightHistory.last {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(WorkoutCalculations.formatWeight(latest.value, unit: workoutStore.weightUnit))
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .monospacedDigit()
+                        Spacer()
+                        Text(latest.dateLabel)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if goalWeight > 0 {
+                        goalSubtitle(current: latest.value)
+                    }
+
+                    bodyWeightChart
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    @ViewBuilder
+    private var bodyWeightChart: some View {
+        let yDomain = bodyWeightYDomain
+        let selectedPoint = isBodyWeightChartActive
+            ? selectedChartPoint(in: bodyWeightHistory, date: selectedBodyWeightDate)
+            : nil
+
+        Chart {
+            if goalWeight > 0 {
+                RuleMark(y: .value("Goal", goalWeight))
+                    .foregroundStyle(Color.yellow.opacity(0.85))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .annotation(position: .top, alignment: .trailing) {
+                        Text(formattedBodyWeight(goalWeight))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.yellow)
+                    }
+            }
+
+            ForEach(bodyWeightHistory) { point in
+                AreaMark(
+                    x: .value("Date", point.date),
+                    yStart: .value("Baseline", yDomain.lowerBound),
+                    yEnd: .value("Weight", point.value)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [bodyWeightAccent.opacity(0.28), bodyWeightAccent.opacity(0.03)],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
-                    .chartYAxisLabel(workoutStore.weightUnit.rawValue)
-                    .chartXAxis {
-                        AxisMarks(values: .automatic(desiredCount: min(bodyWeightHistory.count, 6))) { _ in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
-                            AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                        }
-                    }
-                    .chartYAxis {
-                        AxisMarks(position: .leading) { value in
-                            AxisGridLine()
-                            AxisValueLabel {
-                                if let weight = value.as(Double.self) {
-                                    Text(WorkoutCalculations.formatWeight(weight, unit: workoutStore.weightUnit))
-                                }
-                            }
-                        }
-                    }
-                    .chartYScale(domain: yDomain)
-                    .frame(height: 240)
-                    .padding(14)
-                    .background(Color(.secondarySystemGroupedBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                )
+                .interpolationMethod(.linear)
 
-                    if let latest = bodyWeightHistory.last {
-                        Text("Latest: \(WorkoutCalculations.formatWeight(latest.value, unit: workoutStore.weightUnit)) · \(latest.dateLabel)")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.blue)
+                LineMark(
+                    x: .value("Date", point.date),
+                    y: .value("Weight", point.value)
+                )
+                .foregroundStyle(bodyWeightAccent)
+                .lineStyle(StrokeStyle(lineWidth: 3))
+
+                PointMark(
+                    x: .value("Date", point.date),
+                    y: .value("Weight", point.value)
+                )
+                .foregroundStyle(bodyWeightAccent)
+                .symbolSize(selectedPoint?.id == point.id ? 110 : 44)
+            }
+
+            if let selectedPoint {
+                RuleMark(x: .value("Date", selectedPoint.date))
+                    .foregroundStyle(bodyWeightAccent.opacity(0.45))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            }
+        }
+        .chartDateScrubTooltip(
+            selectedDate: $selectedBodyWeightDate,
+            isActive: $isBodyWeightChartActive,
+            dates: bodyWeightHistory.map(\.date),
+            accent: bodyWeightAccent,
+            yValue: { date in
+                selectedChartPoint(in: bodyWeightHistory, date: date)?.value ?? 0
+            },
+            tooltip: { date in
+                let point = selectedChartPoint(in: bodyWeightHistory, date: date)
+                return ChartTooltipBadge(
+                    title: point?.dateLabel ?? "",
+                    value: point.map {
+                        WorkoutCalculations.formatWeight($0.value, unit: workoutStore.weightUnit)
+                    } ?? "",
+                    accent: bodyWeightAccent
+                )
+            }
+        )
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
+                AxisValueLabel {
+                    if let weight = value.as(Double.self) {
+                        Text(WorkoutCalculations.formatWeight(weight, unit: workoutStore.weightUnit))
                     }
                 }
             }
         }
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: min(bodyWeightHistory.count, 5))) { _ in
+                AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+            }
+        }
+        .chartYScale(domain: yDomain)
+        .frame(height: 180)
+        .padding(.top, 4)
+    }
+
+    @ViewBuilder
+    private func goalSubtitle(current: Double) -> some View {
+        let delta = goalWeight - current
+        let formattedDelta = WorkoutCalculations.formatWeight(abs(delta), unit: workoutStore.weightUnit)
+        let direction = delta > 0 ? "to gain" : delta < 0 ? "to lose" : "at goal"
+        HStack(spacing: 6) {
+            Image(systemName: "target")
+                .font(.caption)
+            Text("Goal \(formattedBodyWeight(goalWeight)) · \(formattedDelta) \(direction)")
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(.yellow)
+    }
+
+    private func formattedBodyWeight(_ value: Double) -> String {
+        WorkoutCalculations.formatWeight(value, unit: workoutStore.weightUnit)
     }
 
     private var bodyWeightYDomain: ClosedRange<Double> {
-        guard let minWeight = bodyWeightHistory.map(\.value).min(),
-              let maxWeight = bodyWeightHistory.map(\.value).max() else {
+        var values = bodyWeightHistory.map(\.value)
+        if goalWeight > 0 { values.append(goalWeight) }
+        guard let minWeight = values.min(),
+              let maxWeight = values.max() else {
             return 0...100
         }
         if minWeight == maxWeight {
@@ -647,24 +696,6 @@ struct WorkoutProgressView: View {
             }
             .buttonStyle(.plain)
         }
-    }
-}
-
-private struct ProgressStatCard: View {
-    let value: String
-    let label: String
-    let icon: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Image(systemName: icon).foregroundStyle(.orange)
-            Text(value).font(.title3.bold().monospacedDigit())
-            Text(label).font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

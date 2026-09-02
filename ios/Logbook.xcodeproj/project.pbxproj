@@ -68,6 +68,11 @@
 		3A100001000000000000003D /* ChartScrubTooltip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A100011000000000000003D /* ChartScrubTooltip.swift */; };
 		3A100001000000000000003E /* LifeLogEventInsightsGraph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A100011000000000000003E /* LifeLogEventInsightsGraph.swift */; };
 		3A100001000000000000003F /* LogbookTabBarStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A100011000000000000003F /* LogbookTabBarStyle.swift */; };
+		3A1000010000000000000040 /* ExerciseCatalogInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1000110000000000000040 /* ExerciseCatalogInfo.swift */; };
+		3A1000010000000000000041 /* ExerciseDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1000110000000000000041 /* ExerciseDetailSheet.swift */; };
+		3A1000010000000000000042 /* AddToRoutineSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A1000110000000000000042 /* AddToRoutineSheet.swift */; };
+		3A100001000000000000004A /* ExerciseLibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A100011000000000000004A /* ExerciseLibraryViewModel.swift */; };
+		3A100001000000000000004B /* HistoryDayLogsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A100011000000000000004B /* HistoryDayLogsSheet.swift */; };
 
 /* Begin PBXFileReference section */
 		3A1000110000000000000001 /* LogbookApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogbookApp.swift; sourceTree = "<group>"; };
@@ -133,6 +138,11 @@
 		3A100011000000000000003D /* ChartScrubTooltip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartScrubTooltip.swift; sourceTree = "<group>"; };
 		3A100011000000000000003E /* LifeLogEventInsightsGraph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeLogEventInsightsGraph.swift; sourceTree = "<group>"; };
 		3A100011000000000000003F /* LogbookTabBarStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogbookTabBarStyle.swift; sourceTree = "<group>"; };
+		3A1000110000000000000040 /* ExerciseCatalogInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseCatalogInfo.swift; sourceTree = "<group>"; };
+		3A1000110000000000000041 /* ExerciseDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailSheet.swift; sourceTree = "<group>"; };
+		3A1000110000000000000042 /* AddToRoutineSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToRoutineSheet.swift; sourceTree = "<group>"; };
+		3A100011000000000000004A /* ExerciseLibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseLibraryViewModel.swift; sourceTree = "<group>"; };
+		3A100011000000000000004B /* HistoryDayLogsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryDayLogsSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -185,6 +195,7 @@
 			children = (
 				3A1000110000000000000011 /* MainTabView.swift */,
 				3A1000110000000000000012 /* HistoryView.swift */,
+				3A100011000000000000004B /* HistoryDayLogsSheet.swift */,
 				3A1000110000000000000013 /* WorkoutCompletionSummaryView.swift */,
 				3A1000110000000000000014 /* HorizontalDateStripView.swift */,
 				3A1000110000000000000015 /* ExerciseMediaView.swift */,
@@ -192,6 +203,9 @@
 				3A100011000000000000001B /* ExerciseTileView.swift */,
 				3A100011000000000000001C /* SettingsView.swift */,
 				3A100011000000000000001D /* ExerciseLibraryView.swift */,
+				3A100011000000000000004A /* ExerciseLibraryViewModel.swift */,
+				3A1000110000000000000041 /* ExerciseDetailSheet.swift */,
+				3A1000110000000000000042 /* AddToRoutineSheet.swift */,
 				3A100011000000000000001E /* HistorySessionDetailView.swift */,
 				3A100011000000000000001F /* TodayView.swift */,
 				3A1000110000000000000020 /* WorkoutSessionView.swift */,
@@ -262,6 +276,7 @@
 				3A1000110000000000000035 /* LifeLogGapFormatting.swift */,
 				3A1000110000000000000036 /* NavConfig.swift */,
 				3A1000110000000000000037 /* ExerciseFilterLogic.swift */,
+				3A1000110000000000000040 /* ExerciseCatalogInfo.swift */,
 				3A100011000000000000003B /* NativeUIKitBridges.swift */,
 				3A100011000000000000003C /* LogReminderScheduler.swift */,
 				3A100011000000000000003D /* ChartScrubTooltip.swift */,
@@ -400,6 +415,11 @@
 				3A100001000000000000003D /* ChartScrubTooltip.swift in Sources */,
 				3A100001000000000000003E /* LifeLogEventInsightsGraph.swift in Sources */,
 				3A100001000000000000003F /* LogbookTabBarStyle.swift in Sources */,
+				3A1000010000000000000040 /* ExerciseCatalogInfo.swift in Sources */,
+				3A1000010000000000000041 /* ExerciseDetailSheet.swift in Sources */,
+				3A1000010000000000000042 /* AddToRoutineSheet.swift in Sources */,
+				3A100001000000000000004A /* ExerciseLibraryViewModel.swift in Sources */,
+				3A100001000000000000004B /* HistoryDayLogsSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

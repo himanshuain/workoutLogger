@@ -425,32 +425,14 @@ private struct RoutineDetailEditorView: View {
         }
         .sheet(isPresented: $showAddExercise) {
             NavigationStack {
-                List(workoutStore.libraryExercises) { exercise in
-                    Button {
+                ExerciseLibraryView(
+                    workoutStore: workoutStore,
+                    pickerMode: true,
+                    onPick: { exercise in
                         append(exercise)
                         showAddExercise = false
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(exercise.name).foregroundStyle(.primary)
-                                Text((exercise.category ?? "other").capitalized)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if target.exercises.contains(where: { $0.exerciseID == exercise.id || $0.name == exercise.name }) {
-                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.orange)
-                            }
-                        }
                     }
-                }
-                .navigationTitle("Add exercise")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { showAddExercise = false }
-                    }
-                }
+                )
             }
         }
         .sheet(item: $previewExercise) { exercise in

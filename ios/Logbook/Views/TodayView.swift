@@ -3,7 +3,6 @@ import SwiftUI
 private enum TodayPage: String, CaseIterable, Hashable {
     case log = "Log"
     case lifeLog = "Life log"
-    case history = "History"
 }
 
 struct TodayView: View {
@@ -57,11 +56,6 @@ struct TodayView: View {
                     case .lifeLog:
                         ScrollView {
                             lifeLogSection
-                                .padding(.horizontal, 20)
-                        }
-                    case .history:
-                        ScrollView {
-                            HomeWorkoutHistorySection(workoutStore: workoutStore, selectedTab: $selectedTab)
                                 .padding(.horizontal, 20)
                         }
                     }
@@ -774,5 +768,61 @@ struct FlowLayout: Layout {
             rowHeight = max(rowHeight, size.height)
             x += size.width + spacing
         }
+    }
+}
+
+/// Pills that collapse with a "more" button when there are many items.
+struct CollapsiblePillRow: View {
+    let items: [String]
+    let selected: String?
+    var collapsedLimit: Int = 6
+    var onSelect: (String) -> Void
+
+    @State private var expanded = false
+
+    private var visibleItems: [String] {
+        expanded ? items : Array(items.prefix(collapsedLimit))
+    }
+
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(visibleItems, id: \.self) { name in
+                pillButton(title: name, isSelected: selected == name) {
+                    onSelect(name)
+                }
+            }
+
+            if items.count > collapsedLimit {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        expanded.toggle()
+                    }
+                } label: {
+                    Text(expanded ? "Less" : "+\(items.count - collapsedLimit) more")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.tertiarySystemFill))
+                        .foregroundStyle(.secondary)
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func pillButton(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.orange : Color(.tertiarySystemFill))
+                .foregroundStyle(isSelected ? .white : .primary)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }

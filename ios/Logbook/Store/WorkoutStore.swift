@@ -704,7 +704,7 @@ final class WorkoutStore: ObservableObject {
         }
     }
 
-    func fetchBodyWeightHistory() async -> [(date: String, value: Double)] {
+    func fetchBodyWeightHistory() async -> [(id: UUID, date: String, value: Double)] {
         guard let dataService, let trackable = bodyWeightTrackable else { return [] }
         do {
             let accessToken = try await resolvedAccessToken()
@@ -715,10 +715,48 @@ final class WorkoutStore: ObservableObject {
             )
             return rows.compactMap { entry in
                 guard let value = entry.value else { return nil }
-                return (entry.date, value)
+                return (entry.id, entry.date, value)
             }.sorted { $0.date < $1.date }
         } catch {
             return []
+        }
+    }
+
+    func logBodyWeight(_ value: Double) async {
+        guard let dataService, let userID, let trackable = bodyWeightTrackable else { return }
+        let today = WorkoutDate.todayString()
+        await mutate {
+            let accessToken = try await self.resolvedAccessToken()
+            var existing: TrackingEntryDTO?
+            if let cached = trackingEntries[trackable.id], cached.date == today {
+                existing = cached
+            } else {
+                let rows = try await dataService.fetchTrackingEntries(accessToken: accessToken, date: today)
+                existing = rows.first { $0.trackableID == trackable.id }
+            }
+            let result = try await dataService.setTrackingValue(
+                accessToken: accessToken,
+                userID: userID,
+                trackableID: trackable.id,
+                date: today,
+                value: value,
+                existing: existing
+            )
+            if viewingDate == today {
+                trackingEntries[trackable.id] = result
+            }
+        }
+    }
+
+    func deleteBodyWeightEntry(id: UUID) async {
+        guard let dataService else { return }
+        await mutate {
+            let accessToken = try await self.resolvedAccessToken()
+            try await dataService.deleteTrackingEntry(accessToken: accessToken, id: id)
+            if let trackable = bodyWeightTrackable,
+               trackingEntries[trackable.id]?.id == id {
+                trackingEntries.removeValue(forKey: trackable.id)
+            }
         }
     }
 
@@ -786,6 +824,37 @@ final class WorkoutStore: ObservableObject {
             )
             await refresh()
         }
+    }
+
+    @discardableResult
+    func appendExerciseToRoutine(
+        routineID: UUID,
+        exercise: ExerciseDTO,
+        targetSets: Int = 3
+    ) async -> Bool {
+        guard let splitIndex = splits.firstIndex(where: { $0.id == routineID }) else { return false }
+        let normalized = WorkoutCalculations.normalizeExerciseName(exercise.name)
+        let routineExercises = splits[splitIndex].exercises.filter { !$0.isSessionExtra }
+        if routineExercises.contains(where: {
+            $0.exerciseID == exercise.id
+                || WorkoutCalculations.normalizeExerciseName($0.name) == normalized
+        }) {
+            return false
+        }
+
+        var inputs = Self.inputs(from: routineExercises)
+        inputs.append(
+            RoutineExerciseInput(
+                exerciseID: exercise.id,
+                exerciseName: exercise.name,
+                category: exercise.category ?? "other",
+                targetSets: targetSets,
+                notes: nil,
+                isPinned: false
+            )
+        )
+        await replaceRoutineExercises(routineID: routineID, exercises: inputs)
+        return true
     }
 
     func reorderExercises(routineID: UUID, orderedIDs: [UUID]) async {
@@ -1446,6 +1515,16 @@ final class WorkoutStore: ObservableObject {
 
     var libraryExercises: [ExerciseDTO] {
         catalog.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    func exerciseLibrarySnapshot() -> ExerciseLibrarySnapshot {
+        ExerciseLibrarySnapshot(
+            exercises: libraryExercises,
+            catalog: catalog,
+            history: exerciseHistory,
+            overrides: mediaOverrides,
+            weightUnit: weightUnit
+        )
     }
 
     func mediaURL(for exercise: ExerciseDTO) -> URL? {

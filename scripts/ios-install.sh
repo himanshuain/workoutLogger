@@ -76,43 +76,34 @@ echo ""
 draw_progress 10 "Looking for iPhone..."
 DEVICE_ID="${IOS_DEVICE_ID:-}"
 if [[ -z "$DEVICE_ID" && -f "$ROOT_DIR/.env.local" ]]; then
-  DEVICE_ID="$(grep -E '^IOS_DEVICE_ID=' "$ROOT_DIR/.env.local" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'")"
+  DEVICE_ID="$(ios_read_env_value "$ROOT_DIR/.env.local" "IOS_DEVICE_ID")"
 fi
 
+AUTO_DEVICE_ID="$(ios_detect_iphone_device_id || true)"
 if [[ -z "$DEVICE_ID" ]]; then
-  DEVICE_ID="$(python3 - <<'PY'
-import json, subprocess, sys
-try:
-    out = subprocess.check_output(
-        ["xcrun", "devicectl", "list", "devices", "--json-output", "-"],
-        stderr=subprocess.DEVNULL,
-        text=True,
-    )
-    data = json.loads(out)
-except Exception:
-    sys.exit(0)
-
-devices = data.get("result", {}).get("devices", [])
-phones = [
-    d for d in devices
-    if d.get("deviceProperties", {}).get("booted")
-    and "iPhone" in d.get("hardwareProperties", {}).get("marketingName", "")
-]
-if not phones:
-    phones = [
-        d for d in devices
-        if "iPhone" in d.get("hardwareProperties", {}).get("marketingName", "")
-        and d.get("connectionProperties", {}).get("transportType") in {"wired", "localNetwork", "local"}
-    ]
-if phones:
-    print(phones[0].get("identifier", ""))
-PY
-)"
+  DEVICE_ID="$AUTO_DEVICE_ID"
 fi
 
 if [[ -z "$DEVICE_ID" ]]; then
   echo ""
   echo "No iPhone detected. Connect, unlock, and trust this Mac."
+  ios_print_device_troubleshooting
+  exit 1
+fi
+
+IOS_VALIDATE_PROJECT="$PROJECT"
+IOS_VALIDATE_SCHEME="$SCHEME"
+if ! ios_verify_device_ready "$DEVICE_ID"; then
+  if [[ -n "$AUTO_DEVICE_ID" && "$AUTO_DEVICE_ID" != "$DEVICE_ID" ]]; then
+    echo ""
+    echo "Configured device is not ready; using connected iPhone instead."
+    DEVICE_ID="$AUTO_DEVICE_ID"
+  fi
+fi
+
+if ! ios_verify_device_ready "$DEVICE_ID"; then
+  echo ""
+  ios_print_device_troubleshooting "$DEVICE_ID"
   exit 1
 fi
 
@@ -136,6 +127,7 @@ xcodebuild \
   -scheme "$SCHEME" \
   -configuration "$CONFIG" \
   -destination "id=$DEVICE_ID" \
+  -destination-timeout 15 \
   -derivedDataPath "$DERIVED_DATA" \
   "${SIGN_ARGS[@]}" \
   build >"$BUILD_LOG" 2>&1 &

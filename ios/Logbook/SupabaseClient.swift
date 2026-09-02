@@ -613,17 +613,43 @@ struct RoutineExerciseDTO: Codable, Identifiable {
     }
 }
 
+struct ExerciseDBMetadataDTO: Codable, Equatable {
+    let equipments: [String]?
+    let targetMuscles: [String]?
+    let secondaryMuscles: [String]?
+    let instructions: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case equipments
+        case targetMuscles = "target_muscles"
+        case secondaryMuscles = "secondary_muscles"
+        case instructions
+    }
+}
+
+struct ExerciseMetadataDTO: Codable, Equatable {
+    let equipmentDisplay: String?
+    let exercisedb: ExerciseDBMetadataDTO?
+
+    enum CodingKeys: String, CodingKey {
+        case equipmentDisplay = "equipment_display"
+        case exercisedb
+    }
+}
+
 struct ExerciseDTO: Codable, Identifiable {
     let id: UUID
     let name: String
     let category: String?
+    let description: String?
     let gifURL: String?
     let imageURL: String?
     let externalSource: String?
     let externalID: String?
+    let metadata: ExerciseMetadataDTO?
 
     enum CodingKeys: String, CodingKey {
-        case id, name, category
+        case id, name, category, description, metadata
         case gifURL = "gif_url"
         case imageURL = "image_url"
         case externalSource = "external_source"

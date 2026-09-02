@@ -7,6 +7,42 @@ enum ExerciseMediaResolver {
         catalog: [ExerciseDTO],
         overrides: [String: ExerciseMediaOverrideDTO]
     ) -> URL? {
+        mediaURL(
+            exerciseID: exerciseID,
+            exerciseName: exerciseName,
+            catalogExercise: catalog.first(where: {
+                WorkoutCalculations.normalizeExerciseName($0.name)
+                    == WorkoutCalculations.normalizeExerciseName(exerciseName)
+            }),
+            catalog: catalog,
+            overrides: overrides,
+            preferStillImage: false
+        )
+    }
+
+    static func resolveThumbnailURL(
+        exercise: ExerciseDTO,
+        catalog: [ExerciseDTO],
+        overrides: [String: ExerciseMediaOverrideDTO]
+    ) -> URL? {
+        mediaURL(
+            exerciseID: exercise.id,
+            exerciseName: exercise.name,
+            catalogExercise: exercise,
+            catalog: catalog,
+            overrides: overrides,
+            preferStillImage: true
+        )
+    }
+
+    private static func mediaURL(
+        exerciseID: UUID?,
+        exerciseName: String,
+        catalogExercise: ExerciseDTO?,
+        catalog: [ExerciseDTO],
+        overrides: [String: ExerciseMediaOverrideDTO],
+        preferStillImage: Bool
+    ) -> URL? {
         if let exerciseID,
            let override = overrides[exerciseID.uuidString],
            let url = URL(string: override.mediaURL) {
@@ -21,15 +57,18 @@ enum ExerciseMediaResolver {
             }
         }
 
-        if let catalogExercise = catalog.first(where: {
-            WorkoutCalculations.normalizeExerciseName($0.name) == normalized
-        }) {
+        if let catalogExercise {
             if let override = overrides[catalogExercise.id.uuidString],
                let url = URL(string: override.mediaURL) {
                 return url
             }
-            if let gif = catalogExercise.gifURL, let url = URL(string: gif) { return url }
-            if let image = catalogExercise.imageURL, let url = URL(string: image) { return url }
+            if preferStillImage {
+                if let image = catalogExercise.imageURL, let url = URL(string: image) { return url }
+                if let gif = catalogExercise.gifURL, let url = URL(string: gif) { return url }
+            } else {
+                if let gif = catalogExercise.gifURL, let url = URL(string: gif) { return url }
+                if let image = catalogExercise.imageURL, let url = URL(string: image) { return url }
+            }
         }
 
         for key in ["name:\(normalized)", "name:\(compact)"] {

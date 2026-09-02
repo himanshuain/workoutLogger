@@ -47,7 +47,7 @@ struct MainTabView: View {
         case NavTabConfig.checklists.id:
             ChecklistsView(workoutStore: workoutStore)
         case NavTabConfig.dashboard.id:
-            WorkoutProgressView(workoutStore: workoutStore)
+            WorkoutProgressView(workoutStore: workoutStore, selectedTab: $selectedTab)
         case NavTabConfig.settings.id:
             SettingsView(
                 authStore: authStore,

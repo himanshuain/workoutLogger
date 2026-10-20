@@ -18,6 +18,7 @@ import {
   actionNeutralIcon,
 } from "@/lib/actionButtonStyles";
 import { toast } from "sonner";
+import { LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
 
 function getLocalDateStr(date = new Date()) {
   const year = date.getFullYear();
@@ -212,10 +213,17 @@ export default function TodayLifeLogPanel({
 
   const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  const allLifelogTab = activeTab === "habits" ? LIFELOG_TAB_HABITS : LIFELOG_TAB_EVENTS;
+
   return (
     <div className={sectionSurfaceClass(isDarkMode)}>
       <SectionHeader icon={Calendar} label="Life log" isDarkMode={isDarkMode}>
-        <SectionManageButton isDarkMode={isDarkMode} onClick={onManage} ariaLabel="Manage life log" />
+        <SectionManageButton
+          isDarkMode={isDarkMode}
+          variant="all"
+          onClick={() => onManage(allLifelogTab)}
+          ariaLabel={activeTab === "habits" ? "All habits" : "All events"}
+        />
       </SectionHeader>
 
       <div
@@ -243,7 +251,7 @@ export default function TodayLifeLogPanel({
                 message="No events yet"
                 hint="Track haircuts, doctor visits, and other life events."
                 actionLabel="Open Lifelog"
-                onAction={onManage}
+                onAction={() => onManage(LIFELOG_TAB_EVENTS)}
               />
             ) : (
               sortedLifeEvents.map(eventType => {
@@ -478,7 +486,7 @@ export default function TodayLifeLogPanel({
                 message="No habits yet"
                 hint="Track water, vitamins, and daily routines."
                 actionLabel="Open Lifelog"
-                onAction={onManage}
+                onAction={() => onManage(LIFELOG_TAB_HABITS)}
               />
             ) : (
               habitTrackables.map(trackable => {

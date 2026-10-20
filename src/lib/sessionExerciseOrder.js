@@ -1,13 +1,10 @@
+import { groupExercisesByArea } from "@/lib/exerciseAreaGroups";
 import {
   getSessionExerciseOrder,
   setSessionExerciseOrder,
 } from "@/lib/workoutSessionClient";
 
-/**
- * Apply persisted per-session exercise order; syncs order when exercises are added/removed.
- */
-export function orderPlannedExercises(exercises, sessionId) {
-  if (!exercises?.length) return [];
+function sortBySessionOrder(exercises, sessionId) {
   const names = exercises.map(e => e.exercise_name);
   let order = sessionId ? getSessionExerciseOrder(sessionId) : [];
 
@@ -28,6 +25,15 @@ export function orderPlannedExercises(exercises, sessionId) {
     (a, b) =>
       (index.get(a.exercise_name) ?? 1e9) - (index.get(b.exercise_name) ?? 1e9),
   );
+}
+
+/**
+ * Session order within each muscle group, then groups in push-day order (chest, shoulders, …).
+ */
+export function orderPlannedExercises(exercises, sessionId) {
+  if (!exercises?.length) return [];
+  const bySession = sortBySessionOrder(exercises, sessionId);
+  return groupExercisesByArea(bySession).flatMap(g => g.exercises);
 }
 
 export function persistExerciseOrder(sessionId, orderedExercises) {

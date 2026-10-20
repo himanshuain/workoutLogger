@@ -8,6 +8,7 @@ import {
   actionSuccess,
   actionNeutralIcon,
 } from "@/lib/actionButtonStyles";
+import { LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
 
 /**
  * Habits list + Life log quick actions (shared by Log page and Today).
@@ -37,6 +38,15 @@ export default function DayHabitsLifeLogCard({
 
   const showCombinedHeader = showHabits && showLifeLog;
 
+  const allTabForHeader =
+    showCombinedHeader || (showHabits && !showLifeLog)
+      ? LIFELOG_TAB_HABITS
+      : LIFELOG_TAB_EVENTS;
+
+  const openAll = tab => {
+    onManageLifelog?.(tab ?? allTabForHeader);
+  };
+
   return (
     <div className={sectionSurfaceClass(isDarkMode)}>
       {showCombinedHeader ? (
@@ -47,8 +57,9 @@ export default function DayHabitsLifeLogCard({
         >
           <SectionManageButton
             isDarkMode={isDarkMode}
-            onClick={onManageLifelog}
-            ariaLabel="Manage habits and life log"
+            variant="all"
+            onClick={() => openAll(LIFELOG_TAB_HABITS)}
+            ariaLabel="All habits and life log"
           />
         </SectionHeader>
       ) : showHabits ? (
@@ -60,8 +71,9 @@ export default function DayHabitsLifeLogCard({
         >
           <SectionManageButton
             isDarkMode={isDarkMode}
-            onClick={onManageLifelog}
-            ariaLabel="Manage habits"
+            variant="all"
+            onClick={() => openAll(LIFELOG_TAB_HABITS)}
+            ariaLabel="All habits"
           />
         </SectionHeader>
       ) : (
@@ -73,8 +85,9 @@ export default function DayHabitsLifeLogCard({
         >
           <SectionManageButton
             isDarkMode={isDarkMode}
-            onClick={onManageLifelog}
-            ariaLabel="Manage life log"
+            variant="all"
+            onClick={() => openAll(LIFELOG_TAB_EVENTS)}
+            ariaLabel="All life log"
           />
         </SectionHeader>
       )}
@@ -100,7 +113,7 @@ export default function DayHabitsLifeLogCard({
                   No habits for this weekday. Add habits on Today, or open{" "}
                   <button
                     type="button"
-                    onClick={onManageLifelog}
+                    onClick={() => openAll(LIFELOG_TAB_HABITS)}
                     className={`font-semibold underline underline-offset-2 ${
                       isDarkMode ? "text-lift-primary" : "text-workout-primary"
                     }`}
@@ -170,7 +183,7 @@ export default function DayHabitsLifeLogCard({
                   No event types yet.{" "}
                   <button
                     type="button"
-                    onClick={onManageLifelog}
+                    onClick={() => openAll(LIFELOG_TAB_EVENTS)}
                     className={`font-semibold underline underline-offset-2 ${
                       isDarkMode ? "text-lift-primary" : "text-workout-primary"
                     }`}

@@ -68,6 +68,7 @@ import {
   mergeEventTypesWithLifelogSettings,
   LIFELOG_EVENT_SETTINGS_CHANGED,
 } from "@/lib/lifelogEventSettings";
+import { lifelogRoute, LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
 
 const HOME_TAB_LOG = "log";
 const HOME_TAB_LIFELOG = "lifelog";
@@ -758,8 +759,9 @@ export default function Home() {
                         >
                           <SectionManageButton
                             isDarkMode={isDarkMode}
-                            onClick={() => router.push("/lifelog")}
-                            ariaLabel="Manage habits"
+                            variant="all"
+                            onClick={() => router.push(lifelogRoute(LIFELOG_TAB_HABITS))}
+                            ariaLabel="All habits"
                           />
                         </SectionHeader>
                         <HabitPills
@@ -781,7 +783,7 @@ export default function Home() {
                         sortedLifeEvents={sortedLifeEvents}
                         hasLifeLogThisDay={hasLifeLogThisDay}
                         onQuickLifeLog={handleQuickLifeLog}
-                        onManageLifelog={() => router.push("/lifelog")}
+                        onManageLifelog={tab => router.push(lifelogRoute(tab))}
                         showHabits
                         showLifeLog={false}
                       />
@@ -816,7 +818,7 @@ export default function Home() {
                     sortedLifeEvents={sortedLifeEvents}
                     hasLifeLogThisDay={hasLifeLogThisDay}
                     onQuickLifeLog={handleQuickLifeLog}
-                    onManage={() => router.push("/lifelog")}
+                    onManage={tab => router.push(lifelogRoute(tab))}
                     onInvalidateStrip={invalidateDateStrip}
                   />
                 </section>

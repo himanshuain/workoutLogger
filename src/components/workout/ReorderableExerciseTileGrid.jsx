@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { groupExercisesByArea } from "@/lib/exerciseAreaGroups";
 import Image from "next/image";
 import {
   DndContext,
@@ -466,6 +467,44 @@ export default function ReorderableExerciseTileGrid({
 
   const ids = exercises.map(ex => ex.exercise_name);
 
+  const exerciseGroups = useMemo(() => groupExercisesByArea(exercises), [exercises]);
+
+  const renderExercise = ex => {
+    const media = resolveMedia(ex.exercise_name);
+    const showPlaceholder = !media || thumbFailed[ex.exercise_name];
+    const shared = {
+      ex,
+      isDarkMode,
+      media,
+      showPlaceholder,
+      onThumbError: () => onThumbFailed(ex.exercise_name),
+      onOpen,
+      loggedCount: completedSetCountFor?.(ex.exercise_name) ?? 0,
+      showReset: showResetFor?.(ex.exercise_name),
+      onReset: onResetExercise,
+      resetting: resettingExercise === ex.exercise_name,
+      onRemoveAdded,
+      exercisesCatalog,
+    };
+    if (isListLayout(layout)) {
+      return <SortableExerciseListRow key={ex.exercise_name} {...shared} />;
+    }
+    return (
+      <SortableExerciseTile key={ex.exercise_name} {...shared} tileSize={layout} />
+    );
+  };
+
+  const groupHeaderClass = cn(
+    "sticky top-0 z-20 font-semibold uppercase tracking-wide",
+    "border-b backdrop-blur-md supports-[backdrop-filter]:bg-opacity-95",
+    isListLayout(layout)
+      ? "-mx-0 px-0 py-1.5 text-[11px]"
+      : "col-span-full -mx-0 px-0 py-1.5 text-[10px]",
+    isDarkMode
+      ? "border-iron-800/80 bg-iron-950/92 text-iron-400"
+      : "border-slate-200/80 bg-surface-section/95 text-slate-500",
+  );
+
   const handleDragEnd = event => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -502,34 +541,17 @@ export default function ReorderableExerciseTileGrid({
           <div
             className={cn(isListLayout(layout) ? "flex flex-col gap-2" : cn("grid", tileSizeGridClass(layout)))}
           >
-            {exercises.map(ex => {
-              const media = resolveMedia(ex.exercise_name);
-              const showPlaceholder = !media || thumbFailed[ex.exercise_name];
-              const shared = {
-                ex,
-                isDarkMode,
-                media,
-                showPlaceholder,
-                onThumbError: () => onThumbFailed(ex.exercise_name),
-                onOpen,
-                loggedCount: completedSetCountFor?.(ex.exercise_name) ?? 0,
-                showReset: showResetFor?.(ex.exercise_name),
-                onReset: onResetExercise,
-                resetting: resettingExercise === ex.exercise_name,
-                onRemoveAdded,
-                exercisesCatalog,
-              };
-              if (isListLayout(layout)) {
-                return <SortableExerciseListRow key={ex.exercise_name} {...shared} />;
-              }
-              return (
-                <SortableExerciseTile
-                  key={ex.exercise_name}
-                  {...shared}
-                  tileSize={layout}
-                />
-              );
-            })}
+            {exerciseGroups.map(group => (
+              <Fragment key={group.area}>
+                <div className={groupHeaderClass}>
+                  {group.label}
+                  <span className={cn("ml-1.5 font-medium normal-case tracking-normal", isDarkMode ? "text-iron-600" : "text-slate-400")}>
+                    · {group.exercises.length}
+                  </span>
+                </div>
+                {group.exercises.map(renderExercise)}
+              </Fragment>
+            ))}
           </div>
         </SortableContext>
       </DndContext>

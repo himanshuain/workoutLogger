@@ -1,37 +1,29 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import ExerciseIcon from "@/components/ExerciseIcon";
-import { exerciseImageUnoptimized, resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
+import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
   Plus,
-  CheckCircle2,
-  Circle,
   Dumbbell,
-  ChevronRight,
   Edit3,
   RefreshCw,
   RotateCw,
-  Trash2,
   CircleCheck,
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { SpringIn, StaggerContainer, StaggerItem, PressableScale } from "@/components/ui/fade-in";
-import GroupedExerciseSections from "@/components/workout/GroupedExerciseSections";
-import { areaCollapseStorageKey } from "@/lib/exerciseAreaCollapseStorage";
-import ExerciseSessionResetButton, {
+import { SpringIn } from "@/components/ui/fade-in";
+import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
+import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
+import {
   exerciseHasLoggedSets,
+  completedSetCountForExercise,
 } from "@/components/workout/ExerciseSessionResetButton";
-import ExercisePreviewButton, {
-  libraryEyeOverlayClass,
-} from "@/components/planner/ExercisePreviewButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,7 +34,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import PlannedExerciseMetaLine from "@/components/workout/PlannedExerciseMetaLine";
 import SectionHeader from "@/components/SectionHeader";
 import {
   actionPrimary,
@@ -52,18 +43,7 @@ import {
   actionDestructiveGhost,
   actionGhost,
 } from "@/lib/actionButtonStyles";
-
-function exerciseStatus(name, setLogs) {
-  const completed = (setLogs || []).filter(l => l.exercise_name === name && l.is_completed);
-  if (completed.length > 0) return "in_progress";
-  return "not_started";
-}
-
-function statusLabel(s) {
-  if (s === "completed") return "Completed";
-  if (s === "in_progress") return "In Progress";
-  return "Not Started";
-}
+import { cn } from "@/lib/utils";
 
 /**
  * New workout board + start/finish flow (embedded on the home Today page).
@@ -118,36 +98,16 @@ export default function TodayWorkoutSection({
     return getSessionExtras(activeSession.id);
   }, [activeSession?.id, extrasVersion]);
 
-  const plannedExercises = useMemo(
-    () => mergePlannedExercises(templateRoutine, extras),
-    [templateRoutine, extras]
-  );
+  const plannedExercises = useMemo(() => {
+    const merged = mergePlannedExercises(templateRoutine, extras);
+    return orderPlannedExercises(merged, activeSession?.id);
+  }, [templateRoutine, extras, activeSession?.id, extrasVersion]);
 
   useEffect(() => {
     setThumbFailed({});
   }, [activeSession?.id, plannedExercises.length]);
 
   const setLogs = activeSession?.set_logs || [];
-
-  const stats = useMemo(() => {
-    let completed = 0;
-    let added = 0;
-    for (const ex of plannedExercises) {
-      const st = exerciseStatus(ex.exercise_name, setLogs);
-      if (st === "in_progress") completed += 1;
-      if (ex.added_today) added += 1;
-    }
-    return {
-      planned: plannedExercises.length,
-      completed,
-      addedToday: added,
-    };
-  }, [plannedExercises, setLogs]);
-
-  const completedSetCount = useMemo(
-    () => (setLogs || []).filter(l => l.is_completed).length,
-    [setLogs],
-  );
 
   useEffect(() => {
     const onFocus = () => bumpExtras();
@@ -430,47 +390,23 @@ export default function TodayWorkoutSection({
       </button>
     ) : null;
 
-  const workoutMeta = hasSession
-    ? `${completedSetCount} set${completedSetCount !== 1 ? "s" : ""}`
-    : stats.planned > 0
-      ? `${stats.planned} planned`
-      : null;
-
   return (
     <SpringIn className="max-w-lg mx-auto">
-      <div className="card-hero overflow-hidden !p-3 sm:!p-4">
-          <SectionHeader
-            icon={Dumbbell}
-            label="Workout"
-            meta={workoutMeta}
-            isDarkMode={isDarkMode}
-            className="mb-2"
-          >
-            {resetInProgressButton}
-            {routineActionButton}
-          </SectionHeader>
-
-          <motion.h2
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="text-screen-title min-w-0 leading-tight"
-          >
-            {routineTitle}
-          </motion.h2>
-
-          {hasSession ? (
-            <p
-              className={`mt-1 text-xs leading-snug ${
-                isDarkMode ? "text-iron-500" : "text-slate-500"
-              }`}
+      <div className="card-hero overflow-visible !p-3 sm:!p-4">
+          <div className="flex items-start justify-between gap-2">
+            <motion.h2
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="text-screen-title min-w-0 flex-1 leading-tight"
             >
-              {stats.completed} exercise{stats.completed !== 1 ? "s" : ""} done
-              {stats.addedToday > 0
-                ? ` · ${stats.addedToday} added today`
-                : ""}
-            </p>
-          ) : null}
+              {routineTitle}
+            </motion.h2>
+            <div className="flex shrink-0 items-center gap-1">
+              {resetInProgressButton}
+              {routineActionButton}
+            </div>
+          </div>
 
           {hasSession ? (
             <>
@@ -479,174 +415,39 @@ export default function TodayWorkoutSection({
                   isDarkMode ? "border-iron-800/80" : "border-slate-100"
                 }`}
               >
-                <StaggerContainer>
-                  <GroupedExerciseSections
-                    exercises={plannedExercises}
-                    isDarkMode={isDarkMode}
-                    collapseStorageKey={areaCollapseStorageKey(activeSession?.id)}
-                    listClassName="space-y-2"
-                    renderExercise={ex => {
-                      const st = exerciseStatus(ex.exercise_name, setLogs);
-                      const hasLogs = exerciseHasLoggedSets(ex.exercise_name, setLogs);
-                      const showReset = hasLogs && hasSession;
-                      const media = resolveExerciseMedia(ex.exercise_name);
-                      const showPlaceholder = !media || thumbFailed[ex.exercise_name];
-                      const hasTrash = ex.added_today;
-                      const cardPadRight =
-                        hasTrash && showReset
-                          ? "pr-[6.75rem]"
-                          : hasTrash || showReset
-                            ? "pr-12"
-                            : "pr-10";
-                      return (
-                        <StaggerItem key={ex.exercise_name}>
-                          <div
-                            className={`relative w-full rounded-card transition-colors ${
-                              isDarkMode
-                                ? "bg-iron-900/50 border border-iron-800 hover:border-iron-700"
-                                : "bg-white border border-slate-200 shadow-sm hover:border-slate-300"
-                            }`}
-                          >
-                            <PressableScale className="w-full block">
-                              <button
-                                type="button"
-                                onClick={() => openExercise(ex.exercise_name, ex.category)}
-                                className={`w-full text-left rounded-card p-2.5 flex gap-2.5 ${cardPadRight}`}
-                              >
-                                <div
-                                  className={`relative w-12 h-12 rounded-lg overflow-hidden shrink-0 flex flex-col items-center justify-center ${
-                                    isDarkMode ? "bg-iron-800" : "bg-slate-100"
-                                  }`}
-                                >
-                                  {!showPlaceholder ? (
-                                    <Image
-                                      src={media}
-                                      alt=""
-                                      fill
-                                      className="object-cover"
-                                      sizes="48px"
-                                      unoptimized={exerciseImageUnoptimized(media)}
-                                      onError={() =>
-                                        setThumbFailed(prev => ({
-                                          ...prev,
-                                          [ex.exercise_name]: true,
-                                        }))
-                                      }
-                                    />
-                                  ) : (
-                                    <>
-                                      <ExerciseIcon
-                                        name={ex.exercise_name}
-                                        className="w-6 h-6"
-                                        color={isDarkMode ? "#71717a" : "#94a3b8"}
-                                      />
-                                      <span
-                                        className={`mt-0.5 text-[9px] font-medium leading-none ${
-                                          isDarkMode ? "text-iron-500" : "text-slate-400"
-                                        }`}
-                                      >
-                                        No image
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p
-                                    className={`font-semibold text-sm leading-snug ${
-                                      isDarkMode ? "text-iron-100" : "text-slate-900"
-                                    }`}
-                                  >
-                                    {ex.exercise_name}
-                                  </p>
-                                  <PlannedExerciseMetaLine
-                                    category={ex.category}
-                                    notes={ex.notes}
-                                    isDarkMode={isDarkMode}
-                                  />
-                                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                    <span
-                                      className={`inline-flex items-center gap-1 text-xs font-medium ${
-                                        st === "in_progress"
-                                          ? isDarkMode
-                                            ? "text-emerald-400"
-                                            : "text-emerald-600"
-                                          : isDarkMode
-                                            ? "text-iron-500"
-                                            : "text-slate-500"
-                                      }`}
-                                    >
-                                      {st === "in_progress" ? (
-                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                      ) : (
-                                        <Circle className="w-3.5 h-3.5" />
-                                      )}
-                                      {statusLabel(st)}
-                                    </span>
-                                    {ex.added_today && (
-                                      <span
-                                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                          isDarkMode
-                                            ? "bg-violet-500/15 text-violet-300"
-                                            : "bg-violet-100 text-violet-700"
-                                        }`}
-                                      >
-                                        Added today
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            </PressableScale>
-                            <ExercisePreviewButton
-                              exerciseName={ex.exercise_name}
-                              exerciseId={ex.exercise_id}
-                              category={ex.category}
-                              notes={ex.notes}
-                              exercises={exercises}
-                              isDarkMode={isDarkMode}
-                              variant="overlay"
-                              overlayOffset={libraryEyeOverlayClass({
-                                hasTrash,
-                                hasReset: showReset,
-                              })}
-                            />
-                            {showReset ? (
-                              <ExerciseSessionResetButton
-                                exerciseName={ex.exercise_name}
-                                isDarkMode={isDarkMode}
-                                compact
-                                disabled={resettingExercise === ex.exercise_name}
-                                onClick={handleResetExercise}
-                                className={hasTrash ? "right-10" : undefined}
-                              />
-                            ) : null}
-                            {hasTrash ? (
-                              <button
-                                type="button"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  handleRemoveAddedToday(ex.exercise_name);
-                                }}
-                                className={`pointer-events-auto absolute top-2 right-2 z-10 w-8 h-8 rounded-lg flex items-center justify-center border transition-colors touch-manipulation ${
-                                  isDarkMode
-                                    ? "border-iron-700/80 bg-iron-900/70 text-iron-400 hover:bg-iron-800 hover:text-red-400"
-                                    : "border-slate-200/90 bg-white/90 text-slate-400 hover:bg-slate-50 hover:text-red-600"
-                                }`}
-                                aria-label={`Remove ${ex.exercise_name} from today`}
-                              >
-                                <Trash2 className="w-[18px] h-[18px] sm:w-5 sm:h-5" />
-                              </button>
-                            ) : null}
-                          </div>
-                        </StaggerItem>
-                      );
-                    }}
-                  />
-                </StaggerContainer>
+                <ReorderableExerciseTileGrid
+                  exercises={plannedExercises}
+                  isDarkMode={isDarkMode}
+                  onReorder={next => {
+                    persistExerciseOrder(activeSession.id, next);
+                    bumpExtras();
+                  }}
+                  onOpen={openExercise}
+                  resolveMedia={resolveExerciseMedia}
+                  thumbFailed={thumbFailed}
+                  onThumbFailed={name =>
+                    setThumbFailed(prev => ({ ...prev, [name]: true }))
+                  }
+                  completedSetCountFor={name => completedSetCountForExercise(name, setLogs)}
+                  showResetFor={name =>
+                    exerciseHasLoggedSets(name, setLogs) && hasSession
+                  }
+                  onResetExercise={handleResetExercise}
+                  resettingExercise={resettingExercise}
+                  onRemoveAdded={handleRemoveAddedToday}
+                  exercisesCatalog={exercises}
+                />
               </div>
 
-              <div className="mt-2.5 space-y-2">
+              <div
+                className={cn(
+                  "sticky bottom-0 z-30 -mx-3 mt-2.5 space-y-2 border-t px-3 pt-2.5 pb-1 sm:-mx-4 sm:px-4",
+                  "backdrop-blur-md supports-[backdrop-filter]:bg-opacity-90",
+                  isDarkMode
+                    ? "border-iron-800/80 bg-iron-950/92"
+                    : "border-slate-200/90 bg-surface-section/95",
+                )}
+              >
                 <button
                   type="button"
                   onClick={() =>

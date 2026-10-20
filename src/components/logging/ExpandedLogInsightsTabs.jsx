@@ -209,7 +209,7 @@ export default function ExpandedLogInsightsTabs({
             active === 0 ? tabActive : tabInactive
           )}
         >
-          {insightsLabel}
+          {logsLabel}
         </button>
         <button
           type="button"
@@ -221,7 +221,7 @@ export default function ExpandedLogInsightsTabs({
             active === 1 ? tabActive : tabInactive
           )}
         >
-          {logsLabel}
+          {insightsLabel}
         </button>
       </div>
 
@@ -235,34 +235,6 @@ export default function ExpandedLogInsightsTabs({
             "[&::-webkit-scrollbar]:hidden"
           )}
         >
-          <section
-            ref={insightsPanelRef}
-            className={cn(
-              "shrink-0 snap-start snap-always pb-2 pr-1",
-              "max-h-[min(58vh,30rem)] overflow-y-auto overflow-x-hidden overscroll-y-auto",
-              "[scrollbar-width:thin]",
-              "[-webkit-overflow-scrolling:touch]",
-              isDarkMode
-                ? "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-iron-700 [&::-webkit-scrollbar]:w-1.5"
-                : "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-1.5",
-              viewportW <= 0 && "min-w-full"
-            )}
-            style={
-              viewportW > 0
-                ? {
-                    flex: "0 0 auto",
-                    width: viewportW,
-                    minWidth: viewportW,
-                    maxWidth: viewportW,
-                    touchAction: "pan-x pan-y",
-                  }
-                : { touchAction: "pan-x pan-y" }
-            }
-            aria-hidden={active !== 0}
-          >
-            <div className="space-y-2">{insightsChildren}</div>
-          </section>
-
           <section
             ref={logsPanelRef}
             className={cn(
@@ -286,9 +258,37 @@ export default function ExpandedLogInsightsTabs({
                   }
                 : { touchAction: "pan-x pan-y" }
             }
-            aria-hidden={active !== 1}
+            aria-hidden={active !== 0}
           >
             <div className="space-y-2">{logsChildren}</div>
+          </section>
+
+          <section
+            ref={insightsPanelRef}
+            className={cn(
+              "shrink-0 snap-start snap-always pb-2 pr-1",
+              "max-h-[min(58vh,30rem)] overflow-y-auto overflow-x-hidden overscroll-y-auto",
+              "[scrollbar-width:thin]",
+              "[-webkit-overflow-scrolling:touch]",
+              isDarkMode
+                ? "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-iron-700 [&::-webkit-scrollbar]:w-1.5"
+                : "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar]:w-1.5",
+              viewportW <= 0 && "min-w-full"
+            )}
+            style={
+              viewportW > 0
+                ? {
+                    flex: "0 0 auto",
+                    width: viewportW,
+                    minWidth: viewportW,
+                    maxWidth: viewportW,
+                    touchAction: "pan-x pan-y",
+                  }
+                : { touchAction: "pan-x pan-y" }
+            }
+            aria-hidden={active !== 1}
+          >
+            <div className="space-y-2">{insightsChildren}</div>
           </section>
         </div>
       </div>

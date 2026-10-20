@@ -5,6 +5,7 @@
 
 const extrasKey = sessionId => `wl_session_extras_${sessionId}`;
 const doneKey = sessionId => `wl_session_exercise_done_${sessionId}`;
+const orderKey = sessionId => `wl_session_exercise_order_${sessionId}`;
 
 let persistMetaCallback = null;
 
@@ -18,23 +19,31 @@ function readMeta(session) {
   return {};
 }
 
-function buildMeta(sessionId, extras, doneMap) {
+function buildMeta(sessionId, extras, doneMap, exerciseOrder) {
   return {
     extras: extras ?? getSessionExtras(sessionId),
     exercise_done: doneMap ?? getExerciseDoneMap(sessionId),
+    exercise_order: exerciseOrder ?? getSessionExerciseOrder(sessionId),
   };
 }
 
-function persistLocal(sessionId, extras, doneMap) {
+function persistLocal(sessionId, extras, doneMap, exerciseOrder) {
   if (typeof window === "undefined" || !sessionId) return;
   try {
     localStorage.setItem(extrasKey(sessionId), JSON.stringify(extras));
     localStorage.setItem(doneKey(sessionId), JSON.stringify(doneMap));
+    localStorage.setItem(
+      orderKey(sessionId),
+      JSON.stringify(exerciseOrder ?? getSessionExerciseOrder(sessionId)),
+    );
   } catch {
     /* ignore */
   }
   if (persistMetaCallback) {
-    persistMetaCallback(sessionId, buildMeta(sessionId, extras, doneMap));
+    persistMetaCallback(
+      sessionId,
+      buildMeta(sessionId, extras, doneMap, exerciseOrder),
+    );
   }
 }
 
@@ -48,6 +57,32 @@ export function hydrateSessionClientState(session) {
   if (meta.exercise_done && typeof meta.exercise_done === "object") {
     localStorage.setItem(doneKey(session.id), JSON.stringify(meta.exercise_done));
   }
+  if (Array.isArray(meta.exercise_order)) {
+    localStorage.setItem(orderKey(session.id), JSON.stringify(meta.exercise_order));
+  }
+}
+
+export function getSessionExerciseOrder(sessionId) {
+  if (typeof window === "undefined" || !sessionId) return [];
+  try {
+    const raw = localStorage.getItem(orderKey(sessionId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setSessionExerciseOrder(sessionId, order) {
+  if (typeof window === "undefined" || !sessionId) return;
+  const list = Array.isArray(order) ? order : [];
+  persistLocal(
+    sessionId,
+    getSessionExtras(sessionId),
+    getExerciseDoneMap(sessionId),
+    list,
+  );
 }
 
 export function getSessionExtras(sessionId) {
@@ -118,7 +153,10 @@ export function renameSessionExerciseClient(sessionId, oldName, newName) {
     delete nextDone[oldName];
     nextDone[newName] = true;
   }
-  persistLocal(sessionId, list, nextDone);
+  const order = getSessionExerciseOrder(sessionId).map(n =>
+    n === oldName ? newName : n,
+  );
+  persistLocal(sessionId, list, nextDone, order);
 }
 
 export function getExerciseDoneMap(sessionId) {
@@ -146,6 +184,7 @@ export function clearSessionClientState(sessionId) {
   try {
     localStorage.removeItem(extrasKey(sessionId));
     localStorage.removeItem(doneKey(sessionId));
+    localStorage.removeItem(orderKey(sessionId));
   } catch {
     /* ignore */
   }

@@ -53,6 +53,7 @@ import SectionSurface from "@/components/SectionSurface";
 import HorizontalDateStrip from "@/components/logging/HorizontalDateStrip";
 import PastDayScrollPill from "@/components/logging/PastDayScrollPill";
 import DayHabitsLifeLogCard from "@/components/logging/DayHabitsLifeLogCard";
+import TodayLifeLogPanel from "@/components/lifelog/TodayLifeLogPanel";
 import DashboardSectionTabs from "@/components/dashboard/DashboardSectionTabs";
 import {
   addDaysStr,
@@ -808,18 +809,15 @@ export default function Home() {
               badge: lifeLoggedCount > 0 ? lifeLoggedCount : null,
               content: (
                 <section className="section-spacing">
-                  <DayHabitsLifeLogCard
+                  <TodayLifeLogPanel
                     isDarkMode={isDarkMode}
-                    selectedDate={viewingDate}
-                    habitList={[]}
-                    trackingForDay={{}}
-                    onHabitToggle={() => {}}
+                    viewingDate={viewingDate}
+                    today={today}
                     sortedLifeEvents={sortedLifeEvents}
                     hasLifeLogThisDay={hasLifeLogThisDay}
                     onQuickLifeLog={handleQuickLifeLog}
-                    onManageLifelog={() => router.push("/lifelog")}
-                    showHabits={false}
-                    showLifeLog
+                    onManage={() => router.push("/lifelog")}
+                    onInvalidateStrip={invalidateDateStrip}
                   />
                 </section>
               ),

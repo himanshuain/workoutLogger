@@ -8,7 +8,7 @@ import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
 
 /**
- * @param {"inline" | "overlay"} variant — inline row (planner) or absolute on today cards
+ * @param {"inline" | "overlay" | "pill"} variant — inline icon, overlay on cards, or tile pill with label
  */
 export default function ExercisePreviewButton({
   exerciseName,
@@ -51,20 +51,30 @@ export default function ExercisePreviewButton({
     if (!next) setPreviewExercise(null);
   }, []);
 
+  const isPill = variant === "pill";
+
   const base = cn(
-    "pointer-events-auto flex items-center justify-center rounded-lg border transition-colors touch-manipulation",
+    "pointer-events-auto flex items-center justify-center border transition-colors touch-manipulation",
     actionGhost(isDarkMode),
-    variant === "inline"
-      ? "h-9 w-9 shrink-0"
-      : "absolute top-2 z-10 h-8 w-8",
+    isPill &&
+      "min-w-0 flex-1 gap-1 rounded-full px-2 h-8 text-[10px] font-semibold leading-none",
+    variant === "inline" && "h-9 w-9 shrink-0 rounded-lg",
+    variant === "overlay" && "absolute top-2 z-10 h-8 w-8 rounded-lg",
     variant === "overlay" && (overlayOffset ?? "right-2"),
     className,
   );
 
+  const iconClass = isPill
+    ? "h-3.5 w-3.5 shrink-0"
+    : variant === "inline"
+      ? "h-4 w-4"
+      : "h-[18px] w-[18px] sm:h-5 sm:w-5";
+
   return (
     <>
       <button type="button" onClick={handleClick} className={base} aria-label={label}>
-        <Eye className={variant === "inline" ? "h-4 w-4" : "h-[18px] w-[18px] sm:h-5 sm:w-5"} aria-hidden />
+        <Eye className={iconClass} aria-hidden />
+        {isPill ? <span className="truncate">Preview</span> : null}
       </button>
 
       <Modal open={open} onOpenChange={handleOpenChange}>

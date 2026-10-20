@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Heart, ChevronDown, Check } from "lucide-react";
+import { Calendar, ChevronDown, Heart } from "lucide-react";
 import { useWorkout } from "@/context/WorkoutContext";
 import EmptyState, { EmptyInline } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonLoader";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/actionButtonStyles";
 import { toast } from "sonner";
 import { LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
+import HabitListCardHeader from "@/components/lifelog/HabitListCardHeader";
 
 function getLocalDateStr(date = new Date()) {
   const year = date.getFullYear();
@@ -211,8 +212,6 @@ export default function TodayLifeLogPanel({
     );
   };
 
-  const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
   const allLifelogTab = activeTab === "habits" ? LIFELOG_TAB_HABITS : LIFELOG_TAB_EVENTS;
 
   return (
@@ -284,13 +283,28 @@ export default function TodayLifeLogPanel({
                           {eventType.icon}
                         </div>
                         <div className="text-left flex-1 min-w-0">
-                          <h3
-                            className={`font-semibold truncate ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                          >
-                            {eventType.name}
-                          </h3>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <h3
+                              className={`min-w-0 truncate font-semibold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
+                            >
+                              {eventType.name}
+                            </h3>
+                            {isOverdue ? (
+                              <span
+                                className="shrink-0 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-amber-500"
+                              >
+                                Due
+                              </span>
+                            ) : null}
+                          </div>
                           <p
-                            className={`text-xs mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
+                            className={`mt-0.5 text-xs ${
+                              isOverdue
+                                ? "text-amber-500"
+                                : isDarkMode
+                                  ? "text-iron-500"
+                                  : "text-slate-500"
+                            }`}
                           >
                             {eventType.days_since === null
                               ? "Never logged"
@@ -504,69 +518,20 @@ export default function TodayLifeLogPanel({
                     key={trackable.id}
                     className={`rounded-card overflow-hidden ${
                       isDarkMode ? "bg-iron-900" : "bg-white border border-slate-200 shadow-sm"
-                    } ${!isScheduledForViewing ? "opacity-70" : ""}`}
+                    }`}
                   >
-                    <div className="p-3 flex items-center gap-2">
-                      {isScheduledForViewing ? (
-                        <button
-                          type="button"
-                          aria-pressed={doneForDay}
-                          onClick={() => handleHabitToggleForDay(trackable)}
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card text-lg transition-all ${
-                            doneForDay
-                              ? "shadow-md"
-                              : isDarkMode
-                                ? "bg-iron-800 ring-1 ring-iron-700"
-                                : "bg-slate-100 ring-1 ring-slate-200"
-                          }`}
-                          style={doneForDay ? { backgroundColor: trackable.color } : undefined}
-                        >
-                          {doneForDay ? (
-                            <Check className="h-5 w-5 text-white" strokeWidth={2.5} />
-                          ) : (
-                            trackable.icon
-                          )}
-                        </button>
-                      ) : (
-                        <div
-                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card text-lg"
-                          style={{ backgroundColor: `${trackable.color}30` }}
-                        >
-                          {trackable.icon}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
-                        className="flex items-center gap-3 flex-1 min-w-0"
-                      >
-                        <div className="text-left flex-1 min-w-0">
-                          <p
-                            className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                          >
-                            {trackable.name}
-                          </p>
-                          <p
-                            className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                          >
-                            {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
-                            {trackable.active_days && (
-                              <span className="ml-1.5">
-                                ·{" "}
-                                {isScheduledForViewing
-                                  ? "Scheduled this day"
-                                  : trackable.active_days.map(d => DAY_LABELS[d]).join(", ")}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <ChevronDown
-                          className={`w-5 h-5 flex-shrink-0 transition-transform ${
-                            isExpanded ? "rotate-180" : ""
-                          } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                        />
-                      </button>
-                    </div>
+                    <HabitListCardHeader
+                      trackable={trackable}
+                      streakDays={streakDays}
+                      isDarkMode={isDarkMode}
+                      scheduledForViewDay={isScheduledForViewing}
+                      doneForDay={doneForDay}
+                      onToggleDone={() => handleHabitToggleForDay(trackable)}
+                      isExpanded={isExpanded}
+                      onToggleExpand={() =>
+                        setExpandedHabit(isExpanded ? null : trackable.id)
+                      }
+                    />
 
                     <AnimatePresence initial={false}>
                       {isExpanded && (

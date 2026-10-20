@@ -14,6 +14,7 @@ import {
   LazyNotificationSettings,
 } from "@/components/lifelog/lazyLifelog";
 import LifeLogEventQuickGlyph from "@/components/logging/LifeLogEventQuickGlyph";
+import HabitListCardHeader from "@/components/lifelog/HabitListCardHeader";
 import DayPicker from "@/components/DayPicker";
 import {
   Modal,
@@ -1077,7 +1078,7 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent
                         className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
+                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
                         }
                       >
                         <ContextMenuItem
@@ -1376,8 +1377,6 @@ export default function LifeLog() {
                   const streakDays = getStreakCount(trackable.id);
                   const isScheduledToday =
                     !trackable.active_days || trackable.active_days.includes(new Date().getDay());
-                  const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
                   return (
                     <ContextMenu key={trackable.id}>
                       <ContextMenuTrigger asChild>
@@ -1386,61 +1385,23 @@ export default function LifeLog() {
                             isDarkMode
                               ? "bg-iron-900"
                               : "bg-white border border-slate-200 shadow-sm"
-                          } ${!isScheduledToday ? "opacity-60" : ""}`}
+                          }`}
                         >
-                          {/* Habit Header */}
-                          <div className="p-3 flex items-center justify-between">
-                            <button
-                              onClick={() => setExpandedHabit(isExpanded ? null : trackable.id)}
-                              className="flex items-center gap-3 flex-1"
-                            >
-                              <div
-                                className="w-10 h-10 rounded-card flex items-center justify-center text-lg"
-                                style={{ backgroundColor: `${trackable.color}30` }}
-                              >
-                                {trackable.icon}
-                              </div>
-                              <div className="text-left">
-                                <p
-                                  className={`font-medium ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}
-                                >
-                                  {trackable.name}
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                  <p
-                                    className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
-                                  >
-                                    {streakDays} day{streakDays !== 1 ? "s" : ""} tracked
-                                  </p>
-                                  {trackable.active_days && (
-                                    <span
-                                      className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                                        isScheduledToday
-                                          ? isDarkMode
-                                            ? "bg-green-500/20 text-green-400"
-                                            : "bg-green-100 text-green-600"
-                                          : isDarkMode
-                                            ? "bg-iron-800 text-iron-500"
-                                            : "bg-slate-100 text-slate-400"
-                                      }`}
-                                    >
-                                      {isScheduledToday
-                                        ? "Today"
-                                        : trackable.active_days.map(d => DAY_LABELS[d]).join(", ")}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <ChevronDown
-                                className={`w-5 h-5 transition-transform ml-auto ${
-                                  isExpanded ? "rotate-180" : ""
-                                } ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
-                              />
-                            </button>
-                            <div className="flex items-center gap-1 ml-2">
+                          <HabitListCardHeader
+                            trackable={trackable}
+                            streakDays={streakDays}
+                            isDarkMode={isDarkMode}
+                            scheduledForViewDay={isScheduledToday}
+                            doneForDay={!!todayEntries[trackable.id]?.is_completed}
+                            isExpanded={isExpanded}
+                            onToggleExpand={() =>
+                              setExpandedHabit(isExpanded ? null : trackable.id)
+                            }
+                            trailingActions={
                               <button
+                                type="button"
                                 onClick={() => setNotificationTrackable(trackable)}
-                                className={`p-2 rounded-lg ${
+                                className={`shrink-0 rounded-lg p-2 ${
                                   isDarkMode ? "active:bg-iron-800" : "active:bg-slate-100"
                                 } ${
                                   NotificationService.getSchedule(trackable.id)?.enabled
@@ -1453,13 +1414,13 @@ export default function LifeLog() {
                                 }`}
                               >
                                 {NotificationService.getSchedule(trackable.id)?.enabled ? (
-                                  <BellRing className="w-4 h-4" />
+                                  <BellRing className="h-4 w-4" />
                                 ) : (
-                                  <Bell className="w-4 h-4" />
+                                  <Bell className="h-4 w-4" />
                                 )}
                               </button>
-                            </div>
-                          </div>
+                            }
+                          />
 
                           {/* Expanded Heatmap and Add Past Entries */}
                           <AnimatePresence initial={false}>
@@ -1626,7 +1587,7 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent
                         className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
+                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
                         }
                       >
                         <ContextMenuItem
@@ -2074,7 +2035,7 @@ export default function LifeLog() {
                       </ContextMenuTrigger>
                       <ContextMenuContent
                         className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
+                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
                         }
                       >
                         <ContextMenuItem

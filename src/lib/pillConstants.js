@@ -31,19 +31,41 @@ export const WEIGHT_PILLS_KG = mergeWeightPills(
 /** Reps pills: 4–30 (every rep). */
 export const REPS_PILLS = Array.from({ length: 27 }, (_, i) => i + 4);
 
+/** Bodyweight logging: BW (0) plus added load in 2.5 kg steps. */
+export const BODYWEIGHT_WEIGHT_PILLS_KG = mergeWeightPills(
+  [BAR_WEIGHT_KG],
+  Array.from({ length: 20 }, (_, i) => 2.5 * (i + 1)),
+);
+
+export function weightPillsForLogMode(mode) {
+  return mode === "bodyweight" ? BODYWEIGHT_WEIGHT_PILLS_KG : WEIGHT_PILLS_KG;
+}
+
 export function isBarWeight(v) {
   return v === BAR_WEIGHT_KG || (typeof v === "number" && Math.abs(v) < 0.001);
 }
 
-export function formatWeightPill(v) {
-  if (isBarWeight(v)) return "Bar";
+export function formatWeightPill(v, logMode = "barbell") {
+  if (isBarWeight(v)) {
+    return logMode === "bodyweight" ? "BW" : "Bar";
+  }
   return Number.isInteger(v) ? String(v) : String(v);
 }
 
-/** e.g. "Bar", "20 kg" */
-export function formatWeightDisplay(v) {
-  if (isBarWeight(v)) return "Bar";
-  return `${formatWeightPill(v)} kg`;
+/** e.g. "Bar", "20 kg", "Bodyweight", "+10 kg" */
+export function formatWeightDisplay(v, logMode = "barbell") {
+  if (isBarWeight(v)) {
+    return logMode === "bodyweight" ? "Bodyweight" : "Bar";
+  }
+  const suffix = logMode === "bodyweight" ? " kg added" : " kg";
+  return `${formatWeightPill(v, logMode)}${suffix}`;
+}
+
+/** Current weight ÷ 2 (0.5 kg precision). Bar/BW stays at 0. */
+export function halveSelectedWeightKg(weight) {
+  if (isBarWeight(weight)) return BAR_WEIGHT_KG;
+  const half = weight / 2;
+  return Math.round(half * 2) / 2;
 }
 
 /** Snap a numeric value to the closest pill in a sorted list. */

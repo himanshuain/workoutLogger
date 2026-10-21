@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef, Fragment } from "react";
+import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import { groupExercisesByArea } from "@/lib/exerciseAreaGroups";
 import Image from "next/image";
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -17,7 +19,11 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2 } from "lucide-react";
+import { MoreVertical, Trash2 } from "lucide-react";
+import { resolveExerciseForPreview } from "@/lib/plannerLibraryNavigation";
+import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
+import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
+import { actionGhostOnLoggedRow } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseImageUnoptimized } from "@/lib/exerciseMedia";
@@ -27,6 +33,8 @@ import {
   getWorkoutExerciseLayout,
   setWorkoutExerciseLayout,
   tileSizeGridClass,
+  loggedMiniTileScrollOuterClass,
+  loggedMiniTileScrollInnerClass,
   isListLayout,
 } from "@/lib/workoutTileSize";
 
@@ -34,21 +42,286 @@ function loggedSetLabel(count) {
   return `${count} set${count !== 1 ? "s" : ""}`;
 }
 
-function loggedCardClass(hasLogged, isDarkMode, dragging) {
+const LOGGED_TILE_SECTION = "__logged__";
+
+function loggedCardClass(hasLogged, isDarkMode, dragging, solidLoggedTile) {
   return cn(
     dragging ? "z-30 opacity-90 shadow-lg" : "z-0",
     hasLogged
-      ? isDarkMode
-        ? "bg-emerald-500/12 border-emerald-500/45 ring-1 ring-emerald-500/25"
-        : "bg-emerald-50/90 border-emerald-400 shadow-sm"
+      ? solidLoggedTile
+        ? isDarkMode
+          ? "border-emerald-500 bg-emerald-600"
+          : "border-emerald-600 bg-emerald-500"
+        : isDarkMode
+          ? "bg-emerald-500/12 border-emerald-500/45 ring-1 ring-emerald-500/25"
+          : "bg-emerald-50/90 border-emerald-400 shadow-sm"
       : isDarkMode
         ? "bg-iron-900/60 border-iron-800"
         : "bg-white border-slate-200 shadow-sm",
   );
 }
 
+function buildExerciseDisplayGroups(exercises, completedSetCountFor, prioritizeLoggedTiles) {
+  if (!prioritizeLoggedTiles) {
+    return groupExercisesByArea(exercises);
+  }
+  const logged = [];
+  const pending = [];
+  for (const ex of exercises || []) {
+    const count = completedSetCountFor?.(ex.exercise_name) ?? 0;
+    if (count > 0) logged.push(ex);
+    else pending.push(ex);
+  }
+  const sections = [];
+  if (logged.length) {
+    sections.push({ area: LOGGED_TILE_SECTION, label: "Logged set", exercises: logged });
+  }
+  sections.push(...groupExercisesByArea(pending));
+  return sections;
+}
+
 function listActionBtnClass() {
   return "!h-8 !w-8";
+}
+
+/** Mouse for desktop; Touch with press-and-hold for mobile (PointerSensor steals touch and fights scroll). */
+function useExerciseReorderSensors() {
+  return useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 12 },
+    }),
+  );
+}
+
+const tileDragSurfaceClass =
+  "flex min-w-0 cursor-grab touch-none select-none text-left active:cursor-grabbing";
+
+function openExerciseFromKey(e, onOpen, name, category) {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    onOpen(name, category);
+  }
+}
+
+const LOGGED_MINI_MENU_WIDTH = 148;
+
+function LoggedMiniExerciseMenu({
+  exerciseName,
+  exerciseId,
+  category,
+  notes,
+  exercises,
+  isDarkMode,
+  onReset,
+  resetting,
+  overlay = false,
+}) {
+  const rootRef = useRef(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewExercise, setPreviewExercise] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!menuOpen || !buttonRef.current) {
+      setMenuStyle(null);
+      return;
+    }
+    const updatePosition = () => {
+      if (!buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      const menuHeight = menuRef.current?.offsetHeight ?? 88;
+      const gap = 4;
+      const fitsBelow = rect.bottom + gap + menuHeight <= window.innerHeight - 8;
+      const top = fitsBelow ? rect.bottom + gap : rect.top - gap - menuHeight;
+      const left = Math.min(
+        Math.max(8, rect.left + rect.width / 2 - LOGGED_MINI_MENU_WIDTH / 2),
+        window.innerWidth - LOGGED_MINI_MENU_WIDTH - 8,
+      );
+      setMenuStyle({ top, left, width: LOGGED_MINI_MENU_WIDTH });
+    };
+    updatePosition();
+    requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handlePointer = event => {
+      const target = event.target;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointer);
+    return () => document.removeEventListener("pointerdown", handlePointer);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = e => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  const openPreview = useCallback(
+    e => {
+      e.stopPropagation();
+      setMenuOpen(false);
+      const ex = resolveExerciseForPreview(exercises, {
+        exerciseId,
+        exerciseName,
+        category,
+        notes,
+      });
+      if (!ex) {
+        toast.message("Exercise not found in catalog");
+        return;
+      }
+      setPreviewExercise(ex);
+      setPreviewOpen(true);
+    },
+    [exercises, exerciseId, exerciseName, category, notes],
+  );
+
+  const menuItemClass = cn(
+    "flex w-full items-center rounded-md px-2.5 py-2 text-left text-xs font-semibold transition-colors",
+    isDarkMode ? "text-iron-100 active:bg-iron-800" : "text-slate-800 active:bg-slate-100",
+  );
+
+  const menu = menuOpen ? (
+    <div
+      ref={menuRef}
+      style={{
+        position: "fixed",
+        top: menuStyle?.top ?? -9999,
+        left: menuStyle?.left ?? -9999,
+        width: LOGGED_MINI_MENU_WIDTH,
+        zIndex: 9999,
+        visibility: menuStyle ? "visible" : "hidden",
+      }}
+      className={cn(
+        "overflow-hidden rounded-lg border py-0.5 shadow-lg",
+        isDarkMode ? "border-iron-700 bg-iron-900" : "border-slate-200 bg-white",
+      )}
+      role="menu"
+    >
+      <button type="button" role="menuitem" className={menuItemClass} onClick={openPreview}>
+        View
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        disabled={resetting}
+        className={cn(
+          menuItemClass,
+          resetting && "opacity-50",
+          isDarkMode ? "text-red-400" : "text-red-600",
+        )}
+        onClick={e => {
+          e.stopPropagation();
+          setMenuOpen(false);
+          onReset?.(exerciseName);
+        }}
+      >
+        Reset
+      </button>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      <div
+        ref={rootRef}
+        className={cn(
+          overlay ? "absolute right-0 top-0 z-30" : "relative flex justify-center",
+        )}
+      >
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            setMenuOpen(open => !open);
+          }}
+          aria-label={`Actions for ${exerciseName}`}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          className={cn(
+            "flex items-center justify-center touch-manipulation transition-colors",
+            overlay
+              ? cn(
+                  "h-7 w-7 rounded-bl-md rounded-tr-[9px] text-white",
+                  menuOpen ? "bg-black/65" : "bg-black/45 hover:bg-black/55 active:bg-black/60",
+                )
+              : cn(
+                  "h-7 w-7 rounded-md",
+                  menuOpen
+                    ? isDarkMode
+                      ? "bg-iron-800 text-iron-200"
+                      : "bg-slate-100 text-slate-700"
+                    : isDarkMode
+                      ? "text-iron-500 hover:bg-iron-800/80 hover:text-iron-300"
+                      : "text-slate-400 hover:bg-slate-100 hover:text-slate-600",
+                ),
+          )}
+        >
+          <MoreVertical className={cn(overlay ? "h-3.5 w-3.5" : "h-4 w-4")} aria-hidden />
+        </button>
+      </div>
+      {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}
+      <Modal
+        open={previewOpen}
+        onOpenChange={next => {
+          setPreviewOpen(next);
+          if (!next) setPreviewExercise(null);
+        }}
+      >
+        <ModalContent
+          showCloseButton
+          className={cn(
+            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle",
+            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden",
+          )}
+        >
+          <ModalHeader className="shrink-0 pb-2">
+            <ModalTitle
+              className={cn(
+                "line-clamp-2 pr-10",
+                isDarkMode ? "!text-iron-50" : "!text-[color:var(--text-primary)]",
+              )}
+            >
+              {previewExercise?.name ?? exerciseName ?? "Exercise"}
+            </ModalTitle>
+          </ModalHeader>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
+            {previewExercise ? (
+              <ExercisePreviewPanel
+                exercise={previewExercise}
+                isDarkMode={isDarkMode}
+                hideHeading
+                hideActions
+                variant="sheet"
+                onOpenExercise={ex => {
+                  const next = exercises.find(item => item.id === ex.id);
+                  if (next) setPreviewExercise(next);
+                }}
+              />
+            ) : null}
+          </div>
+        </ModalContent>
+      </Modal>
+    </>
+  );
 }
 
 function SortableExerciseTile({
@@ -65,6 +338,7 @@ function SortableExerciseTile({
   resetting,
   onRemoveAdded,
   exercisesCatalog,
+  solidLoggedTile = false,
 }) {
   const id = ex.exercise_name;
   const {
@@ -84,33 +358,112 @@ function SortableExerciseTile({
 
   const hasTrash = ex.added_today;
   const hasLogged = loggedCount > 0;
+  const miniLogged = solidLoggedTile && hasLogged;
   const compact = tileSize === "compact";
   const pillSize = compact ? "!h-7 !text-[9px]" : "";
+  if (miniLogged) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "flex w-[7rem] shrink-0 flex-col items-center gap-1",
+          isDragging && "z-30 opacity-90",
+        )}
+      >
+        <div
+          className={cn(
+            "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border",
+            loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
+          )}
+        >
+          {hasTrash ? (
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                onRemoveAdded?.(ex.exercise_name);
+              }}
+              className={cn(
+                "absolute left-0 top-0 z-20 flex h-4 w-4 items-center justify-center rounded-br-md",
+                "bg-emerald-800/90 text-white hover:text-red-200",
+              )}
+              aria-label={`Remove ${ex.exercise_name}`}
+            >
+              <Trash2 className="w-2.5 h-2.5" />
+            </button>
+          ) : null}
+          <div
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpen(ex.exercise_name, ex.category)}
+            onKeyDown={e => openExerciseFromKey(e, onOpen, ex.exercise_name, ex.category)}
+            onContextMenu={e => e.preventDefault()}
+            className={cn(tileDragSurfaceClass, "relative h-16 w-16")}
+            aria-label={`${ex.exercise_name}. Tap to log sets, press and hold to reorder`}
+          >
+            {!showPlaceholder ? (
+              <Image
+                src={media}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="64px"
+                unoptimized={exerciseImageUnoptimized(media)}
+                onError={onThumbError}
+                draggable={false}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ExerciseIcon name={ex.exercise_name} className="w-5 h-5" color="#ffffff" />
+              </div>
+            )}
+            <span
+              className={cn(
+                "absolute inset-x-0 bottom-0 truncate text-center font-semibold px-1 py-0.5 text-[8px] leading-tight",
+                "bg-black/40 text-white backdrop-blur-[2px]",
+              )}
+            >
+              {loggedSetLabel(loggedCount)}
+            </span>
+          </div>
+          <LoggedMiniExerciseMenu
+            overlay
+            exerciseName={ex.exercise_name}
+            exerciseId={ex.exercise_id}
+            category={ex.category}
+            notes={ex.notes}
+            exercises={exercisesCatalog}
+            isDarkMode={isDarkMode}
+            onReset={onReset}
+            resetting={resetting}
+          />
+        </div>
+        <p
+          className={cn(
+            "w-full text-center text-[11px] font-medium leading-tight line-clamp-2",
+            isDarkMode ? "text-iron-200" : "text-slate-700",
+          )}
+          title={ex.exercise_name}
+        >
+          {ex.exercise_name}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative flex min-w-0 flex-col rounded-card overflow-hidden border",
-        loggedCardClass(hasLogged, isDarkMode, isDragging),
+        "relative flex min-w-0 flex-col overflow-hidden rounded-card border",
+        loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
       )}
     >
-      <button
-        type="button"
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        className={cn(
-          "absolute left-0.5 top-0.5 z-20 touch-none cursor-grab active:cursor-grabbing rounded-md",
-          compact ? "p-0" : "p-0.5",
-          isDarkMode ? "bg-iron-950/70 text-iron-500" : "bg-white/90 text-slate-400 shadow-sm",
-        )}
-        aria-label={`Reorder ${ex.exercise_name}`}
-      >
-        <GripVertical className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
-      </button>
-
       {hasTrash ? (
         <button
           type="button"
@@ -121,25 +474,35 @@ function SortableExerciseTile({
           className={cn(
             "absolute right-0.5 top-0.5 z-20 flex items-center justify-center rounded-md border",
             compact ? "h-6 w-6" : "h-7 w-7",
-            isDarkMode
-              ? "border-iron-700/80 bg-iron-900/80 text-iron-400 hover:text-red-400"
-              : "border-slate-200 bg-white/95 text-slate-400 hover:text-red-600",
+            hasLogged && solidLoggedTile
+              ? "border-white/30 bg-emerald-700/90 text-white hover:text-red-200"
+              : isDarkMode
+                ? "border-iron-700/80 bg-iron-900/80 text-iron-400 hover:text-red-400"
+                : "border-slate-200 bg-white/95 text-slate-400 hover:text-red-600",
           )}
           aria-label={`Remove ${ex.exercise_name}`}
         >
-          <Trash2 className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
+          <Trash2 className={miniLogged ? "w-2.5 h-2.5" : compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
         </button>
       ) : null}
 
-      <button
-        type="button"
+      <div
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        role="button"
+        tabIndex={0}
         onClick={() => onOpen(ex.exercise_name, ex.category)}
-        className="flex w-full min-w-0 flex-col text-left"
+        onKeyDown={e => openExerciseFromKey(e, onOpen, ex.exercise_name, ex.category)}
+        onContextMenu={e => e.preventDefault()}
+        className={cn(tileDragSurfaceClass, "w-full flex-col")}
+        aria-label={`${ex.exercise_name}. Tap to log sets, press and hold to reorder`}
       >
         <div
           className={cn(
-            "relative aspect-square w-full",
-            isDarkMode ? "bg-iron-800" : "bg-slate-100",
+            "relative",
+            miniLogged ? "h-10 w-10" : "aspect-square w-full",
+            !miniLogged && (isDarkMode ? "bg-iron-800" : "bg-slate-100"),
           )}
         >
           {!showPlaceholder ? (
@@ -148,7 +511,7 @@ function SortableExerciseTile({
               alt=""
               fill
               className="object-cover"
-              sizes={compact ? "33vw" : "50vw"}
+              sizes={miniLogged ? "40px" : compact ? "33vw" : "50vw"}
               unoptimized={exerciseImageUnoptimized(media)}
               onError={onThumbError}
               draggable={false}
@@ -157,10 +520,10 @@ function SortableExerciseTile({
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
               <ExerciseIcon
                 name={ex.exercise_name}
-                className={compact ? "w-6 h-6" : "w-8 h-8"}
-                color={isDarkMode ? "#71717a" : "#94a3b8"}
+                className={miniLogged ? "w-4 h-4" : compact ? "w-6 h-6" : "w-8 h-8"}
+                color={miniLogged ? "#ffffff" : isDarkMode ? "#71717a" : "#94a3b8"}
               />
-              {!compact ? (
+              {!compact && !miniLogged ? (
                 <span
                   className={`text-[9px] font-medium ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
                 >
@@ -172,59 +535,72 @@ function SortableExerciseTile({
           {hasLogged ? (
             <span
               className={cn(
-                "absolute bottom-1 left-1 right-1 mx-auto max-w-[calc(100%-0.5rem)] truncate text-center font-bold rounded-md px-1 py-0.5",
-                compact ? "text-[9px]" : "text-[10px]",
-                isDarkMode ? "bg-emerald-600/95 text-white" : "bg-emerald-600 text-white",
+                miniLogged
+                  ? "absolute inset-x-0 bottom-0 truncate text-center font-bold px-0.5 py-px leading-none"
+                  : "absolute bottom-1 left-1 right-1 mx-auto max-w-[calc(100%-0.5rem)] truncate text-center font-bold rounded-md px-1 py-0.5",
+                miniLogged ? "text-[7px]" : compact ? "text-[9px]" : "text-[10px]",
+                solidLoggedTile
+                  ? "bg-white/25 text-white"
+                  : isDarkMode
+                    ? "bg-emerald-600/95 text-white"
+                    : "bg-emerald-600 text-white",
               )}
             >
               {loggedSetLabel(loggedCount)}
             </span>
           ) : null}
         </div>
-        <p
-          className={cn(
-            "px-1.5 font-semibold leading-snug line-clamp-2",
-            compact ? "py-1 text-[10px] min-h-[2rem]" : "py-2 text-xs min-h-[2.5rem]",
-            hasLogged
-              ? isDarkMode
-                ? "text-emerald-100"
-                : "text-emerald-900"
-              : isDarkMode
-                ? "text-iron-100"
-                : "text-slate-900",
-          )}
-        >
-          {ex.exercise_name}
-        </p>
-      </button>
-
-      <div
-        className={cn(
-          "flex w-full min-w-0 gap-1",
-          compact ? "px-1 pb-1 pt-0.5" : "px-1.5 pb-1.5 pt-0.5",
-        )}
-      >
-        <ExercisePreviewButton
-          exerciseName={ex.exercise_name}
-          exerciseId={ex.exercise_id}
-          category={ex.category}
-          notes={ex.notes}
-          exercises={exercisesCatalog}
-          isDarkMode={isDarkMode}
-          variant="pill"
-          className={pillSize}
-        />
-        {showReset ? (
-          <ExerciseSessionResetButton
-            exerciseName={ex.exercise_name}
-            isDarkMode={isDarkMode}
-            variant="pill"
-            disabled={resetting}
-            onClick={onReset}
-            className={pillSize}
-          />
+        {!miniLogged ? (
+          <p
+            className={cn(
+              "px-1.5 font-semibold leading-snug line-clamp-2",
+              compact ? "py-1 text-[10px] min-h-[2rem]" : "py-2 text-xs min-h-[2.5rem]",
+              hasLogged && solidLoggedTile
+                ? "text-white"
+                : hasLogged
+                  ? isDarkMode
+                    ? "text-emerald-100"
+                    : "text-emerald-900"
+                  : isDarkMode
+                    ? "text-iron-100"
+                    : "text-slate-900",
+            )}
+          >
+            {ex.exercise_name}
+          </p>
         ) : null}
       </div>
+
+      {!miniLogged ? (
+        <div
+          className={cn(
+            "flex w-full min-w-0 gap-1",
+            compact ? "px-1 pb-1 pt-0.5" : "px-1.5 pb-1.5 pt-0.5",
+            hasLogged && solidLoggedTile && (isDarkMode ? "bg-emerald-600" : "bg-emerald-500"),
+          )}
+        >
+          <ExercisePreviewButton
+            exerciseName={ex.exercise_name}
+            exerciseId={ex.exercise_id}
+            category={ex.category}
+            notes={ex.notes}
+            exercises={exercisesCatalog}
+            isDarkMode={isDarkMode}
+            variant="pill"
+            className={pillSize}
+          />
+          {showReset ? (
+            <ExerciseSessionResetButton
+              exerciseName={ex.exercise_name}
+              isDarkMode={isDarkMode}
+              variant="pill"
+              disabled={resetting}
+              onClick={onReset}
+              className={pillSize}
+            />
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -242,6 +618,7 @@ function SortableExerciseListRow({
   resetting,
   onRemoveAdded,
   exercisesCatalog,
+  solidLoggedTile = false,
 }) {
   const id = ex.exercise_name;
   const {
@@ -261,7 +638,9 @@ function SortableExerciseListRow({
 
   const hasTrash = ex.added_today;
   const hasLogged = loggedCount > 0;
+  const solidLogged = solidLoggedTile && hasLogged;
   const actionBtn = listActionBtnClass();
+  const actionBtnLogged = cn(actionBtn, solidLogged && actionGhostOnLoggedRow());
 
   return (
     <div
@@ -269,27 +648,20 @@ function SortableExerciseListRow({
       style={style}
       className={cn(
         "relative flex min-w-0 items-stretch gap-2 rounded-card border p-2",
-        loggedCardClass(hasLogged, isDarkMode, isDragging),
+        loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
       )}
     >
-      <button
-        type="button"
+      <div
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
-        className={cn(
-          "shrink-0 touch-none cursor-grab active:cursor-grabbing self-center rounded-md p-1",
-          isDarkMode ? "text-iron-500" : "text-slate-400",
-        )}
-        aria-label={`Reorder ${ex.exercise_name}`}
-      >
-        <GripVertical className="w-4 h-4" />
-      </button>
-
-      <button
-        type="button"
+        role="button"
+        tabIndex={0}
         onClick={() => onOpen(ex.exercise_name, ex.category)}
-        className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+        onKeyDown={e => openExerciseFromKey(e, onOpen, ex.exercise_name, ex.category)}
+        onContextMenu={e => e.preventDefault()}
+        className={cn(tileDragSurfaceClass, "min-w-0 flex-1 items-center gap-2.5")}
+        aria-label={`${ex.exercise_name}. Tap to log sets, press and hold to reorder`}
       >
         <div
           className={cn(
@@ -322,13 +694,15 @@ function SortableExerciseListRow({
           <p
             className={cn(
               "text-sm font-semibold leading-snug line-clamp-2",
-              hasLogged
-                ? isDarkMode
-                  ? "text-emerald-100"
-                  : "text-emerald-900"
-                : isDarkMode
-                  ? "text-iron-100"
-                  : "text-slate-900",
+              solidLogged
+                ? "text-white"
+                : hasLogged
+                  ? isDarkMode
+                    ? "text-emerald-100"
+                    : "text-emerald-900"
+                  : isDarkMode
+                    ? "text-iron-100"
+                    : "text-slate-900",
             )}
           >
             {ex.exercise_name}
@@ -337,14 +711,18 @@ function SortableExerciseListRow({
             <p
               className={cn(
                 "mt-0.5 text-xs font-semibold",
-                isDarkMode ? "text-emerald-400" : "text-emerald-700",
+                solidLogged
+                  ? "text-emerald-50/90"
+                  : isDarkMode
+                    ? "text-emerald-400"
+                    : "text-emerald-700",
               )}
             >
               {loggedSetLabel(loggedCount)}
             </p>
           ) : null}
         </div>
-      </button>
+      </div>
 
       <div className="flex shrink-0 items-center gap-0.5 self-center">
         {hasTrash ? (
@@ -356,9 +734,11 @@ function SortableExerciseListRow({
             }}
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-lg border",
-              isDarkMode
-                ? "border-iron-700/80 text-iron-400 hover:text-red-400"
-                : "border-slate-200 text-slate-400 hover:text-red-600",
+              solidLogged
+                ? "border-white/40 bg-white/15 text-white hover:bg-white/25 hover:text-red-200"
+                : isDarkMode
+                  ? "border-iron-700/80 text-iron-400 hover:text-red-400"
+                  : "border-slate-200 text-slate-400 hover:text-red-600",
             )}
             aria-label={`Remove ${ex.exercise_name}`}
           >
@@ -372,7 +752,7 @@ function SortableExerciseListRow({
             variant="inline"
             disabled={resetting}
             onClick={onReset}
-            className={cn(actionBtn, "!relative !top-auto !right-auto")}
+            className={cn(actionBtnLogged, "!relative !top-auto !right-auto")}
           />
         ) : null}
         <ExercisePreviewButton
@@ -383,7 +763,7 @@ function SortableExerciseListRow({
           exercises={exercisesCatalog}
           isDarkMode={isDarkMode}
           variant="inline"
-          className={actionBtn}
+          className={actionBtnLogged}
         />
       </div>
     </div>
@@ -448,6 +828,7 @@ export default function ReorderableExerciseTileGrid({
   exercisesCatalog,
   className = "",
   showSizeToggle = true,
+  prioritizeLoggedTiles = false,
 }) {
   const [layout, setLayout] = useState(() => getWorkoutExerciseLayout());
 
@@ -460,14 +841,21 @@ export default function ReorderableExerciseTileGrid({
     setLayout(next);
   }, []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+  const sensors = useExerciseReorderSensors();
+
+  const listMode = isListLayout(layout);
+
+  const exerciseGroups = useMemo(
+    () => buildExerciseDisplayGroups(exercises, completedSetCountFor, prioritizeLoggedTiles),
+    [exercises, completedSetCountFor, prioritizeLoggedTiles],
   );
 
-  const ids = exercises.map(ex => ex.exercise_name);
+  const ids = useMemo(
+    () => exerciseGroups.flatMap(group => group.exercises.map(ex => ex.exercise_name)),
+    [exerciseGroups],
+  );
 
-  const exerciseGroups = useMemo(() => groupExercisesByArea(exercises), [exercises]);
+  const solidLoggedTile = prioritizeLoggedTiles;
 
   const renderExercise = ex => {
     const media = resolveMedia(ex.exercise_name);
@@ -485,6 +873,7 @@ export default function ReorderableExerciseTileGrid({
       resetting: resettingExercise === ex.exercise_name,
       onRemoveAdded,
       exercisesCatalog,
+      solidLoggedTile,
     };
     if (isListLayout(layout)) {
       return <SortableExerciseListRow key={ex.exercise_name} {...shared} />;
@@ -494,16 +883,19 @@ export default function ReorderableExerciseTileGrid({
     );
   };
 
-  const listMode = isListLayout(layout);
-
-  const groupHeaderClass = cn(
+  const groupHeaderClass = (area) =>
+    cn(
     "sticky top-0 z-20 font-semibold uppercase tracking-wide",
     "border-b backdrop-blur-md supports-[backdrop-filter]:bg-opacity-95",
     listMode ? "-mx-0 px-0 py-1.5 text-[11px]" : "col-span-full -mx-0 px-0 py-1.5 text-[10px]",
-    isDarkMode
-      ? "border-iron-800/80 bg-iron-950/92 text-iron-400"
-      : "border-slate-200/80 bg-surface-section/95 text-slate-500",
-  );
+    area === LOGGED_TILE_SECTION
+      ? isDarkMode
+        ? "border-emerald-600/80 bg-emerald-950/95 text-emerald-300"
+        : "border-emerald-300/90 bg-emerald-50 text-emerald-800"
+      : isDarkMode
+        ? "border-iron-800/80 bg-iron-950/92 text-iron-400"
+        : "border-slate-200/80 bg-surface-section/95 text-slate-500",
+    );
 
   const handleDragEnd = event => {
     const { active, over } = event;
@@ -511,7 +903,8 @@ export default function ReorderableExerciseTileGrid({
     const oldIndex = ids.indexOf(active.id);
     const newIndex = ids.indexOf(over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(exercises, oldIndex, newIndex);
+    const flat = exerciseGroups.flatMap(group => group.exercises);
+    const next = arrayMove(flat, oldIndex, newIndex);
     onReorder(next);
   };
 
@@ -526,14 +919,19 @@ export default function ReorderableExerciseTileGrid({
             isDarkMode ? "text-iron-600" : "text-slate-400",
           )}
         >
-          Drag to reorder
+          Press and hold a tile to reorder
         </span>
         {showSizeToggle ? (
           <LayoutToggle value={layout} onChange={handleLayoutChange} isDarkMode={isDarkMode} />
         ) : null}
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+        autoScroll={{ threshold: { x: 0, y: 0.12 }, acceleration: 8 }}
+      >
         <SortableContext
           items={ids}
           strategy={listMode ? verticalListSortingStrategy : rectSortingStrategy}
@@ -545,13 +943,35 @@ export default function ReorderableExerciseTileGrid({
           >
             {exerciseGroups.map(group => (
               <Fragment key={group.area}>
-                <div className={groupHeaderClass}>
+                <div className={groupHeaderClass(group.area)}>
                   {group.label}
-                  <span className={cn("ml-1.5 font-medium normal-case tracking-normal", isDarkMode ? "text-iron-600" : "text-slate-400")}>
+                  <span
+                    className={cn(
+                      "ml-1.5 font-medium normal-case tracking-normal",
+                      group.area === LOGGED_TILE_SECTION
+                        ? isDarkMode
+                          ? "text-emerald-500"
+                          : "text-emerald-600"
+                        : isDarkMode
+                          ? "text-iron-600"
+                          : "text-slate-400",
+                    )}
+                  >
                     · {group.exercises.length}
                   </span>
                 </div>
-                {group.exercises.map(renderExercise)}
+                {group.area === LOGGED_TILE_SECTION && !listMode ? (
+                  <div
+                    className={loggedMiniTileScrollOuterClass}
+                    style={{ WebkitOverflowScrolling: "touch" }}
+                  >
+                    <div className={loggedMiniTileScrollInnerClass}>
+                      {group.exercises.map(renderExercise)}
+                    </div>
+                  </div>
+                ) : (
+                  group.exercises.map(renderExercise)
+                )}
               </Fragment>
             ))}
           </div>

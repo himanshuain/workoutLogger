@@ -58,6 +58,16 @@ export function actionDestructive(isDarkMode, className) {
   );
 }
 
+/** Inline icon buttons on solid emerald “logged” rows (white on green). */
+export function actionGhostOnLoggedRow(className) {
+  return cn(
+    press,
+    "border-white/40 bg-white/15 text-white shadow-sm",
+    "hover:bg-white/25 hover:text-white active:bg-white/30",
+    className,
+  );
+}
+
 /** Destructive icon / text — delete, clear, reset (red by default). */
 export function actionDestructiveGhost(isDarkMode, className) {
   return cn(

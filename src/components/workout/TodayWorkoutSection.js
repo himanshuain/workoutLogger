@@ -419,6 +419,7 @@ export default function TodayWorkoutSection({
               >
                 <ReorderableExerciseTileGrid
                   exercises={plannedExercises}
+                  prioritizeLoggedTiles
                   isDarkMode={isDarkMode}
                   onReorder={next => {
                     persistExerciseOrder(activeSession.id, next);

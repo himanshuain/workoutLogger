@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 /** Narrow centered column on small screens; full width of parent from lg up. */
 export const narrowMobileWideDesktopClass =
-  "w-full max-w-lg mx-auto px-4 max-lg:max-w-lg lg:max-w-none lg:mx-0 lg:px-0";
+  "w-full max-w-lg mx-auto px-1 max-lg:max-w-lg lg:max-w-none lg:mx-0 lg:px-0";
 
 /** Today / dashboard shell — comfortable padding, wide cap on very large monitors. */
 export const homePageShellClass =

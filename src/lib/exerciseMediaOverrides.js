@@ -93,3 +93,17 @@ export function isValidMediaUrl(raw) {
     return false;
   }
 }
+
+export function isDataUrlGif(raw) {
+  return typeof raw === "string" && /^data:image\/gif;/i.test(raw.trim());
+}
+
+/** HTTP(S) URLs or device-uploaded GIF data URLs stored in overrides. */
+export function isPersistableMediaUrl(raw) {
+  if (typeof raw !== "string") return false;
+  const t = raw.trim();
+  if (!t) return false;
+  if (isValidMediaUrl(t)) return true;
+  if (isDataUrlGif(t)) return t.length <= 12_000_000;
+  return false;
+}

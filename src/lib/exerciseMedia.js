@@ -93,6 +93,7 @@ function isNextImageAllowedHost(url) {
  */
 export function exerciseImageUnoptimized(url) {
   if (!url) return false;
+  if (url.startsWith("data:")) return true;
   if (
     url.includes("wger.de") ||
     url.includes("exercisedb.dev") ||

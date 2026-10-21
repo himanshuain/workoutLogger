@@ -6,6 +6,8 @@ import {
   getExerciseMediaOverrideByName,
   buildExerciseMediaOverridesPatch,
   isValidMediaUrl,
+  isPersistableMediaUrl,
+  isDataUrlGif,
   mergeMediaUrlsWithOverride,
 } from "@/lib/exerciseMediaOverrides";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
@@ -52,6 +54,13 @@ describe("exerciseMediaOverrides", () => {
     expect(isValidMediaUrl("https://cdn.example/img.gif")).toBe(true);
     expect(isValidMediaUrl("ftp://x")).toBe(false);
     expect(isValidMediaUrl("not-a-url")).toBe(false);
+  });
+
+  it("allows gif data urls for device uploads", () => {
+    const data = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    expect(isDataUrlGif(data)).toBe(true);
+    expect(isPersistableMediaUrl(data)).toBe(true);
+    expect(isPersistableMediaUrl("data:image/png;base64,abc")).toBe(false);
   });
 
   it("prepends override to media list", () => {

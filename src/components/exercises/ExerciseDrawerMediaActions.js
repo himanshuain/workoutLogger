@@ -13,11 +13,17 @@ import { exerciseImageUnoptimized, googleImagesSearchUrl } from "@/lib/exerciseM
 import {
   buildExerciseMediaOverridesPatch,
   getExerciseMediaOverrideUrl,
+  isPersistableMediaUrl,
   isValidMediaUrl,
 } from "@/lib/exerciseMediaOverrides";
+import {
+  isGifUploadFile,
+  MAX_GIF_UPLOAD_BYTES,
+  readFileAsDataUrl,
+} from "@/lib/exerciseGifUpload";
 import { useExerciseGifSearch } from "@/hooks/useExerciseGifSearch";
 import { cn } from "@/lib/utils";
-import { ImagePlus, Link2, Loader2, Search, Trash2, X } from "lucide-react";
+import { ImagePlus, Link2, Loader2, Search, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 function InputClearButton({ onClear, isDarkMode, label = "Clear" }) {
@@ -100,6 +106,7 @@ export default function ExerciseDrawerMediaActions({
   const [draftUrl, setDraftUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const pasteUrlInputRef = useRef(null);
+  const gifFileInputRef = useRef(null);
 
   const name = exerciseName || exercise?.name || "";
   const googleHref = googleImagesSearchUrl(name);
@@ -172,11 +179,42 @@ export default function ExerciseDrawerMediaActions({
       await persistOverride("");
       return;
     }
-    if (!isValidMediaUrl(trimmed)) {
+    if (!isPersistableMediaUrl(trimmed)) {
       toast.error("Enter a valid http(s) image or GIF URL");
       return;
     }
     await persistOverride(trimmed);
+  };
+
+  const openGifFilePicker = () => {
+    gifFileInputRef.current?.click();
+  };
+
+  const handleGifFileChange = async event => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || saving) return;
+    if (!isGifUploadFile(file)) {
+      toast.error("Choose a GIF file from your device");
+      return;
+    }
+    if (file.size > MAX_GIF_UPLOAD_BYTES) {
+      toast.error("GIF must be 8 MB or smaller");
+      return;
+    }
+    setSaving(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      if (!isPersistableMediaUrl(dataUrl)) {
+        toast.error("Could not use this GIF");
+        return;
+      }
+      await persistOverride(dataUrl);
+    } catch {
+      toast.error("Could not read GIF from device");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const chipClass = cn(
@@ -259,6 +297,15 @@ export default function ExerciseDrawerMediaActions({
 
   return (
     <>
+      <input
+        ref={gifFileInputRef}
+        type="file"
+        accept="image/gif,.gif"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden
+        onChange={handleGifFileChange}
+      />
       <div className={cn("flex flex-wrap items-center gap-2", compact ? "mt-1" : "mt-2")}>
         {googleHref ? (
           <a
@@ -276,6 +323,15 @@ export default function ExerciseDrawerMediaActions({
         <button type="button" onClick={openPicker} className={chipClass}>
           <ImagePlus className="h-4 w-4 shrink-0" aria-hidden />
           {currentOverride ? "Change image" : "Add image / GIF"}
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={openGifFilePicker}
+          className={cn(chipClass, saving && "opacity-50")}
+        >
+          <Upload className="h-4 w-4 shrink-0" aria-hidden />
+          Upload GIF
         </button>
       </div>
 
@@ -298,12 +354,26 @@ export default function ExerciseDrawerMediaActions({
               Find a GIF
             </DrawerTitle>
             <DrawerDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
-              Search the exercise library, then tap a GIF to set your thumbnail.
+              Search the library, upload a GIF from your device, or paste a URL.
             </DrawerDescription>
           </DrawerHeader>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="shrink-0 px-4 pb-3 pt-4">
+            <div className="shrink-0 space-y-2 px-4 pb-3 pt-4">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={openGifFilePicker}
+                className={cn(
+                  "inline-flex w-full items-center justify-center gap-1.5 rounded-card border py-3 text-sm font-semibold disabled:opacity-50",
+                  isDarkMode
+                    ? "border-iron-700 bg-iron-800/80 text-iron-100 hover:bg-iron-800"
+                    : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100",
+                )}
+              >
+                <Upload className="h-4 w-4 shrink-0" aria-hidden />
+                Upload GIF from device
+              </button>
               <label className="sr-only" htmlFor="exercise-gif-search">
                 Search GIFs
               </label>

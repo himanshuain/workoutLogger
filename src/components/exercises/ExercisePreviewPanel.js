@@ -21,6 +21,7 @@ import {
 } from "@/lib/exerciseCatalog";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { useExerciseMediaOverridePersist } from "@/hooks/useExerciseMediaOverridePersist";
+import { cn } from "@/lib/utils";
 
 /**
  * Shared preview: hero media, title (optional), equipment, add actions.
@@ -273,7 +274,7 @@ export default function ExercisePreviewPanel({
     <div
       className={
         isSheet
-          ? "flex flex-col gap-4 pb-2"
+          ? "flex flex-col gap-5 pb-1"
           : hideHeading
             ? "pb-2"
             : "pb-6"
@@ -308,14 +309,41 @@ export default function ExercisePreviewPanel({
           {exercise.name}
         </h1>
       )}
-      <p
-        className={`text-sm shrink-0 ${
-          hideHeading ? (isSheet ? "mt-0" : "mt-4") : "mt-2"
-        } ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
-      >
-        <span className="capitalize">{exercise.category || "General"}</span>
-        {equipmentLine ? ` · ${equipmentLine}` : ""}
-      </p>
+      {isSheet ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ring-1",
+              isDarkMode
+                ? "bg-white/[0.06] text-iron-200 ring-white/10"
+                : "bg-slate-100 text-slate-700 ring-slate-200/80",
+            )}
+          >
+            {exercise.category || "General"}
+          </span>
+          {equipmentLine ? (
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium ring-1",
+                isDarkMode
+                  ? "bg-white/[0.04] text-iron-400 ring-white/[0.08]"
+                  : "bg-white text-slate-600 ring-slate-200/80",
+              )}
+            >
+              {equipmentLine}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <p
+          className={`text-sm shrink-0 ${
+            hideHeading ? "mt-4" : "mt-2"
+          } ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
+        >
+          <span className="capitalize">{exercise.category || "General"}</span>
+          {equipmentLine ? ` · ${equipmentLine}` : ""}
+        </p>
+      )}
       {plannerNotes ? (
         <p
           className={`text-sm shrink-0 mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
@@ -325,30 +353,48 @@ export default function ExercisePreviewPanel({
       ) : null}
 
       {variations.length > 0 ? (
-        <div className={`shrink-0 ${hideHeading ? (isSheet ? "mt-2" : "mt-4") : "mt-6"}`}>
+        <div
+          className={cn(
+            "shrink-0",
+            hideHeading ? (isSheet ? "" : "mt-4") : "mt-6",
+            isSheet &&
+              cn(
+                "rounded-2xl p-3 ring-1",
+                isDarkMode
+                  ? "bg-white/[0.03] ring-white/10"
+                  : "bg-slate-50 ring-slate-200/80",
+              ),
+          )}
+        >
           <p
-            className={`text-[10px] font-semibold uppercase tracking-wider mb-2 ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
+            className={cn(
+              "mb-2.5 text-[10px] font-bold uppercase tracking-[0.14em]",
+              isDarkMode ? "text-iron-500" : "text-slate-500",
+            )}
           >
             Variations
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {variations.map(({ label, exercise: varEx }) => (
               <button
                 key={label}
                 type="button"
                 disabled={!varEx || !onOpenExercise}
                 onClick={() => varEx && onOpenExercise?.(varEx)}
-                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors",
                   varEx && onOpenExercise
-                    ? isDarkMode
-                      ? "border-iron-600 text-iron-200 active:bg-iron-800"
-                      : "border-slate-300 text-slate-700 active:bg-slate-100"
+                    ? isSheet
+                      ? isDarkMode
+                        ? "bg-white/[0.07] text-iron-100 ring-1 ring-white/12 active:bg-white/12"
+                        : "bg-white text-slate-800 ring-1 ring-slate-200/90 active:bg-slate-50"
+                      : isDarkMode
+                        ? "border border-iron-600 text-iron-200 active:bg-iron-800"
+                        : "border border-slate-300 text-slate-700 active:bg-slate-100"
                     : isDarkMode
-                      ? "border-iron-800 text-iron-600 cursor-default"
-                      : "border-slate-200 text-slate-400 cursor-default"
-                }`}
+                      ? "bg-white/[0.02] text-iron-600 ring-1 ring-white/5 cursor-default"
+                      : "border border-slate-200 text-slate-400 cursor-default",
+                )}
               >
                 {label}
               </button>

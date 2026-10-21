@@ -19,7 +19,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { Eye, MoreVertical, Trash2 } from "lucide-react";
 import { resolveExerciseForPreview } from "@/lib/plannerLibraryNavigation";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
@@ -248,7 +248,9 @@ function LoggedMiniExerciseMenu({
     e.stopPropagation();
   };
 
-  const menu = menuOpen ? (
+  const viewOnly = !showReset;
+
+  const menu = !viewOnly && menuOpen ? (
     <>
       <div
         data-tile-menu-backdrop
@@ -328,11 +330,15 @@ function LoggedMiniExerciseMenu({
           onClick={e => {
             e.stopPropagation();
             guardExerciseTileNavigation();
+            if (viewOnly) {
+              runViewPreview();
+              return;
+            }
             setMenuOpen(open => !open);
           }}
-          aria-label={`Actions for ${exerciseName}`}
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
+          aria-label={viewOnly ? `View ${exerciseName}` : `Actions for ${exerciseName}`}
+          aria-expanded={viewOnly ? undefined : menuOpen}
+          aria-haspopup={viewOnly ? undefined : "menu"}
           className={cn(
             "flex items-center justify-center touch-manipulation transition-colors",
             overlay
@@ -352,7 +358,11 @@ function LoggedMiniExerciseMenu({
                 ),
           )}
         >
-          <MoreVertical className={cn(overlay ? "h-3.5 w-3.5" : "h-4 w-4")} aria-hidden />
+          {viewOnly ? (
+            <Eye className={cn(overlay ? "h-3.5 w-3.5" : "h-4 w-4")} aria-hidden />
+          ) : (
+            <MoreVertical className={cn(overlay ? "h-3.5 w-3.5" : "h-4 w-4")} aria-hidden />
+          )}
         </button>
       </div>
       {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}
@@ -366,21 +376,23 @@ function LoggedMiniExerciseMenu({
         <ModalContent
           showCloseButton
           className={cn(
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle",
-            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden",
+            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden border-t-0",
+            isDarkMode
+              ? "border-iron-800/60 bg-iron-950/98 backdrop-blur-xl"
+              : "border-surface-subtle bg-surface-section/98 backdrop-blur-xl",
           )}
         >
-          <ModalHeader className="shrink-0 pb-2">
+          <ModalHeader className="shrink-0 space-y-0 px-5 pb-1 pt-0">
             <ModalTitle
               className={cn(
-                "line-clamp-2 pr-10",
+                "line-clamp-2 pr-11 text-lg font-bold tracking-tight",
                 isDarkMode ? "!text-iron-50" : "!text-[color:var(--text-primary)]",
               )}
             >
               {previewExercise?.name ?? exerciseName ?? "Exercise"}
             </ModalTitle>
           </ModalHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] touch-pan-y">
             {previewExercise ? (
               <ExercisePreviewPanel
                 exercise={previewExercise}

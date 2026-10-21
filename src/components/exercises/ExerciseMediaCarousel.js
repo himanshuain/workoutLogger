@@ -27,8 +27,32 @@ export default function ExerciseMediaCarousel({
   const list = Array.isArray(urls) ? urls.filter(u => typeof u === "string" && u.trim()) : [];
 
   const frameAspect = compact
-    ? "aspect-[4/3] max-h-[min(34vh,220px)] w-full"
+    ? "aspect-[4/3] max-h-[min(38vh,240px)] w-full"
     : aspectClassName;
+
+  const compactOuter = compact
+    ? cn(
+        "rounded-2xl p-2 ring-1",
+        isDarkMode
+          ? "bg-iron-800/35 ring-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+          : "bg-slate-100/90 ring-black/[0.06]",
+      )
+    : "";
+
+  const compactInner = compact
+    ? cn(
+        "relative overflow-hidden rounded-xl",
+        isDarkMode ? "bg-iron-950/95" : "bg-white",
+      )
+    : "";
+
+  const frameSurface = (extra = "") =>
+    cn(
+      compact ? compactInner : "relative overflow-hidden rounded-card",
+      frameAspect,
+      !compact && (isDarkMode ? "bg-iron-900" : "bg-slate-200"),
+      extra,
+    );
 
   const updateIndexFromScroll = useCallback(() => {
     const el = wrapRef.current;
@@ -65,10 +89,15 @@ export default function ExerciseMediaCarousel({
         aria-label={pending ? "Removing image" : "Remove image"}
         aria-busy={pending}
         className={cn(
-          "pointer-events-auto absolute top-2 right-2 z-30 flex h-9 w-9 items-center justify-center rounded-full border shadow-md transition-opacity",
-          isDarkMode
-            ? "border-iron-600 bg-iron-950/90 text-iron-100 active:bg-iron-800"
-            : "border-slate-200 bg-white/95 text-slate-800 active:bg-slate-100",
+          "pointer-events-auto absolute z-30 flex items-center justify-center rounded-full border shadow-lg transition-opacity",
+          compact
+            ? "top-2.5 right-2.5 h-8 w-8 border-white/20 bg-black/55 text-white backdrop-blur-md active:bg-black/70"
+            : cn(
+                "top-2 right-2 h-9 w-9",
+                isDarkMode
+                  ? "border-iron-600 bg-iron-950/90 text-iron-100 active:bg-iron-800"
+                  : "border-slate-200 bg-white/95 text-slate-800 active:bg-slate-100",
+              ),
           anyPending && !pending && "opacity-40",
           pending && "opacity-100",
         )}
@@ -109,7 +138,7 @@ export default function ExerciseMediaCarousel({
 
   if (list.length === 0) {
     return (
-      <div className={cn(ring, className)}>
+      <div className={cn(ring, compactOuter, className)}>
         <ExerciseIcon name={alt} className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 opacity-90" color="currentColor" />
         <span
           className={cn(
@@ -126,30 +155,25 @@ export default function ExerciseMediaCarousel({
   if (list.length === 1) {
     const u = list[0];
     return (
-      <div
-        className={cn(
-          `relative w-full rounded-card overflow-hidden`,
-          frameAspect,
-          isDarkMode ? "bg-iron-900" : "bg-slate-200",
-          className
-        )}
-      >
-        <ExerciseMediaImage
-          src={u}
-          alt={alt ? `${alt} demonstration` : "Exercise"}
-          fill
-          className={imgObjectClass}
-          sizes="(max-width: 768px) 100vw, 400px"
-        />
-        <PendingPlaceOverlay pending={slideIsDeleting(u)} />
-        {deleteBtn(u)}
+      <div className={cn("relative w-full", compactOuter, className)}>
+        <div className={frameSurface()}>
+          <ExerciseMediaImage
+            src={u}
+            alt={alt ? `${alt} demonstration` : "Exercise"}
+            fill
+            className={imgObjectClass}
+            sizes="(max-width: 768px) 100vw, 400px"
+          />
+          <PendingPlaceOverlay pending={slideIsDeleting(u)} />
+          {deleteBtn(u)}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={cn("relative w-full", className)}>
-      <div className={`relative rounded-card overflow-hidden ${isDarkMode ? "bg-iron-900" : "bg-slate-200"} ${frameAspect}`}>
+    <div className={cn("relative w-full", compactOuter, className)}>
+      <div className={frameSurface()}>
         <div className="absolute inset-y-0 right-3 z-10 flex flex-col justify-center gap-1 pointer-events-none">
           <span className="sr-only" aria-live="polite">{`Slide ${slideIndex + 1} of ${list.length}`}</span>
           {list.map((_, i) => (
@@ -201,8 +225,8 @@ export default function ExerciseMediaCarousel({
       <p
         className={cn(
           "text-center text-[11px] mt-1.5",
-          compact ? "mt-1 text-[10px] leading-tight" : "",
-          isDarkMode ? "text-iron-500" : "text-slate-400",
+          compact ? "mt-2 text-[10px] font-medium tracking-wide text-iron-500" : "",
+          !compact && (isDarkMode ? "text-iron-500" : "text-slate-400"),
         )}
       >
         Swipe for more angles

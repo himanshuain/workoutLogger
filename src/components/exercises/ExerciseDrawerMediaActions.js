@@ -209,11 +209,15 @@ export default function ExerciseDrawerMediaActions({
   };
 
   const chipClass = cn(
-    "inline-flex items-center justify-center gap-1.5 rounded-pill font-semibold transition-colors",
-    compact ? "min-h-[36px] px-3 text-xs" : "min-h-[40px] px-3.5 text-sm",
-    isDarkMode
-      ? "border border-iron-700 bg-iron-800/90 text-iron-100 hover:bg-iron-700"
-      : "border border-slate-200 bg-white text-slate-800 shadow-sm hover:bg-slate-50",
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-semibold transition-colors",
+    compact ? "min-h-[34px] px-3.5 text-[11px]" : "min-h-[40px] rounded-pill px-3.5 text-sm",
+    compact
+      ? isDarkMode
+        ? "border border-white/10 bg-white/[0.06] text-iron-100 active:bg-white/10"
+        : "border border-slate-200/90 bg-white text-slate-800 shadow-sm active:bg-slate-50"
+      : isDarkMode
+        ? "border border-iron-700 bg-iron-800/90 text-iron-100 hover:bg-iron-700"
+        : "border border-slate-200 bg-white text-slate-800 shadow-sm hover:bg-slate-50",
   );
 
   const googleLinkClass = cn(
@@ -297,23 +301,30 @@ export default function ExerciseDrawerMediaActions({
         aria-hidden
         onChange={handleGifFileChange}
       />
-      <div className={cn("flex flex-wrap items-center gap-2", compact ? "mt-1" : "mt-2")}>
+      <div
+        className={cn(
+          "flex items-center gap-2",
+          compact
+            ? "-mx-0.5 flex-nowrap overflow-x-auto pb-0.5 scrollbar-hide"
+            : "mt-2 flex-wrap",
+        )}
+      >
         {googleHref ? (
           <a
             href={googleHref}
             target="_blank"
             rel="noopener noreferrer"
             className={chipClass}
-            aria-label={name ? `Search Google Images for ${name}` : "Search Google Images"}
-            title="Search Google Images"
+            aria-label={name ? `Search images for ${name}` : "Search images"}
+            title="Search images"
           >
             <GoogleGIcon className="h-4 w-4 shrink-0" />
-            <span>Google</span>
+            <span>Search</span>
           </a>
         ) : null}
         <button type="button" onClick={openPicker} className={chipClass}>
           <ImagePlus className="h-4 w-4 shrink-0" aria-hidden />
-          {currentOverride ? "Change image" : "Add image / GIF"}
+          {currentOverride ? "Change thumbnail" : "Add thumbnail"}
         </button>
         <button
           type="button"

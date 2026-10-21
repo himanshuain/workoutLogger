@@ -337,8 +337,8 @@ function LoggedMiniExerciseMenu({
             "flex items-center justify-center touch-manipulation transition-colors",
             overlay
               ? cn(
-                  "h-7 w-7 rounded-bl-md rounded-tr-[9px] text-white",
-                  menuOpen ? "bg-black/65" : "bg-black/45 hover:bg-black/55 active:bg-black/60",
+                  "h-7 w-7 rounded-bl-md rounded-tr-[9px] bg-black text-white",
+                  menuOpen ? "bg-black" : "hover:bg-black/90 active:bg-black/80",
                 )
               : cn(
                   "h-7 w-7 rounded-md",
@@ -712,19 +712,7 @@ function SortableExerciseListRow({
         loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
       )}
     >
-      <div className="relative h-12 w-12 shrink-0 overflow-visible rounded-lg">
-        <LoggedMiniExerciseMenu
-          overlay
-          showReset={showReset}
-          exerciseName={ex.exercise_name}
-          exerciseId={ex.exercise_id}
-          category={ex.category}
-          notes={ex.notes}
-          exercises={exercisesCatalog}
-          isDarkMode={isDarkMode}
-          onReset={onReset}
-          resetting={resetting}
-        />
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
         <div
           ref={setActivatorNodeRef}
           {...attributes}
@@ -826,6 +814,19 @@ function SortableExerciseListRow({
           <Trash2 className="w-4 h-4" />
         </button>
       ) : null}
+      <div className="flex shrink-0 self-center">
+        <LoggedMiniExerciseMenu
+          showReset={showReset}
+          exerciseName={ex.exercise_name}
+          exerciseId={ex.exercise_id}
+          category={ex.category}
+          notes={ex.notes}
+          exercises={exercisesCatalog}
+          isDarkMode={isDarkMode}
+          onReset={onReset}
+          resetting={resetting}
+        />
+      </div>
     </div>
   );
 }

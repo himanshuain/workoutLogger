@@ -69,6 +69,7 @@ import {
   LIFELOG_EVENT_SETTINGS_CHANGED,
 } from "@/lib/lifelogEventSettings";
 import { lifelogRoute, LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
+import { homePageShellClass } from "@/components/layout/PageContainer";
 
 const HOME_TAB_LOG = "log";
 const HOME_TAB_LIFELOG = "lifelog";
@@ -644,7 +645,7 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="page-enter px-4 py-4">
+      <div className={homePageShellClass}>
         {/* Date strip + header */}
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { SpringIn } from "@/components/ui/fade-in";
+import { narrowMobileWideDesktopClass } from "@/components/layout/PageContainer";
 import {
   exerciseHasLoggedSets,
   completedSetCountForExercise,
@@ -279,7 +280,9 @@ export default function WorkoutSessionPage() {
 
   return (
     <Layout>
-      <SpringIn className="px-4 py-4 max-w-lg mx-auto">
+      <SpringIn
+        className={`py-4 ${narrowMobileWideDesktopClass} lg:max-w-[90rem] lg:mx-auto lg:px-8 xl:px-10`}
+      >
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button
@@ -337,7 +340,7 @@ export default function WorkoutSessionPage() {
         {/* Exercise List */}
         {plannedExercises.length > 0 ? (
           <div
-            className={`max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-card pr-1 -mr-0.5 mb-6 ${
+            className={`mb-6 max-h-[min(52vh,28rem)] overflow-y-auto overscroll-contain rounded-card pr-1 -mr-0.5 lg:max-h-none lg:overflow-visible ${
               isDarkMode ? "scrollbar-thin scrollbar-thumb-iron-700" : ""
             }`}
           >

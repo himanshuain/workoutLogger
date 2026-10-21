@@ -205,7 +205,11 @@ export default function Layout({ children }) {
         className={`flex-shrink-0 border-t z-40 bg-surface-section border-surface-subtle shadow-[0_-1px_0_rgba(15,23,42,0.04)] ${isKeyboardVisible ? "hidden" : ""}`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex items-center justify-around py-2 px-1" role="tablist" aria-label="Main navigation">
+        <div
+          className="mx-auto flex w-full max-w-[90rem] items-center justify-around px-1 py-2"
+          role="tablist"
+          aria-label="Main navigation"
+        >
           {navTabs.map(navTab => {
             const NavIcon = navTab.icon;
             const isNavActive = navTab.id === activeTab;

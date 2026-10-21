@@ -494,12 +494,12 @@ export default function ReorderableExerciseTileGrid({
     );
   };
 
+  const listMode = isListLayout(layout);
+
   const groupHeaderClass = cn(
     "sticky top-0 z-20 font-semibold uppercase tracking-wide",
     "border-b backdrop-blur-md supports-[backdrop-filter]:bg-opacity-95",
-    isListLayout(layout)
-      ? "-mx-0 px-0 py-1.5 text-[11px]"
-      : "col-span-full -mx-0 px-0 py-1.5 text-[10px]",
+    listMode ? "-mx-0 px-0 py-1.5 text-[11px]" : "col-span-full -mx-0 px-0 py-1.5 text-[10px]",
     isDarkMode
       ? "border-iron-800/80 bg-iron-950/92 text-iron-400"
       : "border-slate-200/80 bg-surface-section/95 text-slate-500",
@@ -536,10 +536,12 @@ export default function ReorderableExerciseTileGrid({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext
           items={ids}
-          strategy={isListLayout(layout) ? verticalListSortingStrategy : rectSortingStrategy}
+          strategy={listMode ? verticalListSortingStrategy : rectSortingStrategy}
         >
           <div
-            className={cn(isListLayout(layout) ? "flex flex-col gap-2" : cn("grid", tileSizeGridClass(layout)))}
+            className={cn(
+              listMode ? "flex flex-col gap-2" : cn("grid", tileSizeGridClass(layout)),
+            )}
           >
             {exerciseGroups.map(group => (
               <Fragment key={group.area}>

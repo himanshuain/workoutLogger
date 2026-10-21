@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn } from "@/components/ui/fade-in";
+import { narrowMobileWideDesktopClass } from "@/components/layout/PageContainer";
 import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
 import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
 import {
@@ -231,7 +232,7 @@ export default function TodayWorkoutSection({
   if (completedTodaySession && !hasSession) {
     const doneSets = (completedTodaySession.set_logs || []).filter(s => s.is_completed).length;
     return (
-      <div className="max-w-lg mx-auto">
+      <div className={narrowMobileWideDesktopClass}>
         <div className="card-hero overflow-hidden !p-3 sm:!p-4">
           <SectionHeader
               icon={Dumbbell}
@@ -283,7 +284,7 @@ export default function TodayWorkoutSection({
 
   if (!hasSession && routines.length > 0) {
     return (
-      <div className="max-w-lg mx-auto">
+      <div className={narrowMobileWideDesktopClass}>
         <div className="card-hero !p-3 sm:!p-4">
           <p
             className={`text-sm mb-3 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}
@@ -319,7 +320,7 @@ export default function TodayWorkoutSection({
 
   if (!hasSession && routines.length === 0) {
     return (
-      <div className="max-w-lg mx-auto">
+      <div className={narrowMobileWideDesktopClass}>
         <button
           type="button"
           onClick={() => router.push("/plan")}
@@ -392,7 +393,7 @@ export default function TodayWorkoutSection({
     ) : null;
 
   return (
-    <SpringIn className="max-w-lg mx-auto">
+    <SpringIn className={narrowMobileWideDesktopClass}>
       <div className="card-hero overflow-visible !p-3 sm:!p-4">
           <div className="flex items-start justify-between gap-2">
             <motion.h2
@@ -442,11 +443,12 @@ export default function TodayWorkoutSection({
 
               <div
                 className={cn(
-                  "sticky bottom-0 z-30 -mx-3 mt-2.5 space-y-2 border-t px-3 pt-2.5 pb-1 sm:-mx-4 sm:px-4",
-                  "backdrop-blur-md supports-[backdrop-filter]:bg-opacity-90",
+                  "z-30 mt-2.5 space-y-2 border-t pt-2.5",
+                  "max-lg:sticky max-lg:bottom-0 max-lg:-mx-3 max-lg:px-3 max-lg:pb-1 sm:max-lg:-mx-4 sm:max-lg:px-4",
+                  "max-lg:backdrop-blur-md max-lg:supports-[backdrop-filter]:bg-opacity-90",
                   isDarkMode
-                    ? "border-iron-800/80 bg-iron-950/92"
-                    : "border-slate-200/90 bg-surface-section/95",
+                    ? "border-iron-800/80 max-lg:bg-iron-950/92 lg:bg-transparent"
+                    : "border-slate-200/90 max-lg:bg-surface-section/95 lg:bg-transparent",
                 )}
               >
                 <button

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { cn } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
+import PendingIcon from "@/components/ui/PendingIcon";
+import PendingPlaceOverlay from "@/components/ui/PendingPlaceOverlay";
 
 /**
  * Horizontal scroll-snap carousel for GIFs / thumbnails (touch-friendly).
@@ -14,6 +17,10 @@ export default function ExerciseMediaCarousel({
   aspectClassName = "aspect-[4/3]",
   /** Shorter max height for bottom sheets so actions stay on screen */
   compact = false,
+  /** Remove this slide from the exercise (custom or hidden catalog URL). */
+  onDeleteUrl,
+  /** URL currently being removed — shows overlay + spinner on that slide only. */
+  deletingUrl = null,
 }) {
   const wrapRef = useRef(null);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -38,8 +45,46 @@ export default function ExerciseMediaCarousel({
   const imgObjectClass = cn(
     compact ? "object-contain object-center" : "object-cover",
     "select-none",
-    list.length > 1 && "pointer-events-none",
+    list.length > 1 && !onDeleteUrl && "pointer-events-none",
   );
+
+  const slideIsDeleting = url =>
+    Boolean(
+      deletingUrl &&
+        (deletingUrl === url || normalizeSlideKey(deletingUrl) === normalizeSlideKey(url)),
+    );
+
+  const deleteBtn = url => {
+    if (!onDeleteUrl) return null;
+    const pending = slideIsDeleting(url);
+    const anyPending = Boolean(deletingUrl);
+    return (
+      <button
+        type="button"
+        disabled={anyPending}
+        aria-label={pending ? "Removing image" : "Remove image"}
+        aria-busy={pending}
+        className={cn(
+          "pointer-events-auto absolute top-2 right-2 z-30 flex h-9 w-9 items-center justify-center rounded-full border shadow-md transition-opacity",
+          isDarkMode
+            ? "border-iron-600 bg-iron-950/90 text-iron-100 active:bg-iron-800"
+            : "border-slate-200 bg-white/95 text-slate-800 active:bg-slate-100",
+          anyPending && !pending && "opacity-40",
+          pending && "opacity-100",
+        )}
+        onClick={e => {
+          e.stopPropagation();
+          e.preventDefault();
+          if (anyPending) return;
+          onDeleteUrl(url);
+        }}
+      >
+        <PendingIcon pending={pending} iconClassName="h-4 w-4">
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </PendingIcon>
+      </button>
+    );
+  };
 
   useEffect(() => {
     setSlideIndex(0);
@@ -96,6 +141,8 @@ export default function ExerciseMediaCarousel({
           className={imgObjectClass}
           sizes="(max-width: 768px) 100vw, 400px"
         />
+        <PendingPlaceOverlay pending={slideIsDeleting(u)} />
+        {deleteBtn(u)}
       </div>
     );
   }
@@ -133,7 +180,10 @@ export default function ExerciseMediaCarousel({
           onScroll={updateIndexFromScroll}
         >
           {list.map(u => (
-            <div key={normalizeSlideKey(u)} className="min-w-full w-full shrink-0 h-full snap-center snap-always relative">
+            <div
+              key={normalizeSlideKey(u)}
+              className="relative min-w-full w-full shrink-0 h-full snap-center snap-always"
+            >
               <ExerciseMediaImage
                 src={u}
                 alt={alt || "Exercise"}
@@ -142,6 +192,8 @@ export default function ExerciseMediaCarousel({
                 sizes="(max-width: 768px) 100vw, 400px"
                 draggable={false}
               />
+              <PendingPlaceOverlay pending={slideIsDeleting(u)} />
+              {deleteBtn(u)}
             </div>
           ))}
         </div>

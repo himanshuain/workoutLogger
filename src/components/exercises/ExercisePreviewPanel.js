@@ -1,11 +1,11 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useResolvedExerciseMediaSlides } from "@/hooks/useResolvedExerciseMedia";
 import ExerciseMediaCarousel from "@/components/exercises/ExerciseMediaCarousel";
 import ExerciseDrawerMediaActions from "@/components/exercises/ExerciseDrawerMediaActions";
 import RoutineDayPickerDialog from "@/components/exercises/RoutineDayPickerDialog";
-import { getExerciseEquipment } from "@/lib/exerciseMedia";
+import { getExerciseEquipment, mediaUrlsWithPendingDelete } from "@/lib/exerciseMedia";
 import { addSessionExtra } from "@/lib/workoutSessionClient";
 import {
   getRoutinePlannerReturnHref,
@@ -20,6 +20,7 @@ import {
   resolveCatalogVariations,
 } from "@/lib/exerciseCatalog";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
+import { useExerciseMediaOverridePersist } from "@/hooks/useExerciseMediaOverridePersist";
 
 /**
  * Shared preview: hero media, title (optional), equipment, add actions.
@@ -47,6 +48,19 @@ export default function ExercisePreviewPanel({
   } = useWorkout();
   const mediaOverrides = useExerciseMediaOverrides();
   const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises, mediaOverrides);
+  const mediaPersist = useExerciseMediaOverridePersist();
+  const { removeMediaUrl, deletingUrl } = mediaPersist;
+  const carouselUrls = useMemo(
+    () => mediaUrlsWithPendingDelete(mediaUrls, deletingUrl),
+    [mediaUrls, deletingUrl],
+  );
+  const handleDeleteMediaUrl = useCallback(
+    url => {
+      if (!exercise || !url) return;
+      void removeMediaUrl(exercise, url);
+    },
+    [exercise, removeMediaUrl],
+  );
   const equipmentLine = useMemo(() => getExerciseEquipment(exercise), [exercise]);
   const plannerNotes =
     typeof exercise?.metadata?.planner_notes === "string"
@@ -266,11 +280,13 @@ export default function ExercisePreviewPanel({
       }
     >
       <ExerciseMediaCarousel
-        urls={mediaUrls}
+        urls={carouselUrls}
         alt={exercise.name}
         isDarkMode={isDarkMode}
         compact={isSheet}
         className={isSheet ? "shrink-0" : undefined}
+        onDeleteUrl={handleDeleteMediaUrl}
+        deletingUrl={deletingUrl}
       />
       <ExerciseDrawerMediaActions
         exercise={exercise}
@@ -280,6 +296,7 @@ export default function ExercisePreviewPanel({
         mediaOverrides={mediaOverrides}
         updateSettings={updateSettings}
         compact={isSheet}
+        mediaPersist={mediaPersist}
       />
 
       {!hideHeading && (

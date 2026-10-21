@@ -1,6 +1,7 @@
 import {
   getExerciseMediaOverrideUrl,
   getExerciseMediaOverrideByName,
+  getExerciseMediaOverrideState,
 } from "@/lib/exerciseMediaOverrides";
 
 /**
@@ -104,6 +105,15 @@ export function exerciseImageUnoptimized(url) {
   return !isNextImageAllowedHost(url);
 }
 
+/** Keep a slide visible while delete/sync is in flight (settings update is optimistic). */
+export function mediaUrlsWithPendingDelete(urls, deletingUrl) {
+  const list = Array.isArray(urls) ? urls.filter(u => typeof u === "string" && u.trim()) : [];
+  if (!deletingUrl || typeof deletingUrl !== "string") return list;
+  const key = normalizeComparableMediaUrl(deletingUrl);
+  if (list.some(u => normalizeComparableMediaUrl(u) === key)) return list;
+  return [deletingUrl.trim(), ...list];
+}
+
 export function normalizeComparableMediaUrl(url) {
   if (typeof url !== "string") return "";
   const t = url.trim();
@@ -158,9 +168,11 @@ function normalizeExerciseNameForMerge(name) {
  */
 export function collectExerciseMediaUrls(exercise, allExercises, overrides) {
   if (!exercise) return [];
-  const custom = getExerciseMediaOverrideUrl(exercise, overrides);
+  const { primary, extras, hidden } = getExerciseMediaOverrideState(exercise, overrides);
+  const hiddenSet = new Set(hidden.map(normalizeComparableMediaUrl));
   const list = [];
-  if (custom) list.push(custom);
+  if (primary) list.push(primary);
+  for (const u of extras) list.push(u);
   list.push(...collectUrlsFromExerciseRow(exercise));
 
   const key = normalizeExerciseNameForMerge(exercise.name);
@@ -175,6 +187,7 @@ export function collectExerciseMediaUrls(exercise, allExercises, overrides) {
   const seen = new Set();
   return list.filter(u => {
     const k = normalizeComparableMediaUrl(u);
+    if (hiddenSet.has(k)) return false;
     if (seen.has(k)) return false;
     seen.add(k);
     return true;

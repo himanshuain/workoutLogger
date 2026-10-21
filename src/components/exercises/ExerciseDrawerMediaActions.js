@@ -13,16 +13,11 @@ import {
 } from "@/components/ui/drawer";
 import { googleImagesSearchUrl } from "@/lib/exerciseMedia";
 import {
-  buildExerciseMediaOverridesPatch,
   getExerciseMediaOverrideUrl,
   isPersistableMediaUrl,
   isValidMediaUrl,
 } from "@/lib/exerciseMediaOverrides";
-import { mergeExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
-import {
-  cacheLocalExerciseMediaOverrides,
-  readLocalExerciseMediaOverrides,
-} from "@/lib/userPrefsMigration";
+import { useExerciseMediaOverridePersist } from "@/hooks/useExerciseMediaOverridePersist";
 import {
   isGifUploadFile,
   MAX_GIF_UPLOAD_BYTES,
@@ -31,6 +26,7 @@ import {
 import { useExerciseGifSearch } from "@/hooks/useExerciseGifSearch";
 import { cn } from "@/lib/utils";
 import { ImagePlus, Link2, Loader2, Search, Trash2, Upload, X } from "lucide-react";
+import PendingIcon from "@/components/ui/PendingIcon";
 import { toast } from "sonner";
 
 function InputClearButton({ onClear, isDarkMode, label = "Clear" }) {
@@ -107,12 +103,15 @@ export default function ExerciseDrawerMediaActions({
   mediaOverrides,
   updateSettings,
   compact = false,
+  /** When set (e.g. from ExercisePreviewPanel), share one pending state for upload/save/delete loaders. */
+  mediaPersist,
 }) {
-  const { user, settings } = useWorkout();
+  const { user } = useWorkout();
+  const internalPersist = useExerciseMediaOverridePersist();
+  const { saving, persistPrimaryUrl } = mediaPersist ?? internalPersist;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pasteUrlOpen, setPasteUrlOpen] = useState(false);
   const [draftUrl, setDraftUrl] = useState("");
-  const [saving, setSaving] = useState(false);
   const pasteUrlInputRef = useRef(null);
   const gifFileInputRef = useRef(null);
 
@@ -151,43 +150,8 @@ export default function ExerciseDrawerMediaActions({
   };
 
   const persistOverride = async url => {
-    if (!user?.id) {
-      toast.error("Sign in to save a custom image");
-      return;
-    }
     if (!exercise || !updateSettings) return;
-    const local = readLocalExerciseMediaOverrides(user.id);
-    const mergedBase = mergeExerciseMediaOverrides(
-      local,
-      mergeExerciseMediaOverrides(mediaOverrides, settings?.exercise_media_overrides),
-    );
-    const patch = buildExerciseMediaOverridesPatch(mergedBase, exercise, url);
-    if (!patch) return;
-    setSaving(true);
-    try {
-      await updateSettings({ exercise_media_overrides: patch });
-      toast.success(url ? "Thumbnail updated" : "Using catalog image");
-      closeAllDrawers();
-    } catch (err) {
-      const code = err?.code ?? "";
-      const message = String(err?.message ?? "");
-      const migrationHint =
-        message.includes("exercise_media_overrides") || code === "PGRST204";
-      if (patch && Object.keys(patch).length) {
-        const cached = cacheLocalExerciseMediaOverrides(user.id, patch);
-        toast.success("Thumbnail updated");
-        if (!cached) {
-          toast.message("GIF is large — saved in this session only", { duration: 5000 });
-        } else if (migrationHint) {
-          toast.message("Cloud sync issue — thumbnail is on this device", { duration: 5000 });
-        }
-        closeAllDrawers();
-      } else {
-        toast.error("Could not save image");
-      }
-    } finally {
-      setSaving(false);
-    }
+    await persistPrimaryUrl(exercise, url, closeAllDrawers);
   };
 
   const handleSelectGif = gifUrl => {
@@ -357,7 +321,9 @@ export default function ExerciseDrawerMediaActions({
           onClick={openGifFilePicker}
           className={cn(chipClass, saving && "opacity-50")}
         >
-          <Upload className="h-4 w-4 shrink-0" aria-hidden />
+          <PendingIcon pending={saving} iconClassName="h-4 w-4 shrink-0">
+            <Upload className="h-4 w-4 shrink-0" aria-hidden />
+          </PendingIcon>
           Upload GIF
         </button>
       </div>
@@ -398,7 +364,9 @@ export default function ExerciseDrawerMediaActions({
                     : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100",
                 )}
               >
-                <Upload className="h-4 w-4 shrink-0" aria-hidden />
+                <PendingIcon pending={saving} iconClassName="h-4 w-4 shrink-0">
+                  <Upload className="h-4 w-4 shrink-0" aria-hidden />
+                </PendingIcon>
                 Upload GIF from device
               </button>
               <label className="sr-only" htmlFor="exercise-gif-search">
@@ -562,7 +530,10 @@ export default function ExerciseDrawerMediaActions({
                 isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white",
               )}
             >
-              {saving ? "Saving…" : "Save"}
+              <span className="inline-flex items-center justify-center gap-2">
+                {saving ? <PendingIcon pending iconClassName="h-4 w-4" /> : null}
+                {saving ? "Saving…" : "Save"}
+              </span>
             </button>
           </DrawerFooter>
         </DrawerContent>

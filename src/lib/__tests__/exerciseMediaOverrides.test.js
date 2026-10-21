@@ -5,12 +5,13 @@ import {
   getExerciseMediaOverrideUrl,
   getExerciseMediaOverrideByName,
   buildExerciseMediaOverridesPatch,
+  buildExerciseMediaRemoveUrlPatch,
   isValidMediaUrl,
   isPersistableMediaUrl,
   isDataUrlGif,
   mergeMediaUrlsWithOverride,
 } from "@/lib/exerciseMediaOverrides";
-import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
+import { resolveExerciseMediaUrl, collectExerciseMediaUrls } from "@/lib/exerciseMedia";
 
 describe("exerciseMediaOverrides", () => {
   const exercise = { id: "abc-123", name: "Bench Press" };
@@ -68,6 +69,15 @@ describe("exerciseMediaOverrides", () => {
       "https://b",
       "https://a",
     ]);
+  });
+
+  it("remove patch hides catalog urls and clears custom primary", () => {
+    const catalog = { id: "abc-123", name: "Bench Press", gif_url: "https://catalog.gif" };
+    const withCustom = buildExerciseMediaOverridesPatch({}, exercise, "https://custom.gif");
+    const cleared = buildExerciseMediaRemoveUrlPatch(withCustom, exercise, "https://custom.gif");
+    expect(getExerciseMediaOverrideUrl(exercise, cleared)).toBeNull();
+    const hidden = buildExerciseMediaRemoveUrlPatch({}, catalog, "https://catalog.gif");
+    expect(collectExerciseMediaUrls(catalog, [], hidden)).toEqual([]);
   });
 
   it("resolveExerciseMediaUrl uses name override when catalog id differs", () => {

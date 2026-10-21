@@ -1,0 +1,19 @@
+---
+description: Run full CI checks before finishing tasks that change app code
+alwaysApply: true
+---
+
+# CI verification before done
+
+GitHub Actions and Vercel run `lint`, `test`, and `build`. **Production builds fail on ESLint errors** (e.g. `react/jsx-no-undef` when a Lucide icon is used but not imported).
+
+After any change under `src/`, `pages/`, or `scripts/` that affects the web app:
+
+1. Run from the repo root:
+   ```bash
+   cd /Users/himanshu.jain/Desktop/CodeRepo/workoutlogger && npm run verify
+   ```
+2. Fix all **errors** (not only warnings) before reporting the task complete.
+3. When adding JSX that uses a component or icon, **add the import in the same edit**.
+
+Optional local gate (if hooks are installed): `git push` runs `npm run verify` via Husky.

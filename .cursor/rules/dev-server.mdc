@@ -12,7 +12,7 @@ After making code changes to this project, always kill the running Next.js dev s
 lsof -ti:3000,3001 2>/dev/null | xargs kill -9 2>/dev/null
 
 # Restart dev server
-cd /Users/himanshu.jain/Desktop/workout-logger && npm run dev
+cd /Users/himanshu.jain/Desktop/CodeRepo/workoutlogger && npm run dev
 ```
 
 - Check terminals for an existing dev server before starting a new one

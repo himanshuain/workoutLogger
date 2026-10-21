@@ -34,16 +34,38 @@ function halfWeightPillClass(isDarkMode, disabled) {
   );
 }
 
-/** Barbell, body weight, and half weight in one horizontal scroll row. */
-export default function ExerciseLogModePillRow({
-  value,
-  onChange,
-  onHalveWeight,
-  canHalveWeight = true,
+export function HalfWeightPill({
+  selected = false,
+  disabled = false,
+  onToggle,
   isDarkMode,
+  className,
 }) {
-  const halfDisabled = !canHalveWeight;
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={() => {
+        if (disabled) return;
+        hapticLight();
+        onToggle();
+      }}
+      disabled={disabled}
+      className={cn(
+        disabled
+          ? halfWeightPillClass(isDarkMode, true)
+          : modePillClass(isDarkMode, selected),
+        className,
+      )}
+      aria-label="Halve weight for current set only"
+    >
+      Half weight
+    </button>
+  );
+}
 
+/** Barbell and body weight mode pills. */
+export default function ExerciseLogModePillRow({ value, onChange, isDarkMode }) {
   return (
     <div className={pillRowScrollClass} style={{ WebkitOverflowScrolling: "touch" }}>
       {NO_WEIGHT_OPTIONS.map(({ id, label }) => {
@@ -63,24 +85,11 @@ export default function ExerciseLogModePillRow({
           </button>
         );
       })}
-      <button
-        type="button"
-        onClick={() => {
-          if (halfDisabled) return;
-          hapticLight();
-          onHalveWeight();
-        }}
-        disabled={halfDisabled}
-        className={halfWeightPillClass(isDarkMode, halfDisabled)}
-        aria-label="Halve current weight"
-      >
-        Half weight
-      </button>
     </div>
   );
 }
 
 /** @deprecated Use ExerciseLogModePillRow */
 export function ExerciseLogModePills(props) {
-  return <ExerciseLogModePillRow {...props} onHalveWeight={() => {}} canHalveWeight={false} />;
+  return <ExerciseLogModePillRow {...props} />;
 }

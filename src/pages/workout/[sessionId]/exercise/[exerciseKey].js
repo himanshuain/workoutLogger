@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -15,7 +15,7 @@ import {
 import { deriveEquipmentTags } from "@/lib/exerciseEquipmentFilter";
 import { isSessionToday } from "@/lib/workoutNavigation";
 import PillRail from "@/components/workout/PillRail";
-import ExerciseLogModePillRow from "@/components/workout/ExerciseLogModeToggle";
+import ExerciseLogModePillRow, { HalfWeightPill } from "@/components/workout/ExerciseLogModeToggle";
 import ExercisePastSetsDrawer from "@/components/workout/ExercisePastSetsDrawer";
 import { Trash2, ArrowLeft, History } from "lucide-react";
 import { actionSecondary } from "@/lib/actionButtonStyles";
@@ -87,11 +87,26 @@ export default function ExerciseLoggerPage() {
       .sort((a, b) => a.set_number - b.set_number);
   }, [effectiveSession, exerciseName]);
 
-  const [weight, setWeight] = useState(20);
+  /** Weight pill rail — not changed by half-weight mode. */
+  const [editWeight, setEditWeight] = useState(20);
   const [reps, setReps] = useState(15);
   const [logMode, setLogMode] = useState("barbell");
+  const [halfWeightActive, setHalfWeightActive] = useState(false);
+  const halfSetsLoggedRef = useRef(0);
   const [removingSetId, setRemovingSetId] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof sessionId !== "string" || typeof exerciseKey !== "string") {
+      return;
+    }
+    sessionStorage.removeItem(`wl_half_weight_locked_${sessionId}_${exerciseKey}`);
+  }, [sessionId, exerciseKey]);
+
+  const currentSetWeight = useMemo(
+    () => (halfWeightActive ? halveSelectedWeightKg(editWeight) : editWeight),
+    [halfWeightActive, editWeight],
+  );
 
   const weightPills = useMemo(() => weightPillsForLogMode(logMode), [logMode]);
 
@@ -106,7 +121,7 @@ export default function ExerciseLoggerPage() {
   }, [exerciseName, catalogExercise]);
 
   useEffect(() => {
-    setWeight(w => (isBarWeight(w) ? w : nearestPill(w, weightPills)));
+    setEditWeight(w => (isBarWeight(w) ? w : nearestPill(w, weightPills)));
   }, [weightPills]);
 
   const lastLogged = setsForExercise[setsForExercise.length - 1];
@@ -116,26 +131,36 @@ export default function ExerciseLoggerPage() {
     if (!exerciseName) return;
     const pills = weightPillsForLogMode(logMode);
     if (lastLogged) {
-      setWeight(nearestPill(lastLogged.weight, pills));
+      if (!halfWeightActive) {
+        setEditWeight(nearestPill(lastLogged.weight, pills));
+      }
       setReps(nearestPill(lastLogged.reps, REPS_PILLS));
       return;
     }
     const h = exerciseHistory?.[exerciseName];
     const defaultWeight = logMode === "bodyweight" ? 0 : 20;
-    setWeight(nearestPill(h?.last_weight ?? defaultWeight, pills));
+    setEditWeight(nearestPill(h?.last_weight ?? defaultWeight, pills));
     setReps(nearestPill(h?.last_reps ?? 15, REPS_PILLS));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- omit logMode so Bar/BW pill taps are not overwritten by history/default.
-  }, [exerciseName, exerciseHistory, lastLogged?.id, setsForExercise.length]);
+  }, [exerciseName, exerciseHistory, lastLogged?.id, setsForExercise.length, halfWeightActive]);
 
   const handleLogModePill = useCallback(mode => {
     setLogMode(mode);
-    setWeight(BAR_WEIGHT_KG);
+    setEditWeight(BAR_WEIGHT_KG);
   }, []);
 
+  const HALF_WEIGHT_SETS_BEFORE_AUTO_OFF = 4;
+
   const handleHalveWeight = useCallback(() => {
-    if (isBarWeight(weight)) return;
-    setWeight(halveSelectedWeightKg(weight));
-  }, [weight]);
+    if (isBarWeight(editWeight)) return;
+    setHalfWeightActive(prev => {
+      if (prev) return false;
+      halfSetsLoggedRef.current = 0;
+      return true;
+    });
+  }, [editWeight]);
+
+  const canUseHalfWeight = !isBarWeight(editWeight);
 
   const handleSaveSet = useCallback(async () => {
     if (!sessionId || !exerciseName) return;
@@ -146,10 +171,17 @@ export default function ExerciseLoggerPage() {
     });
     if (!row) return;
     await updateSetLog(row.id, {
-      weight,
+      weight: currentSetWeight,
       reps,
       is_completed: true,
     });
+    if (halfWeightActive) {
+      halfSetsLoggedRef.current += 1;
+      if (halfSetsLoggedRef.current >= HALF_WEIGHT_SETS_BEFORE_AUTO_OFF) {
+        setHalfWeightActive(false);
+        halfSetsLoggedRef.current = 0;
+      }
+    }
     const updated = await getWorkoutSession(sessionId);
     setSession(updated);
     await loadActiveSession();
@@ -157,8 +189,9 @@ export default function ExerciseLoggerPage() {
     sessionId,
     exerciseName,
     category,
-    weight,
+    currentSetWeight,
     reps,
+    halfWeightActive,
     addSetLog,
     updateSetLog,
     getWorkoutSession,
@@ -183,7 +216,7 @@ export default function ExerciseLoggerPage() {
   );
 
   const handleClose = () => {
-    // Return to session overview for past dates, home for today
+    setHalfWeightActive(false);
     if (isSessionToday(effectiveSession)) {
       router.push("/");
     } else {
@@ -273,17 +306,15 @@ export default function ExerciseLoggerPage() {
 
       <div className="flex-1 overflow-y-auto px-5 py-6 pb-8 space-y-8">
         <ExerciseLogModePillRow
-          value={isBarWeight(weight) ? logMode : null}
+          value={isBarWeight(editWeight) ? logMode : null}
           onChange={handleLogModePill}
-          onHalveWeight={handleHalveWeight}
-          canHalveWeight={!isBarWeight(weight)}
           isDarkMode={isDarkMode}
         />
         <PillRail
           label={logMode === "bodyweight" ? "Added weight" : "Weight"}
           values={weightPills}
-          selected={weight}
-          onSelect={setWeight}
+          selected={editWeight}
+          onSelect={setEditWeight}
           format={v => formatWeightPill(v, logMode)}
           isDarkMode={isDarkMode}
         />
@@ -308,13 +339,23 @@ export default function ExerciseLoggerPage() {
           >
             Current set
           </p>
-          <div className="flex flex-col items-center gap-1">
-            <span className={`text-2xl font-semibold tabular-nums ${isDarkMode ? "text-iron-50" : "text-slate-900"}`}>
-              {formatWeightDisplay(weight, logMode)}
-            </span>
-            <span className={`text-lg tabular-nums ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
-              {reps} reps
-            </span>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="flex flex-col items-center gap-1 min-w-[8rem]">
+              <span
+                className={`text-2xl font-semibold tabular-nums ${isDarkMode ? "text-iron-50" : "text-slate-900"}`}
+              >
+                {formatWeightDisplay(currentSetWeight, logMode)}
+              </span>
+              <span className={`text-lg tabular-nums ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
+                {reps} reps
+              </span>
+            </div>
+            <HalfWeightPill
+              selected={halfWeightActive}
+              disabled={!canUseHalfWeight}
+              onToggle={handleHalveWeight}
+              isDarkMode={isDarkMode}
+            />
           </div>
           <button
             type="button"

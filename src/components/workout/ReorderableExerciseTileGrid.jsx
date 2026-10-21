@@ -23,12 +23,9 @@ import { MoreVertical, Trash2 } from "lucide-react";
 import { resolveExerciseForPreview } from "@/lib/plannerLibraryNavigation";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
-import { actionGhostOnLoggedRow } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseImageUnoptimized } from "@/lib/exerciseMedia";
-import ExercisePreviewButton from "@/components/planner/ExercisePreviewButton";
-import ExerciseSessionResetButton from "@/components/workout/ExerciseSessionResetButton";
 import {
   getWorkoutExerciseLayout,
   setWorkoutExerciseLayout,
@@ -80,10 +77,6 @@ function buildExerciseDisplayGroups(exercises, completedSetCountFor, prioritizeL
   return sections;
 }
 
-function listActionBtnClass() {
-  return "!h-8 !w-8";
-}
-
 /** Mouse for desktop; Touch with press-and-hold for mobile (PointerSensor steals touch and fights scroll). */
 function useExerciseReorderSensors() {
   return useSensors(
@@ -115,6 +108,7 @@ function LoggedMiniExerciseMenu({
   isDarkMode,
   onReset,
   resetting,
+  showReset = true,
   overlay = false,
 }) {
   const rootRef = useRef(null);
@@ -218,23 +212,25 @@ function LoggedMiniExerciseMenu({
       <button type="button" role="menuitem" className={menuItemClass} onClick={openPreview}>
         View
       </button>
-      <button
-        type="button"
-        role="menuitem"
-        disabled={resetting}
-        className={cn(
-          menuItemClass,
-          resetting && "opacity-50",
-          isDarkMode ? "text-red-400" : "text-red-600",
-        )}
-        onClick={e => {
-          e.stopPropagation();
-          setMenuOpen(false);
-          onReset?.(exerciseName);
-        }}
-      >
-        Reset
-      </button>
+      {showReset ? (
+        <button
+          type="button"
+          role="menuitem"
+          disabled={resetting}
+          className={cn(
+            menuItemClass,
+            resetting && "opacity-50",
+            isDarkMode ? "text-red-400" : "text-red-600",
+          )}
+          onClick={e => {
+            e.stopPropagation();
+            setMenuOpen(false);
+            onReset?.(exerciseName);
+          }}
+        >
+          Reset
+        </button>
+      ) : null}
     </div>
   ) : null;
 
@@ -360,7 +356,6 @@ function SortableExerciseTile({
   const hasLogged = loggedCount > 0;
   const miniLogged = solidLoggedTile && hasLogged;
   const compact = tileSize === "compact";
-  const pillSize = compact ? "!h-7 !text-[9px]" : "";
   if (miniLogged) {
     return (
       <div
@@ -432,6 +427,7 @@ function SortableExerciseTile({
           </div>
           <LoggedMiniExerciseMenu
             overlay
+            showReset={showReset}
             exerciseName={ex.exercise_name}
             exerciseId={ex.exercise_id}
             category={ex.category}
@@ -464,28 +460,6 @@ function SortableExerciseTile({
         loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
       )}
     >
-      {hasTrash ? (
-        <button
-          type="button"
-          onClick={e => {
-            e.stopPropagation();
-            onRemoveAdded?.(ex.exercise_name);
-          }}
-          className={cn(
-            "absolute right-0.5 top-0.5 z-20 flex items-center justify-center rounded-md border",
-            compact ? "h-6 w-6" : "h-7 w-7",
-            hasLogged && solidLoggedTile
-              ? "border-white/30 bg-emerald-700/90 text-white hover:text-red-200"
-              : isDarkMode
-                ? "border-iron-700/80 bg-iron-900/80 text-iron-400 hover:text-red-400"
-                : "border-slate-200 bg-white/95 text-slate-400 hover:text-red-600",
-          )}
-          aria-label={`Remove ${ex.exercise_name}`}
-        >
-          <Trash2 className={miniLogged ? "w-2.5 h-2.5" : compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
-        </button>
-      ) : null}
-
       <div
         ref={setActivatorNodeRef}
         {...attributes}
@@ -505,6 +479,27 @@ function SortableExerciseTile({
             !miniLogged && (isDarkMode ? "bg-iron-800" : "bg-slate-100"),
           )}
         >
+          {hasTrash ? (
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                onRemoveAdded?.(ex.exercise_name);
+              }}
+              className={cn(
+                "absolute left-0 top-0 z-20 flex items-center justify-center rounded-br-md",
+                compact ? "h-6 w-6" : "h-7 w-7",
+                hasLogged && solidLoggedTile
+                  ? "bg-emerald-800/90 text-white hover:text-red-200"
+                  : isDarkMode
+                    ? "border border-iron-700/80 bg-iron-900/90 text-iron-400 hover:text-red-400"
+                    : "border border-slate-200 bg-white/95 text-slate-400 hover:text-red-600",
+              )}
+              aria-label={`Remove ${ex.exercise_name}`}
+            >
+              <Trash2 className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
+            </button>
+          ) : null}
           {!showPlaceholder ? (
             <Image
               src={media}
@@ -549,6 +544,20 @@ function SortableExerciseTile({
               {loggedSetLabel(loggedCount)}
             </span>
           ) : null}
+          {!miniLogged ? (
+            <LoggedMiniExerciseMenu
+              overlay
+              showReset={showReset}
+              exerciseName={ex.exercise_name}
+              exerciseId={ex.exercise_id}
+              category={ex.category}
+              notes={ex.notes}
+              exercises={exercisesCatalog}
+              isDarkMode={isDarkMode}
+              onReset={onReset}
+              resetting={resetting}
+            />
+          ) : null}
         </div>
         {!miniLogged ? (
           <p
@@ -570,37 +579,6 @@ function SortableExerciseTile({
           </p>
         ) : null}
       </div>
-
-      {!miniLogged ? (
-        <div
-          className={cn(
-            "flex w-full min-w-0 gap-1",
-            compact ? "px-1 pb-1 pt-0.5" : "px-1.5 pb-1.5 pt-0.5",
-            hasLogged && solidLoggedTile && (isDarkMode ? "bg-emerald-600" : "bg-emerald-500"),
-          )}
-        >
-          <ExercisePreviewButton
-            exerciseName={ex.exercise_name}
-            exerciseId={ex.exercise_id}
-            category={ex.category}
-            notes={ex.notes}
-            exercises={exercisesCatalog}
-            isDarkMode={isDarkMode}
-            variant="pill"
-            className={pillSize}
-          />
-          {showReset ? (
-            <ExerciseSessionResetButton
-              exerciseName={ex.exercise_name}
-              isDarkMode={isDarkMode}
-              variant="pill"
-              disabled={resetting}
-              onClick={onReset}
-              className={pillSize}
-            />
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -639,8 +617,6 @@ function SortableExerciseListRow({
   const hasTrash = ex.added_today;
   const hasLogged = loggedCount > 0;
   const solidLogged = solidLoggedTile && hasLogged;
-  const actionBtn = listActionBtnClass();
-  const actionBtnLogged = cn(actionBtn, solidLogged && actionGhostOnLoggedRow());
 
   return (
     <div
@@ -689,6 +665,18 @@ function SortableExerciseListRow({
               />
             </div>
           )}
+          <LoggedMiniExerciseMenu
+            overlay
+            showReset={showReset}
+            exerciseName={ex.exercise_name}
+            exerciseId={ex.exercise_id}
+            category={ex.category}
+            notes={ex.notes}
+            exercises={exercisesCatalog}
+            isDarkMode={isDarkMode}
+            onReset={onReset}
+            resetting={resetting}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <p
@@ -724,48 +712,26 @@ function SortableExerciseListRow({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 self-center">
-        {hasTrash ? (
-          <button
-            type="button"
-            onClick={e => {
-              e.stopPropagation();
-              onRemoveAdded?.(ex.exercise_name);
-            }}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-lg border",
-              solidLogged
-                ? "border-white/40 bg-white/15 text-white hover:bg-white/25 hover:text-red-200"
-                : isDarkMode
-                  ? "border-iron-700/80 text-iron-400 hover:text-red-400"
-                  : "border-slate-200 text-slate-400 hover:text-red-600",
-            )}
-            aria-label={`Remove ${ex.exercise_name}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        ) : null}
-        {showReset ? (
-          <ExerciseSessionResetButton
-            exerciseName={ex.exercise_name}
-            isDarkMode={isDarkMode}
-            variant="inline"
-            disabled={resetting}
-            onClick={onReset}
-            className={cn(actionBtnLogged, "!relative !top-auto !right-auto")}
-          />
-        ) : null}
-        <ExercisePreviewButton
-          exerciseName={ex.exercise_name}
-          exerciseId={ex.exercise_id}
-          category={ex.category}
-          notes={ex.notes}
-          exercises={exercisesCatalog}
-          isDarkMode={isDarkMode}
-          variant="inline"
-          className={actionBtnLogged}
-        />
-      </div>
+      {hasTrash ? (
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            onRemoveAdded?.(ex.exercise_name);
+          }}
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-lg border",
+            solidLogged
+              ? "border-white/40 bg-white/15 text-white hover:bg-white/25 hover:text-red-200"
+              : isDarkMode
+                ? "border-iron-700/80 text-iron-400 hover:text-red-400"
+                : "border-slate-200 text-slate-400 hover:text-red-600",
+          )}
+          aria-label={`Remove ${ex.exercise_name}`}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      ) : null}
     </div>
   );
 }

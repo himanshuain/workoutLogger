@@ -1,19 +1,14 @@
 ---
-description: Run full CI checks before finishing tasks that change app code
+description: Run local checks before finishing tasks that change app code
 alwaysApply: true
 ---
 
-# CI verification before done
+# Build verification before done
 
-GitHub Actions and Vercel run `lint`, `test`, and `build`. **Production builds fail on ESLint errors** (e.g. `react/jsx-no-undef` when a Lucide icon is used but not imported).
+**Vercel** deploys on push and runs `next build` (with your project env vars). There is no GitHub Actions CI in this repo.
 
-After any change under `src/`, `pages/`, or `scripts/` that affects the web app:
+After substantive changes under `src/` or `pages/`:
 
-1. Run from the repo root:
-   ```bash
-   cd /Users/himanshu.jain/Desktop/CodeRepo/workoutlogger && npm run verify
-   ```
-2. Fix all **errors** (not only warnings) before reporting the task complete.
-3. When adding JSX that uses a component or icon, **add the import in the same edit**.
-
-Optional local gate (if hooks are installed): `git push` runs `npm run verify` via Husky.
+1. Prefer `npm run verify` locally before pushing (lint + test + build).
+2. **Production builds fail on ESLint errors** (e.g. missing Lucide imports). Fix errors, not only warnings.
+3. When adding JSX icons/components, **add imports in the same edit**.

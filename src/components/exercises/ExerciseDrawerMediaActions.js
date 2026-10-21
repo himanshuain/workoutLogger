@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
+import { useWorkout } from "@/context/WorkoutContext";
 import GoogleGIcon from "@/components/icons/GoogleGIcon";
 import {
   Drawer,
@@ -9,13 +11,18 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { exerciseImageUnoptimized, googleImagesSearchUrl } from "@/lib/exerciseMedia";
+import { googleImagesSearchUrl } from "@/lib/exerciseMedia";
 import {
   buildExerciseMediaOverridesPatch,
   getExerciseMediaOverrideUrl,
   isPersistableMediaUrl,
   isValidMediaUrl,
 } from "@/lib/exerciseMediaOverrides";
+import { mergeExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
+import {
+  cacheLocalExerciseMediaOverrides,
+  readLocalExerciseMediaOverrides,
+} from "@/lib/userPrefsMigration";
 import {
   isGifUploadFile,
   MAX_GIF_UPLOAD_BYTES,
@@ -101,6 +108,7 @@ export default function ExerciseDrawerMediaActions({
   updateSettings,
   compact = false,
 }) {
+  const { user, settings } = useWorkout();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pasteUrlOpen, setPasteUrlOpen] = useState(false);
   const [draftUrl, setDraftUrl] = useState("");
@@ -143,8 +151,17 @@ export default function ExerciseDrawerMediaActions({
   };
 
   const persistOverride = async url => {
+    if (!user?.id) {
+      toast.error("Sign in to save a custom image");
+      return;
+    }
     if (!exercise || !updateSettings) return;
-    const patch = buildExerciseMediaOverridesPatch(mediaOverrides, exercise, url);
+    const local = readLocalExerciseMediaOverrides(user.id);
+    const mergedBase = mergeExerciseMediaOverrides(
+      local,
+      mergeExerciseMediaOverrides(mediaOverrides, settings?.exercise_media_overrides),
+    );
+    const patch = buildExerciseMediaOverridesPatch(mergedBase, exercise, url);
     if (!patch) return;
     setSaving(true);
     try {
@@ -156,10 +173,15 @@ export default function ExerciseDrawerMediaActions({
       const message = String(err?.message ?? "");
       const migrationHint =
         message.includes("exercise_media_overrides") || code === "PGRST204";
-      if (migrationHint) {
-        toast.error("Saved on this device only — run migration-v15 on Supabase to sync");
-      } else if (patch && Object.keys(patch).length) {
-        toast.message("Saved on this device — cloud sync failed, will retry on next load");
+      if (patch && Object.keys(patch).length) {
+        const cached = cacheLocalExerciseMediaOverrides(user.id, patch);
+        toast.success("Thumbnail updated");
+        if (!cached) {
+          toast.message("GIF is large — saved in this session only", { duration: 5000 });
+        } else if (migrationHint) {
+          toast.message("Cloud sync issue — thumbnail is on this device", { duration: 5000 });
+        }
+        closeAllDrawers();
       } else {
         toast.error("Could not save image");
       }
@@ -202,19 +224,24 @@ export default function ExerciseDrawerMediaActions({
       toast.error("GIF must be 8 MB or smaller");
       return;
     }
-    setSaving(true);
+    let dataUrl;
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      if (!isPersistableMediaUrl(dataUrl)) {
-        toast.error("Could not use this GIF");
-        return;
-      }
-      await persistOverride(dataUrl);
+      dataUrl = await readFileAsDataUrl(file);
     } catch {
       toast.error("Could not read GIF from device");
-    } finally {
-      setSaving(false);
+      return;
     }
+    if (!isPersistableMediaUrl(dataUrl)) {
+      const tooLarge =
+        typeof dataUrl === "string" &&
+        /^data:image\/gif;/i.test(dataUrl) &&
+        dataUrl.length > 12_000_000;
+      toast.error(
+        tooLarge ? "GIF is too large — try a smaller file (under ~4 MB)" : "Could not use this GIF",
+      );
+      return;
+    }
+    await persistOverride(dataUrl);
   };
 
   const chipClass = cn(
@@ -300,7 +327,7 @@ export default function ExerciseDrawerMediaActions({
       <input
         ref={gifFileInputRef}
         type="file"
-        accept="image/gif,.gif"
+        accept="image/gif,.gif,image/*"
         className="sr-only"
         tabIndex={-1}
         aria-hidden
@@ -496,20 +523,19 @@ export default function ExerciseDrawerMediaActions({
               ) : null}
             </div>
 
-            {isValidMediaUrl(draftUrl) ? (
+            {isPersistableMediaUrl(draftUrl) ? (
               <div
                 className={cn(
                   "relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-card",
                   isDarkMode ? "bg-iron-800" : "bg-slate-100",
                 )}
               >
-                <Image
+                <ExerciseMediaImage
                   src={draftUrl.trim()}
                   alt="Preview"
                   fill
                   className="object-contain"
                   sizes="320px"
-                  unoptimized={exerciseImageUnoptimized(draftUrl.trim())}
                 />
               </div>
             ) : null}

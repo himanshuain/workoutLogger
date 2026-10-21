@@ -15,11 +15,15 @@ export function useWorkoutSettings(user, settings, setSettings) {
         throw new Error("Sign in to save settings");
       }
 
+      const mediaOnlyUpdate =
+        Boolean(newSettings.exercise_media_overrides) &&
+        Object.keys(newSettings).length === 1;
+
+      setSettings(prev => ({ ...(prev ?? {}), ...newSettings }));
+
       if (newSettings.exercise_media_overrides) {
         cacheLocalExerciseMediaOverrides(user.id, newSettings.exercise_media_overrides);
       }
-
-      setSettings(prev => ({ ...(prev ?? {}), ...newSettings }));
 
       if (newSettings.nav_config) {
         cacheLocalNavConfig(newSettings.nav_config);
@@ -49,16 +53,27 @@ export function useWorkoutSettings(user, settings, setSettings) {
       }
 
       if (error) {
+        if (mediaOnlyUpdate) {
+          const sent = newSettings.exercise_media_overrides;
+          cacheLocalExerciseMediaOverrides(user.id, sent);
+          setSettings(prev => ({ ...(prev ?? {}), exercise_media_overrides: sent }));
+          return;
+        }
         throw error;
       }
 
       if (newSettings.exercise_media_overrides) {
         const fromServer = data?.exercise_media_overrides;
+        const sent = newSettings.exercise_media_overrides;
         const resolved = hasExerciseMediaOverrides(fromServer)
           ? fromServer
-          : newSettings.exercise_media_overrides;
-        cacheLocalExerciseMediaOverrides(user.id, resolved);
-        setSettings(prev => ({ ...(prev ?? {}), exercise_media_overrides: resolved }));
+          : sent;
+        const preferSent =
+          hasExerciseMediaOverrides(sent) &&
+          JSON.stringify(sent).length > JSON.stringify(fromServer ?? {}).length;
+        const finalOverrides = preferSent ? sent : resolved;
+        cacheLocalExerciseMediaOverrides(user.id, finalOverrides);
+        setSettings(prev => ({ ...(prev ?? {}), exercise_media_overrides: finalOverrides }));
       }
     },
     [user, setSettings],

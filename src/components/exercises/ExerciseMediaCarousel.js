@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { cn } from "@/lib/utils";
-import { exerciseImageUnoptimized } from "@/lib/exerciseMedia";
 
 /**
  * Horizontal scroll-snap carousel for GIFs / thumbnails (touch-friendly).
@@ -90,13 +89,12 @@ export default function ExerciseMediaCarousel({
           className
         )}
       >
-        <Image
+        <ExerciseMediaImage
           src={u}
           alt={alt ? `${alt} demonstration` : "Exercise"}
           fill
           className={imgObjectClass}
           sizes="(max-width: 768px) 100vw, 400px"
-          unoptimized={exerciseImageUnoptimized(u)}
         />
       </div>
     );
@@ -136,14 +134,13 @@ export default function ExerciseMediaCarousel({
         >
           {list.map(u => (
             <div key={normalizeSlideKey(u)} className="min-w-full w-full shrink-0 h-full snap-center snap-always relative">
-              <Image
+              <ExerciseMediaImage
                 src={u}
                 alt={alt || "Exercise"}
                 fill
                 className={imgObjectClass}
                 sizes="(max-width: 768px) 100vw, 400px"
                 draggable={false}
-                unoptimized={exerciseImageUnoptimized(u)}
               />
             </div>
           ))}

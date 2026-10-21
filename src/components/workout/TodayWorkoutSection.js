@@ -20,12 +20,15 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn } from "@/components/ui/fade-in";
 import { narrowMobileWideDesktopClass } from "@/components/layout/PageContainer";
-import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
+import ReorderableExerciseTileGrid, {
+  shouldBlockExerciseTileNavigation,
+} from "@/components/workout/ReorderableExerciseTileGrid";
 import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
 import {
   exerciseHasLoggedSets,
   completedSetCountForExercise,
 } from "@/components/workout/ExerciseSessionResetButton";
+import { saveHomeScrollPosition } from "@/lib/homeScrollRestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -107,7 +110,7 @@ export default function TodayWorkoutSection({
 
   useEffect(() => {
     setThumbFailed({});
-  }, [activeSession?.id, plannedExercises.length]);
+  }, [activeSession?.id, plannedExercises.length, mediaOverrides]);
 
   const setLogs = activeSession?.set_logs || [];
 
@@ -161,6 +164,8 @@ export default function TodayWorkoutSection({
 
   const openExercise = (name, category) => {
     if (!activeSession?.id) return;
+    if (shouldBlockExerciseTileNavigation()) return;
+    saveHomeScrollPosition();
     const q = new URLSearchParams({ category: category || "other" });
     router.push(
       `/workout/${activeSession.id}/exercise/${encodeURIComponent(name)}?${q.toString()}`

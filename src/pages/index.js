@@ -70,6 +70,7 @@ import {
 } from "@/lib/lifelogEventSettings";
 import { lifelogRoute, LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
 import { homePageShellClass } from "@/components/layout/PageContainer";
+import { restoreHomeScrollPosition } from "@/lib/homeScrollRestore";
 
 const HOME_TAB_LOG = "log";
 const HOME_TAB_LIFELOG = "lifelog";
@@ -174,6 +175,11 @@ export default function Home() {
     window.addEventListener(LIFELOG_EVENT_SETTINGS_CHANGED, bump);
     return () => window.removeEventListener(LIFELOG_EVENT_SETTINGS_CHANGED, bump);
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady || router.pathname !== "/") return;
+    restoreHomeScrollPosition();
+  }, [router.isReady, router.pathname, router.asPath]);
 
   const isViewingToday = viewingDate === today;
   const dayHeader = formatDayHeader(viewingDate || today, today);

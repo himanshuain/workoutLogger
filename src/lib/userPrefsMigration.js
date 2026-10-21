@@ -64,10 +64,16 @@ export function readLocalExerciseMediaOverrides(userId) {
   }
 }
 
+/** @returns {boolean} whether the map was stored locally */
 export function cacheLocalExerciseMediaOverrides(userId, map) {
-  if (typeof window === "undefined" || !userId) return;
-  if (!map || typeof map !== "object") return;
-  localStorage.setItem(`wl_exercise_media_overrides_${userId}`, JSON.stringify(map));
+  if (typeof window === "undefined" || !userId) return false;
+  if (!map || typeof map !== "object") return false;
+  try {
+    localStorage.setItem(`wl_exercise_media_overrides_${userId}`, JSON.stringify(map));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function readLegacyNotificationSchedules() {

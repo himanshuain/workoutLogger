@@ -2,7 +2,17 @@ import { groupExercisesByArea } from "@/lib/exerciseAreaGroups";
 import {
   getSessionExerciseOrder,
   setSessionExerciseOrder,
+  moveSessionExerciseToTop,
 } from "@/lib/workoutSessionClient";
+
+export { moveSessionExerciseToTop };
+
+export function isCompleteSessionExerciseOrder(order, exerciseNames) {
+  const names = exerciseNames || [];
+  if (!order?.length || order.length !== names.length) return false;
+  const set = new Set(names);
+  return order.every(n => set.has(n)) && new Set(order).size === names.length;
+}
 
 function sortBySessionOrder(exercises, sessionId) {
   const names = exercises.map(e => e.exercise_name);
@@ -15,7 +25,8 @@ function sortBySessionOrder(exercises, sessionId) {
 
   if (
     sessionId &&
-    (missing.length > 0 || pruned.length !== order.length)
+    (missing.length > 0 || pruned.length !== order.length) &&
+    !isCompleteSessionExerciseOrder(order, names)
   ) {
     setSessionExerciseOrder(sessionId, nextOrder);
   }
@@ -28,11 +39,16 @@ function sortBySessionOrder(exercises, sessionId) {
 }
 
 /**
- * Session order within each muscle group, then groups in push-day order (chest, shoulders, …).
+ * Uses saved session order when complete (after drag / move-to-top); otherwise area groups.
  */
 export function orderPlannedExercises(exercises, sessionId) {
   if (!exercises?.length) return [];
+  const names = exercises.map(e => e.exercise_name);
+  const order = sessionId ? getSessionExerciseOrder(sessionId) : [];
   const bySession = sortBySessionOrder(exercises, sessionId);
+  if (isCompleteSessionExerciseOrder(order, names)) {
+    return bySession;
+  }
   return groupExercisesByArea(bySession).flatMap(g => g.exercises);
 }
 

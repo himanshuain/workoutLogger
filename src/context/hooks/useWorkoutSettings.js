@@ -5,6 +5,7 @@ import {
   cacheLocalRestMap,
   cacheLocalExerciseMediaOverrides,
 } from "@/lib/userPrefsMigration";
+import { writeLocalWorkoutUiPrefs } from "@/lib/workoutUiPrefs";
 import { hasExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
 
 /** User settings read/write extracted from WorkoutContext. */
@@ -30,6 +31,9 @@ export function useWorkoutSettings(user, settings, setSettings) {
       }
       if (newSettings.routine_rest_days) {
         cacheLocalRestMap(user.id, newSettings.routine_rest_days);
+      }
+      if (newSettings.workout_ui_prefs) {
+        writeLocalWorkoutUiPrefs(user.id, newSettings.workout_ui_prefs);
       }
 
       const { data: updateData, error } = await supabase

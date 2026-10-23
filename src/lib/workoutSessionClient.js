@@ -29,21 +29,16 @@ function buildMeta(sessionId, extras, doneMap, exerciseOrder) {
 
 function persistLocal(sessionId, extras, doneMap, exerciseOrder) {
   if (typeof window === "undefined" || !sessionId) return;
+  const order = exerciseOrder ?? getSessionExerciseOrder(sessionId);
   try {
     localStorage.setItem(extrasKey(sessionId), JSON.stringify(extras));
     localStorage.setItem(doneKey(sessionId), JSON.stringify(doneMap));
-    localStorage.setItem(
-      orderKey(sessionId),
-      JSON.stringify(exerciseOrder ?? getSessionExerciseOrder(sessionId)),
-    );
+    localStorage.setItem(orderKey(sessionId), JSON.stringify(order));
   } catch {
     /* ignore */
   }
   if (persistMetaCallback) {
-    persistMetaCallback(
-      sessionId,
-      buildMeta(sessionId, extras, doneMap, exerciseOrder),
-    );
+    persistMetaCallback(sessionId, buildMeta(sessionId, extras, doneMap, order));
   }
 }
 
@@ -83,6 +78,30 @@ export function setSessionExerciseOrder(sessionId, order) {
     getExerciseDoneMap(sessionId),
     list,
   );
+}
+
+/**
+ * Prepend exercise to session order (2nd move → index 1). Syncs via client_meta on workout_sessions.
+ * @param {string[]} displayOrderNames — current list order (all planned exercise names).
+ */
+export function moveSessionExerciseToTop(sessionId, exerciseName, displayOrderNames) {
+  if (typeof window === "undefined" || !sessionId || !exerciseName) return;
+  const names = Array.isArray(displayOrderNames) ? displayOrderNames.filter(Boolean) : [];
+  let order = getSessionExerciseOrder(sessionId);
+  const nameSet = new Set(names.length ? names : [exerciseName]);
+
+  if (names.length) {
+    const valid = order.filter(n => nameSet.has(n));
+    const missing = names.filter(n => !valid.includes(n));
+    order = [...valid, ...missing];
+    if (order.length !== names.length) {
+      order = [...names];
+    }
+  }
+
+  order = order.filter(n => n !== exerciseName);
+  order.unshift(exerciseName);
+  setSessionExerciseOrder(sessionId, order);
 }
 
 export function getSessionExtras(sessionId) {
@@ -128,6 +147,8 @@ export function removeSessionExtra(sessionId, exerciseName) {
   const next = list.filter(e => e.exercise_name !== exerciseName);
   setSessionExtras(sessionId, next);
   setExerciseDone(sessionId, exerciseName, false);
+  const order = getSessionExerciseOrder(sessionId).filter(n => n !== exerciseName);
+  setSessionExerciseOrder(sessionId, order);
   return next;
 }
 

@@ -6,7 +6,11 @@ import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
 import { completedSetCountForExercise } from "@/components/workout/ExerciseSessionResetButton";
-import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
+import {
+  orderPlannedExercises,
+  persistExerciseOrder,
+  moveSessionExerciseToTop,
+} from "@/lib/sessionExerciseOrder";
 
 // Helper functions for exercise management
 function exerciseStatus(name, setLogs) {
@@ -57,6 +61,19 @@ export default function WorkoutSessionView({
     const merged = mergePlannedExercises(sessionRoutine, extras);
     return orderPlannedExercises(merged, session?.id);
   }, [sessionRoutine, extras, session?.id, extrasVersion]);
+
+  const handleMoveExerciseToTop = useCallback(
+    exerciseName => {
+      if (!session?.id) return;
+      moveSessionExerciseToTop(
+        session.id,
+        exerciseName,
+        plannedExercises.map(e => e.exercise_name),
+      );
+      bumpExtras();
+    },
+    [session?.id, plannedExercises, bumpExtras],
+  );
 
   useEffect(() => {
     setThumbFailed({});
@@ -120,6 +137,10 @@ export default function WorkoutSessionView({
                 bumpExtras();
               }
             }}
+            sessionId={session?.id ?? null}
+            inlineLog={Boolean(session?.id)}
+            exerciseOrderVersion={extrasVersion}
+            onMoveExerciseToTop={handleMoveExerciseToTop}
             onOpen={(name, category) => onExerciseClick?.(name, category)}
             resolveMedia={resolveExerciseMedia}
             thumbFailed={thumbFailed}

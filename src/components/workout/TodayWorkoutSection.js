@@ -20,15 +20,16 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SpringIn } from "@/components/ui/fade-in";
 import { narrowMobileWideDesktopClass } from "@/components/layout/PageContainer";
-import ReorderableExerciseTileGrid, {
-  shouldBlockExerciseTileNavigation,
-} from "@/components/workout/ReorderableExerciseTileGrid";
-import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
+import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
+import {
+  orderPlannedExercises,
+  persistExerciseOrder,
+  moveSessionExerciseToTop,
+} from "@/lib/sessionExerciseOrder";
 import {
   exerciseHasLoggedSets,
   completedSetCountForExercise,
 } from "@/components/workout/ExerciseSessionResetButton";
-import { saveHomeScrollPosition } from "@/lib/homeScrollRestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -162,15 +163,6 @@ export default function TodayWorkoutSection({
     }
   };
 
-  const openExercise = (name, category) => {
-    if (!activeSession?.id) return;
-    if (shouldBlockExerciseTileNavigation()) return;
-    saveHomeScrollPosition();
-    const q = new URLSearchParams({ category: category || "other" });
-    router.push(
-      `/workout/${activeSession.id}/exercise/${encodeURIComponent(name)}?${q.toString()}`
-    );
-  };
 
   const handleFinish = () => {
     if (!activeSession?.id) return;
@@ -201,6 +193,19 @@ export default function TodayWorkoutSection({
       setShowDiscardConfirm(false);
     }
   };
+
+  const handleMoveExerciseToTop = useCallback(
+    exerciseName => {
+      if (!activeSession?.id) return;
+      moveSessionExerciseToTop(
+        activeSession.id,
+        exerciseName,
+        plannedExercises.map(e => e.exercise_name),
+      );
+      bumpExtras();
+    },
+    [activeSession?.id, plannedExercises, bumpExtras],
+  );
 
   const handleRemoveAddedToday = exerciseName => {
     if (!activeSession?.id) return;
@@ -424,13 +429,16 @@ export default function TodayWorkoutSection({
               >
                 <ReorderableExerciseTileGrid
                   exercises={plannedExercises}
-                  prioritizeLoggedTiles
+                  greenLoggedTiles
                   isDarkMode={isDarkMode}
                   onReorder={next => {
                     persistExerciseOrder(activeSession.id, next);
                     bumpExtras();
                   }}
-                  onOpen={openExercise}
+                  sessionId={activeSession.id}
+                  inlineLog
+                  exerciseOrderVersion={extrasVersion}
+                  onMoveExerciseToTop={handleMoveExerciseToTop}
                   resolveMedia={resolveExerciseMedia}
                   thumbFailed={thumbFailed}
                   onThumbFailed={name =>

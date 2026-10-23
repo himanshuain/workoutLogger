@@ -49,3 +49,23 @@ export function clearHomeScrollRestore() {
     /* ignore */
   }
 }
+
+/** Snapshot main scroll container (Today layout) for restore after async UI updates. */
+export function captureHomeScrollPosition() {
+  const el = getHomeScrollElement();
+  if (!el) return null;
+  return { el, top: el.scrollTop, left: el.scrollLeft };
+}
+
+export function restoreHomeScrollPositionSnapshot(snapshot) {
+  if (!snapshot?.el) return;
+  const { el, top, left } = snapshot;
+  const apply = () => {
+    el.scrollTop = top;
+    el.scrollLeft = left;
+  };
+  requestAnimationFrame(() => {
+    apply();
+    requestAnimationFrame(apply);
+  });
+}

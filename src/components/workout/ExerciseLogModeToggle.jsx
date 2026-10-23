@@ -10,13 +10,19 @@ const NO_WEIGHT_OPTIONS = [
 const pillRowScrollClass =
   "flex flex-nowrap gap-2 overflow-x-auto pb-1 -mx-1 px-1 overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
-function modePillClass(isDarkMode, selected) {
+function modePillClass(isDarkMode, selected, dense = false) {
   return cn(
-    "shrink-0 min-h-[44px] px-4 rounded-pill text-sm font-semibold",
+    "shrink-0 rounded-pill",
     touchPress,
+    dense
+      ? "min-h-[28px] px-2.5 text-[11px] font-medium leading-tight"
+      : "min-h-[44px] px-4 text-sm font-semibold",
     selected
       ? isDarkMode
-        ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/25"
+        ? cn(
+            "bg-lift-primary text-iron-950",
+            dense ? "shadow-sm shadow-lift-primary/20" : "shadow-lg shadow-lift-primary/25",
+          )
         : actionAccentSoft(false)
       : isDarkMode
         ? "bg-iron-800/90 text-iron-200 border border-iron-700/80"
@@ -24,9 +30,9 @@ function modePillClass(isDarkMode, selected) {
   );
 }
 
-function halfWeightPillClass(isDarkMode, disabled) {
+function halfWeightPillClass(isDarkMode, disabled, dense = false) {
   return cn(
-    modePillClass(isDarkMode, false),
+    modePillClass(isDarkMode, false, dense),
     disabled &&
       (isDarkMode
         ? "cursor-not-allowed opacity-45 shadow-none active:bg-iron-800/90"
@@ -34,12 +40,13 @@ function halfWeightPillClass(isDarkMode, disabled) {
   );
 }
 
-export function HalfWeightPill({
+export function DualPulleyPill({
   selected = false,
   disabled = false,
   onToggle,
   isDarkMode,
   className,
+  dense = false,
 }) {
   return (
     <button
@@ -53,21 +60,29 @@ export function HalfWeightPill({
       disabled={disabled}
       className={cn(
         disabled
-          ? halfWeightPillClass(isDarkMode, true)
-          : modePillClass(isDarkMode, selected),
+          ? halfWeightPillClass(isDarkMode, true, dense)
+          : modePillClass(isDarkMode, selected, dense),
         className,
       )}
-      aria-label="Halve weight for current set only"
+      aria-label="Dual pulley — log half the selected stack weight"
     >
-      Half weight
+      Dual pulley
     </button>
   );
 }
 
+/** @deprecated Use DualPulleyPill */
+export function HalfWeightPill(props) {
+  return <DualPulleyPill {...props} />;
+}
+
 /** Barbell and body weight mode pills. */
-export default function ExerciseLogModePillRow({ value, onChange, isDarkMode }) {
+export default function ExerciseLogModePillRow({ value, onChange, isDarkMode, dense = false }) {
   return (
-    <div className={pillRowScrollClass} style={{ WebkitOverflowScrolling: "touch" }}>
+    <div
+      className={cn(pillRowScrollClass, dense && "gap-1")}
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
       {NO_WEIGHT_OPTIONS.map(({ id, label }) => {
         const selected = value != null && value === id;
         return (
@@ -79,7 +94,7 @@ export default function ExerciseLogModePillRow({ value, onChange, isDarkMode }) 
               hapticLight();
               onChange(id);
             }}
-            className={modePillClass(isDarkMode, selected)}
+            className={modePillClass(isDarkMode, selected, dense)}
           >
             {label}
           </button>

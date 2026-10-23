@@ -7,7 +7,11 @@ import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
-import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
+import {
+  orderPlannedExercises,
+  persistExerciseOrder,
+  moveSessionExerciseToTop,
+} from "@/lib/sessionExerciseOrder";
 import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
 import { getPostWorkoutReturnPath, isSessionToday } from "@/lib/workoutNavigation";
 import { toast } from "sonner";
@@ -61,6 +65,7 @@ export default function WorkoutSessionPage() {
     deleteWorkoutSession,
     resetSessionExerciseLogs,
     loadActiveSession,
+    activeSession,
   } = useWorkout();
   const mediaOverrides = useExerciseMediaOverrides();
 
@@ -116,7 +121,9 @@ export default function WorkoutSessionPage() {
     setThumbFailed({});
   }, [sessionId, plannedExercises.length]);
 
-  const setLogs = session?.set_logs || [];
+  const effectiveSession =
+    activeSession?.id === sessionId && typeof sessionId === "string" ? activeSession : session;
+  const setLogs = effectiveSession?.set_logs || [];
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -142,13 +149,19 @@ export default function WorkoutSessionPage() {
   }, [bumpExtras]);
 
   // Navigation handlers
-  const openExercise = (name, category) => {
-    if (!sessionId) return;
-    const q = new URLSearchParams({ category: category || "other" });
-    router.push(
-      `/workout/${sessionId}/exercise/${encodeURIComponent(name)}?${q.toString()}`
-    );
-  };
+
+  const handleMoveExerciseToTop = useCallback(
+    exerciseName => {
+      if (!sessionId || typeof sessionId !== "string") return;
+      moveSessionExerciseToTop(
+        sessionId,
+        exerciseName,
+        plannedExercises.map(e => e.exercise_name),
+      );
+      bumpExtras();
+    },
+    [sessionId, plannedExercises, bumpExtras],
+  );
 
   const handleRemoveAddedToday = useCallback(
     exerciseName => {
@@ -353,7 +366,10 @@ export default function WorkoutSessionPage() {
                   bumpExtras();
                 }
               }}
-              onOpen={openExercise}
+              sessionId={typeof sessionId === "string" ? sessionId : null}
+              inlineLog
+              exerciseOrderVersion={extrasVersion}
+              onMoveExerciseToTop={handleMoveExerciseToTop}
               resolveMedia={resolveExerciseMedia}
               thumbFailed={thumbFailed}
               onThumbFailed={name => setThumbFailed(prev => ({ ...prev, [name]: true }))}

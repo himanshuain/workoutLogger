@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useMemo } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from "react";
+import { setWorkoutUiPrefsPersistCallback } from "@/lib/workoutUiPrefs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTrackableActions } from "@/context/hooks/useTrackables";
 import { useNotificationSchedules } from "@/context/hooks/useNotificationSchedules";
@@ -71,6 +72,14 @@ function WorkoutProviderInner({ children }) {
     useNotificationSchedules(user, notificationSchedules, setNotificationSchedules);
 
   const { updateSettings } = useWorkoutSettings(user, settings, setSettings);
+
+  useEffect(() => {
+    setWorkoutUiPrefsPersistCallback(prefs => {
+      if (!user?.id) return;
+      void updateSettings({ workout_ui_prefs: prefs });
+    });
+    return () => setWorkoutUiPrefsPersistCallback(null);
+  }, [user?.id, updateSettings]);
 
   const {
     loadExercises,

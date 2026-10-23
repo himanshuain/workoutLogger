@@ -13,10 +13,7 @@ import {
   cacheLocalRestMap,
 } from "@/lib/userPrefsMigration";
 import { reconcileExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
-import {
-  readCachedExerciseCatalog,
-  writeCachedExerciseCatalog,
-} from "@/lib/exerciseCatalogCache";
+import { hydrateWorkoutUiPrefsFromServer } from "@/lib/workoutUiPrefs";
 
 /** Runs get_user_init_data RPC once per login; falls back to individual loaders. */
 export function useWorkoutInit({
@@ -52,13 +49,7 @@ export function useWorkoutInit({
     if (uid === initUserIdRef.current) return;
     initUserIdRef.current = uid;
 
-    const cachedCatalog = readCachedExerciseCatalog(uid);
-    const hadCachedCatalog = Boolean(cachedCatalog?.length);
-    if (hadCachedCatalog) {
-      setExercises(cachedCatalog);
-    } else {
-      setIsLoading(true);
-    }
+    setIsLoading(true);
 
     async function applyDeferredInit(data) {
       const historyMap = {};
@@ -153,13 +144,16 @@ export function useWorkoutInit({
 
         const preparedExercises = prepareExerciseCatalog(data.exercises || []);
         setExercises(preparedExercises);
-        writeCachedExerciseCatalog(uid, preparedExercises);
 
         if (data.user_settings) {
           const { merged: mediaOverrides, needsServerBackfill: backfillMediaOverrides } =
             reconcileExerciseMediaOverrides(uid, data.user_settings.exercise_media_overrides);
 
           setSettings({ ...data.user_settings, exercise_media_overrides: mediaOverrides });
+
+          if (data.user_settings.workout_ui_prefs) {
+            hydrateWorkoutUiPrefsFromServer(uid, data.user_settings.workout_ui_prefs);
+          }
 
           if (backfillMediaOverrides) {
             void supabase

@@ -13,30 +13,38 @@ export default function PillRail({
   onSelect,
   format = (v) => String(v),
   isDarkMode,
+  scrollToSelected = true,
+  dense = false,
 }) {
   const scrollRef = useRef(null);
   const selectedRef = useRef(null);
 
   useEffect(() => {
+    if (!scrollToSelected || selected == null) return;
     const el = selectedRef.current;
     const wrap = scrollRef.current;
     if (!el || !wrap) return;
     const left = el.offsetLeft - wrap.clientWidth / 2 + el.offsetWidth / 2;
     wrap.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
-  }, [selected]);
+  }, [selected, scrollToSelected]);
 
   return (
-    <div className="space-y-2">
+    <div className={dense ? "space-y-1" : "space-y-2"}>
       <p
-        className={`text-[11px] font-semibold uppercase tracking-widest ${
-          isDarkMode ? "text-iron-500" : "text-slate-500"
-        }`}
+        className={cn(
+          "font-semibold uppercase tracking-widest",
+          dense ? "text-[9px] tracking-wide" : "text-[11px] tracking-widest",
+          isDarkMode ? "text-iron-500" : "text-slate-500",
+        )}
       >
         {label}
       </p>
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className={cn(
+          "flex overflow-x-auto pb-0.5 -mx-1 px-1 overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+          dense ? "gap-1" : "gap-2",
+        )}
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {values.map((v) => {
@@ -54,15 +62,26 @@ export default function PillRail({
                 onSelect(v);
               }}
               className={cn(
-                "shrink-0 min-h-[44px] min-w-[44px] px-4 rounded-pill text-sm font-semibold",
-                touchPress,
+                "shrink-0 rounded-pill touchPress",
+                dense
+                  ? "min-h-[28px] min-w-[32px] px-2 text-[11px] font-medium leading-none"
+                  : "min-h-[44px] min-w-[44px] px-4 text-sm font-semibold",
                 active
                   ? isDarkMode
-                    ? "bg-lift-primary text-iron-950 shadow-lg shadow-lift-primary/25"
+                    ? cn(
+                        "bg-lift-primary text-iron-950",
+                        dense ? "shadow-sm shadow-lift-primary/20" : "shadow-lg shadow-lift-primary/25",
+                      )
                     : actionAccentSoft(false)
                   : isDarkMode
-                    ? "bg-iron-800/90 text-iron-200 border border-iron-700/80"
-                    : "bg-white text-[color:var(--text-secondary)] border border-surface-subtle shadow-sm active:bg-surface-pressed",
+                    ? cn(
+                        "bg-iron-800/90 text-iron-200",
+                        dense ? "border border-iron-700/70" : "border border-iron-700/80",
+                      )
+                    : cn(
+                        "bg-white text-[color:var(--text-secondary)] active:bg-surface-pressed",
+                        dense ? "border border-surface-subtle/80" : "border border-surface-subtle shadow-sm",
+                      ),
               )}
             >
               {format(v)}

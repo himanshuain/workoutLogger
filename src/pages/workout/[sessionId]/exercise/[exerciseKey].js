@@ -1,23 +1,10 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import {
-  REPS_PILLS,
-  nearestPill,
-  formatWeightPill,
-  formatWeightDisplay,
-  isBarWeight,
-  BAR_WEIGHT_KG,
-  halveSelectedWeightKg,
-  weightPillsForLogMode,
-} from "@/lib/pillConstants";
-import { deriveEquipmentTags } from "@/lib/exerciseEquipmentFilter";
 import { isSessionToday } from "@/lib/workoutNavigation";
-import PillRail from "@/components/workout/PillRail";
-import ExerciseLogModePillRow, { HalfWeightPill } from "@/components/workout/ExerciseLogModeToggle";
-import ExercisePastSetsDrawer from "@/components/workout/ExercisePastSetsDrawer";
-import { Trash2, ArrowLeft, History } from "lucide-react";
+import ExerciseSetLogPanel, { useCatalogExerciseForName } from "@/components/workout/ExerciseSetLogPanel";
+import { ArrowLeft } from "lucide-react";
 import { actionSecondary } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 
@@ -25,18 +12,7 @@ export default function ExerciseLoggerPage() {
   const router = useRouter();
   const { sessionId, exerciseKey, category: categoryQuery } = router.query;
   const { isDarkMode } = useTheme();
-  const {
-    user,
-    activeSession,
-    getWorkoutSession,
-    exercises,
-    exerciseHistory,
-    addSetLog,
-    updateSetLog,
-    deleteSetLog,
-    loadActiveSession,
-    getExerciseSetHistory,
-  } = useWorkout();
+  const { user, activeSession, getWorkoutSession, exercises } = useWorkout();
 
   const categoryFromQuery =
     typeof categoryQuery === "string" ? decodeURIComponent(categoryQuery) : null;
@@ -64,15 +40,7 @@ export default function ExerciseLoggerPage() {
     load();
   }, [sessionId, user, getWorkoutSession]);
 
-  const catalogExercise = useMemo(() => {
-    if (!exerciseName) return null;
-    return (
-      exercises.find((e) => e.name === exerciseName) ||
-      exercises.find((e) => e.name?.toLowerCase() === exerciseName?.toLowerCase()) ||
-      null
-    );
-  }, [exercises, exerciseName]);
-
+  const catalogExercise = useCatalogExerciseForName(exercises, exerciseName);
   const category = categoryFromQuery || catalogExercise?.category || "other";
 
   const effectiveSession = useMemo(() => {
@@ -80,143 +48,7 @@ export default function ExerciseLoggerPage() {
     return session;
   }, [activeSession, sessionId, session]);
 
-  const setsForExercise = useMemo(() => {
-    const logs = effectiveSession?.set_logs || [];
-    return logs
-      .filter((l) => l.exercise_name === exerciseName && l.is_completed)
-      .sort((a, b) => a.set_number - b.set_number);
-  }, [effectiveSession, exerciseName]);
-
-  /** Weight pill rail — not changed by half-weight mode. */
-  const [editWeight, setEditWeight] = useState(20);
-  const [reps, setReps] = useState(15);
-  const [logMode, setLogMode] = useState("barbell");
-  const [halfWeightActive, setHalfWeightActive] = useState(false);
-  const halfSetsLoggedRef = useRef(0);
-  const [removingSetId, setRemovingSetId] = useState(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof sessionId !== "string" || typeof exerciseKey !== "string") {
-      return;
-    }
-    sessionStorage.removeItem(`wl_half_weight_locked_${sessionId}_${exerciseKey}`);
-  }, [sessionId, exerciseKey]);
-
-  const currentSetWeight = useMemo(
-    () => (halfWeightActive ? halveSelectedWeightKg(editWeight) : editWeight),
-    [halfWeightActive, editWeight],
-  );
-
-  const weightPills = useMemo(() => weightPillsForLogMode(logMode), [logMode]);
-
-  useEffect(() => {
-    if (!exerciseName) return;
-    const tags = deriveEquipmentTags(catalogExercise || { name: exerciseName });
-    if (tags.includes("bodyweight") && !tags.includes("barbell")) {
-      setLogMode("bodyweight");
-    } else {
-      setLogMode("barbell");
-    }
-  }, [exerciseName, catalogExercise]);
-
-  useEffect(() => {
-    setEditWeight(w => (isBarWeight(w) ? w : nearestPill(w, weightPills)));
-  }, [weightPills]);
-
-  const lastLogged = setsForExercise[setsForExercise.length - 1];
-  const hasLoggedSets = setsForExercise.length > 0;
-
-  useEffect(() => {
-    if (!exerciseName) return;
-    const pills = weightPillsForLogMode(logMode);
-    if (lastLogged) {
-      if (!halfWeightActive) {
-        setEditWeight(nearestPill(lastLogged.weight, pills));
-      }
-      setReps(nearestPill(lastLogged.reps, REPS_PILLS));
-      return;
-    }
-    const h = exerciseHistory?.[exerciseName];
-    const defaultWeight = logMode === "bodyweight" ? 0 : 20;
-    setEditWeight(nearestPill(h?.last_weight ?? defaultWeight, pills));
-    setReps(nearestPill(h?.last_reps ?? 15, REPS_PILLS));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- omit logMode so Bar/BW pill taps are not overwritten by history/default.
-  }, [exerciseName, exerciseHistory, lastLogged?.id, setsForExercise.length, halfWeightActive]);
-
-  const handleLogModePill = useCallback(mode => {
-    setLogMode(mode);
-    setEditWeight(BAR_WEIGHT_KG);
-  }, []);
-
-  const HALF_WEIGHT_SETS_BEFORE_AUTO_OFF = 4;
-
-  const handleHalveWeight = useCallback(() => {
-    if (isBarWeight(editWeight)) return;
-    setHalfWeightActive(prev => {
-      if (prev) return false;
-      halfSetsLoggedRef.current = 0;
-      return true;
-    });
-  }, [editWeight]);
-
-  const canUseHalfWeight = !isBarWeight(editWeight);
-
-  const handleSaveSet = useCallback(async () => {
-    if (!sessionId || !exerciseName) return;
-    const row = await addSetLog({
-      sessionId,
-      exerciseName,
-      category,
-    });
-    if (!row) return;
-    await updateSetLog(row.id, {
-      weight: currentSetWeight,
-      reps,
-      is_completed: true,
-    });
-    if (halfWeightActive) {
-      halfSetsLoggedRef.current += 1;
-      if (halfSetsLoggedRef.current >= HALF_WEIGHT_SETS_BEFORE_AUTO_OFF) {
-        setHalfWeightActive(false);
-        halfSetsLoggedRef.current = 0;
-      }
-    }
-    const updated = await getWorkoutSession(sessionId);
-    setSession(updated);
-    await loadActiveSession();
-  }, [
-    sessionId,
-    exerciseName,
-    category,
-    currentSetWeight,
-    reps,
-    halfWeightActive,
-    addSetLog,
-    updateSetLog,
-    getWorkoutSession,
-    loadActiveSession,
-  ]);
-
-  const handleRemoveSet = useCallback(
-    async (setLogId) => {
-      if (!sessionId) return;
-      setRemovingSetId(setLogId);
-      try {
-        const ok = await deleteSetLog(setLogId);
-        if (!ok) return;
-        const updated = await getWorkoutSession(sessionId);
-        setSession(updated);
-        await loadActiveSession();
-      } finally {
-        setRemovingSetId(null);
-      }
-    },
-    [sessionId, deleteSetLog, getWorkoutSession, loadActiveSession],
-  );
-
   const handleClose = () => {
-    setHalfWeightActive(false);
     if (isSessionToday(effectiveSession)) {
       router.push("/");
     } else {
@@ -240,7 +72,6 @@ export default function ExerciseLoggerPage() {
     );
   }
 
-  // Allow logging even if exercise not in catalog (custom names)
   const title = exerciseName || "Exercise";
 
   return (
@@ -280,141 +111,16 @@ export default function ExerciseLoggerPage() {
             {category && category !== "other" ? category : "General"}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setHistoryOpen(true)}
-          className={cn(
-            actionSecondary(isDarkMode),
-            "mt-0.5 shrink-0 inline-flex h-10 items-center gap-1.5 rounded-card px-3",
-          )}
-          aria-label="View past sets history"
-        >
-          <History className="h-4 w-4 shrink-0" aria-hidden />
-          <span className="text-sm font-semibold">History</span>
-        </button>
       </header>
 
-      <ExercisePastSetsDrawer
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        isDarkMode={isDarkMode}
-        exerciseName={exerciseName}
-        excludeSessionId={typeof sessionId === "string" ? sessionId : null}
-        getExerciseSetHistory={getExerciseSetHistory}
-        userId={user?.id}
-      />
-
-      <div className="flex-1 overflow-y-auto px-5 py-6 pb-8 space-y-8">
-        <ExerciseLogModePillRow
-          value={isBarWeight(editWeight) ? logMode : null}
-          onChange={handleLogModePill}
+      <div className="flex-1 overflow-y-auto pb-8">
+        <ExerciseSetLogPanel
+          sessionId={typeof sessionId === "string" ? sessionId : null}
+          exerciseName={exerciseName}
+          category={category}
+          catalogExercise={catalogExercise}
           isDarkMode={isDarkMode}
         />
-        <PillRail
-          label={logMode === "bodyweight" ? "Added weight" : "Weight"}
-          values={weightPills}
-          selected={editWeight}
-          onSelect={setEditWeight}
-          format={v => formatWeightPill(v, logMode)}
-          isDarkMode={isDarkMode}
-        />
-
-        <PillRail
-          label="Reps"
-          values={REPS_PILLS}
-          selected={reps}
-          onSelect={setReps}
-          isDarkMode={isDarkMode}
-        />
-
-        <div
-          className={`rounded-card p-6 space-y-4 ${
-            isDarkMode ? "bg-iron-900/80 border border-iron-800" : "bg-white border border-slate-200 shadow-sm"
-          }`}
-        >
-          <p
-            className={`text-[11px] font-semibold uppercase tracking-widest ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
-          >
-            Current set
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <div className="flex flex-col items-center gap-1 min-w-[8rem]">
-              <span
-                className={`text-2xl font-semibold tabular-nums ${isDarkMode ? "text-iron-50" : "text-slate-900"}`}
-              >
-                {formatWeightDisplay(currentSetWeight, logMode)}
-              </span>
-              <span className={`text-lg tabular-nums ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
-                {reps} reps
-              </span>
-            </div>
-            <HalfWeightPill
-              selected={halfWeightActive}
-              disabled={!canUseHalfWeight}
-              onToggle={handleHalveWeight}
-              isDarkMode={isDarkMode}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleSaveSet}
-            className={`w-full py-3.5 rounded-card font-semibold transition-colors ${
-              hasLoggedSets
-                ? "bg-emerald-500 text-iron-950"
-                : isDarkMode
-                  ? "bg-lift-primary text-iron-950"
-                  : "bg-workout-primary text-white"
-            }`}
-          >
-            {hasLoggedSets ? "Log another set" : "Save set"}
-          </button>
-        </div>
-
-        <div>
-          <p
-            className={`text-[11px] font-semibold uppercase tracking-widest mb-3 ${
-              isDarkMode ? "text-iron-500" : "text-slate-500"
-            }`}
-          >
-            Logged sets
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {setsForExercise.map((s) => (
-              <div
-                key={s.id}
-                className={`inline-flex items-center gap-2 text-sm font-medium pl-3 pr-1 py-1.5 rounded-card ${
-                  isDarkMode ? "bg-iron-800 text-iron-200" : "bg-slate-100 text-slate-800"
-                }`}
-              >
-                <span className="tabular-nums">
-                  {isBarWeight(s.weight)
-                    ? logMode === "bodyweight"
-                      ? "BW"
-                      : "Bar"
-                    : logMode === "bodyweight"
-                      ? `+${s.weight}`
-                      : s.weight}
-                  ×{s.reps}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSet(s.id)}
-                  disabled={removingSetId === s.id}
-                  className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
-                    isDarkMode
-                      ? "text-iron-500 hover:bg-iron-700 hover:text-red-400"
-                      : "text-slate-400 hover:bg-slate-200 hover:text-red-600"
-                  }`}
-                  aria-label={`Delete set ${s.weight}×${s.reps}`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" strokeWidth={2.25} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

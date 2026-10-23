@@ -15,9 +15,11 @@ describe("exerciseImageUnoptimized", () => {
     expect(exerciseImageUnoptimized("https://cdn.example/demo.gif")).toBe(true);
   });
 
-  it("appends gif to google images search query", () => {
+  it("appends smartworkout site filter to google images search query", () => {
     const url = googleImagesSearchUrl("Lat Pulldown");
-    expect(url).toContain(encodeURIComponent("Lat Pulldown gif"));
-    expect(googleImagesSearchUrl("Bench Press gif")).toContain(encodeURIComponent("Bench Press gif"));
+    expect(url).toContain(encodeURIComponent("Lat Pulldown site:smartworkout.app"));
+    expect(googleImagesSearchUrl("Bench Press site:smartworkout.app")).toContain(
+      encodeURIComponent("Bench Press site:smartworkout.app"),
+    );
   });
 });

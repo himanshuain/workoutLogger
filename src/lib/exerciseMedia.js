@@ -65,12 +65,16 @@ export function getExerciseEquipment(exercise) {
   return "";
 }
 
+const GOOGLE_IMAGES_SITE_FILTER = "site:smartworkout.app";
+
 /** Google Images SERP URL for reference photos (embedding google.com in iframes is blocked). */
 export function googleImagesSearchUrl(query) {
   if (typeof query !== "string") return null;
   const base = query.trim();
   if (!base) return null;
-  const q = /\bgif\b/i.test(base) ? base : `${base} gif`;
+  const q = /\bsite:\s*(?:https?:\/\/)?smartworkout\.app\b/i.test(base)
+    ? base
+    : `${base} ${GOOGLE_IMAGES_SITE_FILTER}`;
   return `https://www.google.com/search?tbm=isch&hl=en&q=${encodeURIComponent(q)}`;
 }
 

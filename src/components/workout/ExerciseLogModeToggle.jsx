@@ -71,11 +71,6 @@ export function DualPulleyPill({
   );
 }
 
-/** @deprecated Use DualPulleyPill */
-export function HalfWeightPill(props) {
-  return <DualPulleyPill {...props} />;
-}
-
 /** Barbell and body weight mode pills. */
 export default function ExerciseLogModePillRow({ value, onChange, isDarkMode, dense = false }) {
   return (
@@ -102,9 +97,4 @@ export default function ExerciseLogModePillRow({ value, onChange, isDarkMode, de
       })}
     </div>
   );
-}
-
-/** @deprecated Use ExerciseLogModePillRow */
-export function ExerciseLogModePills(props) {
-  return <ExerciseLogModePillRow {...props} />;
 }

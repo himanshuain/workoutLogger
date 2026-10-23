@@ -38,8 +38,6 @@ import {
   getWorkoutExerciseLayout,
   setWorkoutExerciseLayout,
   tileSizeGridClass,
-  loggedMiniTileScrollOuterClass,
-  loggedMiniTileScrollInnerClass,
   isListLayout,
 } from "@/lib/workoutTileSize";
 import ExerciseSetLogPanel, { useCatalogExerciseForName } from "@/components/workout/ExerciseSetLogPanel";
@@ -207,8 +205,6 @@ function SortableMotionShell({ setNodeRef, style, isDragging, isSorting, classNa
   );
 }
 
-const LOGGED_TILE_SECTION = "__logged__";
-
 function loggedCardClass(hasLogged, isDarkMode, dragging, solidLoggedTile) {
   return cn(
     dragging ? "z-30 opacity-90 shadow-lg" : "z-0",
@@ -226,35 +222,15 @@ function loggedCardClass(hasLogged, isDarkMode, dragging, solidLoggedTile) {
   );
 }
 
-function buildExerciseDisplayGroups(
-  exercises,
-  completedSetCountFor,
-  prioritizeLoggedTiles,
-  sessionId,
-) {
-  if (!prioritizeLoggedTiles) {
-    const names = (exercises || []).map(ex => ex.exercise_name);
-    const order = sessionId ? getSessionExerciseOrder(sessionId) : [];
-    if (sessionId && isCompleteSessionExerciseOrder(order, names)) {
-      const byName = new Map((exercises || []).map(ex => [ex.exercise_name, ex]));
-      const ordered = order.map(n => byName.get(n)).filter(Boolean);
-      return [{ area: FLAT_EXERCISE_SECTION, label: "", exercises: ordered }];
-    }
-    return groupExercisesByArea(exercises);
+function buildExerciseDisplayGroups(exercises, sessionId) {
+  const names = (exercises || []).map(ex => ex.exercise_name);
+  const order = sessionId ? getSessionExerciseOrder(sessionId) : [];
+  if (sessionId && isCompleteSessionExerciseOrder(order, names)) {
+    const byName = new Map((exercises || []).map(ex => [ex.exercise_name, ex]));
+    const ordered = order.map(n => byName.get(n)).filter(Boolean);
+    return [{ area: FLAT_EXERCISE_SECTION, label: "", exercises: ordered }];
   }
-  const logged = [];
-  const pending = [];
-  for (const ex of exercises || []) {
-    const count = completedSetCountFor?.(ex.exercise_name) ?? 0;
-    if (count > 0) logged.push(ex);
-    else pending.push(ex);
-  }
-  const sections = [];
-  if (logged.length) {
-    sections.push({ area: LOGGED_TILE_SECTION, label: "Logged set", exercises: logged });
-  }
-  sections.push(...groupExercisesByArea(pending));
-  return sections;
+  return groupExercisesByArea(exercises);
 }
 
 const SORTABLE_TRANSITION = {
@@ -679,13 +655,11 @@ function SortableExerciseTile({
   onRemoveAdded,
   exercisesCatalog,
   solidLoggedTile = false,
-  compactLoggedLayout = false,
   isExpanded = false,
   inlineLog = false,
   sessionId,
   userId,
   getExerciseSetHistory,
-  panelBelowScroller = false,
   embedInlinePanel = true,
   scrollOnUserExpand = false,
   onConsumedScrollOnExpand,
@@ -707,7 +681,6 @@ function SortableExerciseTile({
 
   const hasTrash = ex.added_today;
   const hasLogged = loggedCount > 0;
-  const miniLogged = compactLoggedLayout && hasLogged;
   const compact = tileSize === "compact";
   const expandedRing =
     inlineLog && isExpanded
@@ -723,111 +696,6 @@ function SortableExerciseTile({
   };
   const solidLogged = hasLogged && solidLoggedTile;
 
-  if (miniLogged) {
-    return (
-      <SortableMotionShell
-        setNodeRef={setNodeRef}
-        style={style}
-        isDragging={isDragging}
-        isSorting={isSorting}
-        className={cn(
-          "flex w-[7rem] shrink-0 flex-col items-center gap-1",
-          isDragging && "z-30 opacity-90",
-          expandedRing && "rounded-lg",
-        )}
-      >
-        <div
-          className={cn(
-            "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border",
-            loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
-            expandedRing,
-          )}
-        >
-          <ExerciseMuscleBadge
-            category={ex.category}
-            tiny
-            solidLogged={solidLogged}
-            isDarkMode={isDarkMode}
-          />
-          {hasTrash ? (
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                onRemoveAdded?.(ex.exercise_name);
-              }}
-              className={cn(
-                "absolute left-0 top-0 z-20 flex h-4 w-4 items-center justify-center rounded-br-md",
-                "bg-emerald-800/90 text-white hover:text-red-200",
-              )}
-              aria-label={`Remove ${ex.exercise_name}`}
-            >
-              <Trash2 className="w-2.5 h-2.5" />
-            </button>
-          ) : null}
-          <div
-            ref={setActivatorNodeRef}
-            {...attributes}
-            {...listeners}
-            role="button"
-            tabIndex={0}
-            onClick={e => openExerciseFromTileClick(e, onOpen, ex.exercise_name, ex.category)}
-            onKeyDown={e => openExerciseFromKey(e, onOpen, ex.exercise_name, ex.category)}
-            onContextMenu={e => e.preventDefault()}
-            className={cn(tileDragSurfaceClass, "relative h-16 w-16")}
-            aria-label={`${ex.exercise_name}. Tap to log sets, press and hold to reorder`}
-          >
-            {!showPlaceholder ? (
-              <ExerciseMediaImage
-                src={media}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="64px"
-                onError={onThumbError}
-                draggable={false}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <ExerciseIcon name={ex.exercise_name} className="w-5 h-5" color="#ffffff" />
-              </div>
-            )}
-            <span
-              className={cn(
-                "absolute inset-x-0 bottom-0 truncate text-center font-semibold px-1 py-0.5 text-[8px] leading-tight",
-                "bg-black/40 text-white backdrop-blur-[2px]",
-              )}
-            >
-              {loggedSetLabel(loggedCount)}
-            </span>
-          </div>
-          <LoggedMiniExerciseMenu
-            overlay
-            showReset={showReset}
-            exerciseName={ex.exercise_name}
-            exerciseId={ex.exercise_id}
-            category={ex.category}
-            notes={ex.notes}
-            exercises={exercisesCatalog}
-            isDarkMode={isDarkMode}
-            onReset={onReset}
-            resetting={resetting}
-            {...menuSessionProps}
-          />
-        </div>
-        <p
-          className={cn(
-            "w-full text-center text-[11px] font-medium leading-tight line-clamp-2",
-            isDarkMode ? "text-iron-200" : "text-slate-700",
-          )}
-          title={ex.exercise_name}
-        >
-          {ex.exercise_name}
-        </p>
-      </SortableMotionShell>
-    );
-  }
-
   return (
     <SortableMotionShell
       setNodeRef={setNodeRef}
@@ -842,26 +710,23 @@ function SortableExerciseTile({
     >
       <div
         className={cn(
-          "relative w-full",
-          miniLogged ? "h-10 w-10" : "aspect-square",
-          !miniLogged && (isDarkMode ? "bg-iron-800" : "bg-slate-100"),
+          "relative w-full aspect-square",
+          isDarkMode ? "bg-iron-800" : "bg-slate-100",
         )}
       >
-        {!miniLogged ? (
-          <LoggedMiniExerciseMenu
-            overlay
-            showReset={showReset}
-            exerciseName={ex.exercise_name}
-            exerciseId={ex.exercise_id}
-            category={ex.category}
-            notes={ex.notes}
-            exercises={exercisesCatalog}
-            isDarkMode={isDarkMode}
-            onReset={onReset}
-            resetting={resetting}
-            {...menuSessionProps}
-          />
-        ) : null}
+        <LoggedMiniExerciseMenu
+          overlay
+          showReset={showReset}
+          exerciseName={ex.exercise_name}
+          exerciseId={ex.exercise_id}
+          category={ex.category}
+          notes={ex.notes}
+          exercises={exercisesCatalog}
+          isDarkMode={isDarkMode}
+          onReset={onReset}
+          resetting={resetting}
+          {...menuSessionProps}
+        />
         <div
           ref={setActivatorNodeRef}
           {...attributes}
@@ -908,7 +773,7 @@ function SortableExerciseTile({
                 alt=""
                 fill
                 className="object-cover"
-                sizes={miniLogged ? "40px" : compact ? "33vw" : "50vw"}
+                sizes={compact ? "33vw" : "50vw"}
                 onError={onThumbError}
                 draggable={false}
               />
@@ -916,10 +781,10 @@ function SortableExerciseTile({
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
                 <ExerciseIcon
                   name={ex.exercise_name}
-                  className={miniLogged ? "w-4 h-4" : compact ? "w-6 h-6" : "w-8 h-8"}
-                  color={miniLogged ? "#ffffff" : isDarkMode ? "#71717a" : "#94a3b8"}
+                  className={compact ? "w-6 h-6" : "w-8 h-8"}
+                  color={isDarkMode ? "#71717a" : "#94a3b8"}
                 />
-              {!compact && !miniLogged ? (
+              {!compact ? (
                 <span
                   className={`text-[9px] font-medium ${isDarkMode ? "text-iron-500" : "text-slate-400"}`}
                 >
@@ -932,10 +797,8 @@ function SortableExerciseTile({
           {hasLogged ? (
             <span
               className={cn(
-                miniLogged
-                  ? "absolute inset-x-0 bottom-0 z-10 truncate text-center font-bold px-0.5 py-px leading-none"
-                  : "absolute bottom-1 left-1 right-1 z-10 mx-auto max-w-[calc(100%-0.5rem)] truncate text-center font-bold rounded-md px-1 py-0.5",
-                miniLogged ? "text-[7px]" : compact ? "text-[9px]" : "text-[10px]",
+                "absolute bottom-1 left-1 right-1 z-10 mx-auto max-w-[calc(100%-0.5rem)] truncate text-center font-bold rounded-md px-1 py-0.5",
+                compact ? "text-[9px]" : "text-[10px]",
                 solidLoggedTile
                   ? "bg-white/25 text-white"
                   : isDarkMode
@@ -948,29 +811,27 @@ function SortableExerciseTile({
           ) : null}
         </div>
       </div>
-      {!miniLogged ? (
-        <p
-          role="button"
-          tabIndex={0}
-          onClick={e => openExerciseFromTileClick(e, onOpen, ex.exercise_name, ex.category)}
-          onKeyDown={e => openExerciseFromKey(e, onOpen, ex.exercise_name, ex.category)}
-          className={cn(
-            "px-1.5 font-semibold leading-snug line-clamp-2 cursor-pointer",
-            compact ? "py-1 text-[10px] min-h-[2rem]" : "py-2 text-xs min-h-[2.5rem]",
-            hasLogged && solidLoggedTile
-              ? "text-white"
-              : hasLogged
-                ? isDarkMode
-                  ? "text-emerald-100"
-                  : "text-emerald-900"
-                : isDarkMode
-                  ? "text-iron-100"
-                  : "text-slate-900",
-          )}
-        >
-          {ex.exercise_name}
-        </p>
-      ) : null}
+      <p
+        role="button"
+        tabIndex={0}
+        onClick={e => openExerciseFromTileClick(e, onOpen, ex.exercise_name, ex.category)}
+        onKeyDown={e => openExerciseFromKey(e, onOpen, ex.exercise_name, ex.category)}
+        className={cn(
+          "px-1.5 font-semibold leading-snug line-clamp-2 cursor-pointer",
+          compact ? "py-1 text-[10px] min-h-[2rem]" : "py-2 text-xs min-h-[2.5rem]",
+          hasLogged && solidLoggedTile
+            ? "text-white"
+            : hasLogged
+              ? isDarkMode
+                ? "text-emerald-100"
+                : "text-emerald-900"
+              : isDarkMode
+                ? "text-iron-100"
+                : "text-slate-900",
+        )}
+      >
+        {ex.exercise_name}
+      </p>
       {embedInlinePanel ? (
         <InlineExerciseLogBlock
           show={inlineLog && isExpanded}
@@ -1248,7 +1109,6 @@ export default function ReorderableExerciseTileGrid({
   exercisesCatalog,
   className = "",
   showSizeToggle = true,
-  prioritizeLoggedTiles = false,
   greenLoggedTiles = true,
   sessionId = null,
   inlineLog = false,
@@ -1282,14 +1142,8 @@ export default function ReorderableExerciseTileGrid({
   const listMode = isListLayout(layout);
 
   const exerciseGroups = useMemo(
-    () =>
-      buildExerciseDisplayGroups(
-        exercises,
-        completedSetCountFor,
-        prioritizeLoggedTiles,
-        sessionId,
-      ),
-    [exercises, completedSetCountFor, prioritizeLoggedTiles, sessionId, exerciseOrderVersion],
+    () => buildExerciseDisplayGroups(exercises, sessionId),
+    [exercises, sessionId, exerciseOrderVersion],
   );
 
   const ids = useMemo(
@@ -1335,7 +1189,7 @@ export default function ReorderableExerciseTileGrid({
     if (!stillThere) setExpandedLog(null);
   }, [exercises, expandedLog?.name]);
 
-  const renderExercise = (ex, { panelBelowScroller = false, embedInlinePanel = true } = {}) => {
+  const renderExercise = (ex, { embedInlinePanel = true } = {}) => {
     const media = resolveMedia(ex.exercise_name);
     const showPlaceholder = !media || thumbFailed[ex.exercise_name];
     const isExpanded = inlineLog && expandedLog?.name === ex.exercise_name;
@@ -1353,13 +1207,11 @@ export default function ReorderableExerciseTileGrid({
       onRemoveAdded,
       exercisesCatalog,
       solidLoggedTile,
-      compactLoggedLayout: prioritizeLoggedTiles && panelBelowScroller,
       isExpanded,
       inlineLog,
       sessionId,
       userId: user?.id,
       getExerciseSetHistory,
-      panelBelowScroller,
       embedInlinePanel,
       onMoveToTop: onMoveExerciseToTop,
       ...inlineLogScrollProps(ex.exercise_name),
@@ -1372,9 +1224,9 @@ export default function ReorderableExerciseTileGrid({
     );
   };
 
-  const renderGridGroupExercises = (groupExercises, { panelBelowScroller = false } = {}) => {
+  const renderGridGroupExercises = groupExercises => {
     if (!inlineLog || isListLayout(layout)) {
-      return groupExercises.map(ex => renderExercise(ex, { panelBelowScroller }));
+      return groupExercises.map(ex => renderExercise(ex));
     }
 
     const nodes = [];
@@ -1382,7 +1234,7 @@ export default function ReorderableExerciseTileGrid({
 
     for (let i = 0; i < groupExercises.length; i++) {
       const ex = groupExercises[i];
-      nodes.push(renderExercise(ex, { panelBelowScroller, embedInlinePanel: false }));
+      nodes.push(renderExercise(ex, { embedInlinePanel: false }));
       if (expandedLog?.name === ex.exercise_name) {
         pendingExpand = expandedLog;
       }
@@ -1413,13 +1265,9 @@ export default function ReorderableExerciseTileGrid({
     "sticky top-0 z-20 font-semibold uppercase tracking-wide",
     "border-b backdrop-blur-md supports-[backdrop-filter]:bg-opacity-95",
     listMode ? "-mx-0 px-0 py-1.5 text-[11px]" : "col-span-full -mx-0 px-0 py-1.5 text-[10px]",
-    area === LOGGED_TILE_SECTION
-      ? isDarkMode
-        ? "border-emerald-600/80 bg-emerald-950/95 text-emerald-300"
-        : "border-emerald-300/90 bg-emerald-50 text-emerald-800"
-      : isDarkMode
-        ? "border-iron-800/80 bg-iron-950/92 text-iron-400"
-        : "border-slate-200/80 bg-surface-section/95 text-slate-500",
+    isDarkMode
+      ? "border-iron-800/80 bg-iron-950/92 text-iron-400"
+      : "border-slate-200/80 bg-surface-section/95 text-slate-500",
     );
 
   const handleDragEnd = event => {
@@ -1477,48 +1325,14 @@ export default function ReorderableExerciseTileGrid({
                     <span
                       className={cn(
                         "ml-1.5 font-medium normal-case tracking-normal",
-                        group.area === LOGGED_TILE_SECTION
-                          ? isDarkMode
-                            ? "text-emerald-500"
-                            : "text-emerald-600"
-                          : isDarkMode
-                            ? "text-iron-600"
-                            : "text-slate-400",
+                        isDarkMode ? "text-iron-600" : "text-slate-400",
                       )}
                     >
                       · {group.exercises.length}
                     </span>
                   </div>
                 ) : null}
-                {group.area === LOGGED_TILE_SECTION && !listMode ? (
-                  <>
-                    <div
-                      className={loggedMiniTileScrollOuterClass}
-                      style={{ WebkitOverflowScrolling: "touch" }}
-                    >
-                      <div className={loggedMiniTileScrollInnerClass}>
-                        {group.exercises.map(ex => renderExercise(ex, { panelBelowScroller: true }))}
-                      </div>
-                    </div>
-                    {inlineLog &&
-                    expandedLog &&
-                    group.exercises.some(ex => ex.exercise_name === expandedLog.name) ? (
-                      <div className="col-span-full min-w-0">
-                        <InlineExerciseLogBlock
-                          show
-                          sessionId={sessionId}
-                          exerciseName={expandedLog.name}
-                          category={expandedLog.category}
-                          exercisesCatalog={exercisesCatalog}
-                          isDarkMode={isDarkMode}
-                          {...inlineLogScrollProps(expandedLog.name)}
-                        />
-                      </div>
-                    ) : null}
-                  </>
-                ) : (
-                  renderGridGroupExercises(group.exercises)
-                )}
+                {renderGridGroupExercises(group.exercises)}
               </Fragment>
             ))}
             </div>
@@ -1527,8 +1341,4 @@ export default function ReorderableExerciseTileGrid({
       </DndContext>
     </div>
   );
-}
-
-export function shouldBlockExerciseTileNavigation() {
-  return isExerciseTileNavigationBlocked();
 }

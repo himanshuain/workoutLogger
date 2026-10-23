@@ -4,7 +4,11 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
-import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient";
+import {
+  getSessionExtras,
+  moveSessionExerciseToTop,
+  removeSessionExtra,
+} from "@/lib/workoutSessionClient";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
   Plus,
@@ -21,11 +25,7 @@ import { motion } from "framer-motion";
 import { SpringIn } from "@/components/ui/fade-in";
 import { narrowMobileWideDesktopClass } from "@/components/layout/PageContainer";
 import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
-import {
-  orderPlannedExercises,
-  persistExerciseOrder,
-  moveSessionExerciseToTop,
-} from "@/lib/sessionExerciseOrder";
+import { orderPlannedExercises, persistExerciseOrder } from "@/lib/sessionExerciseOrder";
 import {
   exerciseHasLoggedSets,
   completedSetCountForExercise,
@@ -68,7 +68,6 @@ export default function TodayWorkoutSection({
     user,
     routines,
     activeSession,
-    startWorkoutSession,
     markTodayWorkoutDone,
     undoTodayWorkoutDone,
     exercises,

@@ -30,16 +30,6 @@ export function setWorkoutExerciseLayout(layout) {
   }
 }
 
-/** @deprecated use getWorkoutExerciseLayout */
-export function getWorkoutTileSize() {
-  return getWorkoutExerciseLayout();
-}
-
-/** @deprecated use setWorkoutExerciseLayout */
-export function setWorkoutTileSize(size) {
-  setWorkoutExerciseLayout(size);
-}
-
 export function isListLayout(layout) {
   return layout === "list";
 }
@@ -51,9 +41,3 @@ export function tileSizeGridClass(layout) {
   return "grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7";
 }
 
-/** Today “Logged set” — horizontal scroll strip (not nested CSS grid). */
-export const loggedMiniTileScrollOuterClass =
-  "col-span-full w-full min-w-0 overflow-x-auto pb-1 overscroll-x-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
-
-export const loggedMiniTileScrollInnerClass =
-  "inline-flex w-max flex-row flex-nowrap items-start gap-2";

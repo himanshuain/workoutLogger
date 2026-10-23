@@ -3,14 +3,17 @@ import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
-import { getSessionExtras, removeSessionExtra } from "@/lib/workoutSessionClient";
+import {
+  getSessionExtras,
+  moveSessionExerciseToTop,
+  removeSessionExtra,
+} from "@/lib/workoutSessionClient";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
   orderPlannedExercises,
   persistExerciseOrder,
-  moveSessionExerciseToTop,
 } from "@/lib/sessionExerciseOrder";
 import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
 import {
@@ -49,7 +52,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// exerciseStatus + statusLabel mirror Today / WorkoutSessionView helpers
+// exerciseStatus helpers for session stats
 function exerciseStatus(name, setLogs) {
   const completed = (setLogs || []).filter(l => l.exercise_name === name && l.is_completed);
   if (completed.length > 0) return "in_progress";

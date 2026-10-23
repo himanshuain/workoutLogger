@@ -1,11 +1,5 @@
 import { groupExercisesByArea } from "@/lib/exerciseAreaGroups";
-import {
-  getSessionExerciseOrder,
-  setSessionExerciseOrder,
-  moveSessionExerciseToTop,
-} from "@/lib/workoutSessionClient";
-
-export { moveSessionExerciseToTop };
+import { getSessionExerciseOrder, setSessionExerciseOrder } from "@/lib/workoutSessionClient";
 
 export function isCompleteSessionExerciseOrder(order, exerciseNames) {
   const names = exerciseNames || [];

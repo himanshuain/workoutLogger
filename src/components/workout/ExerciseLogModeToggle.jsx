@@ -71,13 +71,20 @@ export function DualPulleyPill({
   );
 }
 
-/** Barbell and body weight mode pills. */
-export default function ExerciseLogModePillRow({ value, onChange, isDarkMode, dense = false }) {
+/** Barbell and body weight mode pills. Optional `prefix` (e.g. Dual pulley) scrolls inline. */
+export default function ExerciseLogModePillRow({
+  value,
+  onChange,
+  isDarkMode,
+  dense = false,
+  prefix = null,
+}) {
   return (
     <div
       className={cn(pillRowScrollClass, dense && "gap-1")}
       style={{ WebkitOverflowScrolling: "touch" }}
     >
+      {prefix}
       {NO_WEIGHT_OPTIONS.map(({ id, label }) => {
         const selected = value != null && value === id;
         return (

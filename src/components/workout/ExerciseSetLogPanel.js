@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Trash2 } from "lucide-react";
+import { Eye, History, Trash2 } from "lucide-react";
 import {
   REPS_PILLS,
   formatWeightPill,
@@ -20,6 +20,9 @@ export default function ExerciseSetLogPanel({
   compact = false,
   explicitPicks = false,
   className,
+  onViewExercise = null,
+  onOpenHistory = null,
+  showHistoryAction = false,
 }) {
   const logger = useExerciseSetLogger({
     sessionId,
@@ -48,11 +51,11 @@ export default function ExerciseSetLogPanel({
     handleRemoveSet,
   } = logger;
 
-  const spaceY = compact ? "space-y-2.5" : "space-y-8";
+  const spaceY = compact ? "space-y-2" : "space-y-8";
   const densePills = compact;
   const pillScrollAlign = compact ? "end" : "center";
 
-  const dualPulleyRow = (
+  const dualPulleyPill = (
     <DualPulleyPill
       selected={dualPulleyActive}
       onToggle={handleDualPulleyToggle}
@@ -66,6 +69,7 @@ export default function ExerciseSetLogPanel({
       onChange={handleLogModePill}
       isDarkMode={isDarkMode}
       dense={densePills}
+      prefix={compact ? dualPulleyPill : null}
     />
   );
   const weightRail = (
@@ -93,6 +97,54 @@ export default function ExerciseSetLogPanel({
       dense={densePills}
     />
   );
+
+  const iconBtnClass = cn(
+    "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+    isDarkMode
+      ? "text-iron-400 hover:bg-iron-800 hover:text-iron-100"
+      : "text-slate-500 hover:bg-slate-200 hover:text-slate-800",
+  );
+
+  const quickActionButtons =
+    compact && (typeof onViewExercise === "function" || (showHistoryAction && onOpenHistory))
+      ? (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {typeof onViewExercise === "function" ? (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onViewExercise();
+                }}
+                aria-label={`View ${exerciseName}`}
+                className={iconBtnClass}
+              >
+                <Eye className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            ) : null}
+            {showHistoryAction && typeof onOpenHistory === "function" ? (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
+                  onOpenHistory();
+                }}
+                aria-label={`History for ${exerciseName}`}
+                className={iconBtnClass}
+              >
+                <History className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            ) : null}
+          </div>
+        )
+      : null;
+
+  const modeToolbarRow = compact ? (
+    <div className="flex items-center justify-between gap-2">
+      <div className="min-w-0 flex-1">{logModeRow}</div>
+      {quickActionButtons}
+    </div>
+  ) : null;
 
   const saveSetCard = (
     <div
@@ -159,12 +211,16 @@ export default function ExerciseSetLogPanel({
 
   return (
     <div
-      className={cn(compact ? "px-2 py-3" : "px-5 py-6", spaceY, className)}
+      className={cn(compact ? "px-2 py-2" : "px-5 py-6", spaceY, className)}
       onClick={e => e.stopPropagation()}
       onKeyDown={e => e.stopPropagation()}
     >
-      {dualPulleyRow}
-      {logModeRow}
+      {compact ? modeToolbarRow : (
+        <>
+          {dualPulleyPill}
+          {logModeRow}
+        </>
+      )}
       {compact ? (
         <div
           data-log-section="weight-reps"

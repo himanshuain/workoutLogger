@@ -21,6 +21,12 @@ import {
 } from "@/lib/exerciseCatalog";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { useExerciseMediaOverridePersist } from "@/hooks/useExerciseMediaOverridePersist";
+import { useSmartworkoutExerciseDetail } from "@/hooks/useSmartworkoutExerciseDetail";
+import {
+  ExerciseSmartworkoutDescription,
+  ExerciseSmartworkoutHowToPerform,
+  ExerciseSmartworkoutInfoCard,
+} from "@/components/exercises/ExerciseSmartworkoutSheetSections";
 import { cn } from "@/lib/utils";
 
 /**
@@ -51,6 +57,8 @@ export default function ExercisePreviewPanel({
   const mediaUrls = useResolvedExerciseMediaSlides(exercise, exercises, mediaOverrides);
   const mediaPersist = useExerciseMediaOverridePersist();
   const { removeMediaUrl, deletingUrl } = mediaPersist;
+  const { detail: smartworkoutDetail, loading: smartworkoutLoading } =
+    useSmartworkoutExerciseDetail(exercise);
   const carouselUrls = useMemo(
     () => mediaUrlsWithPendingDelete(mediaUrls, deletingUrl),
     [mediaUrls, deletingUrl],
@@ -268,17 +276,63 @@ export default function ExercisePreviewPanel({
   if (!exercise) return null;
 
   const isSheet = variant === "sheet";
+  const smartworkoutSheet = isSheet && Boolean(smartworkoutDetail);
 
   return (
     <div
       className={
         isSheet
-          ? "flex flex-col gap-3 pb-1"
+          ? "flex flex-col gap-2.5 pb-1"
           : hideHeading
             ? "pb-2"
             : "pb-6"
       }
     >
+      {smartworkoutSheet ? (
+        <>
+          <ExerciseSmartworkoutInfoCard
+            name={exercise.name}
+            primaryMuscle={
+              smartworkoutDetail.primaryMuscle ||
+              (exercise.category
+                ? String(exercise.category).replace(/^\w/, c => c.toUpperCase())
+                : "General")
+            }
+            stabilizingMuscles={smartworkoutDetail.stabilizingMuscles}
+            isDarkMode={isDarkMode}
+            className="mt-7"
+          />
+          <ExerciseMediaCarousel
+            urls={carouselUrls}
+            alt={exercise.name}
+            isDarkMode={isDarkMode}
+            compact
+            className="shrink-0"
+            onDeleteUrl={handleDeleteMediaUrl}
+            deletingUrl={deletingUrl}
+          />
+          <ExerciseDrawerMediaActions
+            exercise={exercise}
+            exerciseName={exercise.name}
+            allExercises={exercises}
+            isDarkMode={isDarkMode}
+            mediaOverrides={mediaOverrides}
+            updateSettings={updateSettings}
+            compact={isSheet}
+            mediaPersist={mediaPersist}
+          />
+          <ExerciseSmartworkoutHowToPerform
+            steps={smartworkoutDetail.instructions}
+            isDarkMode={isDarkMode}
+            loading={smartworkoutLoading}
+          />
+          <ExerciseSmartworkoutDescription
+            text={smartworkoutDetail.description}
+            isDarkMode={isDarkMode}
+          />
+        </>
+      ) : (
+        <>
       <ExerciseMediaCarousel
         urls={carouselUrls}
         alt={exercise.name}
@@ -298,8 +352,10 @@ export default function ExercisePreviewPanel({
         compact={isSheet}
         mediaPersist={mediaPersist}
       />
+        </>
+      )}
 
-      {!hideHeading && (
+      {!hideHeading && !smartworkoutSheet && (
         <h1
           className={`mt-8 text-2xl font-semibold tracking-tight ${
             isDarkMode ? "text-iron-50" : "text-slate-900"
@@ -308,7 +364,7 @@ export default function ExercisePreviewPanel({
           {exercise.name}
         </h1>
       )}
-      {isSheet ? (
+      {isSheet && !smartworkoutSheet ? (
         equipmentLine ? (
           <p className={cn("text-[11px] font-medium", isDarkMode ? "text-iron-500" : "text-slate-500")}>
             {equipmentLine}

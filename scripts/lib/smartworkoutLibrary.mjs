@@ -3,6 +3,8 @@
  * Demo media is served from api.smartworkout.app (GIF at /asset/image/{uuid}, MP4 at /asset/video/…).
  */
 
+import { parseSmartworkoutExerciseFromHtml as parseFromHtml } from "../../src/lib/smartworkoutExerciseParse.js";
+
 const SITEMAP_INDEX = "https://smartworkout.app/sitemap.xml";
 const EXERCISE_PAGE_RE =
   /^https:\/\/smartworkout\.app\/en\/exercise-library\/[^/]+\/[^/]+\/?$/;
@@ -40,37 +42,13 @@ export async function listSmartworkoutExercisePageUrls() {
   return [...urls].sort();
 }
 
-/** @returns {{ id: string, name: string, aliases: string[], gifUrl: string, libraryPath: string | null, videoDarkUrl: string | null, videoLightUrl: string | null, bodyPart: string | null } | null} */
+/** @returns {ReturnType<typeof parseFromHtml> & { slug: string } | null} */
 export function parseSmartworkoutExerciseFromHtml(html, pageUrl) {
-  const m = String(html).match(
-    /<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/,
-  );
-  if (!m) return null;
-  let data;
-  try {
-    data = JSON.parse(m[1]);
-  } catch {
-    return null;
-  }
-  const ex = data?.props?.pageProps?.exercise;
-  if (!ex?.id) return null;
-
-  const name = ex.translations?.en?.trim();
-  const gifUrl = ex.image?.uri?.trim() || null;
-  if (!name || !gifUrl) return null;
-
-  const aliases = Array.isArray(ex.aliases?.en) ? ex.aliases.en.filter(Boolean) : [];
-
+  const record = parseFromHtml(html, pageUrl);
+  if (!record) return null;
   return {
-    id: String(ex.id),
-    name: name.trim(),
-    aliases,
-    slug: slugFromExercisePageUrl(pageUrl),
-    gifUrl,
-    libraryPath: data?.props?.pageProps?.path || pageUrl.replace("https://smartworkout.app", "") || null,
-    videoDarkUrl: ex.videoDarkUrl || null,
-    videoLightUrl: ex.videoLightUrl || null,
-    bodyPart: ex.bodyPart || null,
+    ...record,
+    slug: record.slug || slugFromExercisePageUrl(pageUrl),
   };
 }
 
@@ -100,6 +78,13 @@ export function smartworkoutMetadata(record, syncedAt = new Date().toISOString()
       videoLightUrl: record.videoLightUrl,
       bodyPart: record.bodyPart,
       aliases: record.aliases,
+      description: record.description || null,
+      instructions: record.instructions || [],
+      tips: record.tips || [],
+      commonMistakes: record.commonMistakes || [],
+      exerciseMuscles: record.exerciseMuscles || {},
+      equipments: record.equipments || [],
+      tags: record.tags || [],
       syncedAt,
     },
   };
@@ -116,7 +101,7 @@ export function rowFromSmartworkoutRecord(record) {
     user_id: null,
     external_source: "smartworkout",
     external_id: String(record.id),
-    description: null,
+    description: record.description?.trim() || null,
     gif_url: record.gifUrl,
     image_url: null,
     metadata: smartworkoutMetadata(record),

@@ -87,14 +87,38 @@ function InlineExerciseLogBlock({
   show,
   sessionId,
   exerciseName,
+  exerciseId = null,
   category,
   exercisesCatalog,
   isDarkMode,
   scrollOnUserExpand = false,
   onConsumedScrollOnExpand,
+  userId = null,
+  getExerciseSetHistory = null,
 }) {
   const rootRef = useRef(null);
   const catalogExercise = useCatalogExerciseForName(exercisesCatalog, exerciseName);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const showHistory = Boolean(sessionId && getExerciseSetHistory);
+
+  const previewExercise = useMemo(
+    () =>
+      resolveExerciseForPreview(exercisesCatalog, {
+        exerciseId,
+        exerciseName,
+        category,
+      }) ?? catalogExercise,
+    [exercisesCatalog, exerciseId, exerciseName, category, catalogExercise],
+  );
+
+  const openView = useCallback(() => {
+    if (!previewExercise) {
+      toast.message("Exercise not found in catalog");
+      return;
+    }
+    setPreviewOpen(true);
+  }, [previewExercise]);
 
   useEffect(() => {
     if (!show || !exerciseName || !scrollOnUserExpand) return;
@@ -116,24 +140,77 @@ function InlineExerciseLogBlock({
 
   if (!show || !sessionId || !exerciseName) return null;
   return (
-    <div
-      ref={rootRef}
-      data-inline-exercise-log
-      className={cn(
-        "rounded-b-card border-t",
-        isDarkMode ? "border-iron-700/80 bg-iron-950/60" : "border-slate-200 bg-slate-50/90"
-      )}
-    >
-      <ExerciseSetLogPanel
-        sessionId={sessionId}
-        exerciseName={exerciseName}
-        category={category || "other"}
-        catalogExercise={catalogExercise}
-        isDarkMode={isDarkMode}
-        compact
-        explicitPicks
-      />
-    </div>
+    <>
+      <div
+        ref={rootRef}
+        data-inline-exercise-log
+        className={cn(
+          "rounded-b-card border-t",
+          isDarkMode ? "border-iron-700/80 bg-iron-950/60" : "border-slate-200 bg-slate-50/90",
+        )}
+      >
+        <ExerciseSetLogPanel
+          sessionId={sessionId}
+          exerciseName={exerciseName}
+          category={category || "other"}
+          catalogExercise={catalogExercise}
+          isDarkMode={isDarkMode}
+          compact
+          explicitPicks
+          onViewExercise={openView}
+          onOpenHistory={() => setHistoryOpen(true)}
+          showHistoryAction={showHistory}
+        />
+      </div>
+      {showHistory ? (
+        <ExercisePastSetsDrawer
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          isDarkMode={isDarkMode}
+          exerciseName={exerciseName}
+          excludeSessionId={sessionId}
+          getExerciseSetHistory={getExerciseSetHistory}
+          userId={userId}
+        />
+      ) : null}
+      <Modal open={previewOpen} onOpenChange={setPreviewOpen}>
+        <ModalContent
+          showCloseButton
+          className={cn(
+            "flex min-h-0 flex-col overflow-hidden",
+            isDarkMode
+              ? "border-iron-800/60 bg-iron-950/98 backdrop-blur-xl"
+              : "border-surface-subtle bg-surface-section/98 backdrop-blur-xl",
+          )}
+        >
+          {previewExercise?.external_source !== "smartworkout" ? (
+            <ModalHeader className="shrink-0 space-y-0 px-5 pb-1 pt-0">
+              <ExerciseSheetTitleRow
+                name={previewExercise?.name ?? exerciseName}
+                category={previewExercise?.category ?? category}
+                isDarkMode={isDarkMode}
+              />
+            </ModalHeader>
+          ) : null}
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] touch-pan-y",
+              previewExercise?.external_source === "smartworkout" ? "pt-1" : "pt-2",
+            )}
+          >
+            {previewExercise ? (
+              <ExercisePreviewPanel
+                exercise={previewExercise}
+                isDarkMode={isDarkMode}
+                hideHeading
+                hideActions
+                variant="sheet"
+              />
+            ) : null}
+          </div>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }
 
@@ -621,6 +698,7 @@ function LoggedMiniExerciseMenu({
       >
         <ModalContent
           showCloseButton
+          showHandle={false}
           className={cn(
             "flex min-h-0 flex-col overflow-hidden border-t-0",
             isDarkMode
@@ -628,14 +706,21 @@ function LoggedMiniExerciseMenu({
               : "border-surface-subtle bg-surface-section/98 backdrop-blur-xl"
           )}
         >
-          <ModalHeader className="shrink-0 space-y-0 px-5 pb-1 pt-0">
-            <ExerciseSheetTitleRow
-              name={previewExercise?.name ?? exerciseName ?? "Exercise"}
-              category={previewExercise?.category}
-              isDarkMode={isDarkMode}
-            />
-          </ModalHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] touch-pan-y">
+          {previewExercise?.external_source !== "smartworkout" ? (
+            <ModalHeader className="shrink-0 space-y-0 px-5 pb-1 pt-2">
+              <ExerciseSheetTitleRow
+                name={previewExercise?.name ?? exerciseName ?? "Exercise"}
+                category={previewExercise?.category}
+                isDarkMode={isDarkMode}
+              />
+            </ModalHeader>
+          ) : null}
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] touch-pan-y",
+              previewExercise?.external_source === "smartworkout" ? "pt-1" : "pt-2",
+            )}
+          >
             {previewExercise ? (
               <ExercisePreviewPanel
                 exercise={previewExercise}
@@ -850,11 +935,14 @@ function SortableExerciseTile({
           show={inlineLog && isExpanded}
           sessionId={sessionId}
           exerciseName={ex.exercise_name}
+          exerciseId={ex.exercise_id}
           category={ex.category}
           exercisesCatalog={exercisesCatalog}
           isDarkMode={isDarkMode}
           scrollOnUserExpand={scrollOnUserExpand}
           onConsumedScrollOnExpand={onConsumedScrollOnExpand}
+          userId={userId}
+          getExerciseSetHistory={getExerciseSetHistory}
         />
       ) : null}
     </SortableMotionShell>
@@ -1049,11 +1137,14 @@ function SortableExerciseListRow({
         show={inlineLog && isExpanded}
         sessionId={sessionId}
         exerciseName={ex.exercise_name}
+        exerciseId={ex.exercise_id}
         category={ex.category}
         exercisesCatalog={exercisesCatalog}
         isDarkMode={isDarkMode}
         scrollOnUserExpand={scrollOnUserExpand}
         onConsumedScrollOnExpand={onConsumedScrollOnExpand}
+        userId={userId}
+        getExerciseSetHistory={getExerciseSetHistory}
       />
     </SortableMotionShell>
   );
@@ -1183,7 +1274,12 @@ export default function ReorderableExerciseTileGrid({
           setScrollPanelOnExpandFor(null);
         } else {
           setScrollPanelOnExpandFor(name);
-          setExpandedLog({ name, category: category || "other" });
+          const row = exercises?.find(e => e.exercise_name === name);
+          setExpandedLog({
+            name,
+            category: category || "other",
+            exerciseId: row?.exercise_id ?? null,
+          });
         }
         return;
       }
@@ -1253,9 +1349,12 @@ export default function ReorderableExerciseTileGrid({
               show
               sessionId={sessionId}
               exerciseName={pendingExpand.name}
+              exerciseId={pendingExpand.exerciseId}
               category={pendingExpand.category}
               exercisesCatalog={exercisesCatalog}
               isDarkMode={isDarkMode}
+              userId={user?.id}
+              getExerciseSetHistory={getExerciseSetHistory}
               {...inlineLogScrollProps(pendingExpand.name)}
             />
           </div>

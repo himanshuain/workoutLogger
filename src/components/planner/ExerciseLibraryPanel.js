@@ -393,14 +393,21 @@ export default function ExerciseLibraryPanel({
             "flex min-h-0 flex-col overflow-hidden",
           )}
         >
-          <ModalHeader className="shrink-0 pb-2">
-            <ExerciseSheetTitleRow
-              name={previewExercise?.name ?? "Exercise"}
-              category={previewExercise?.category}
-              isDarkMode={isDarkMode}
-            />
-          </ModalHeader>
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
+          {previewExercise?.external_source !== "smartworkout" ? (
+            <ModalHeader className="shrink-0 pb-2 pt-2">
+              <ExerciseSheetTitleRow
+                name={previewExercise?.name ?? "Exercise"}
+                category={previewExercise?.category}
+                isDarkMode={isDarkMode}
+              />
+            </ModalHeader>
+          ) : null}
+          <div
+            className={cn(
+              "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y",
+              "pt-1",
+            )}
+          >
             {previewExercise ? (
               <ExercisePreviewPanel
                 exercise={previewExercise}

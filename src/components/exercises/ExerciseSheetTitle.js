@@ -1,6 +1,5 @@
 import { ModalTitle } from "@/components/ui/modal";
-import GoogleGIcon from "@/components/icons/GoogleGIcon";
-import { googleImagesSearchUrl } from "@/lib/exerciseMedia";
+import ExerciseGoogleSearchChip from "@/components/exercises/ExerciseGoogleSearchChip";
 import { cn } from "@/lib/utils";
 
 export function ExerciseCategoryPill({ category, isDarkMode, className }) {
@@ -20,19 +19,18 @@ export function ExerciseCategoryPill({ category, isDarkMode, className }) {
   );
 }
 
-function sheetActionChipClass(isDarkMode) {
-  return cn(
-    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-[11px] font-semibold transition-colors",
-    isDarkMode
-      ? "border border-white/10 bg-white/[0.06] text-iron-100 active:bg-white/10"
-      : "border border-slate-200/90 bg-white text-slate-800 shadow-sm active:bg-slate-50",
-  );
-}
+/** Exercise name + category; optional Google chip inline after name. */
+export function ExerciseSheetTitleRow({
+  name,
+  category,
+  isDarkMode,
+  titleClassName,
+  /** SmartWorkout sheet: title + Google live in body card. */
+  titleInBody = false,
+}) {
+  if (titleInBody) return null;
 
-/** Exercise name + category on line 1; Google Images on line 2. */
-export function ExerciseSheetTitleRow({ name, category, isDarkMode, titleClassName }) {
   const displayName = name || "Exercise";
-  const googleHref = googleImagesSearchUrl(displayName);
 
   return (
     <div className="flex flex-col gap-2 pr-11">
@@ -50,21 +48,9 @@ export function ExerciseSheetTitleRow({ name, category, isDarkMode, titleClassNa
             isDarkMode={isDarkMode}
             className="align-middle"
           />
+          <ExerciseGoogleSearchChip name={displayName} isDarkMode={isDarkMode} />
         </span>
       </ModalTitle>
-      {googleHref ? (
-        <a
-          href={googleHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(sheetActionChipClass(isDarkMode), "w-fit")}
-          aria-label={`Search SmartWorkout images for ${displayName}`}
-          title="SmartWorkout on Google Images"
-        >
-          <GoogleGIcon className="h-4 w-4 shrink-0" aria-hidden />
-          <span>Search</span>
-        </a>
-      ) : null}
     </div>
   );
 }

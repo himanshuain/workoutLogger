@@ -46,7 +46,7 @@ const modalSheetHeightClass =
   "h-[96dvh] max-h-[96dvh] min-h-[min(55dvh,520px)]";
 
 const ModalContent = React.forwardRef(
-  ({ className, children, showCloseButton = true, ...props }, ref) => {
+  ({ className, children, showCloseButton = true, showHandle = true, ...props }, ref) => {
     return (
       <Drawer.Portal>
         <ModalOverlay />
@@ -55,17 +55,20 @@ const ModalContent = React.forwardRef(
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 mx-auto mt-24 flex w-full min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
             modalSheetHeightClass,
+            !showHandle && "border-t-0",
             className,
           )}
           {...props}
         >
-          <Drawer.Handle
-            className="mx-auto mt-3 mb-2 h-1.5 w-12 flex-shrink-0 cursor-grab rounded-full bg-surface-pressed active:cursor-grabbing"
-            aria-label="Drag to resize sheet"
-          />
+          {showHandle ? (
+            <Drawer.Handle
+              className="mx-auto mt-3 mb-2 h-1.5 w-12 flex-shrink-0 cursor-grab rounded-full bg-surface-pressed active:cursor-grabbing"
+              aria-label="Drag to resize sheet"
+            />
+          ) : null}
           {children}
           {showCloseButton && (
-            <Drawer.Close className="absolute right-3 top-3 glass-close-btn">
+            <Drawer.Close className="absolute right-3 top-3 z-[60] glass-close-btn">
               <span className="ripple-ring" />
               <X className="h-4 w-4 relative z-10 text-iron-400" />
               <span className="sr-only">Close</span>

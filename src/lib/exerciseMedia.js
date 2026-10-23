@@ -3,6 +3,7 @@ import {
   getExerciseMediaOverrideByName,
   getExerciseMediaOverrideState,
 } from "@/lib/exerciseMediaOverrides";
+import { resolveExerciseFromCatalog } from "@/lib/plannerLibraryNavigation";
 
 /**
  * Prefer user override, then GIF (animated demo), then static image from catalog.
@@ -28,9 +29,14 @@ export function findCatalogExerciseByName(exercises, exerciseName) {
   return exercises.find(e => normalizeExerciseNameForLookup(e?.name) === key) ?? null;
 }
 
-/** Thumbnail URL for a routine/log row (catalog match + name-keyed overrides). */
-export function resolveExerciseMediaUrl(exercises, exerciseName, overrides) {
-  const ex = findCatalogExerciseByName(exercises, exerciseName);
+/**
+ * Thumbnail URL for a routine/log row (id + name catalog match + overrides).
+ * @param {string | null | undefined} exerciseId — routine row id when available
+ */
+export function resolveExerciseMediaUrl(exercises, exerciseName, overrides, exerciseId = null) {
+  const ex =
+    resolveExerciseFromCatalog(exercises, { exerciseId, exerciseName }) ??
+    findCatalogExerciseByName(exercises, exerciseName);
   if (ex) return exerciseMediaUrl(ex, overrides);
   return getExerciseMediaOverrideByName(exerciseName, overrides);
 }
@@ -67,6 +73,17 @@ export function getExerciseEquipment(exercise) {
 
 const GOOGLE_IMAGES_SITE_FILTER = "site:smartworkout.app";
 
+/** Direct media hosted on SmartWorkout (paste-URL validation). */
+export function isSmartworkoutMediaUrl(url) {
+  if (typeof url !== "string" || !url.trim()) return false;
+  try {
+    const host = new URL(url.trim()).hostname.toLowerCase();
+    return host === "api.smartworkout.app" || host.endsWith(".smartworkout.app");
+  } catch {
+    return false;
+  }
+}
+
 /** Google Images SERP URL for reference photos (embedding google.com in iframes is blocked). */
 export function googleImagesSearchUrl(query) {
   if (typeof query !== "string") return null;
@@ -102,6 +119,7 @@ export function exerciseImageUnoptimized(url) {
   if (
     url.includes("wger.de") ||
     url.includes("exercisedb.dev") ||
+    url.includes("api.smartworkout.app") ||
     /\.gif(\?|#|$)/i.test(url)
   ) {
     return true;
@@ -183,6 +201,7 @@ export function collectExerciseMediaUrls(exercise, allExercises, overrides) {
   if (Array.isArray(allExercises) && key) {
     for (const e of allExercises) {
       if (!e || e.id === exercise.id) continue;
+      if (e.external_source !== "smartworkout") continue;
       if (normalizeExerciseNameForMerge(e.name) !== key) continue;
       list.push(...collectUrlsFromExerciseRow(e));
     }

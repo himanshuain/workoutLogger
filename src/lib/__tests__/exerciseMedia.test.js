@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { exerciseImageUnoptimized, googleImagesSearchUrl } from "@/lib/exerciseMedia";
+import {
+  exerciseImageUnoptimized,
+  googleImagesSearchUrl,
+  isSmartworkoutMediaUrl,
+} from "@/lib/exerciseMedia";
 
 describe("exerciseImageUnoptimized", () => {
   it("allows user-pasted hosts without next.config entry", () => {
@@ -13,6 +17,11 @@ describe("exerciseImageUnoptimized", () => {
   it("still unoptimizes gifs and wger", () => {
     expect(exerciseImageUnoptimized("https://wger.de/media/foo.jpg")).toBe(true);
     expect(exerciseImageUnoptimized("https://cdn.example/demo.gif")).toBe(true);
+  });
+
+  it("recognizes SmartWorkout CDN URLs", () => {
+    expect(isSmartworkoutMediaUrl("https://api.smartworkout.app/asset/image/uuid")).toBe(true);
+    expect(isSmartworkoutMediaUrl("https://static.exercisedb.dev/x.gif")).toBe(false);
   });
 
   it("appends smartworkout site filter to google images search query", () => {

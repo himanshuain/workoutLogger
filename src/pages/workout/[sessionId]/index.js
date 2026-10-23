@@ -249,8 +249,8 @@ export default function WorkoutSessionPage() {
     }
   };
 
-  const resolveExerciseMedia = exerciseName =>
-    resolveExerciseMediaUrl(exercises, exerciseName, mediaOverrides);
+  const resolveExerciseMedia = (exerciseName, exerciseId = null) =>
+    resolveExerciseMediaUrl(exercises, exerciseName, mediaOverrides, exerciseId);
 
   const formatSessionDate = (dateStr) => {
     if (!dateStr) return "";

@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { searchExerciseGifs } from "@/lib/exerciseGifSearch";
 
-/**
- * Search local catalog + ExerciseDB for GIF demos (browser-side ExerciseDB call).
- */
+/** Search SmartWorkout exercises from the loaded catalog (in-memory). */
 export function useExerciseGifSearch(
   initialQuery = "",
   { enabled = true, debounceMs = 350, localExercises = [] } = {},

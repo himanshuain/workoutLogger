@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { useWorkout } from "@/context/WorkoutContext";
@@ -11,7 +11,8 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { googleImagesSearchUrl } from "@/lib/exerciseMedia";
+import { googleImagesSearchUrl, isSmartworkoutMediaUrl } from "@/lib/exerciseMedia";
+import { isSmartworkoutCatalogExercise } from "@/lib/exerciseGifSearch";
 import {
   getExerciseMediaOverrideUrl,
   isPersistableMediaUrl,
@@ -116,9 +117,14 @@ export default function ExerciseDrawerMediaActions({
   const googleHref = googleImagesSearchUrl(name);
   const currentOverride = getExerciseMediaOverrideUrl(exercise, mediaOverrides);
 
+  const smartworkoutCatalog = useMemo(
+    () => (allExercises || []).filter(isSmartworkoutCatalogExercise),
+    [allExercises],
+  );
+
   const librarySearch = useExerciseGifSearch(name, {
     enabled: pickerOpen,
-    localExercises: allExercises,
+    localExercises: smartworkoutCatalog,
   });
 
   const { results, loading, searched, query: searchQuery, setQuery } = librarySearch;
@@ -164,6 +170,10 @@ export default function ExerciseDrawerMediaActions({
     }
     if (!isPersistableMediaUrl(trimmed)) {
       toast.error("Enter a valid http(s) image or GIF URL");
+      return;
+    }
+    if (!isSmartworkoutMediaUrl(trimmed)) {
+      toast.error("Use a SmartWorkout URL (api.smartworkout.app) or upload from device");
       return;
     }
     await persistOverride(trimmed);
@@ -235,7 +245,8 @@ export default function ExerciseDrawerMediaActions({
   const emptyHint = searched ? (
     <div className="space-y-3 py-6 text-center">
       <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-        No GIFs found for &ldquo;{searchQuery.trim()}&rdquo;. Try a shorter or simpler name.
+        No SmartWorkout GIFs for &ldquo;{searchQuery.trim()}&rdquo;. Try a shorter name or search Google
+        (SmartWorkout only).
       </p>
       {googleHref ? (
         <a
@@ -245,7 +256,7 @@ export default function ExerciseDrawerMediaActions({
           className={googleLinkClass}
         >
           <GoogleGIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Search Google Images
+          SmartWorkout on Google Images
         </a>
       ) : null}
     </div>
@@ -265,7 +276,7 @@ export default function ExerciseDrawerMediaActions({
           )}
         >
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          Searching GIFs…
+          Searching SmartWorkout…
         </div>
       );
     }
@@ -309,8 +320,8 @@ export default function ExerciseDrawerMediaActions({
             target="_blank"
             rel="noopener noreferrer"
             className={chipClass}
-            aria-label={name ? `Search images for ${name}` : "Search images"}
-            title="Search images"
+            aria-label={name ? `Search SmartWorkout images for ${name}` : "Search SmartWorkout images"}
+            title="SmartWorkout on Google Images"
           >
             <GoogleGIcon className="h-4 w-4 shrink-0" />
             <span>Search</span>
@@ -352,7 +363,8 @@ export default function ExerciseDrawerMediaActions({
               Find a GIF
             </DrawerTitle>
             <DrawerDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
-              Search the library, upload a GIF from your device, or paste a URL.
+              Search the SmartWorkout catalog (~1k exercises). Upload is for your own GIFs; paste URLs must
+              be from api.smartworkout.app.
             </DrawerDescription>
           </DrawerHeader>
 
@@ -393,7 +405,7 @@ export default function ExerciseDrawerMediaActions({
                   autoComplete="off"
                   value={searchQuery}
                   onChange={e => setQuery(e.target.value)}
-                  placeholder="Search exercise name…"
+                  placeholder="Search SmartWorkout…"
                   autoFocus
                   className={cn(inputClass, "pl-10", searchQuery ? "pr-12" : "pr-3")}
                 />
@@ -423,7 +435,7 @@ export default function ExerciseDrawerMediaActions({
                 )}
               >
                 <Link2 className="h-4 w-4 shrink-0" aria-hidden />
-                Paste custom URL instead
+                Paste SmartWorkout URL
               </button>
             </div>
           </div>
@@ -468,7 +480,7 @@ export default function ExerciseDrawerMediaActions({
               Paste image URL
             </DrawerTitle>
             <DrawerDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
-              Paste a direct link to a .gif or image file to use as your thumbnail.
+              Paste a direct SmartWorkout asset URL (api.smartworkout.app).
             </DrawerDescription>
           </DrawerHeader>
 
@@ -484,7 +496,7 @@ export default function ExerciseDrawerMediaActions({
                 inputMode="url"
                 value={draftUrl}
                 onChange={e => setDraftUrl(e.target.value)}
-                placeholder="https://…/photo.jpg or .gif"
+                placeholder="https://api.smartworkout.app/asset/image/…"
                 className={cn(inputClass, draftUrl ? "pr-12" : undefined)}
               />
               {draftUrl ? (

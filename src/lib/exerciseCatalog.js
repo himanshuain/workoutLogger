@@ -25,7 +25,8 @@ function catalogRichnessScore(exercise) {
   if (descLen > 80) s += 60;
   else if (descLen > 0) s += 20;
 
-  if (exercise.external_source === "exercisedb") s += 40;
+  if (exercise.external_source === "smartworkout") s += 55;
+  else if (exercise.external_source === "exercisedb") s += 40;
   else if (exercise.external_source === "exerciseapi") s += 35;
   else if (exercise.external_source === "wger") s += 8;
   else if (exercise.external_source) s += 5;
@@ -100,6 +101,8 @@ export function dedupeExercisesForPicker(exercises) {
       const prevMedia = exerciseMediaUrl(prev);
       if (exMedia && !prevMedia) {
         bestByName.set(key, mergeLosersMetadata(ex, prev));
+      } else if (ex.external_source === "smartworkout" && prev.external_source !== "smartworkout") {
+        bestByName.set(key, mergeLosersMetadata(ex, prev));
       } else if (ex.external_source === "exercisedb" && prev.external_source === "wger") {
         bestByName.set(key, mergeLosersMetadata(ex, prev));
       } else {
@@ -135,8 +138,26 @@ export function exerciseSearchBlob(exercise) {
   if (Array.isArray(exercise.metadata?._catalogAliases)) {
     parts.push(...exercise.metadata._catalogAliases);
   }
+  const sw = exercise.metadata?.smartworkout;
+  if (Array.isArray(sw?.aliases)) parts.push(...sw.aliases);
+  if (sw?.bodyPart) parts.push(sw.bodyPart);
 
   return parts.filter(Boolean).join(" ").toLowerCase();
+}
+
+/** When SmartWorkout rows exist, picker uses them (+ user customs) instead of older catalogs. */
+export function filterExercisesForSmartworkoutCatalog(exercises) {
+  const list = exercises || [];
+  const hasSmartworkout = list.some(
+    e => e.is_predefined && e.external_source === "smartworkout" && e.external_id,
+  );
+  if (!hasSmartworkout) return list;
+
+  return list.filter(e => {
+    if (e.user_id) return true;
+    if (!e.is_predefined) return true;
+    return e.external_source === "smartworkout";
+  });
 }
 
 export function exerciseMatchesSearch(exercise, term) {
@@ -147,7 +168,8 @@ export function exerciseMatchesSearch(exercise, term) {
 
 /** Final catalog for pickers: dedupe + drop legacy seeds superseded by catalog media. */
 export function prepareExerciseCatalog(exercises) {
-  const deduped = dedupeExercisesForPicker(exercises || []);
+  const scoped = filterExercisesForSmartworkoutCatalog(exercises || []);
+  const deduped = dedupeExercisesForPicker(scoped);
   return deduped.filter(ex => {
     if (!isLegacySeedExercise(ex)) return true;
     return !isSeedCoveredByCatalog(ex, deduped);

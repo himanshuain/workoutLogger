@@ -231,8 +231,8 @@ export default function TodayWorkoutSection({
     }
   };
 
-  const resolveExerciseMedia = exerciseName =>
-    resolveExerciseMediaUrl(exercises, exerciseName, mediaOverrides);
+  const resolveExerciseMedia = (exerciseName, exerciseId = null) =>
+    resolveExerciseMediaUrl(exercises, exerciseName, mediaOverrides, exerciseId);
 
   if (!user) return null;
 

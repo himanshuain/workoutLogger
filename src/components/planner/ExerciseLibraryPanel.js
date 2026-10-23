@@ -102,8 +102,14 @@ export default function ExerciseLibraryPanel({
     if (equipmentFilter) {
       list = list.filter(e => exerciseMatchesEquipmentFilter(e, equipmentFilter));
     }
-    return list.slice(0, 72);
+    return list;
   }, [exercises, q, chip, subChip, equipmentFilter]);
+
+  const totalCount = exercises?.length ?? 0;
+  const filteredCount = filtered.length;
+  const hasActiveFilters = Boolean(
+    q.trim() || chip || subChip || equipmentFilter,
+  );
 
   const previewExercise = useMemo(
     () => (previewId ? exercises.find(e => e.id === previewId) ?? null : null),
@@ -252,7 +258,9 @@ export default function ExerciseLibraryPanel({
 
           <div className="flex items-center justify-between gap-2">
             <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-[color:var(--text-muted)]"}`}>
-              {filtered.length} shown{filtered.length >= 72 ? "+" : ""}
+              {hasActiveFilters
+                ? `${filteredCount} of ${totalCount} exercises`
+                : `${filteredCount} exercises`}
             </p>
             <div className={cn("flex rounded-pill p-0.5", isDarkMode ? "bg-surface-interactive" : "bg-surface-interactive")}>
               <button

@@ -316,7 +316,7 @@ export default function ExercisesSearchPage() {
     if (equipmentFilter) {
       list = list.filter(e => exerciseMatchesEquipmentFilter(e, equipmentFilter));
     }
-    return list.slice(0, 80);
+    return list;
   }, [exercises, q, chip, subChip, equipmentFilter]);
 
   const scrollToCatalogExercise = useCallback(exerciseId => {

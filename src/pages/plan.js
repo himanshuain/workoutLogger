@@ -349,7 +349,8 @@ export default function RoutinePlannerPage() {
     [selectedRoutineId, isDirty, router]
   );
 
-  const thumb = name => resolveExerciseMediaUrl(exercises, name, mediaOverrides);
+  const thumb = (name, exerciseId = null) =>
+    resolveExerciseMediaUrl(exercises, name, mediaOverrides, exerciseId);
 
   const handleClear = () => {
     setList([]);
@@ -538,7 +539,7 @@ export default function RoutinePlannerPage() {
                               <RoutineExerciseRow
                                 key={item.key}
                                 item={item}
-                                thumbUrl={thumb(item.exercise_name)}
+                                thumbUrl={thumb(item.exercise_name, item.exercise_id)}
                                 isDarkMode={isDarkMode}
                                 exercises={exercises}
                                 onNotesChange={handleNotesChange}

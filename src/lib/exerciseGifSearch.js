@@ -1,8 +1,6 @@
 import { normalizeExerciseName, exerciseMatchesSearch } from "@/lib/exerciseCatalog";
 import { normalizeComparableMediaUrl } from "@/lib/exerciseMedia";
 
-const EXERCISEDB_SEARCH = "https://oss.exercisedb.dev/api/v1/exercises/search";
-
 function scoreLocalMatch(exercise, query) {
   const name = exercise?.name || "";
   const n = normalizeExerciseName(name);
@@ -16,18 +14,27 @@ function scoreLocalMatch(exercise, query) {
   return exerciseMatchesSearch(exercise, query) ? 30 : 0;
 }
 
-/** Search loaded exercise catalog for GIF/image URLs matching query. */
+export function isSmartworkoutCatalogExercise(exercise) {
+  return (
+    exercise?.external_source === "smartworkout" &&
+    Boolean(exercise?.gif_url || exercise?.image_url)
+  );
+}
+
+/** Search SmartWorkout catalog rows in the loaded exercise list. */
 export function searchLocalExerciseGifs(exercises, query, limit = 24) {
   const q = String(query || "").trim();
   if (q.length < 2 || !Array.isArray(exercises)) return [];
 
-  const ranked = exercises
+  const catalog = exercises.filter(isSmartworkoutCatalogExercise);
+
+  const ranked = catalog
     .map(ex => {
       const score = scoreLocalMatch(ex, q);
       if (!score) return null;
       const gifUrl = ex.gif_url || ex.image_url || null;
       if (!gifUrl) return null;
-      return { id: ex.id, name: ex.name, gifUrl, source: "local", score };
+      return { id: ex.id, name: ex.name, gifUrl, source: "smartworkout", score };
     })
     .filter(Boolean)
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
@@ -44,33 +51,7 @@ export function searchLocalExerciseGifs(exercises, query, limit = 24) {
   return out;
 }
 
-/** Client-side ExerciseDB search (CORS open; server-side fetch may fail on TLS). */
-export async function searchExerciseDbGifs(query, limit = 24) {
-  const q = String(query || "").trim();
-  if (q.length < 2) return [];
-
-  const url = new URL(EXERCISEDB_SEARCH);
-  url.searchParams.set("search", q);
-  url.searchParams.set("limit", String(limit));
-
-  const r = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
-  });
-  if (!r.ok) return [];
-
-  const json = await r.json();
-  const rows = Array.isArray(json?.data) ? json.data : [];
-  return rows
-    .map(row => ({
-      id: row.exerciseId ?? row.id ?? null,
-      name: row.name ?? "",
-      gifUrl: row.gifUrl ?? row.gif_url ?? null,
-      source: "exercisedb",
-    }))
-    .filter(row => row.gifUrl && row.name);
-}
-
-/** Merge local + remote GIF hits, deduped by URL. */
+/** Merge GIF hits, deduped by URL (kept for tests / future multi-source). */
 export function mergeGifSearchResults(local = [], remote = [], limit = 24) {
   const seen = new Set();
   const out = [];
@@ -84,13 +65,7 @@ export function mergeGifSearchResults(local = [], remote = [], limit = 24) {
   return out;
 }
 
+/** SmartWorkout library search only (no ExerciseDB or other catalogs). */
 export async function searchExerciseGifs(query, { localExercises = [], limit = 24 } = {}) {
-  const local = searchLocalExerciseGifs(localExercises, query, limit);
-  let remote = [];
-  try {
-    remote = await searchExerciseDbGifs(query, limit);
-  } catch {
-    remote = [];
-  }
-  return mergeGifSearchResults(local, remote, limit);
+  return searchLocalExerciseGifs(localExercises, query, limit);
 }

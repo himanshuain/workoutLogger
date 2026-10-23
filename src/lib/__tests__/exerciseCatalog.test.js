@@ -98,4 +98,34 @@ describe("exerciseCatalog", () => {
   it("normalizeExerciseName collapses whitespace and case", () => {
     expect(normalizeExerciseName("  Barbell   Bench Press ")).toBe("barbell bench press");
   });
+
+  it("prepareExerciseCatalog prefers SmartWorkout rows and hides other predefined catalogs", () => {
+    const sw = {
+      id: "sw1",
+      name: "Bench Press",
+      is_predefined: true,
+      external_source: "smartworkout",
+      external_id: "uuid-1",
+      gif_url: "https://api.smartworkout.app/g.gif",
+      category: "chest",
+    };
+    const edb = {
+      id: "edb1",
+      name: "Old Bench",
+      is_predefined: true,
+      external_source: "exercisedb",
+      external_id: "x",
+      gif_url: "https://static.exercisedb.dev/x.gif",
+      category: "chest",
+    };
+    const custom = {
+      id: "u1",
+      name: "My Press",
+      user_id: "user-1",
+      is_predefined: false,
+    };
+
+    const prepared = prepareExerciseCatalog([sw, edb, custom]);
+    expect(prepared.map(e => e.id).sort()).toEqual(["sw1", "u1"].sort());
+  });
 });

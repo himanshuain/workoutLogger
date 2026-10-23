@@ -29,6 +29,22 @@ describe("plannerLibraryNavigation", () => {
     expect(fallback.metadata.planner_notes).toBe("Cable machine variant");
   });
 
+  it("resolves by word-order–independent name (SmartWorkout vs routine)", () => {
+    const sw = [
+      {
+        id: "sw-1",
+        name: "Seated Cable Chest Press",
+        category: "chest",
+        gif_url: "https://example.com/g.gif",
+        external_source: "smartworkout",
+      },
+    ];
+    const ex = resolveExerciseFromCatalog(sw, {
+      exerciseName: "Cable Seated Chest Press",
+    });
+    expect(ex?.id).toBe("sw-1");
+  });
+
   it("uses fallback when catalog lookup fails", () => {
     const ex = resolveExerciseForPreview(catalog, {
       exerciseId: "missing-id",

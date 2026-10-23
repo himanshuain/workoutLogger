@@ -1,4 +1,5 @@
 import { normalizeExerciseName } from "@/lib/exerciseCatalog";
+import { findCatalogExerciseByLooseName } from "@/lib/exerciseNameMatch";
 
 /** Resolve catalog exercises by id or name. */
 
@@ -16,6 +17,8 @@ export function resolveExerciseIdForLibrary(exercises, { exerciseId, exerciseNam
     const key = normalizeExerciseName(trimmed);
     const byNorm = list.find(e => normalizeExerciseName(e.name) === key);
     if (byNorm) return byNorm.id;
+    const byLoose = findCatalogExerciseByLooseName(list, trimmed);
+    if (byLoose) return byLoose.id;
   }
   return null;
 }

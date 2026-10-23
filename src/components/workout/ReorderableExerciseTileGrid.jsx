@@ -1190,7 +1190,7 @@ export default function ReorderableExerciseTileGrid({
   }, [exercises, expandedLog?.name]);
 
   const renderExercise = (ex, { embedInlinePanel = true } = {}) => {
-    const media = resolveMedia(ex.exercise_name);
+    const media = resolveMedia(ex.exercise_name, ex.exercise_id);
     const showPlaceholder = !media || thumbFailed[ex.exercise_name];
     const isExpanded = inlineLog && expandedLog?.name === ex.exercise_name;
     const shared = {

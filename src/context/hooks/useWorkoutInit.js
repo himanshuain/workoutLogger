@@ -13,6 +13,10 @@ import {
   cacheLocalRestMap,
 } from "@/lib/userPrefsMigration";
 import { reconcileExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
+import {
+  readCachedExerciseCatalog,
+  writeCachedExerciseCatalog,
+} from "@/lib/exerciseCatalogCache";
 
 /** Runs get_user_init_data RPC once per login; falls back to individual loaders. */
 export function useWorkoutInit({
@@ -48,7 +52,96 @@ export function useWorkoutInit({
     if (uid === initUserIdRef.current) return;
     initUserIdRef.current = uid;
 
-    setIsLoading(true);
+    const cachedCatalog = readCachedExerciseCatalog(uid);
+    const hadCachedCatalog = Boolean(cachedCatalog?.length);
+    if (hadCachedCatalog) {
+      setExercises(cachedCatalog);
+    } else {
+      setIsLoading(true);
+    }
+
+    async function applyDeferredInit(data) {
+      const historyMap = {};
+      for (const h of data.exercise_history || []) {
+        historyMap[h.exercise_name] = h;
+      }
+      setExerciseHistory(historyMap);
+
+      setFoodItems(data.food_items || []);
+
+      let schedules = data.notification_schedules || [];
+      const legacySchedules = readLegacyNotificationSchedules();
+      if ((!schedules || schedules.length === 0) && Object.keys(legacySchedules).length > 0) {
+        const migrated = await Promise.all(
+          Object.entries(legacySchedules).map(async ([trackableId, sched]) => {
+            const { data: row } = await supabase
+              .from("notification_schedules")
+              .upsert(
+                {
+                  user_id: uid,
+                  trackable_id: trackableId,
+                  title: sched.title,
+                  body: sched.body,
+                  icon: sched.icon,
+                  time: sched.time,
+                  days: sched.days || [],
+                  enabled: sched.enabled !== false,
+                  updated_at: new Date().toISOString(),
+                },
+                { onConflict: "user_id,trackable_id" },
+              )
+              .select()
+              .single();
+            return row;
+          }),
+        );
+        schedules = migrated.filter(Boolean);
+      }
+      setNotificationSchedules(schedules);
+      NotificationService.setUserId(uid);
+      NotificationService.setSchedulesFromServer(schedules, uid);
+
+      const localEventSettings = readLocalEventSettings();
+      const eventTypesRaw = data.event_types || [];
+      const eventTypesNeedingMigration = eventTypesRaw.filter(et => localEventSettings[et.id]);
+      if (eventTypesNeedingMigration.length > 0) {
+        await Promise.all(
+          eventTypesNeedingMigration.map(et => {
+            const local = localEventSettings[et.id];
+            return supabase
+              .from("event_types")
+              .update({
+                track_graph: local.track_graph || false,
+                need_value: local.need_value || false,
+                need_notes: local.need_notes || false,
+              })
+              .eq("id", et.id);
+          }),
+        );
+      }
+
+      const processedEvents = processEventTypes(
+        eventTypesNeedingMigration.length > 0
+          ? eventTypesRaw.map(et => {
+              const local = localEventSettings[et.id];
+              if (!local) return et;
+              return {
+                ...et,
+                track_graph: local.track_graph || false,
+                need_value: local.need_value || false,
+                need_notes: local.need_notes || false,
+              };
+            })
+          : eventTypesRaw,
+      );
+      setEventTypes(processedEvents);
+
+      const processedCards = (data.step_cards || []).map(card => ({
+        ...card,
+        step_items: (card.step_items || []).sort((a, b) => a.order_index - b.order_index),
+      }));
+      setStepCards(processedCards);
+    }
 
     async function loadInitData() {
       try {
@@ -58,7 +151,9 @@ export function useWorkoutInit({
 
         if (error) throw error;
 
-        setExercises(prepareExerciseCatalog(data.exercises || []));
+        const preparedExercises = prepareExerciseCatalog(data.exercises || []);
+        setExercises(preparedExercises);
+        writeCachedExerciseCatalog(uid, preparedExercises);
 
         if (data.user_settings) {
           const { merged: mediaOverrides, needsServerBackfill: backfillMediaOverrides } =
@@ -108,33 +203,23 @@ export function useWorkoutInit({
           }
         }
 
-        const historyMap = {};
-        for (const h of data.exercise_history || []) {
-          historyMap[h.exercise_name] = h;
-        }
-        setExerciseHistory(historyMap);
-
         const { merged: mergedTrackables, toMigrate: activeDaysToMigrate } =
           mergeTrackablesActiveDays(data.trackables || [], uid);
         setTrackables(mergedTrackables);
-        if (activeDaysToMigrate.length > 0) {
-          await Promise.all(
-            activeDaysToMigrate.map(row =>
-              supabase
-                .from("trackables")
-                .update({ active_days: row.active_days })
-                .eq("id", row.id),
-            ),
-          );
-        }
+        void Promise.all(
+          activeDaysToMigrate.map(row =>
+            supabase
+              .from("trackables")
+              .update({ active_days: row.active_days })
+              .eq("id", row.id),
+          ),
+        );
 
         const entriesMap = {};
         for (const e of data.today_entries || []) {
           entriesMap[e.trackable_id] = e;
         }
         setTodayEntries(entriesMap);
-
-        setFoodItems(data.food_items || []);
 
         const foodEntriesMap = {};
         for (const e of data.today_food_entries || []) {
@@ -153,78 +238,8 @@ export function useWorkoutInit({
         setActiveSession(data.active_session || null);
         if (data.active_session) hydrateSessionClientState(data.active_session);
 
-        let schedules = data.notification_schedules || [];
-        const legacySchedules = readLegacyNotificationSchedules();
-        if ((!schedules || schedules.length === 0) && Object.keys(legacySchedules).length > 0) {
-          const migrated = await Promise.all(
-            Object.entries(legacySchedules).map(async ([trackableId, sched]) => {
-              const { data: row } = await supabase
-                .from("notification_schedules")
-                .upsert(
-                  {
-                    user_id: uid,
-                    trackable_id: trackableId,
-                    title: sched.title,
-                    body: sched.body,
-                    icon: sched.icon,
-                    time: sched.time,
-                    days: sched.days || [],
-                    enabled: sched.enabled !== false,
-                    updated_at: new Date().toISOString(),
-                  },
-                  { onConflict: "user_id,trackable_id" },
-                )
-                .select()
-                .single();
-              return row;
-            }),
-          );
-          schedules = migrated.filter(Boolean);
-        }
-        setNotificationSchedules(schedules);
-        NotificationService.setUserId(uid);
-        NotificationService.setSchedulesFromServer(schedules, uid);
-
-        const localEventSettings = readLocalEventSettings();
-        const eventTypesRaw = data.event_types || [];
-        const eventTypesNeedingMigration = eventTypesRaw.filter(et => localEventSettings[et.id]);
-        if (eventTypesNeedingMigration.length > 0) {
-          await Promise.all(
-            eventTypesNeedingMigration.map(et => {
-              const local = localEventSettings[et.id];
-              return supabase
-                .from("event_types")
-                .update({
-                  track_graph: local.track_graph || false,
-                  need_value: local.need_value || false,
-                  need_notes: local.need_notes || false,
-                })
-                .eq("id", et.id);
-            }),
-          );
-        }
-
-        const processedEvents = processEventTypes(
-          eventTypesNeedingMigration.length > 0
-            ? eventTypesRaw.map(et => {
-                const local = localEventSettings[et.id];
-                if (!local) return et;
-                return {
-                  ...et,
-                  track_graph: local.track_graph || false,
-                  need_value: local.need_value || false,
-                  need_notes: local.need_notes || false,
-                };
-              })
-            : eventTypesRaw,
-        );
-        setEventTypes(processedEvents);
-
-        const processedCards = (data.step_cards || []).map(card => ({
-          ...card,
-          step_items: (card.step_items || []).sort((a, b) => a.order_index - b.order_index),
-        }));
-        setStepCards(processedCards);
+        setIsLoading(false);
+        void applyDeferredInit(data);
       } catch (err) {
         console.error("RPC init failed, falling back to individual loaders:", err);
         fallbackLoaders.loadExercises();

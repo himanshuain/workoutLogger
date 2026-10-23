@@ -110,7 +110,7 @@ export default function TodayWorkoutSection({
 
   useEffect(() => {
     setThumbFailed({});
-  }, [activeSession?.id, plannedExercises.length, mediaOverrides]);
+  }, [activeSession?.id, plannedExercises.length, mediaOverrides, exercises.length]);
 
   const setLogs = activeSession?.set_logs || [];
 

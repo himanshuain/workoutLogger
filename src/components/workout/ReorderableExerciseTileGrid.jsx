@@ -48,6 +48,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { getSessionExerciseOrder } from "@/lib/workoutSessionClient";
 import { isCompleteSessionExerciseOrder } from "@/lib/sessionExerciseOrder";
 import { persistExerciseTileLayoutPref } from "@/lib/workoutUiPrefs";
+import { workoutGridToolbarBarClass } from "@/components/workout/workoutToolbarChrome";
 
 const FLAT_EXERCISE_SECTION = "__flat__";
 
@@ -1215,8 +1216,8 @@ function LayoutToggle({ value, onChange, isDarkMode }) {
   return (
     <div
       className={cn(
-        "flex gap-0.5 rounded-lg p-0.5",
-        isDarkMode ? "bg-iron-900/80" : "bg-slate-100",
+        "flex shrink-0 gap-px rounded-md p-0.5",
+        isDarkMode ? "bg-iron-950/80" : "bg-white/90",
       )}
       role="group"
       aria-label="Exercise layout"
@@ -1436,14 +1437,14 @@ export default function ReorderableExerciseTileGrid({
 
   return (
     <div className={className}>
-      <div className="mb-2 flex items-center justify-between gap-2">
+      <div className={workoutGridToolbarBarClass(isDarkMode)}>
         <span
           className={cn(
-            "text-[10px] font-medium uppercase tracking-wide",
-            isDarkMode ? "text-iron-600" : "text-slate-400",
+            "min-w-0 truncate text-[10px] font-medium tracking-wide",
+            isDarkMode ? "text-iron-500" : "text-slate-500",
           )}
         >
-          Press and hold a tile to reorder
+          Hold to reorder
         </span>
         {showSizeToggle ? (
           <LayoutToggle value={layout} onChange={handleLayoutChange} isDarkMode={isDarkMode} />

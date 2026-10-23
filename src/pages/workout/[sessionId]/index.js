@@ -13,6 +13,10 @@ import {
   moveSessionExerciseToTop,
 } from "@/lib/sessionExerciseOrder";
 import ReorderableExerciseTileGrid from "@/components/workout/ReorderableExerciseTileGrid";
+import {
+  workoutToolbarBtnClass,
+  workoutToolbarShellClass,
+} from "@/components/workout/workoutToolbarChrome";
 import { getPostWorkoutReturnPath, isSessionToday } from "@/lib/workoutNavigation";
 import { toast } from "sonner";
 import {
@@ -308,36 +312,37 @@ export default function WorkoutSessionPage() {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              {!isSessionToday(session) && (
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-iron-500" />
-                  <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                    {formatSessionDate(session.date)}
-                  </p>
-                </div>
-              )}
-              <h1 className="text-screen-title">
+          <div className="min-w-0 flex-1">
+            {!isSessionToday(session) && (
+              <div className="mb-1 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-iron-500" />
+                <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                  {formatSessionDate(session.date)}
+                </p>
+              </div>
+            )}
+            <div className="flex min-w-0 items-center gap-2">
+              <h1
+                className="min-w-0 flex-1 truncate text-base font-semibold leading-snug tracking-wide sm:text-lg"
+                title={session.routine_name || "Workout"}
+              >
                 {session.routine_name || "Workout"}
               </h1>
+              {session.status === "active" ? (
+                <div className={workoutToolbarShellClass(isDarkMode)}>
+                  <button
+                    type="button"
+                    onClick={handleResetInProgress}
+                    disabled={resetting}
+                    aria-label="Reset in-progress workout"
+                    className={workoutToolbarBtnClass(isDarkMode, { destructive: true })}
+                  >
+                    <RotateCw className={`h-3.5 w-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`} aria-hidden />
+                    <span className="hidden min-[380px]:inline">{resetting ? "…" : "Reset"}</span>
+                  </button>
+                </div>
+              ) : null}
             </div>
-            {session.status === "active" ? (
-              <button
-                type="button"
-                onClick={handleResetInProgress}
-                disabled={resetting}
-                aria-label="Reset in-progress workout"
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-                  isDarkMode
-                    ? "text-iron-400 hover:text-red-400 hover:bg-iron-800/80"
-                    : "text-slate-500 hover:text-red-600 hover:bg-slate-100"
-                }`}
-              >
-                <RotateCw className={`w-3.5 h-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`} aria-hidden />
-                {resetting ? "Resetting…" : "Reset"}
-              </button>
-            ) : null}
           </div>
         </div>
 

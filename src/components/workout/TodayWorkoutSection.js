@@ -46,10 +46,12 @@ import {
   actionSecondary,
   actionMarkDone,
   actionDestructive,
-  actionDestructiveGhost,
-  actionGhost,
 } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
+import {
+  workoutToolbarShellClass,
+  workoutToolbarBtnClass,
+} from "@/components/workout/workoutToolbarChrome";
 
 /**
  * New workout board + start/finish flow (embedded on the home Today page).
@@ -375,57 +377,63 @@ export default function TodayWorkoutSection({
     );
   }
 
-  const routineActionButton =
-    routines.length > 0 ? (
-      <button
-        type="button"
-        onClick={() => onChooseRoutine?.()}
-        className={`shrink-0 inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors ${actionGhost(isDarkMode)}`}
-        aria-label={hasSession ? "Switch routine" : "Choose another routine"}
-      >
-        <RefreshCw className="w-3.5 h-3.5 shrink-0" aria-hidden />
-        {hasSession ? "Switch" : "Choose"}
-      </button>
-    ) : null;
-
-  const resetInProgressButton =
-    hasSession ? (
-      <button
-        type="button"
-        onClick={handleResetInProgress}
-        disabled={resetting}
-        aria-label="Reset in-progress workout"
-        className={`shrink-0 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${actionDestructiveGhost(isDarkMode)}`}
-      >
-        <RotateCw className={`w-3.5 h-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`} aria-hidden />
-        {resetting ? "Resetting…" : "Reset"}
-      </button>
-    ) : null;
+  const sessionToolbar =
+    hasSession || routines.length > 0
+      ? (
+          <div className={workoutToolbarShellClass(isDarkMode)} role="toolbar" aria-label="Workout actions">
+            {hasSession ? (
+              <button
+                type="button"
+                onClick={handleResetInProgress}
+                disabled={resetting}
+                aria-label="Reset in-progress workout"
+                className={workoutToolbarBtnClass(isDarkMode, { destructive: true })}
+              >
+                <RotateCw
+                  className={`h-3.5 w-3.5 shrink-0 ${resetting ? "animate-spin" : ""}`}
+                  aria-hidden
+                />
+                <span className="hidden min-[380px]:inline">{resetting ? "…" : "Reset"}</span>
+              </button>
+            ) : null}
+            {routines.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => onChooseRoutine?.()}
+                className={workoutToolbarBtnClass(isDarkMode)}
+                aria-label={hasSession ? "Switch routine" : "Choose another routine"}
+              >
+                <RefreshCw className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="hidden min-[380px]:inline">{hasSession ? "Switch" : "Choose"}</span>
+              </button>
+            ) : null}
+          </div>
+        )
+      : null;
 
   return (
     <SpringIn className={narrowMobileWideDesktopClass}>
       <div className="card-hero overflow-visible !p-3 sm:!p-4">
-          <div className="flex items-start justify-between gap-2">
+          <header className="mb-2 flex min-w-0 items-center gap-2">
             <motion.h2
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="text-screen-title min-w-0 flex-1 leading-tight"
+              className="min-w-0 flex-1 truncate text-base font-semibold leading-snug tracking-wide sm:text-lg"
+              title={routineTitle}
             >
               {routineTitle}
             </motion.h2>
-            <div className="flex shrink-0 items-center gap-1">
-              {resetInProgressButton}
-              {routineActionButton}
-            </div>
-          </div>
+            {sessionToolbar}
+          </header>
 
           {hasSession ? (
             <>
               <div
-                className={`mt-3 pt-3 border-t ${
-                  isDarkMode ? "border-iron-800/80" : "border-slate-100"
-                }`}
+                className={cn(
+                  "border-t pt-2",
+                  isDarkMode ? "border-iron-800/80" : "border-slate-100",
+                )}
               >
                 <ReorderableExerciseTileGrid
                   exercises={plannedExercises}

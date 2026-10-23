@@ -74,7 +74,6 @@ export default function ExercisePreviewPanel({
   );
   const [session, setSession] = useState(null);
   const [routinePickerOpen, setRoutinePickerOpen] = useState(false);
-
   // Load session context for session-aware button copy
   useEffect(() => {
     async function loadSession() {
@@ -274,7 +273,7 @@ export default function ExercisePreviewPanel({
     <div
       className={
         isSheet
-          ? "flex flex-col gap-5 pb-1"
+          ? "flex flex-col gap-3 pb-1"
           : hideHeading
             ? "pb-2"
             : "pb-6"
@@ -310,30 +309,11 @@ export default function ExercisePreviewPanel({
         </h1>
       )}
       {isSheet ? (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ring-1",
-              isDarkMode
-                ? "bg-white/[0.06] text-iron-200 ring-white/10"
-                : "bg-slate-100 text-slate-700 ring-slate-200/80",
-            )}
-          >
-            {exercise.category || "General"}
-          </span>
-          {equipmentLine ? (
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-1 text-[11px] font-medium ring-1",
-                isDarkMode
-                  ? "bg-white/[0.04] text-iron-400 ring-white/[0.08]"
-                  : "bg-white text-slate-600 ring-slate-200/80",
-              )}
-            >
-              {equipmentLine}
-            </span>
-          ) : null}
-        </div>
+        equipmentLine ? (
+          <p className={cn("text-[11px] font-medium", isDarkMode ? "text-iron-500" : "text-slate-500")}>
+            {equipmentLine}
+          </p>
+        ) : null
       ) : (
         <p
           className={`text-sm shrink-0 ${

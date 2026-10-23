@@ -10,14 +10,9 @@ export function workoutToolbarShellClass(isDarkMode) {
   );
 }
 
-/** Full-width bar above the exercise grid. */
-export function workoutGridToolbarBarClass(isDarkMode) {
-  return cn(
-    "mb-2 flex min-h-8 items-center justify-between gap-2 rounded-lg px-2 py-1",
-    isDarkMode
-      ? "bg-iron-900/45 ring-1 ring-inset ring-iron-800/55"
-      : "bg-slate-50 ring-1 ring-inset ring-slate-200/70",
-  );
+/** Full-width bar above the exercise grid (no fill — sits on card). */
+export function workoutGridToolbarBarClass() {
+  return "mb-2 flex min-h-8 items-center justify-between gap-2 px-0 py-1";
 }
 
 export function workoutToolbarBtnClass(isDarkMode, { destructive = false } = {}) {

@@ -14,6 +14,8 @@ export default function PillRail({
   format = (v) => String(v),
   isDarkMode,
   scrollToSelected = true,
+  /** Horizontal scroll position for selected pill: center | start | end (end ≈ right thumb). */
+  scrollAlign = "center",
   dense = false,
 }) {
   const scrollRef = useRef(null);
@@ -24,9 +26,16 @@ export default function PillRail({
     const el = selectedRef.current;
     const wrap = scrollRef.current;
     if (!el || !wrap) return;
-    const left = el.offsetLeft - wrap.clientWidth / 2 + el.offsetWidth / 2;
+    let left;
+    if (scrollAlign === "start") {
+      left = el.offsetLeft - 8;
+    } else if (scrollAlign === "end") {
+      left = el.offsetLeft - wrap.clientWidth + el.offsetWidth + 8;
+    } else {
+      left = el.offsetLeft - wrap.clientWidth / 2 + el.offsetWidth / 2;
+    }
     wrap.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
-  }, [selected, scrollToSelected]);
+  }, [selected, scrollToSelected, scrollAlign]);
 
   return (
     <div className={dense ? "space-y-1" : "space-y-2"}>

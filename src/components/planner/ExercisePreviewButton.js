@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import { actionGhost } from "@/lib/actionButtonStyles";
 import { resolveExerciseForPreview } from "@/lib/plannerLibraryNavigation";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
-import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal";
+import { ExerciseSheetTitleRow } from "@/components/exercises/ExerciseSheetTitle";
 
 /**
  * @param {"inline" | "overlay" | "pill"} variant — inline icon, overlay on cards, or tile pill with label
@@ -86,14 +87,11 @@ export default function ExercisePreviewButton({
           )}
         >
           <ModalHeader className="shrink-0 pb-2">
-            <ModalTitle
-              className={cn(
-                "line-clamp-2 pr-10",
-                isDarkMode ? "!text-iron-50" : "!text-[color:var(--text-primary)]",
-              )}
-            >
-              {previewExercise?.name ?? exerciseName ?? "Exercise"}
-            </ModalTitle>
+            <ExerciseSheetTitleRow
+              name={previewExercise?.name ?? exerciseName ?? "Exercise"}
+              category={previewExercise?.category ?? category}
+              isDarkMode={isDarkMode}
+            />
           </ModalHeader>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
             {previewExercise ? (

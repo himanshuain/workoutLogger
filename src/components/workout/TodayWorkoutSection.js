@@ -459,51 +459,44 @@ export default function TodayWorkoutSection({
                   resettingExercise={resettingExercise}
                   onRemoveAdded={handleRemoveAddedToday}
                   exercisesCatalog={exercises}
+                  onAddExercise={() =>
+                    router.push(
+                      `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`,
+                    )
+                  }
                 />
               </div>
 
               <div
                 className={cn(
-                  "z-30 mt-2.5 space-y-2 border-t pt-2.5",
-                  "max-lg:sticky max-lg:bottom-0 max-lg:-mx-3 max-lg:px-3 max-lg:pb-1 sm:max-lg:-mx-4 sm:max-lg:px-4",
-                  "max-lg:backdrop-blur-md max-lg:supports-[backdrop-filter]:bg-opacity-90",
-                  isDarkMode
-                    ? "border-iron-800/80 max-lg:bg-iron-950/92 lg:bg-transparent"
-                    : "border-slate-200/90 max-lg:bg-surface-section/95 lg:bg-transparent",
+                  "z-30 mt-2 flex flex-wrap items-center justify-center gap-2 pt-1",
+                  "max-lg:sticky max-lg:bottom-0 max-lg:px-0 max-lg:pb-1",
                 )}
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    router.push(
-                      `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`
-                    )
-                  }
-                  className={`w-full rounded-card py-2.5 text-sm font-semibold border border-dashed flex items-center justify-center gap-2 ${actionSecondary(isDarkMode)}`}
+                  onClick={handleFinish}
+                  className={cn(
+                    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold",
+                    actionPrimary(isDarkMode),
+                  )}
                 >
-                  <Plus className="w-4 h-4" />
-                  Add exercise for today
+                  <CircleCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                  Finish
                 </button>
-
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <button
-                    type="button"
-                    onClick={handleFinish}
-                    className={`flex min-h-[40px] items-center justify-center gap-2 rounded-card py-2.5 text-sm font-bold ${actionPrimary(isDarkMode)}`}
-                  >
-                    <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
-                    Finish workout
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleMarkDone}
-                    disabled={markingDone}
-                    className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-card px-3 py-2.5 text-xs font-semibold disabled:opacity-50 ${actionMarkDone(isDarkMode)}`}
-                  >
-                    <CircleCheck className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
-                    {markingDone ? "…" : "Mark done"}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleMarkDone}
+                  disabled={markingDone}
+                  aria-label="Mark workout done"
+                  className={cn(
+                    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50",
+                    actionMarkDone(isDarkMode),
+                  )}
+                >
+                  <CircleCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                  {markingDone ? "…" : "Done"}
+                </button>
               </div>
             </>
           ) : null}

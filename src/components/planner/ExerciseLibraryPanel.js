@@ -4,7 +4,8 @@ import { ChevronDown, ChevronUp, LayoutGrid, List, Search } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
-import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal";
+import { ExerciseSheetTitleRow } from "@/components/exercises/ExerciseSheetTitle";
 import { cn } from "@/lib/utils";
 import {
   PARENT_CHIPS,
@@ -393,9 +394,11 @@ export default function ExerciseLibraryPanel({
           )}
         >
           <ModalHeader className="shrink-0 pb-2">
-            <ModalTitle className={cn("line-clamp-2 pr-10", isDarkMode ? "!text-iron-50" : "!text-[color:var(--text-primary)]")}>
-              {previewExercise?.name ?? "Exercise"}
-            </ModalTitle>
+            <ExerciseSheetTitleRow
+              name={previewExercise?.name ?? "Exercise"}
+              category={previewExercise?.category}
+              isDarkMode={isDarkMode}
+            />
           </ModalHeader>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
             {previewExercise ? (

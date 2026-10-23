@@ -5,7 +5,8 @@ import Layout from "@/components/Layout";
 import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import ExerciseIcon from "@/components/ExerciseIcon";
-import { Modal, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
+import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal";
+import { ExerciseSheetTitleRow } from "@/components/exercises/ExerciseSheetTitle";
 import { cn } from "@/lib/utils";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -1154,11 +1155,11 @@ export default function ExercisesSearchPage() {
           )}
         >
           <ModalHeader className="shrink-0 pb-2">
-            <ModalTitle
-              className={cn("pr-10 line-clamp-2", isDarkMode ? "!text-iron-50" : "!text-slate-900")}
-            >
-              {previewExercise?.name ?? "Exercise"}
-            </ModalTitle>
+            <ExerciseSheetTitleRow
+              name={previewExercise?.name ?? "Exercise"}
+              category={previewExercise?.category}
+              isDarkMode={isDarkMode}
+            />
           </ModalHeader>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
             {previewExercise ? (

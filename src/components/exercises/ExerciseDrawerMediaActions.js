@@ -5,7 +5,6 @@ import { useWorkout } from "@/context/WorkoutContext";
 import GoogleGIcon from "@/components/icons/GoogleGIcon";
 import {
   Modal,
-  NestedModal,
   ModalContent,
   ModalHeader,
   ModalTitle,
@@ -17,14 +16,13 @@ import { isSmartworkoutCatalogExercise } from "@/lib/exerciseGifSearch";
 import {
   getExerciseMediaOverrideUrl,
   isPersistableMediaUrl,
-  isValidMediaUrl,
 } from "@/lib/exerciseMediaOverrides";
 import { useExerciseMediaOverridePersist } from "@/hooks/useExerciseMediaOverridePersist";
 import { isGifUploadFile, MAX_GIF_UPLOAD_BYTES } from "@/lib/exerciseGifUpload";
 import { uploadExerciseMediaGif } from "@/lib/exerciseMediaStorage";
 import { useExerciseGifSearch } from "@/hooks/useExerciseGifSearch";
 import { cn } from "@/lib/utils";
-import { ImagePlus, Link2, Loader2, Search, Trash2, Upload, X } from "lucide-react";
+import { ImagePlus, Link2, Loader2, Search, Upload, X } from "lucide-react";
 import PendingIcon from "@/components/ui/PendingIcon";
 import { toast } from "sonner";
 
@@ -92,7 +90,7 @@ function GifResultGrid({ results, saving, isDarkMode, onSelect }) {
 }
 
 /**
- * Exercise library GIF search drawer + Google Images shortcut for exercise preview.
+ * Exercise preview: open GIF search + upload; paste URL via carousel link control.
  */
 export default function ExerciseDrawerMediaActions({
   exercise,
@@ -102,17 +100,21 @@ export default function ExerciseDrawerMediaActions({
   mediaOverrides,
   updateSettings,
   compact = false,
-  /** When set (e.g. from ExercisePreviewPanel), share one pending state for upload/save/delete loaders. */
   mediaPersist,
+  pasteUrlOpen: pasteUrlOpenProp,
+  onPasteUrlOpenChange,
 }) {
   const { user } = useWorkout();
   const internalPersist = useExerciseMediaOverridePersist();
   const { saving, persistPrimaryUrl } = mediaPersist ?? internalPersist;
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [pasteUrlOpen, setPasteUrlOpen] = useState(false);
+  const [pasteInternal, setPasteInternal] = useState(false);
   const [draftUrl, setDraftUrl] = useState("");
   const pasteUrlInputRef = useRef(null);
   const gifFileInputRef = useRef(null);
+
+  const pasteUrlOpen = pasteUrlOpenProp ?? pasteInternal;
+  const setPasteUrlOpen = onPasteUrlOpenChange ?? setPasteInternal;
 
   const name = exerciseName || exercise?.name || "";
   const googleHref = googleImagesSearchUrl(name);
@@ -132,30 +134,24 @@ export default function ExerciseDrawerMediaActions({
 
   useEffect(() => {
     if (pasteUrlOpen) {
+      setDraftUrl(currentOverride || "");
       pasteUrlInputRef.current?.focus();
     }
-  }, [pasteUrlOpen]);
+  }, [pasteUrlOpen, currentOverride]);
 
-  const closeAllDrawers = () => {
+  const closeAll = () => {
     setPickerOpen(false);
     setPasteUrlOpen(false);
   };
 
   const openPicker = () => {
-    setDraftUrl(currentOverride || "");
-    setPasteUrlOpen(false);
     librarySearch.reset(name);
     setPickerOpen(true);
   };
 
-  const openPasteUrlDrawer = () => {
-    setDraftUrl(currentOverride || "");
-    setPasteUrlOpen(true);
-  };
-
   const persistOverride = async url => {
     if (!exercise || !updateSettings) return;
-    await persistPrimaryUrl(exercise, url, closeAllDrawers);
+    await persistPrimaryUrl(exercise, url, closeAll);
   };
 
   const handleSelectGif = gifUrl => {
@@ -225,13 +221,6 @@ export default function ExerciseDrawerMediaActions({
         : "border border-slate-200 bg-white text-slate-800 shadow-sm hover:bg-slate-50",
   );
 
-  const googleLinkClass = cn(
-    "inline-flex items-center gap-1.5 rounded-pill border px-3 py-2 text-xs font-semibold",
-    isDarkMode
-      ? "border-iron-600 bg-iron-800 text-iron-100 hover:bg-iron-700"
-      : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50",
-  );
-
   const inputClass = cn(
     "box-border block w-full min-h-[48px] appearance-none rounded-card border px-3 py-3 text-base leading-normal outline-none focus:ring-2",
     isDarkMode
@@ -244,26 +233,12 @@ export default function ExerciseDrawerMediaActions({
   );
 
   const emptyHint = searched ? (
-    <div className="space-y-3 py-6 text-center">
-      <p className={`text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-        No SmartWorkout GIFs for &ldquo;{searchQuery.trim()}&rdquo;. Try a shorter name or search Google
-        (SmartWorkout only).
-      </p>
-      {googleHref ? (
-        <a
-          href={googleHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={googleLinkClass}
-        >
-          <GoogleGIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          SmartWorkout on Google Images
-        </a>
-      ) : null}
-    </div>
+    <p className={`py-8 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+      No matches for &ldquo;{searchQuery.trim()}&rdquo;.
+    </p>
   ) : (
     <p className={`py-8 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-      Type at least 2 characters to search.
+      Type to search SmartWorkout.
     </p>
   );
 
@@ -277,7 +252,7 @@ export default function ExerciseDrawerMediaActions({
           )}
         >
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          Searching SmartWorkout…
+          Searching…
         </div>
       );
     }
@@ -311,11 +286,17 @@ export default function ExerciseDrawerMediaActions({
         className={cn(
           "flex items-center gap-2",
           compact
-            ? "-mx-0.5 flex-nowrap overflow-x-auto pb-0.5 scrollbar-hide"
+            ? "-mx-0.5 flex-nowrap overflow-x-auto overscroll-x-contain pb-0.5 scrollbar-hide"
             : "mt-2 flex-wrap",
         )}
       >
-        {googleHref ? (
+        {compact ? (
+          <button type="button" onClick={() => setPasteUrlOpen(true)} className={chipClass}>
+            <Link2 className="h-4 w-4 shrink-0" aria-hidden />
+            Paste URL
+          </button>
+        ) : null}
+        {!compact && googleHref ? (
           <a
             href={googleHref}
             target="_blank"
@@ -345,45 +326,14 @@ export default function ExerciseDrawerMediaActions({
         </button>
       </div>
 
-      <Modal
-        open={pickerOpen}
-        onOpenChange={open => {
-          setPickerOpen(open);
-          if (!open) setPasteUrlOpen(false);
-        }}
-      >
+      <Modal open={pickerOpen} onOpenChange={setPickerOpen}>
         <ModalContent
           showCloseButton
           className={cn("z-[60] flex flex-col overflow-hidden", drawerSurface)}
         >
-          <ModalHeader className="shrink-0 space-y-1.5 pb-0 pt-0 text-left">
-            <ModalTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>
-              Find a GIF
-            </ModalTitle>
-            <ModalDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
-              Search the SmartWorkout catalog (~1k exercises). Upload is for your own GIFs; paste URLs must
-              be from api.smartworkout.app.
-            </ModalDescription>
-          </ModalHeader>
-
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="shrink-0 space-y-2 px-4 pb-3 pt-4">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={openGifFilePicker}
-                className={cn(
-                  "inline-flex w-full items-center justify-center gap-1.5 rounded-card border py-3 text-sm font-semibold disabled:opacity-50",
-                  isDarkMode
-                    ? "border-iron-700 bg-iron-800/80 text-iron-100 hover:bg-iron-800"
-                    : "border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100",
-                )}
-              >
-                <PendingIcon pending={saving} iconClassName="h-4 w-4 shrink-0">
-                  <Upload className="h-4 w-4 shrink-0" aria-hidden />
-                </PendingIcon>
-                Upload GIF from device
-              </button>
+          <ModalTitle className="sr-only">Find a GIF</ModalTitle>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-2">
+            <div className="shrink-0 px-4 pb-3">
               <label className="sr-only" htmlFor="exercise-gif-search">
                 Search GIFs
               </label>
@@ -417,57 +367,14 @@ export default function ExerciseDrawerMediaActions({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-3 touch-pan-y">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] touch-pan-y">
               {resultsPanel}
             </div>
-
-            <div className="shrink-0 border-t border-surface-subtle px-4 py-3">
-              <button
-                type="button"
-                onClick={openPasteUrlDrawer}
-                className={cn(
-                  "inline-flex w-full items-center justify-center gap-1.5 rounded-card border py-3 text-sm font-semibold",
-                  isDarkMode
-                    ? "border-iron-700 bg-iron-800/80 text-iron-200 hover:bg-iron-800"
-                    : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100",
-                )}
-              >
-                <Link2 className="h-4 w-4 shrink-0" aria-hidden />
-                Paste SmartWorkout URL
-              </button>
-            </div>
           </div>
-
-          <ModalFooter className="shrink-0 flex-row gap-2 border-t border-surface-subtle px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            {currentOverride ? (
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void persistOverride("")}
-                className={cn(
-                  "inline-flex flex-1 items-center justify-center gap-1.5 rounded-card py-3 text-sm font-medium disabled:opacity-50",
-                  isDarkMode ? "bg-iron-800 text-red-400" : "bg-slate-100 text-red-600",
-                )}
-              >
-                <Trash2 className="h-4 w-4" aria-hidden />
-                Reset
-              </button>
-            ) : null}
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => setPickerOpen(false)}
-              className={cn(
-                "flex-1 rounded-card py-3 text-sm font-medium",
-                isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600",
-              )}
-            >
-              Done
-            </button>
-          </ModalFooter>
         </ModalContent>
+      </Modal>
 
-        <NestedModal open={pasteUrlOpen} onOpenChange={setPasteUrlOpen}>
+      <Modal open={pasteUrlOpen} onOpenChange={setPasteUrlOpen}>
         <ModalContent
           showCloseButton
           className={cn("z-[70] flex flex-col overflow-hidden", drawerSurface)}
@@ -477,7 +384,7 @@ export default function ExerciseDrawerMediaActions({
               Paste image URL
             </ModalTitle>
             <ModalDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
-              Paste a direct SmartWorkout asset URL (api.smartworkout.app).
+              api.smartworkout.app asset link
             </ModalDescription>
           </ModalHeader>
 
@@ -533,7 +440,7 @@ export default function ExerciseDrawerMediaActions({
                 isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600",
               )}
             >
-              Back
+              Cancel
             </button>
             <button
               type="button"
@@ -551,7 +458,6 @@ export default function ExerciseDrawerMediaActions({
             </button>
           </ModalFooter>
         </ModalContent>
-        </NestedModal>
       </Modal>
     </>
   );

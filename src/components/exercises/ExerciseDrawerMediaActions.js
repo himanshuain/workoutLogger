@@ -4,13 +4,14 @@ import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { useWorkout } from "@/context/WorkoutContext";
 import GoogleGIcon from "@/components/icons/GoogleGIcon";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from "@/components/ui/drawer";
+  Modal,
+  NestedModal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalFooter,
+} from "@/components/ui/modal";
 import { googleImagesSearchUrl, isSmartworkoutMediaUrl } from "@/lib/exerciseMedia";
 import { isSmartworkoutCatalogExercise } from "@/lib/exerciseGifSearch";
 import {
@@ -344,29 +345,26 @@ export default function ExerciseDrawerMediaActions({
         </button>
       </div>
 
-      <Drawer
+      <Modal
         open={pickerOpen}
         onOpenChange={open => {
           setPickerOpen(open);
           if (!open) setPasteUrlOpen(false);
         }}
       >
-        <DrawerContent
-          overlayClassName="z-[60]"
-          className={cn(
-            "z-[60] flex h-[min(88dvh,640px)] max-h-[88dvh] flex-col overflow-hidden",
-            drawerSurface,
-          )}
+        <ModalContent
+          showCloseButton
+          className={cn("z-[60] flex flex-col overflow-hidden", drawerSurface)}
         >
-          <DrawerHeader className="shrink-0 space-y-1.5 pb-0 pt-2 text-left">
-            <DrawerTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>
+          <ModalHeader className="shrink-0 space-y-1.5 pb-0 pt-0 text-left">
+            <ModalTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>
               Find a GIF
-            </DrawerTitle>
-            <DrawerDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
+            </ModalTitle>
+            <ModalDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
               Search the SmartWorkout catalog (~1k exercises). Upload is for your own GIFs; paste URLs must
               be from api.smartworkout.app.
-            </DrawerDescription>
-          </DrawerHeader>
+            </ModalDescription>
+          </ModalHeader>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="shrink-0 space-y-2 px-4 pb-3 pt-4">
@@ -440,7 +438,7 @@ export default function ExerciseDrawerMediaActions({
             </div>
           </div>
 
-          <DrawerFooter className="shrink-0 flex-row gap-2 border-t border-surface-subtle px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+          <ModalFooter className="shrink-0 flex-row gap-2 border-t border-surface-subtle px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
             {currentOverride ? (
               <button
                 type="button"
@@ -466,23 +464,22 @@ export default function ExerciseDrawerMediaActions({
             >
               Done
             </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          </ModalFooter>
+        </ModalContent>
 
-      <Drawer open={pasteUrlOpen} onOpenChange={setPasteUrlOpen}>
-        <DrawerContent
-          overlayClassName="z-[70]"
-          className={cn("z-[70] flex max-h-[min(72dvh,520px)] flex-col overflow-hidden", drawerSurface)}
+        <NestedModal open={pasteUrlOpen} onOpenChange={setPasteUrlOpen}>
+        <ModalContent
+          showCloseButton
+          className={cn("z-[70] flex flex-col overflow-hidden", drawerSurface)}
         >
-          <DrawerHeader className="shrink-0 space-y-1.5 pb-0 pt-2 text-left">
-            <DrawerTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>
+          <ModalHeader className="shrink-0 space-y-1.5 pb-0 pt-0 text-left">
+            <ModalTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>
               Paste image URL
-            </DrawerTitle>
-            <DrawerDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
+            </ModalTitle>
+            <ModalDescription className={isDarkMode ? "text-iron-400" : "text-slate-600"}>
               Paste a direct SmartWorkout asset URL (api.smartworkout.app).
-            </DrawerDescription>
-          </DrawerHeader>
+            </ModalDescription>
+          </ModalHeader>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2 pt-4">
             <div className="relative shrink-0">
@@ -526,7 +523,7 @@ export default function ExerciseDrawerMediaActions({
             ) : null}
           </div>
 
-          <DrawerFooter className="shrink-0 flex-row gap-2 border-t border-surface-subtle px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+          <ModalFooter className="shrink-0 flex-row gap-2 border-t border-surface-subtle px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
             <button
               type="button"
               disabled={saving}
@@ -552,9 +549,10 @@ export default function ExerciseDrawerMediaActions({
                 {saving ? "Saving…" : "Save"}
               </span>
             </button>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+          </ModalFooter>
+        </ModalContent>
+        </NestedModal>
+      </Modal>
     </>
   );
 }

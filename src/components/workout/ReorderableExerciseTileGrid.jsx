@@ -603,7 +603,7 @@ function LoggedMiniExerciseMenu({
         <ModalContent
           showCloseButton
           className={cn(
-            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden border-t-0",
+            "flex min-h-0 flex-col overflow-hidden border-t-0",
             isDarkMode
               ? "border-iron-800/60 bg-iron-950/98 backdrop-blur-xl"
               : "border-surface-subtle bg-surface-section/98 backdrop-blur-xl",

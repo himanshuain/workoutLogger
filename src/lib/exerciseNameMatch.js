@@ -1,21 +1,8 @@
+import { exerciseTokenKey, looseNormalizeExerciseName, normalizeExerciseName } from "@/lib/exerciseNameNormalize";
+
+export { exerciseTokenKey, looseNormalizeExerciseName, normalizeExerciseName };
+
 /** Shared loose matching (SmartWorkout vs routine / legacy naming). */
-
-export function looseNormalizeExerciseName(name) {
-  let s = String(name ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-  s = s.replace(/\bbenchpress\b/g, "bench press");
-  s = s.replace(/\bdumbbells\b/g, "dumbbell");
-  s = s.replace(/[^a-z0-9\s]/g, " ");
-  return s.replace(/\s+/g, " ").trim();
-}
-
-/** Same words in any order — e.g. "Cable Seated Chest Press" ↔ "Seated Cable Chest Press". */
-export function exerciseTokenKey(name) {
-  const words = looseNormalizeExerciseName(name).split(" ").filter(Boolean);
-  return [...words].sort().join(" ");
-}
 
 export function findCatalogExerciseByLooseName(exercises, exerciseName) {
   const list = exercises || [];

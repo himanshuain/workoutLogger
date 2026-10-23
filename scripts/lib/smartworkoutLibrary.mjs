@@ -7,44 +7,8 @@ const SITEMAP_INDEX = "https://smartworkout.app/sitemap.xml";
 const EXERCISE_PAGE_RE =
   /^https:\/\/smartworkout\.app\/en\/exercise-library\/[^/]+\/[^/]+\/?$/;
 
-export function normalizeExerciseName(name) {
-  return String(name ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-/** Collapse common catalog typos (e.g. "Benchpress Dumbbells" vs "Dumbbell Bench Press"). */
-export function looseNormalizeExerciseName(name) {
-  let s = normalizeExerciseName(name);
-  s = s.replace(/\bbenchpress\b/g, "bench press");
-  s = s.replace(/\bdumbbells\b/g, "dumbbell");
-  s = s.replace(/[^a-z0-9\s]/g, " ");
-  return s.replace(/\s+/g, " ").trim();
-}
-
-/** Same words in any order — matches SmartWorkout vs ExerciseDB naming. */
-export function exerciseTokenKey(name) {
-  const words = looseNormalizeExerciseName(name).split(" ").filter(Boolean);
-  return [...words].sort().join(" ");
-}
-
-export function exerciseNameToSlug(name) {
-  return looseNormalizeExerciseName(name).replace(/\s+/g, "-");
-}
-
 export function slugFromExercisePageUrl(pageUrl) {
   return String(pageUrl || "").replace(/\/$/, "").split("/").pop() || "";
-}
-
-export function catalogMatchKeys(name) {
-  const keys = new Set();
-  if (!name) return keys;
-  keys.add(normalizeExerciseName(name));
-  keys.add(looseNormalizeExerciseName(name));
-  keys.add(exerciseTokenKey(name));
-  keys.add(exerciseNameToSlug(name));
-  return keys;
 }
 
 export function isSmartworkoutExercisePageUrl(url) {
@@ -99,7 +63,7 @@ export function parseSmartworkoutExerciseFromHtml(html, pageUrl) {
 
   return {
     id: String(ex.id),
-    name,
+    name: name.trim(),
     aliases,
     slug: slugFromExercisePageUrl(pageUrl),
     gifUrl,

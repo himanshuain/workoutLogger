@@ -3,11 +3,15 @@ import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const Modal = ({ children, ...props }) => (
+/** Drag up to full height; default opens around half viewport. */
+export const MODAL_SHEET_SNAP_POINTS = [0.55, 1];
+
+const Modal = ({ children, snapPoints = MODAL_SHEET_SNAP_POINTS, ...props }) => (
   <Drawer.Root
     shouldScaleBackground
     setBackgroundColorOnScale={false}
     repositionInputs={false}
+    snapPoints={snapPoints}
     {...props}
   >
     {children}
@@ -15,8 +19,8 @@ const Modal = ({ children, ...props }) => (
 );
 Modal.displayName = "Modal";
 
-const NestedModal = ({ children, ...props }) => (
-  <Drawer.NestedRoot repositionInputs={false} {...props}>
+const NestedModal = ({ children, snapPoints = MODAL_SHEET_SNAP_POINTS, ...props }) => (
+  <Drawer.NestedRoot repositionInputs={false} snapPoints={snapPoints} {...props}>
     {children}
   </Drawer.NestedRoot>
 );
@@ -38,6 +42,9 @@ const ModalOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ));
 ModalOverlay.displayName = "ModalOverlay";
 
+const modalSheetHeightClass =
+  "h-[96dvh] max-h-[96dvh] min-h-[min(55dvh,520px)]";
+
 const ModalContent = React.forwardRef(
   ({ className, children, showCloseButton = true, ...props }, ref) => {
     return (
@@ -46,12 +53,16 @@ const ModalContent = React.forwardRef(
         <Drawer.Content
           ref={ref}
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mx-auto mt-24 flex h-auto w-full max-h-[96vh] min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
+            "fixed inset-x-0 bottom-0 z-50 mx-auto mt-24 flex w-full min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
+            modalSheetHeightClass,
             className,
           )}
           {...props}
         >
-          <div className="mx-auto mt-3 mb-1 h-1.5 w-12 flex-shrink-0 rounded-full bg-surface-pressed" />
+          <Drawer.Handle
+            className="mx-auto mt-3 mb-2 h-1.5 w-12 flex-shrink-0 cursor-grab rounded-full bg-surface-pressed active:cursor-grabbing"
+            aria-label="Drag to resize sheet"
+          />
           {children}
           {showCloseButton && (
             <Drawer.Close className="absolute right-3 top-3 glass-close-btn">
@@ -100,7 +111,7 @@ ModalDescription.displayName = "ModalDescription";
 
 const ModalBody = ({ className, ...props }) => (
   <div
-    className={cn("px-4 py-2 max-h-[60vh] overflow-y-auto", className)}
+    className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-2", className)}
     {...props}
   />
 );

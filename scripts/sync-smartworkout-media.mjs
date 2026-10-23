@@ -6,8 +6,10 @@
  * upserts by (external_source, external_id) — no name matching to legacy catalog.
  *
  * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- * Run: npm run sync:exercises:smartworkout
+ * Run: npm run sync:exercises:smartworkout   (or npm run sync:exercises:all)
  *      npm run sync:exercises:smartworkout -- --dry-run --limit 20
+ *
+ * Re-run without --limit after SmartWorkout updates the library (~1k pages).
  *
  * @see https://smartworkout.app/en/exercise-library
  */

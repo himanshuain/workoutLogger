@@ -296,7 +296,9 @@ export default function ExerciseLibraryPanel({
             className={cn(
               "overflow-y-auto scrollbar-thin pr-0.5",
               embedded ? "max-h-[min(68vh,640px)]" : "max-h-[min(52vh,520px)]",
-              viewMode === "card" ? "grid grid-cols-2 gap-3 lg:grid-cols-3" : "space-y-2",
+              viewMode === "card"
+                ? "grid grid-cols-2 gap-3 lg:grid-cols-3 [&>button]:[content-visibility:auto] [&>button]:[contain-intrinsic-size:0_120px]"
+                : "space-y-2 [&>button]:[content-visibility:auto]",
             )}
           >
             {filtered.length === 0 ? (
@@ -387,7 +389,7 @@ export default function ExerciseLibraryPanel({
           showCloseButton
           className={cn(
             isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle",
-            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden",
+            "flex min-h-0 flex-col overflow-hidden",
           )}
         >
           <ModalHeader className="shrink-0 pb-2">

@@ -11,6 +11,11 @@ import {
   readLocalExerciseMediaOverrides,
 } from "@/lib/userPrefsMigration";
 import { toast } from "sonner";
+import {
+  isExerciseMediaStorageUrl,
+  tryDeleteExerciseMediaFromStorage,
+} from "@/lib/exerciseMediaStorage";
+import { getExerciseMediaOverrideUrl } from "@/lib/exerciseMediaOverrides";
 
 /** Ensures spinners paint (optimistic settings updates can finish in one frame). */
 const MIN_PENDING_MS = 320;
@@ -85,7 +90,13 @@ export function useExerciseMediaOverridePersist() {
   const persistPrimaryUrl = useCallback(
     async (exercise, url, onSuccess) => {
       if (!exercise) return false;
-      const patch = buildExerciseMediaOverridesPatch(mergedBaseForExercise(), exercise, url);
+      const merged = mergedBaseForExercise();
+      const previous = getExerciseMediaOverrideUrl(exercise, merged);
+      const trimmed = typeof url === "string" ? url.trim() : "";
+      if (previous && isExerciseMediaStorageUrl(previous) && previous !== trimmed) {
+        await tryDeleteExerciseMediaFromStorage(previous);
+      }
+      const patch = buildExerciseMediaOverridesPatch(merged, exercise, url);
       if (!patch) return false;
       const msg = url ? "Thumbnail updated" : "Using catalog image";
       return applyOverridesPatch(patch, { successMessage: msg, onSuccess });
@@ -96,8 +107,13 @@ export function useExerciseMediaOverridePersist() {
   const removeMediaUrl = useCallback(
     async (exercise, url, onSuccess) => {
       if (!exercise || !url) return false;
+      const merged = mergedBaseForExercise();
+      const primary = getExerciseMediaOverrideUrl(exercise, merged);
+      if (primary && isExerciseMediaStorageUrl(primary) && primary === url) {
+        await tryDeleteExerciseMediaFromStorage(primary);
+      }
       setDeletingUrl(url);
-      const patch = buildExerciseMediaRemoveUrlPatch(mergedBaseForExercise(), exercise, url);
+      const patch = buildExerciseMediaRemoveUrlPatch(merged, exercise, url);
       if (!patch) {
         setDeletingUrl(null);
         return false;

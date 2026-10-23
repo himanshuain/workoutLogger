@@ -18,11 +18,8 @@ import {
   isValidMediaUrl,
 } from "@/lib/exerciseMediaOverrides";
 import { useExerciseMediaOverridePersist } from "@/hooks/useExerciseMediaOverridePersist";
-import {
-  isGifUploadFile,
-  MAX_GIF_UPLOAD_BYTES,
-  readFileAsDataUrl,
-} from "@/lib/exerciseGifUpload";
+import { isGifUploadFile, MAX_GIF_UPLOAD_BYTES } from "@/lib/exerciseGifUpload";
+import { uploadExerciseMediaGif } from "@/lib/exerciseMediaStorage";
 import { useExerciseGifSearch } from "@/hooks/useExerciseGifSearch";
 import { cn } from "@/lib/utils";
 import { ImagePlus, Link2, Loader2, Search, Trash2, Upload, X } from "lucide-react";
@@ -188,24 +185,21 @@ export default function ExerciseDrawerMediaActions({
       toast.error("GIF must be 8 MB or smaller");
       return;
     }
-    let dataUrl;
+    if (!user?.id) {
+      toast.error("Sign in to upload a GIF");
+      return;
+    }
     try {
-      dataUrl = await readFileAsDataUrl(file);
-    } catch {
-      toast.error("Could not read GIF from device");
-      return;
+      const publicUrl = await uploadExerciseMediaGif(user.id, exercise, file);
+      await persistOverride(publicUrl);
+    } catch (err) {
+      const message = String(err?.message ?? "");
+      if (message.includes("Bucket not found") || message.includes("workoutlogger")) {
+        toast.error("Storage not set up — run migration-v22 on Supabase");
+      } else {
+        toast.error("Could not upload GIF");
+      }
     }
-    if (!isPersistableMediaUrl(dataUrl)) {
-      const tooLarge =
-        typeof dataUrl === "string" &&
-        /^data:image\/gif;/i.test(dataUrl) &&
-        dataUrl.length > 12_000_000;
-      toast.error(
-        tooLarge ? "GIF is too large — try a smaller file (under ~4 MB)" : "Could not use this GIF",
-      );
-      return;
-    }
-    await persistOverride(dataUrl);
   };
 
   const chipClass = cn(

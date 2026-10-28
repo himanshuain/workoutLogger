@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { hapticLight } from "@/lib/touchFeedback";
 import { actionGhost } from "@/lib/actionButtonStyles";
 import HabitPills from "@/components/HabitPills";
+import { sheetTopActionButtonClass } from "@/components/ui/sheetTopActions";
 import {
   Modal,
   ModalContent,
@@ -40,11 +41,11 @@ import {
   actionPrimary,
   actionDestructive,
 } from "@/lib/actionButtonStyles";
+import HomeRoutineSelectorModal from "@/components/home/HomeRoutineSelectorModal";
 import {
   LazyTodayWorkoutSection,
   LazyLogDayWorkoutPanel,
   LazyHomeWorkoutHistory,
-  LazyHomeRoutineSelectorModal,
   LazyHomeAddHabitModal,
 } from "@/components/home/lazyHome";
 import SectionManageButton from "@/components/SectionManageButton";
@@ -856,24 +857,22 @@ export default function Home() {
         )}
       </div>
 
-      {showRoutineSelector ? (
-        <LazyHomeRoutineSelectorModal
-          open={showRoutineSelector}
-          onOpenChange={setShowRoutineSelector}
-          isDarkMode={isDarkMode}
-          routineSelectorMode={routineSelectorMode}
-          isViewingToday={isViewingToday}
-          viewingDate={viewingDate}
-          today={today}
-          routines={routines}
-          isStartingWorkout={isStartingWorkout}
-          onSelectRoutine={routine =>
-            isViewingToday
-              ? handleRoutineFromSelector(routine)
-              : handleStartWithPickedRoutineForViewingDate(routine)
-          }
-        />
-      ) : null}
+      <HomeRoutineSelectorModal
+        open={showRoutineSelector}
+        onOpenChange={setShowRoutineSelector}
+        isDarkMode={isDarkMode}
+        routineSelectorMode={routineSelectorMode}
+        isViewingToday={isViewingToday}
+        viewingDate={viewingDate}
+        today={today}
+        routines={routines}
+        isStartingWorkout={isStartingWorkout}
+        onSelectRoutine={routine =>
+          isViewingToday
+            ? handleRoutineFromSelector(routine)
+            : handleStartWithPickedRoutineForViewingDate(routine)
+        }
+      />
 
       {showAddHabitDrawer ? (
         <LazyHomeAddHabitModal
@@ -999,12 +998,21 @@ export default function Home() {
         }}
       >
         <ModalContent
-          className={`flex max-h-[92vh] min-h-0 flex-col ${
+          className={`flex min-h-0 flex-col overflow-hidden ${
             isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
           }`}
           showCloseButton
         >
-          <ModalHeader className="shrink-0">
+          <ModalFooter>
+            <button
+              type="button"
+              onClick={() => void submitViewingLifeLogSheet()}
+              className={sheetTopActionButtonClass(isDarkMode, { primary: true })}
+            >
+              Save log
+            </button>
+          </ModalFooter>
+          <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               {viewingLifeLogSheet ? (
                 <>
@@ -1021,7 +1029,7 @@ export default function Home() {
               </p>
             ) : null}
           </ModalHeader>
-          <ModalBody className="min-h-0 shrink space-y-4 overflow-y-auto pb-2">
+          <ModalBody className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
             {viewingLifeLogSheet?.need_value ? (
               <div>
                 <label
@@ -1070,26 +1078,6 @@ export default function Home() {
               </div>
             ) : null}
           </ModalBody>
-          <ModalFooter className="shrink-0">
-            <button
-              type="button"
-              onClick={closeViewingLifeLogSheet}
-              className={`flex-1 rounded-card py-3 text-sm font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => void submitViewingLifeLogSheet()}
-              className={`flex-1 rounded-card py-3 text-sm font-bold ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
-            >
-              Save log
-            </button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
     </Layout>

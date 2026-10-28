@@ -3,12 +3,18 @@ import { Drawer } from "vaul";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Shared with SheetTopActions — pinned action row under drawer close. */
+export const modalSheetTopActionsClass =
+  "absolute left-3 top-3 z-[60] flex max-w-[calc(100%-3.5rem)] items-center gap-2";
+
+export const modalSheetHeaderBelowActionsClass = "shrink-0 px-4 pb-2 pt-14";
+
 /** Drag up to full height; default opens around half viewport. */
 export const MODAL_SHEET_SNAP_POINTS = [0.55, 1];
 
 const Modal = ({ children, snapPoints = MODAL_SHEET_SNAP_POINTS, ...props }) => (
   <Drawer.Root
-    shouldScaleBackground
+    shouldScaleBackground={false}
     setBackgroundColorOnScale={false}
     repositionInputs={false}
     snapPoints={snapPoints}
@@ -34,7 +40,7 @@ const ModalOverlay = React.forwardRef(({ className, ...props }, ref) => (
   <Drawer.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
+      "fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm transition-opacity duration-300",
       className,
     )}
     {...props}
@@ -53,7 +59,7 @@ const ModalContent = React.forwardRef(
         <Drawer.Content
           ref={ref}
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mx-auto mt-24 flex w-full min-h-0 flex-col rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
+            "fixed inset-x-0 bottom-0 z-[101] mx-auto flex w-full min-h-0 flex-col overflow-hidden rounded-t-card border-t border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]",
             modalSheetHeightClass,
             !showHandle && "border-t-0",
             className,
@@ -82,12 +88,12 @@ const ModalContent = React.forwardRef(
 ModalContent.displayName = "ModalContent";
 
 const ModalHeader = ({ className, ...props }) => (
-  <div className={cn("flex flex-col gap-1.5 p-4 pb-2", className)} {...props} />
+  <div className={cn(modalSheetHeaderBelowActionsClass, className)} {...props} />
 );
 ModalHeader.displayName = "ModalHeader";
 
 const ModalFooter = ({ className, ...props }) => (
-  <div className={cn("flex gap-2 p-4 pt-2", className)} {...props} />
+  <div className={cn(modalSheetTopActionsClass, className)} {...props} />
 );
 ModalFooter.displayName = "ModalFooter";
 
@@ -114,7 +120,10 @@ ModalDescription.displayName = "ModalDescription";
 
 const ModalBody = ({ className, ...props }) => (
   <div
-    className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-2", className)}
+    className={cn(
+      "min-h-0 flex-1 overflow-y-auto px-4 py-2 pb-[max(1rem,env(safe-area-inset-bottom))]",
+      className,
+    )}
     {...props}
   />
 );

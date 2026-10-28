@@ -886,14 +886,6 @@ export default function Steps() {
           </ModalBody>
           <ModalFooter>
             <button
-              onClick={() => { setShowCardModal(false); resetCardForm(); }}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              Cancel
-            </button>
-            <button
               onClick={handleSaveCard}
               disabled={!cardForm.name.trim()}
               className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
@@ -959,14 +951,6 @@ export default function Steps() {
             />
           </ModalBody>
           <ModalFooter>
-            <button
-              onClick={() => { setEditingItem(null); setEditItemText(""); }}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              Cancel
-            </button>
             <button
               onClick={handleUpdateStep}
               disabled={!editItemText.trim()}

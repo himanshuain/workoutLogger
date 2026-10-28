@@ -6,6 +6,7 @@
 const extrasKey = sessionId => `wl_session_extras_${sessionId}`;
 const doneKey = sessionId => `wl_session_exercise_done_${sessionId}`;
 const orderKey = sessionId => `wl_session_exercise_order_${sessionId}`;
+const skippedKey = sessionId => `wl_session_skipped_${sessionId}`;
 
 let persistMetaCallback = null;
 
@@ -19,26 +20,29 @@ function readMeta(session) {
   return {};
 }
 
-function buildMeta(sessionId, extras, doneMap, exerciseOrder) {
+function buildMeta(sessionId, extras, doneMap, exerciseOrder, skippedNames) {
   return {
     extras: extras ?? getSessionExtras(sessionId),
     exercise_done: doneMap ?? getExerciseDoneMap(sessionId),
     exercise_order: exerciseOrder ?? getSessionExerciseOrder(sessionId),
+    skipped_exercises: skippedNames ?? getSessionSkippedNames(sessionId),
   };
 }
 
-function persistLocal(sessionId, extras, doneMap, exerciseOrder) {
+function persistLocal(sessionId, extras, doneMap, exerciseOrder, skippedNames) {
   if (typeof window === "undefined" || !sessionId) return;
   const order = exerciseOrder ?? getSessionExerciseOrder(sessionId);
+  const skipped = skippedNames ?? getSessionSkippedNames(sessionId);
   try {
     localStorage.setItem(extrasKey(sessionId), JSON.stringify(extras));
     localStorage.setItem(doneKey(sessionId), JSON.stringify(doneMap));
     localStorage.setItem(orderKey(sessionId), JSON.stringify(order));
+    localStorage.setItem(skippedKey(sessionId), JSON.stringify(skipped));
   } catch {
     /* ignore */
   }
   if (persistMetaCallback) {
-    persistMetaCallback(sessionId, buildMeta(sessionId, extras, doneMap, order));
+    persistMetaCallback(sessionId, buildMeta(sessionId, extras, doneMap, order, skipped));
   }
 }
 
@@ -55,6 +59,42 @@ export function hydrateSessionClientState(session) {
   if (Array.isArray(meta.exercise_order)) {
     localStorage.setItem(orderKey(session.id), JSON.stringify(meta.exercise_order));
   }
+  if (Array.isArray(meta.skipped_exercises)) {
+    localStorage.setItem(skippedKey(session.id), JSON.stringify(meta.skipped_exercises));
+  }
+}
+
+export function getSessionSkippedNames(sessionId) {
+  if (typeof window === "undefined" || !sessionId) return [];
+  try {
+    const raw = localStorage.getItem(skippedKey(sessionId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(n => typeof n === "string" && n.trim()) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Hide a split exercise for this session only (does not edit the saved split). */
+export function skipSessionSplitExercise(sessionId, exerciseName) {
+  if (typeof window === "undefined" || !sessionId || !exerciseName) return [];
+  const name = String(exerciseName).trim();
+  if (!name) return getSessionSkippedNames(sessionId);
+  const skipped = getSessionSkippedNames(sessionId);
+  if (skipped.includes(name)) return skipped;
+  const next = [...skipped, name];
+  persistLocal(
+    sessionId,
+    getSessionExtras(sessionId),
+    getExerciseDoneMap(sessionId),
+    getSessionExerciseOrder(sessionId),
+    next,
+  );
+  const order = getSessionExerciseOrder(sessionId).filter(n => n !== name);
+  setSessionExerciseOrder(sessionId, order);
+  setExerciseDone(sessionId, name, false);
+  return next;
 }
 
 export function getSessionExerciseOrder(sessionId) {
@@ -206,6 +246,7 @@ export function clearSessionClientState(sessionId) {
     localStorage.removeItem(extrasKey(sessionId));
     localStorage.removeItem(doneKey(sessionId));
     localStorage.removeItem(orderKey(sessionId));
+    localStorage.removeItem(skippedKey(sessionId));
   } catch {
     /* ignore */
   }

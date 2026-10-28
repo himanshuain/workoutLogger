@@ -22,6 +22,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
+import { sheetTopActionButtonClass } from "@/components/ui/sheetTopActions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1071,12 +1072,21 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
           }}
         >
           <ModalContent
-            className={`flex max-h-[85vh] min-h-0 flex-col ${
+            className={`flex min-h-0 flex-col overflow-hidden ${
               isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
             }`}
             showCloseButton
           >
-            <ModalHeader className="shrink-0">
+            <ModalFooter>
+              <button
+                type="button"
+                onClick={submitLifeLogSheet}
+                className={sheetTopActionButtonClass(isDarkMode, { primary: true })}
+              >
+                Save log
+              </button>
+            </ModalFooter>
+            <ModalHeader>
               <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
                 {lifeLogSheet ? (
                   <>
@@ -1093,7 +1103,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                 </p>
               )}
             </ModalHeader>
-            <ModalBody className="shrink-0 space-y-4 !max-h-none overflow-visible pb-2">
+            <ModalBody className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
               {lifeLogSheet?.need_value && (
                 <div>
                   <label
@@ -1136,26 +1146,6 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
                 </div>
               )}
             </ModalBody>
-            <ModalFooter className="shrink-0 pt-2">
-              <button
-                type="button"
-                onClick={closeLifeLogSheet}
-                className={`flex-1 rounded-card py-3 text-sm font-medium ${
-                  isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitLifeLogSheet}
-                className={`flex-1 rounded-card py-3 text-sm font-bold ${
-                  isDarkMode ? "bg-violet-500 text-white" : "bg-violet-600 text-white"
-                }`}
-              >
-                Save log
-              </button>
-            </ModalFooter>
           </ModalContent>
         </NestedModal>
       </Modal>

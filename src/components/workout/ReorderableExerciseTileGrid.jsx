@@ -32,7 +32,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Eye, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Eye, MoreVertical, Plus } from "lucide-react";
 import { resolveExerciseForPreview } from "@/lib/plannerLibraryNavigation";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal";
@@ -287,7 +287,7 @@ function ExerciseMuscleBadge({
   );
 }
 
-function SortableMotionShell({ setNodeRef, style, isDragging, isSorting, className, children }) {
+function SortableMotionShell({ setNodeRef, style, isDragging, isSorting, className, children, dataExerciseTile }) {
   const useLayoutMotion = !isDragging && !isSorting;
   return (
     <motion.div
@@ -298,6 +298,7 @@ function SortableMotionShell({ setNodeRef, style, isDragging, isSorting, classNa
       style={style}
       transition={REORDER_LAYOUT_TRANSITION}
       className={className}
+      data-exercise-tile={dataExerciseTile}
     >
       {children}
     </motion.div>
@@ -403,6 +404,8 @@ function LoggedMiniExerciseMenu({
   userId,
   getExerciseSetHistory,
   onMoveToTop,
+  showRemoveFromSplit = false,
+  onRemoveFromSplit,
 }) {
   const rootRef = useRef(null);
   const buttonRef = useRef(null);
@@ -414,7 +417,7 @@ function LoggedMiniExerciseMenu({
   const [historyOpen, setHistoryOpen] = useState(false);
   const showHistory = Boolean(sessionId && getExerciseSetHistory);
   const showMoveToTop = Boolean(sessionId && onMoveToTop);
-  const useActionsMenu = showReset || showHistory || showMoveToTop;
+  const useActionsMenu = showReset || showHistory || showMoveToTop || showRemoveFromSplit;
 
   useLayoutEffect(() => {
     if (!menuOpen || !buttonRef.current) {
@@ -526,6 +529,17 @@ function LoggedMiniExerciseMenu({
     [exerciseName, onMoveToTop]
   );
 
+  const handleMenuRemoveFromSplit = useCallback(
+    e => {
+      e.preventDefault();
+      e.stopPropagation();
+      guardExerciseTileNavigation();
+      setMenuOpen(false);
+      onRemoveFromSplit?.(exerciseName);
+    },
+    [exerciseName, onRemoveFromSplit]
+  );
+
   const menuItemClass = cn(
     "flex w-full items-center rounded-md px-2.5 py-2 text-left text-xs font-semibold transition-colors",
     isDarkMode ? "text-iron-100 active:bg-iron-800" : "text-slate-800 active:bg-slate-100"
@@ -600,6 +614,21 @@ function LoggedMiniExerciseMenu({
               onClick={handleMenuMoveToTop}
             >
               Move to top
+            </button>
+          ) : null}
+          {showRemoveFromSplit ? (
+            <button
+              type="button"
+              role="menuitem"
+              className={cn(
+                menuItemClass,
+                isDarkMode ? "text-red-400" : "text-red-600",
+              )}
+              onPointerDown={blockPointerToTile}
+              onPointerUp={handleMenuRemoveFromSplit}
+              onClick={handleMenuRemoveFromSplit}
+            >
+              Remove from split
             </button>
           ) : null}
           {showReset ? (
@@ -741,6 +770,10 @@ function LoggedMiniExerciseMenu({
   );
 }
 
+function exerciseTileJustAddedClass(active) {
+  return active ? "exercise-tile-just-added" : null;
+}
+
 function SortableExerciseTile({
   ex,
   tileSize,
@@ -754,6 +787,7 @@ function SortableExerciseTile({
   onReset,
   resetting,
   onRemoveAdded,
+  onRemoveFromSplit,
   exercisesCatalog,
   solidLoggedTile = false,
   isExpanded = false,
@@ -765,6 +799,7 @@ function SortableExerciseTile({
   scrollOnUserExpand = false,
   onConsumedScrollOnExpand,
   onMoveToTop,
+  highlightJustAdded = false,
 }) {
   const id = ex.exercise_name;
   const {
@@ -780,9 +815,14 @@ function SortableExerciseTile({
 
   const style = sortableShellStyle(transform, transition, isDragging, isSorting);
 
-  const hasTrash = ex.added_today;
   const hasLogged = loggedCount > 0;
   const compact = tileSize === "compact";
+  const showRemoveFromSplit =
+    (ex.added_today && onRemoveAdded) || (!ex.added_today && onRemoveFromSplit);
+  const handleRemoveFromSplit = name => {
+    if (ex.added_today) onRemoveAdded?.(name);
+    else onRemoveFromSplit?.(name);
+  };
   const expandedRing =
     inlineLog && isExpanded
       ? isDarkMode
@@ -803,10 +843,12 @@ function SortableExerciseTile({
       style={style}
       isDragging={isDragging}
       isSorting={isSorting}
+      dataExerciseTile={ex.exercise_name}
       className={cn(
         "relative flex min-w-0 flex-col overflow-hidden rounded-card border",
         loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
-        expandedRing
+        expandedRing,
+        exerciseTileJustAddedClass(highlightJustAdded),
       )}
     >
       <div
@@ -823,6 +865,8 @@ function SortableExerciseTile({
           isDarkMode={isDarkMode}
           onReset={onReset}
           resetting={resetting}
+          showRemoveFromSplit={Boolean(showRemoveFromSplit)}
+          onRemoveFromSplit={handleRemoveFromSplit}
           {...menuSessionProps}
         />
         <div
@@ -843,27 +887,6 @@ function SortableExerciseTile({
             solidLogged={solidLogged}
             isDarkMode={isDarkMode}
           />
-          {hasTrash ? (
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                onRemoveAdded?.(ex.exercise_name);
-              }}
-              className={cn(
-                "absolute left-0 top-0 z-20 flex items-center justify-center rounded-br-md",
-                compact ? "h-6 w-6" : "h-7 w-7",
-                hasLogged && solidLoggedTile
-                  ? "bg-emerald-800/90 text-white hover:text-red-200"
-                  : isDarkMode
-                    ? "border border-iron-700/80 bg-iron-900/90 text-iron-400 hover:text-red-400"
-                    : "border border-slate-200 bg-white/95 text-slate-400 hover:text-red-600"
-              )}
-              aria-label={`Remove ${ex.exercise_name}`}
-            >
-              <Trash2 className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
-            </button>
-          ) : null}
           <div className="absolute inset-0">
             {!showPlaceholder ? (
               <ExerciseMediaImage
@@ -961,6 +984,7 @@ function SortableExerciseListRow({
   onReset,
   resetting,
   onRemoveAdded,
+  onRemoveFromSplit,
   exercisesCatalog,
   solidLoggedTile = false,
   isExpanded = false,
@@ -971,6 +995,7 @@ function SortableExerciseListRow({
   scrollOnUserExpand = false,
   onConsumedScrollOnExpand,
   onMoveToTop,
+  highlightJustAdded = false,
 }) {
   const id = ex.exercise_name;
   const {
@@ -986,8 +1011,13 @@ function SortableExerciseListRow({
 
   const style = sortableShellStyle(transform, transition, isDragging, isSorting);
 
-  const hasTrash = ex.added_today;
   const hasLogged = loggedCount > 0;
+  const showRemoveFromSplit =
+    (ex.added_today && onRemoveAdded) || (!ex.added_today && onRemoveFromSplit);
+  const handleRemoveFromSplit = name => {
+    if (ex.added_today) onRemoveAdded?.(name);
+    else onRemoveFromSplit?.(name);
+  };
   const solidLogged = solidLoggedTile && hasLogged;
   const expandedRing =
     inlineLog && isExpanded
@@ -1002,6 +1032,7 @@ function SortableExerciseListRow({
       style={style}
       isDragging={isDragging}
       isSorting={isSorting}
+      dataExerciseTile={ex.exercise_name}
       className={cn("flex min-w-0 flex-col gap-0", isDragging && "z-30")}
     >
       <div
@@ -1009,7 +1040,8 @@ function SortableExerciseListRow({
           "relative flex min-w-0 items-stretch gap-2 rounded-card border p-2",
           loggedCardClass(hasLogged, isDarkMode, isDragging, solidLoggedTile),
           expandedRing,
-          inlineLog && isExpanded && "rounded-b-none"
+          inlineLog && isExpanded && "rounded-b-none",
+          exerciseTileJustAddedClass(highlightJustAdded),
         )}
       >
         <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
@@ -1095,26 +1127,6 @@ function SortableExerciseListRow({
           </div>
         </div>
 
-        {hasTrash ? (
-          <button
-            type="button"
-            onClick={e => {
-              e.stopPropagation();
-              onRemoveAdded?.(ex.exercise_name);
-            }}
-            className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-lg border",
-              solidLogged
-                ? "border-white/40 bg-white/15 text-white hover:bg-white/25 hover:text-red-200"
-                : isDarkMode
-                  ? "border-iron-700/80 text-iron-400 hover:text-red-400"
-                  : "border-slate-200 text-slate-400 hover:text-red-600"
-            )}
-            aria-label={`Remove ${ex.exercise_name}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        ) : null}
         <div className="flex shrink-0 self-center">
           <LoggedMiniExerciseMenu
             showReset={showReset}
@@ -1126,6 +1138,8 @@ function SortableExerciseListRow({
             isDarkMode={isDarkMode}
             onReset={onReset}
             resetting={resetting}
+            showRemoveFromSplit={Boolean(showRemoveFromSplit)}
+            onRemoveFromSplit={handleRemoveFromSplit}
             sessionId={sessionId}
             userId={userId}
             getExerciseSetHistory={getExerciseSetHistory}
@@ -1205,6 +1219,7 @@ export default function ReorderableExerciseTileGrid({
   onResetExercise,
   resettingExercise,
   onRemoveAdded,
+  onRemoveFromSplit,
   exercisesCatalog,
   className = "",
   showSizeToggle = true,
@@ -1214,10 +1229,13 @@ export default function ReorderableExerciseTileGrid({
   onMoveExerciseToTop,
   exerciseOrderVersion = 0,
   onAddExercise = null,
+  scrollToExerciseName = null,
+  onScrolledToExercise = null,
 }) {
   const { user, getExerciseSetHistory } = useWorkout();
   const [expandedLog, setExpandedLog] = useState(null);
   const [scrollPanelOnExpandFor, setScrollPanelOnExpandFor] = useState(null);
+  const [highlightExerciseName, setHighlightExerciseName] = useState(null);
   const [layout, setLayout] = useState(() => getWorkoutExerciseLayout());
   const gridRef = useRef(null);
   const gridCols = useGridColumnCount(gridRef, layout);
@@ -1294,6 +1312,35 @@ export default function ReorderableExerciseTileGrid({
     if (!stillThere) setExpandedLog(null);
   }, [exercises, expandedLog?.name]);
 
+  useEffect(() => {
+    if (!scrollToExerciseName?.trim()) return;
+    const name = scrollToExerciseName.trim();
+    const present = exercises?.some(ex => ex.exercise_name === name);
+    if (!present) return;
+
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const root = gridRef.current;
+        if (!root) return;
+        const escaped =
+          typeof CSS !== "undefined" && CSS.escape
+            ? CSS.escape(name)
+            : name.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        const tile = root.querySelector(`[data-exercise-tile="${escaped}"]`);
+        tile?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        setHighlightExerciseName(name);
+        onScrolledToExercise?.();
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollToExerciseName, exercises, exerciseOrderVersion, onScrolledToExercise]);
+
+  useEffect(() => {
+    if (!highlightExerciseName) return undefined;
+    const timer = window.setTimeout(() => setHighlightExerciseName(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [highlightExerciseName]);
+
   const renderExercise = (ex, { embedInlinePanel = true } = {}) => {
     const media = resolveMedia(ex.exercise_name, ex.exercise_id);
     const showPlaceholder = !media || thumbFailed[ex.exercise_name];
@@ -1309,8 +1356,9 @@ export default function ReorderableExerciseTileGrid({
       showReset: showResetFor?.(ex.exercise_name),
       onReset: onResetExercise,
       resetting: resettingExercise === ex.exercise_name,
-      onRemoveAdded,
-      exercisesCatalog,
+  onRemoveAdded,
+  onRemoveFromSplit,
+  exercisesCatalog,
       solidLoggedTile,
       isExpanded,
       inlineLog,
@@ -1319,6 +1367,7 @@ export default function ReorderableExerciseTileGrid({
       getExerciseSetHistory,
       embedInlinePanel,
       onMoveToTop: onMoveExerciseToTop,
+      highlightJustAdded: highlightExerciseName === ex.exercise_name,
       ...inlineLogScrollProps(ex.exercise_name),
     };
     if (isListLayout(layout)) {
@@ -1441,7 +1490,7 @@ export default function ReorderableExerciseTileGrid({
         >
           <LayoutGroup id="workout-exercise-tiles">
             <div
-              ref={listMode ? undefined : gridRef}
+              ref={gridRef}
               className={cn(
                 "touch-pan-y",
                 listMode ? "flex flex-col gap-2" : cn("grid", tileSizeGridClass(layout))

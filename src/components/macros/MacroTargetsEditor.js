@@ -82,16 +82,6 @@ export default function MacroTargetsEditor({ targets, onSave, isDarkMode }) {
           <ModalFooter>
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              className={cn(
-                "flex-1 py-3 rounded-card font-medium",
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600",
-              )}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
               onClick={handleSave}
               className={cn(
                 "flex-1 py-3 rounded-card font-bold",

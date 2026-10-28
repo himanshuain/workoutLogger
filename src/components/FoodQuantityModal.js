@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import {
   Modal,
   ModalContent,
@@ -8,6 +8,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
+import { sheetTopActionButtonClass } from "@/components/ui/sheetTopActions";
 import { normalizeFoodQuantity } from "@/lib/foodQuantity";
 
 function buildQuantitySuggestions(whole, defaultQuantity) {
@@ -86,7 +87,21 @@ export default function FoodQuantityModal({
 
   return (
     <Modal open={open} onOpenChange={(o) => !o && onClose()}>
-      <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+      <ModalContent
+        className={`flex min-h-0 flex-col overflow-hidden ${
+          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+        }`}
+        showCloseButton
+      >
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={sheetTopActionButtonClass(isDarkMode, { primary: true })}
+          >
+            Save {preview} {item?.unit || ""}
+          </button>
+        </ModalFooter>
         <ModalHeader>
           <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
             {isAdjusting ? "Adjust quantity" : "How much did you have?"}
@@ -187,27 +202,6 @@ export default function FoodQuantityModal({
             </button>
           </div>
         </ModalBody>
-        <ModalFooter className="flex-col gap-2 sm:flex-col">
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`w-full py-4 rounded-card font-bold flex items-center justify-center gap-2 ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
-            }`}
-          >
-            <Check className="w-5 h-5" />
-            Save {preview} {item?.unit || ""}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`w-full py-3 rounded-card font-medium ${
-              isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            Cancel
-          </button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );

@@ -1819,15 +1819,6 @@ export default function LifeLog() {
           </ModalBody>
           <ModalFooter>
             <button
-              onClick={() => {
-                setShowAddDrawer(false);
-                resetEventForm();
-              }}
-              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
-            >
-              Cancel
-            </button>
-            <button
               onClick={handleSaveEvent}
               disabled={!newEvent.name.trim()}
               className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${actionPrimary(isDarkMode)}`}
@@ -1936,13 +1927,6 @@ export default function LifeLog() {
             )}
           </ModalBody>
           <ModalFooter className="shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowLogDrawer(false)}
-              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
-            >
-              Cancel
-            </button>
             <button
               type="button"
               onClick={() => handleLogEvent()}
@@ -2132,12 +2116,6 @@ export default function LifeLog() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <button
-              onClick={() => setEditingLog(null)}
-              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
-            >
-              Cancel
-            </button>
             <button
               onClick={handleSaveEditLog}
               className={`flex-1 py-3 rounded-card font-bold flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
@@ -2372,12 +2350,6 @@ export default function LifeLog() {
           </ModalBody>
           <ModalFooter>
             <button
-              onClick={() => setShowAddHabitModal(false)}
-              className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
-            >
-              Cancel
-            </button>
-            <button
               onClick={handleSavePill}
               disabled={!newPill.name.trim()}
               className={`flex-1 py-3 rounded-card font-bold transition-colors disabled:opacity-50 ${
@@ -2503,14 +2475,6 @@ export default function LifeLog() {
             </div>
             </div>
           </ModalBody>
-          <ModalFooter>
-            <button
-              onClick={() => setPastEntryTrackable(null)}
-              className={`w-full py-3 rounded-card font-bold ${actionPrimary(isDarkMode)}`}
-            >
-              Done
-            </button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
 

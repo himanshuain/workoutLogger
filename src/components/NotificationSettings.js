@@ -255,12 +255,6 @@ export default function NotificationSettings({ trackable, onClose }) {
 
         <ModalFooter>
           <button
-            onClick={handleClose}
-            className="flex-1 py-3 rounded-card bg-iron-800 text-iron-400 font-medium"
-          >
-            Cancel
-          </button>
-          <button
             onClick={handleSave}
             disabled={schedule.enabled && schedule.days.length === 0}
             className="flex-1 py-3 rounded-card bg-lift-primary text-iron-950 font-bold

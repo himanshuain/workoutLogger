@@ -494,12 +494,6 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
           </ModalBody>
           <ModalFooter>
             <button
-              onClick={() => setShowAddModal(false)}
-              className={`px-4 py-2.5 rounded-card text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
-            >
-              Cancel
-            </button>
-            <button
               onClick={handleAddGoal}
               disabled={!newGoal.target || (newGoal.type === "custom" && !newGoal.name)}
               className={`px-6 py-2.5 rounded-card text-sm font-bold ${
@@ -546,12 +540,6 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
             </div>
           </ModalBody>
           <ModalFooter>
-            <button
-              onClick={() => setEditingGoal(null)}
-              className={`px-4 py-2.5 rounded-card text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
-            >
-              Cancel
-            </button>
             <button
               onClick={handleSaveEdit}
               disabled={!editingGoal?.target || (editingGoal?.type === "custom" && !editingGoal?.name)}

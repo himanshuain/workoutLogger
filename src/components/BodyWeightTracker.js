@@ -1,15 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { toast } from "sonner";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalTitle,
-  ModalBody,
-  ModalFooter,
-} from "@/components/ui/modal";
+import LogBodyWeightSheet from "@/components/lifelog/LogBodyWeightSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,13 +81,19 @@ function MiniLineChart({ data, isDarkMode }) {
   );
 }
 
-export default function BodyWeightTracker({ isDarkMode }) {
+export default function BodyWeightTracker({ isDarkMode, preferredLogDate = null }) {
   const { user, trackables, todayEntries, toggleTrackingEntry, toggleTrackingEntryForDate, createTrackable, getTrackingEntries, today } = useWorkout();
   const queryClient = useQueryClient();
 
+  const logForDate = preferredLogDate || today;
+
+  useEffect(() => {
+    setLogDate(logForDate);
+  }, [logForDate]);
+
   const [showLogModal, setShowLogModal] = useState(false);
   const [logWeight, setLogWeight] = useState("");
-  const [logDate, setLogDate] = useState(today);
+  const [logDate, setLogDate] = useState(logForDate);
   const [isExpanded, setIsExpanded] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
@@ -121,6 +120,29 @@ export default function BodyWeightTracker({ isDarkMode }) {
 
   const todayWeight = todayEntries[weightTrackable?.id];
 
+  const { data: preferredDayEntry } = useQuery({
+    queryKey: ["bodyWeightForDate", user?.id, weightTrackable?.id, logForDate],
+    queryFn: async () => {
+      if (!weightTrackable || logForDate === today) return null;
+      const rows = await getTrackingEntries(logForDate, logForDate);
+      return rows.find(e => e.trackable_id === weightTrackable.id && e.is_completed) ?? null;
+    },
+    enabled: Boolean(user && weightTrackable && logForDate && logForDate !== today),
+  });
+
+  const weightForLogDay =
+    logForDate === today ? todayWeight : preferredDayEntry;
+
+  const openLogModal = () => {
+    setLogWeight(
+      weightForLogDay?.value != null && weightForLogDay?.value !== ""
+        ? String(weightForLogDay.value)
+        : "",
+    );
+    setLogDate(logForDate);
+    setShowLogModal(true);
+  };
+
   const stats = useMemo(() => {
     if (weightHistory.length === 0) return null;
     const latest = weightHistory[weightHistory.length - 1];
@@ -141,23 +163,6 @@ export default function BodyWeightTracker({ isDarkMode }) {
       value_unit: "kg",
     });
     toast.success("Body weight tracker created");
-  };
-
-  const handleLogWeight = async () => {
-    if (!logWeight || !weightTrackable) return;
-    const value = parseFloat(logWeight);
-    if (isNaN(value)) return;
-
-    if (logDate === today) {
-      await toggleTrackingEntry(weightTrackable.id, true, value);
-    } else {
-      await toggleTrackingEntryForDate(weightTrackable.id, logDate, true, value);
-    }
-    toast.success(`Weight logged: ${value} kg`);
-    queryClient.invalidateQueries({ queryKey: ["bodyWeightHistory"] });
-    setShowLogModal(false);
-    setLogWeight("");
-    setLogDate(today);
   };
 
   const handleDeleteEntry = async (entry) => {
@@ -250,9 +255,7 @@ export default function BodyWeightTracker({ isDarkMode }) {
           type="button"
           onClick={e => {
             e.stopPropagation();
-            setLogWeight(todayWeight?.value?.toString() || "");
-            setLogDate(today);
-            setShowLogModal(true);
+            openLogModal();
           }}
           className={cn(
             "mt-3 shrink-0 rounded-card p-2",
@@ -340,57 +343,19 @@ export default function BodyWeightTracker({ isDarkMode }) {
         </ChartBody>
       )}
 
-      {/* Log Weight Modal */}
-      <Modal open={showLogModal} onOpenChange={setShowLogModal}>
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
-          <ModalHeader>
-            <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Log Weight</ModalTitle>
-          </ModalHeader>
-          <ModalBody className="space-y-4">
-            <div>
-              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>Date</label>
-              <input
-                type="date"
-                value={logDate}
-                onChange={(e) => setLogDate(e.target.value)}
-                max={today}
-                className={`input-field ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
-              />
-            </div>
-            <div>
-              <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>Weight (kg)</label>
-              <input
-                type="number"
-                step="0.1"
-                value={logWeight}
-                onChange={(e) => setLogWeight(e.target.value)}
-                placeholder="e.g., 72.5"
-                className={`input-field text-center text-2xl font-bold ${isDarkMode ? "bg-iron-800 text-iron-100 border-iron-700" : "bg-slate-50 text-slate-800 border-slate-200"}`}
-                autoFocus
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <button
-              onClick={() => setShowLogModal(false)}
-              className={`px-4 py-2.5 rounded-card text-sm font-medium ${isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"}`}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleLogWeight}
-              disabled={!logWeight}
-              className={`px-6 py-2.5 rounded-card text-sm font-bold ${
-                isDarkMode
-                  ? "bg-purple-500 text-white disabled:opacity-40"
-                  : "bg-purple-600 text-white disabled:opacity-40"
-              }`}
-            >
-              Save
-            </button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <LogBodyWeightSheet
+        open={showLogModal}
+        onOpenChange={setShowLogModal}
+        isDarkMode={isDarkMode}
+        trackableId={weightTrackable?.id}
+        date={logDate}
+        initialValue={logWeight}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ["bodyWeightHistory"] });
+          queryClient.invalidateQueries({ queryKey: ["bodyWeightForDate"] });
+          queryClient.invalidateQueries({ queryKey: ["trackingEntriesForDate"] });
+        }}
+      />
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>

@@ -7,6 +7,7 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
+import { sheetTopActionButtonClass } from "@/components/ui/sheetTopActions";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Check } from "lucide-react";
@@ -53,11 +54,26 @@ export default function HomeAddHabitModal({
 }) {
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+      <ModalContent
+        className={`flex min-h-0 flex-col overflow-hidden ${
+          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
+        }`}
+        showCloseButton
+      >
+        <ModalFooter>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!newHabit.name.trim()}
+            className={sheetTopActionButtonClass(isDarkMode, { primary: true })}
+          >
+            Add Habit
+          </button>
+        </ModalFooter>
         <ModalHeader>
           <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add New Habit</ModalTitle>
         </ModalHeader>
-        <ModalBody className="space-y-4">
+        <ModalBody className="min-h-0 flex-1 space-y-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div>
             <label className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}>
               Name
@@ -156,24 +172,6 @@ export default function HomeAddHabitModal({
             isDarkMode={isDarkMode}
           />
         </ModalBody>
-        <ModalFooter>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className={`flex-1 py-3 rounded-card font-medium ${actionSecondary(isDarkMode)}`}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={!newHabit.name.trim()}
-            className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${actionPrimary(isDarkMode)}`}
-          >
-            <Check className="w-4 h-4" />
-            Add Habit
-          </button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );

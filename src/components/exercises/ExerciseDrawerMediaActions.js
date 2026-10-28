@@ -5,12 +5,14 @@ import { useWorkout } from "@/context/WorkoutContext";
 import GoogleGIcon from "@/components/icons/GoogleGIcon";
 import {
   Modal,
+  NestedModal,
   ModalContent,
   ModalHeader,
   ModalTitle,
   ModalDescription,
   ModalFooter,
 } from "@/components/ui/modal";
+import { sheetTopActionButtonClass } from "@/components/ui/sheetTopActions";
 import { googleImagesSearchUrl, isSmartworkoutMediaUrl } from "@/lib/exerciseMedia";
 import { isSmartworkoutCatalogExercise } from "@/lib/exerciseGifSearch";
 import {
@@ -232,6 +234,9 @@ export default function ExerciseDrawerMediaActions({
     isDarkMode ? "border-iron-800 bg-iron-900" : "border-slate-200 bg-white",
   );
 
+  /** When `compact`, actions sit inside another Vaul sheet — use nested drawers for correct stacking. */
+  const MediaSheet = compact ? NestedModal : Modal;
+
   const emptyHint = searched ? (
     <p className={`py-8 text-center text-sm ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
       No matches for &ldquo;{searchQuery.trim()}&rdquo;.
@@ -326,10 +331,10 @@ export default function ExerciseDrawerMediaActions({
         </button>
       </div>
 
-      <Modal open={pickerOpen} onOpenChange={setPickerOpen}>
+      <MediaSheet open={pickerOpen} onOpenChange={setPickerOpen}>
         <ModalContent
           showCloseButton
-          className={cn("z-[60] flex flex-col overflow-hidden", drawerSurface)}
+          className={cn("flex flex-col overflow-hidden", drawerSurface)}
         >
           <ModalTitle className="sr-only">Find a GIF</ModalTitle>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden pt-2">
@@ -372,14 +377,24 @@ export default function ExerciseDrawerMediaActions({
             </div>
           </div>
         </ModalContent>
-      </Modal>
+      </MediaSheet>
 
-      <Modal open={pasteUrlOpen} onOpenChange={setPasteUrlOpen}>
+      <MediaSheet open={pasteUrlOpen} onOpenChange={setPasteUrlOpen}>
         <ModalContent
           showCloseButton
-          className={cn("z-[70] flex flex-col overflow-hidden", drawerSurface)}
+          className={cn("flex min-h-0 flex-col overflow-hidden", drawerSurface)}
         >
-          <ModalHeader className="shrink-0 space-y-1.5 pb-0 pt-0 text-left">
+          <ModalFooter>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleSavePaste()}
+              className={sheetTopActionButtonClass(isDarkMode, { primary: true })}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </ModalFooter>
+          <ModalHeader className="shrink-0 space-y-1.5 pb-0 text-left">
             <ModalTitle className={isDarkMode ? "text-iron-50" : "text-slate-900"}>
               Paste image URL
             </ModalTitle>
@@ -429,36 +444,8 @@ export default function ExerciseDrawerMediaActions({
               </div>
             ) : null}
           </div>
-
-          <ModalFooter className="shrink-0 flex-row gap-2 border-t border-surface-subtle px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => setPasteUrlOpen(false)}
-              className={cn(
-                "flex-1 rounded-card py-3 text-sm font-medium",
-                isDarkMode ? "bg-iron-800 text-iron-300" : "bg-slate-100 text-slate-600",
-              )}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void handleSavePaste()}
-              className={cn(
-                "flex-1 rounded-card py-3 text-sm font-bold disabled:opacity-50",
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white",
-              )}
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                {saving ? <PendingIcon pending iconClassName="h-4 w-4" /> : null}
-                {saving ? "Saving…" : "Save"}
-              </span>
-            </button>
-          </ModalFooter>
         </ModalContent>
-      </Modal>
+      </MediaSheet>
     </>
   );
 }

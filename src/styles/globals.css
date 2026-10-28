@@ -895,3 +895,20 @@ input[type="number"] {
   background: rgba(128, 128, 128, 0.3);
 }
 
+@keyframes wl-exercise-tile-highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+  }
+  18% {
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.85), 0 0 20px rgba(250, 204, 21, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+  }
+}
+
+.exercise-tile-just-added {
+  animation: wl-exercise-tile-highlight 2.4s ease-out;
+  z-index: 5;
+}
+

@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, ChevronDown, Heart } from "lucide-react";
+import { LazyBodyWeightTracker } from "@/components/charts/lazyCharts";
 import { useWorkout } from "@/context/WorkoutContext";
 import EmptyState, { EmptyInline } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonLoader";
@@ -224,6 +225,10 @@ export default function TodayLifeLogPanel({
           ariaLabel={activeTab === "habits" ? "All habits" : "All events"}
         />
       </SectionHeader>
+
+      <div className="mb-4">
+        <LazyBodyWeightTracker isDarkMode={isDarkMode} preferredLogDate={viewingDate} />
+      </div>
 
       <div
         className={`flex gap-1.5 p-1 rounded-card mb-4 ${

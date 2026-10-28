@@ -5,9 +5,12 @@ import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import {
   getSessionExtras,
+  getSessionSkippedNames,
   moveSessionExerciseToTop,
   removeSessionExtra,
+  skipSessionSplitExercise,
 } from "@/lib/workoutSessionClient";
+import SessionAddExerciseSheet from "@/components/workout/SessionAddExerciseSheet";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
@@ -84,6 +87,7 @@ export default function WorkoutSessionPage() {
   const [resetting, setResetting] = useState(false);
   const [resettingExercise, setResettingExercise] = useState(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [addExerciseOpen, setAddExerciseOpen] = useState(false);
 
   const bumpExtras = useCallback(() => setExtrasVersion(v => v + 1), []);
 
@@ -118,11 +122,19 @@ export default function WorkoutSessionPage() {
   }, [sessionId, extrasVersion]);
 
   // Merge planned exercises
+  const skippedNames = useMemo(() => {
+    if (!sessionId || typeof sessionId !== "string") return [];
+    return getSessionSkippedNames(sessionId);
+  }, [sessionId, extrasVersion]);
+
   const plannedExercises = useMemo(() => {
     const merged = mergePlannedExercises(sessionRoutine, extras);
     const sid = typeof sessionId === "string" ? sessionId : null;
-    return orderPlannedExercises(merged, sid);
-  }, [sessionRoutine, extras, sessionId, extrasVersion]);
+    const ordered = orderPlannedExercises(merged, sid);
+    if (!skippedNames.length) return ordered;
+    const skip = new Set(skippedNames);
+    return ordered.filter(ex => !skip.has(ex.exercise_name));
+  }, [sessionRoutine, extras, sessionId, extrasVersion, skippedNames]);
 
   useEffect(() => {
     setThumbFailed({});
@@ -180,6 +192,16 @@ export default function WorkoutSessionPage() {
     [sessionId, bumpExtras]
   );
 
+  const handleRemoveFromSplit = useCallback(
+    exerciseName => {
+      if (!sessionId || typeof sessionId !== "string") return;
+      skipSessionSplitExercise(sessionId, exerciseName);
+      bumpExtras();
+      toast.success("Removed from today's split");
+    },
+    [sessionId, bumpExtras],
+  );
+
   const handleResetExercise = useCallback(
     async exerciseName => {
       if (!sessionId || typeof sessionId !== "string" || session?.status !== "active") return;
@@ -202,7 +224,7 @@ export default function WorkoutSessionPage() {
   );
 
   const handleAddExercise = () => {
-    router.push(`/exercises?sessionId=${encodeURIComponent(sessionId)}`);
+    setAddExerciseOpen(true);
   };
 
   const handleComplete = async () => {
@@ -388,6 +410,7 @@ export default function WorkoutSessionPage() {
               onResetExercise={handleResetExercise}
               resettingExercise={resettingExercise}
               onRemoveAdded={handleRemoveAddedToday}
+              onRemoveFromSplit={handleRemoveFromSplit}
               exercisesCatalog={exercises}
             />
           </div>
@@ -432,6 +455,17 @@ export default function WorkoutSessionPage() {
           )}
         </div>
       </SpringIn>
+
+      {sessionId && typeof sessionId === "string" ? (
+        <SessionAddExerciseSheet
+          open={addExerciseOpen}
+          onOpenChange={setAddExerciseOpen}
+          sessionId={sessionId}
+          session={session}
+          isDarkMode={isDarkMode}
+          onAdded={bumpExtras}
+        />
+      ) : null}
 
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
         <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>

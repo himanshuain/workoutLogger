@@ -6,9 +6,12 @@ import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import {
   getSessionExtras,
+  getSessionSkippedNames,
   moveSessionExerciseToTop,
   removeSessionExtra,
+  skipSessionSplitExercise,
 } from "@/lib/workoutSessionClient";
+import SessionAddExerciseSheet from "@/components/workout/SessionAddExerciseSheet";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
   Plus,
@@ -84,8 +87,20 @@ export default function TodayWorkoutSection({
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [extrasVersion, setExtrasVersion] = useState(0);
   const [thumbFailed, setThumbFailed] = useState({});
+  const [addExerciseOpen, setAddExerciseOpen] = useState(false);
+  const [scrollToExerciseName, setScrollToExerciseName] = useState(null);
 
   const bumpExtras = useCallback(() => setExtrasVersion(v => v + 1), []);
+
+  const handleExerciseAdded = useCallback(
+    ({ exerciseName } = {}) => {
+      bumpExtras();
+      if (exerciseName?.trim()) {
+        setScrollToExerciseName(exerciseName.trim());
+      }
+    },
+    [bumpExtras],
+  );
 
   useEffect(() => {
     if (user) loadActiveSession?.();
@@ -105,10 +120,18 @@ export default function TodayWorkoutSection({
     return getSessionExtras(activeSession.id);
   }, [activeSession?.id, extrasVersion]);
 
+  const skippedNames = useMemo(() => {
+    if (!activeSession?.id) return [];
+    return getSessionSkippedNames(activeSession.id);
+  }, [activeSession?.id, extrasVersion]);
+
   const plannedExercises = useMemo(() => {
     const merged = mergePlannedExercises(templateRoutine, extras);
-    return orderPlannedExercises(merged, activeSession?.id);
-  }, [templateRoutine, extras, activeSession?.id, extrasVersion]);
+    const ordered = orderPlannedExercises(merged, activeSession?.id);
+    if (!skippedNames.length) return ordered;
+    const skip = new Set(skippedNames);
+    return ordered.filter(ex => !skip.has(ex.exercise_name));
+  }, [templateRoutine, extras, activeSession?.id, extrasVersion, skippedNames]);
 
   useEffect(() => {
     setThumbFailed({});
@@ -215,6 +238,13 @@ export default function TodayWorkoutSection({
     toast.success("Removed from today");
   };
 
+  const handleRemoveFromSplit = exerciseName => {
+    if (!activeSession?.id || !exerciseName) return;
+    skipSessionSplitExercise(activeSession.id, exerciseName);
+    bumpExtras();
+    toast.success("Removed from today's split");
+  };
+
   const handleResetExercise = async exerciseName => {
     if (!activeSession?.id || activeSession.status !== "active") return;
     setResettingExercise(exerciseName);
@@ -307,7 +337,13 @@ export default function TodayWorkoutSection({
             <div className="grid grid-cols-[1fr_auto] gap-2">
               <button
                 type="button"
-                onClick={() => onChooseRoutine?.()}
+                onClick={() => {
+                  if (!onChooseRoutine) {
+                    toast.error("Could not open split picker");
+                    return;
+                  }
+                  onChooseRoutine();
+                }}
                 className={`flex min-h-[44px] items-center justify-center gap-2 rounded-card py-3 font-bold ${actionPrimary(isDarkMode)}`}
               >
                 <Dumbbell className="w-5 h-5" />
@@ -458,12 +494,11 @@ export default function TodayWorkoutSection({
                   onResetExercise={handleResetExercise}
                   resettingExercise={resettingExercise}
                   onRemoveAdded={handleRemoveAddedToday}
+                  onRemoveFromSplit={handleRemoveFromSplit}
                   exercisesCatalog={exercises}
-                  onAddExercise={() =>
-                    router.push(
-                      `/exercises?return=today&sessionId=${encodeURIComponent(activeSession.id)}`,
-                    )
-                  }
+                  onAddExercise={() => setAddExerciseOpen(true)}
+                  scrollToExerciseName={scrollToExerciseName}
+                  onScrolledToExercise={() => setScrollToExerciseName(null)}
                 />
               </div>
 
@@ -501,6 +536,17 @@ export default function TodayWorkoutSection({
             </>
           ) : null}
       </div>
+
+      {activeSession?.id ? (
+        <SessionAddExerciseSheet
+          open={addExerciseOpen}
+          onOpenChange={setAddExerciseOpen}
+          sessionId={activeSession.id}
+          session={activeSession}
+          isDarkMode={isDarkMode}
+          onAdded={handleExerciseAdded}
+        />
+      ) : null}
 
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
         <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>

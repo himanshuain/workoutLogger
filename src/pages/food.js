@@ -1087,14 +1087,6 @@ export default function Food() {
               </button>
             )}
             <button
-              onClick={() => setShowAddModal(false)}
-              className={`flex-1 py-3 rounded-card font-medium ${
-                isDarkMode ? "bg-iron-800 text-iron-400" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              Cancel
-            </button>
-            <button
               onClick={handleSaveFood}
               disabled={!newFood.name.trim()}
               className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${

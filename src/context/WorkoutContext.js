@@ -155,6 +155,7 @@ function WorkoutProviderInner({ children }) {
   const {
     loadEventTypes,
     processEventTypes,
+    mergeEventTypesPreservingLogFields,
     createEventType,
     updateEventType,
     deleteEventType,
@@ -193,6 +194,7 @@ function WorkoutProviderInner({ children }) {
     setEventTypes,
     setStepCards,
     processEventTypes,
+    mergeEventTypesPreservingLogFields,
     fallbackLoaders: {
       loadExercises,
       loadSettings,

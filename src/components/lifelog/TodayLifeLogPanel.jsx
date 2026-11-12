@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, ChevronDown, Heart } from "lucide-react";
+import Link from "next/link";
+import { Calendar, ChevronDown, Heart, Bike, Plus } from "lucide-react";
 import { LazyBodyWeightTracker } from "@/components/charts/lazyCharts";
 import { useWorkout } from "@/context/WorkoutContext";
 import EmptyState, { EmptyInline } from "@/components/EmptyState";
@@ -218,12 +219,36 @@ export default function TodayLifeLogPanel({
   return (
     <div className={sectionSurfaceClass(isDarkMode)}>
       <SectionHeader icon={Calendar} label="Life log" isDarkMode={isDarkMode}>
-        <SectionManageButton
-          isDarkMode={isDarkMode}
-          variant="all"
-          onClick={() => onManage(allLifelogTab)}
-          ariaLabel={activeTab === "habits" ? "All habits" : "All events"}
-        />
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/bike-logs?new=1"
+            className={`inline-flex items-center gap-1 rounded-card px-2.5 py-1.5 text-[11px] font-semibold ${
+              isDarkMode
+                ? "bg-lift-primary/20 text-lift-primary ring-1 ring-lift-primary/30 active:bg-lift-primary/30"
+                : "bg-amber-100 text-amber-900 border border-amber-200/80 shadow-sm active:bg-amber-200/80"
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Quick bike log
+          </Link>
+          <Link
+            href="/bike-logs"
+            className={`inline-flex items-center gap-1 rounded-card px-2.5 py-1.5 text-[11px] font-semibold ${
+              isDarkMode
+                ? "bg-iron-800 text-iron-200 active:bg-iron-700"
+                : "bg-white text-slate-700 border border-slate-200 shadow-sm active:bg-slate-50"
+            }`}
+          >
+            <Bike className="w-3.5 h-3.5" />
+            All logs
+          </Link>
+          <SectionManageButton
+            isDarkMode={isDarkMode}
+            variant="all"
+            onClick={() => onManage(allLifelogTab)}
+            ariaLabel={activeTab === "habits" ? "All habits" : "All events"}
+          />
+        </div>
       </SectionHeader>
 
       <div className="mb-4">

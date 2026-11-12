@@ -33,6 +33,7 @@ export function useWorkoutInit({
   setEventTypes,
   setStepCards,
   processEventTypes,
+  mergeEventTypesPreservingLogFields,
   fallbackLoaders,
 }) {
   const initUserIdRef = useRef(null);
@@ -111,7 +112,7 @@ export function useWorkoutInit({
         );
       }
 
-      const processedEvents = processEventTypes(
+      const eventTypesMergedSettings =
         eventTypesNeedingMigration.length > 0
           ? eventTypesRaw.map(et => {
               const local = localEventSettings[et.id];
@@ -123,9 +124,9 @@ export function useWorkoutInit({
                 need_notes: local.need_notes || false,
               };
             })
-          : eventTypesRaw,
-      );
-      setEventTypes(processedEvents);
+          : eventTypesRaw;
+
+      setEventTypes(prev => mergeEventTypesPreservingLogFields(prev, eventTypesMergedSettings));
 
       const processedCards = (data.step_cards || []).map(card => ({
         ...card,

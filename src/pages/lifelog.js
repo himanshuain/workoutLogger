@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
@@ -57,7 +58,9 @@ import {
   BarChart3,
   Hash,
   FileText,
+  Bike,
 } from "lucide-react";
+import { filterGeneralLifeLogEvents } from "@/lib/bikeEventScope";
 import NotificationService from "@/lib/notifications";
 import { toast } from "sonner";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
@@ -179,6 +182,7 @@ export default function LifeLog() {
 
   // Event types include DB-backed UI settings
   const eventTypes = useMemo(() => mergeEventTypesWithLifelogSettings(rawEventTypes), [rawEventTypes]);
+  const generalLifeEvents = useMemo(() => filterGeneralLifeLogEvents(eventTypes), [eventTypes]);
 
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
@@ -955,11 +959,25 @@ export default function LifeLog() {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="mt-4 space-y-3"
           >
-            {eventTypes.length === 0 ? (
+            <Link
+              href="/bike-logs"
+              className={`flex items-center justify-between gap-3 rounded-card px-3.5 py-3 ${
+                isDarkMode
+                  ? "bg-iron-900 border border-iron-800 text-iron-100"
+                  : "bg-white border border-slate-200 text-slate-800 shadow-sm"
+              }`}
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <Bike className={`w-4 h-4 ${isDarkMode ? "text-lift-primary" : "text-workout-primary"}`} />
+                Bike logs
+              </span>
+              <ChevronRight className={`w-4 h-4 ${isDarkMode ? "text-iron-600" : "text-slate-400"}`} />
+            </Link>
+            {generalLifeEvents.length === 0 ? (
               <EmptyState
                 isDarkMode={isDarkMode}
-                message="No events yet"
-                hint="Track haircuts, doctor visits, and other life events."
+                message="No other events yet"
+                hint="Bike maintenance lives on Bike logs. Add haircuts, doctor visits, etc. here."
                 actionLabel="Add event"
                 onAction={() => {
                   resetEventForm();
@@ -969,7 +987,7 @@ export default function LifeLog() {
             ) : (
               <>
                 <LongPressContextHint isDarkMode={isDarkMode} className="-mt-1 mb-1" />
-                {eventTypes.map(eventType => {
+                {generalLifeEvents.map(eventType => {
                 const isOverdue =
                   eventType.reminder_days &&
                   eventType.days_since !== null &&

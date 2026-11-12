@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useTheme } from "@/context/ThemeContext";
 import { useWorkout } from "@/context/WorkoutContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, ClipboardList } from "lucide-react";
+import { Dumbbell, TrendingUp, Settings, Utensils, ListChecks, ClipboardList, Bike } from "lucide-react";
 import { cacheLocalNavConfig, readLocalNavConfig } from "@/lib/userPrefsMigration";
 import { hapticLight, hapticSelect, touchPressNav } from "@/lib/touchFeedback";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ const LazyInstallPrompt = dynamic(() => import("@/components/InstallPrompt"), {
 
 const DEFAULT_TABS = [
   { id: "today", href: "/", icon: Dumbbell, label: "Today" },
+  { id: "bike", href: "/bike-logs", icon: Bike, label: "Bike" },
   { id: "plan", href: "/plan", icon: ListChecks, label: "Splits" },
   { id: "checklists", href: "/checklists", icon: ClipboardList, label: "Checklists" },
   { id: "progress", href: "/dashboard", icon: TrendingUp, label: "Dashboard" },

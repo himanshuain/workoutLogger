@@ -6,6 +6,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { Reorder, useDragControls } from "framer-motion";
 import { toast } from "sonner";
+import Link from "next/link";
 import {
   User,
   Zap,
@@ -19,6 +20,8 @@ import {
   Check,
   X,
   RotateCcw,
+  Bike,
+  ChevronRight,
 } from "lucide-react";
 
 function NavItem({ tab, isDarkMode, config, editingId, editLabel, inputRef, setEditLabel, setEditingId, saveRename, startRename, getLabel, toggleVisibility, isHidden }) {
@@ -319,6 +322,26 @@ export default function Settings() {
         </div>
 
         <div className="space-y-section mt-4">
+          <section>
+            <h3
+              className={`text-xs font-medium uppercase tracking-wider mb-3 flex items-center gap-2 ${
+                isDarkMode ? "text-iron-500" : "text-slate-500"
+              }`}
+            >
+              <Bike className="w-3.5 h-3.5" />
+              Bike logs
+            </h3>
+            <Link
+              href="/bike-logs"
+              className={`card flex items-center justify-between gap-3 ${
+                isDarkMode ? "text-iron-100" : "text-slate-800"
+              }`}
+            >
+              <span className="font-medium">Open bike logs page</span>
+              <ChevronRight className={`w-4 h-4 ${isDarkMode ? "text-iron-500" : "text-slate-400"}`} />
+            </Link>
+          </section>
+
           {/* Theme Toggle */}
           <section>
             <h3

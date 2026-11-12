@@ -26,10 +26,10 @@ export default function LifeLogGapPill({
 
   const tier = tiers[Math.min(tierIdx, tiers.length - 1)];
 
-  const pillBodyClass = `text-[9px] font-medium max-w-[min(100%,16rem)] px-2 py-px rounded-full select-none text-center whitespace-normal leading-tight border ${
+  const pillBodyClass = `inline-block text-[10px] font-medium max-w-[min(100%,16rem)] px-2.5 py-0.5 rounded-full select-none text-center whitespace-nowrap leading-snug border ${
     isDarkMode
-      ? "bg-iron-800/80 text-iron-600 border-iron-700/50"
-      : "bg-slate-100 text-slate-400 border-slate-200"
+      ? "bg-iron-800 text-iron-400 border-iron-700/60"
+      : "bg-slate-100 text-slate-500 border-slate-200"
   }`;
 
   const { text, ariaLabel, titleHint } = useMemo(() => {

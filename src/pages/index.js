@@ -70,6 +70,7 @@ import {
   LIFELOG_EVENT_SETTINGS_CHANGED,
 } from "@/lib/lifelogEventSettings";
 import { lifelogRoute, LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/lifelogNav";
+import { filterGeneralLifeLogEvents } from "@/lib/bikeEventScope";
 import { homePageShellClass } from "@/components/layout/PageContainer";
 import { restoreHomeScrollPosition } from "@/lib/homeScrollRestore";
 
@@ -333,7 +334,10 @@ export default function Home() {
   );
 
   const sortedLifeEvents = useMemo(
-    () => [...mergedLifeEventTypes].sort((a, b) => (a.order_index || 0) - (b.order_index || 0)),
+    () =>
+      filterGeneralLifeLogEvents(mergedLifeEventTypes).sort(
+        (a, b) => (a.order_index || 0) - (b.order_index || 0),
+      ),
     [mergedLifeEventTypes],
   );
 

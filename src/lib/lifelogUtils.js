@@ -26,6 +26,15 @@ export function formatDate(dateStr) {
 export const GAP_MONTH_DAYS = 30;
 export const GAP_WEEK_DAYS = 7;
 
+/** Calendar days between two log dates (newer − older). */
+export function gapDaysBetween(newerDateStr, olderDateStr) {
+  if (!newerDateStr || !olderDateStr) return 0;
+  const newer = new Date(`${String(newerDateStr).slice(0, 10)}T12:00:00`);
+  const older = new Date(`${String(olderDateStr).slice(0, 10)}T12:00:00`);
+  const gap = Math.floor((newer.getTime() - older.getTime()) / (1000 * 60 * 60 * 24));
+  return gap > 0 ? gap : 0;
+}
+
 export function buildGapTierOrder(gapDays) {
   const order = ["d"];
   if (gapDays >= GAP_WEEK_DAYS) order.push("w");

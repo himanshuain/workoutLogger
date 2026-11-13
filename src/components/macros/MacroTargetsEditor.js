@@ -49,7 +49,7 @@ export default function MacroTargetsEditor({ targets, onSave, isDarkMode }) {
       </button>
 
       <Modal open={open} onOpenChange={setOpen}>
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ModalContent>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Daily Macro Targets

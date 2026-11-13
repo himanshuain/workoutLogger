@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { pageStickyHeaderClass, pageTitleClass, pageSubtitleClass } from "@/lib/pageChrome";
 import {
   Modal,
   ModalContent,
@@ -46,6 +48,12 @@ import {
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/fade-in";
+import {
+  actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
+import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -140,7 +148,7 @@ function SortableStepItem({ item, card, isChecked, isDarkMode, onToggle, onEdit,
           </button>
         </div>
       </ContextMenuTrigger>
-      <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+      <ContextMenuContent>
         <ContextMenuItem
           onClick={onEdit}
           className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -363,9 +371,7 @@ export default function Steps() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
+            className={cn("mt-4 px-6 py-2.5 rounded-card font-bold", actionPrimary(isDarkMode))}
           >
             Sign In
           </button>
@@ -377,19 +383,13 @@ export default function Steps() {
   return (
     <Layout>
       <FadeIn duration={0.5}>
-      <div className="px-4 py-4 pb-16">
+      <PageContainer className="py-4 pb-16">
         {/* Header */}
-        <div
-          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
-            isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
-          }`}
-        >
+        <div className={pageStickyHeaderClass(isDarkMode)}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                Steps
-              </h2>
-              <p className={`text-sm mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+              <h2 className={pageTitleClass(isDarkMode)}>Steps</h2>
+              <p className={pageSubtitleClass(isDarkMode, "mt-0.5")}>
                 Your reusable checklists
               </p>
             </div>
@@ -418,11 +418,10 @@ export default function Steps() {
               </div>
               <button
                 onClick={handleOpenAddCard}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-card font-medium text-sm ${
-                  isDarkMode
-                    ? "bg-lift-primary text-iron-950"
-                    : "bg-workout-primary text-white"
-                }`}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2.5 rounded-card font-medium text-sm",
+                  actionPrimary(isDarkMode),
+                )}
               >
                 <Plus className="w-4 h-4" />
                 Add Card
@@ -546,7 +545,7 @@ export default function Steps() {
                       </AnimatePresence>
                     </div>
                   </ContextMenuTrigger>
-                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                  <ContextMenuContent>
                     <ContextMenuItem onClick={() => handleOpenEditCard(card)} className={isDarkMode ? "text-iron-200" : "text-slate-700"}>
                       <Pencil className="w-4 h-4" />
                       Edit Card
@@ -638,7 +637,7 @@ export default function Steps() {
                       )}
                     </motion.button>
                   </ContextMenuTrigger>
-                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                  <ContextMenuContent>
                     <ContextMenuItem onClick={() => handleOpenEditCard(card)} className={isDarkMode ? "text-iron-200" : "text-slate-700"}>
                       <Pencil className="w-4 h-4" />
                       Edit Card
@@ -655,7 +654,6 @@ export default function Steps() {
             })}
           </StaggerContainer>
         )}
-      </div>
 
       {/* ======================== ZOOM OVERLAY ======================== */}
       <AnimatePresence>
@@ -767,6 +765,7 @@ export default function Steps() {
           );
         })()}
       </AnimatePresence>
+      </PageContainer>
       </FadeIn>
 
       {/* Add/Edit Card Modal */}
@@ -774,7 +773,7 @@ export default function Steps() {
         open={showCardModal}
         onOpenChange={(open) => { setShowCardModal(open); if (!open) resetCardForm(); }}
       >
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ModalContent>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               {editingCardId ? "Edit Card" : "New Card"}
@@ -888,9 +887,10 @@ export default function Steps() {
             <button
               onClick={handleSaveCard}
               disabled={!cardForm.name.trim()}
-              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={cn(
+                "flex-1 py-3 rounded-card font-bold disabled:opacity-50",
+                actionPrimary(isDarkMode),
+              )}
             >
               {editingCardId ? "Save Changes" : "Create Card"}
             </button>
@@ -900,7 +900,7 @@ export default function Steps() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Delete Card?
@@ -910,14 +910,12 @@ export default function Steps() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className={isDarkMode ? "bg-iron-800 text-iron-400 border-0" : "bg-slate-100 text-slate-600 border-0"}
-            >
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteCard}
-              className="bg-red-500 text-white hover:bg-red-600 border-0"
+              className={alertDialogDestructive(isDarkMode)}
             >
               Delete
             </AlertDialogAction>
@@ -930,7 +928,7 @@ export default function Steps() {
         open={!!editingItem}
         onOpenChange={(open) => { if (!open) { setEditingItem(null); setEditItemText(""); } }}
       >
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ModalContent>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Edit Step
@@ -954,9 +952,10 @@ export default function Steps() {
             <button
               onClick={handleUpdateStep}
               disabled={!editItemText.trim()}
-              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={cn(
+                "flex-1 py-3 rounded-card font-bold disabled:opacity-50",
+                actionPrimary(isDarkMode),
+              )}
             >
               Save
             </button>

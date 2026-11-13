@@ -3,11 +3,13 @@ import { hapticLight, touchPress } from "@/lib/touchFeedback";
 import {
   BIKE_SCOPE_FILTER_ALL,
   BIKE_SCOPE_FILTER_UNTAGGED,
+  BIKE_SCOPE_FILTER_PENDING,
 } from "@/lib/bikeLogUtils";
 
 function formatPillLabel(pill) {
   if (pill === BIKE_SCOPE_FILTER_ALL) return "All";
   if (pill === BIKE_SCOPE_FILTER_UNTAGGED) return "Untagged";
+  if (pill === BIKE_SCOPE_FILTER_PENDING) return "Pending";
   return pill.charAt(0).toUpperCase() + pill.slice(1);
 }
 

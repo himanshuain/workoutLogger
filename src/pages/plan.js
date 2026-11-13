@@ -17,10 +17,11 @@ import { getRoutineById, NEW_SPLIT_ID, sortRoutinesByName } from "@/lib/routineS
 import { Plus, Trash2, RotateCcw, Loader2, FileText } from "lucide-react";
 import {
   actionDestructiveGhost,
-  actionDestructive,
   actionSecondary,
   actionSecondaryCompact,
   actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
 } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import { SkeletonRoutineExercises } from "@/components/SkeletonLoader";
@@ -703,7 +704,7 @@ export default function RoutinePlannerPage() {
         </Tabs>
 
         <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className={isDarkMode ? "text-iron-50" : ""}>
                 Delete this split?
@@ -715,7 +716,7 @@ export default function RoutinePlannerPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className={actionSecondary(isDarkMode)} disabled={deleting}>
+              <AlertDialogCancel className={alertDialogCancel(isDarkMode)} disabled={deleting}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
@@ -724,7 +725,7 @@ export default function RoutinePlannerPage() {
                   e.preventDefault();
                   void confirmDeleteSplit();
                 }}
-                className={actionDestructive(isDarkMode, "border-0")}
+                className={alertDialogDestructive(isDarkMode)}
               >
                 {deleting ? "Deleting…" : "Delete split"}
               </AlertDialogAction>

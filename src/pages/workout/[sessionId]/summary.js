@@ -8,13 +8,18 @@ import { toast } from "sonner";
 import { ClipboardList, Home, Save, Pencil, Plus, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+} from "@/components/ui/modal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -411,9 +416,10 @@ export default function WorkoutSummaryPage() {
           type="button"
           onClick={handleSaveWorkout}
           disabled={saving || stats.exerciseNames.length === 0 || Boolean(mutatingKey)}
-          className={`w-full py-4 rounded-card font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 ${
-            isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-          }`}
+          className={cn(
+            "w-full py-4 rounded-card font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2",
+            actionPrimary(isDarkMode),
+          )}
         >
           <Save className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
           {saving ? "Saving…" : session?.status === "completed" ? "Save changes" : "Save workout"}
@@ -448,19 +454,19 @@ export default function WorkoutSummaryPage() {
       </div>
 
       {/* Edit sets */}
-      <Dialog
+      <Modal
         open={editOpen}
         onOpenChange={open => {
           setEditOpen(open);
           if (!open) setEditingSetRow(null);
         }}
       >
-        <DialogContent
-          className={cn("flex max-h-[min(92vh,760px)] max-w-lg flex-col gap-0 overflow-hidden", dialogSkin)}
+        <ModalContent
+          className={cn(dialogSkin)}
           onOpenAutoFocus={e => e.preventDefault()}
         >
-          <DialogHeader className="shrink-0 space-y-2 px-1">
-            <DialogTitle className={isDarkMode ? "" : "!text-slate-900"}>Sets</DialogTitle>
+          <ModalHeader className="!pt-4 shrink-0 space-y-2 px-1">
+            <ModalTitle className={isDarkMode ? "" : "!text-slate-900"}>Sets</ModalTitle>
             {editOriginalName ? (
               <p
                 className={cn("text-base font-semibold leading-snug", isDarkMode ? "text-iron-100" : "text-slate-900")}
@@ -468,14 +474,14 @@ export default function WorkoutSummaryPage() {
                 {editOriginalName}
               </p>
             ) : null}
-            <DialogDescription className={cn("text-sm", descriptionSkin)}>
+            <ModalDescription className={cn("text-sm", descriptionSkin)}>
               Adjust weight × reps below. Totals update when you save the workout.
-            </DialogDescription>
-          </DialogHeader>
+            </ModalDescription>
+          </ModalHeader>
 
-          <div
+          <ModalBody
             className={cn(
-              "mt-5 min-h-0 flex-1 overflow-y-auto border-t pt-4",
+              "border-t pt-4",
               isDarkMode ? "border-iron-800" : "border-slate-200",
             )}
           >
@@ -649,11 +655,11 @@ export default function WorkoutSummaryPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </ModalBody>
 
-          <DialogFooter
+          <div
             className={cn(
-              "mt-4 shrink-0 border-t px-1 pt-4",
+              "shrink-0 border-t px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]",
               isDarkMode ? "border-iron-800" : "border-slate-200",
             )}
           >
@@ -662,14 +668,14 @@ export default function WorkoutSummaryPage() {
               onClick={() => setEditOpen(false)}
               className={cn(
                 "w-full rounded-card py-3 text-sm font-semibold disabled:opacity-45",
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white",
+                actionPrimary(isDarkMode),
               )}
             >
               Done
             </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </ModalContent>
+      </Modal>
 
       {/* Confirm delete */}
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={open => !open && setDeleteTarget(null)}>
@@ -684,12 +690,7 @@ export default function WorkoutSummaryPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className={cn(
-                isDarkMode &&
-                  "!border-iron-700 !bg-transparent !text-iron-200 hover:!bg-iron-800",
-              )}
-            >
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -697,9 +698,7 @@ export default function WorkoutSummaryPage() {
                 e.preventDefault();
                 confirmDelete();
               }}
-              className={cn(
-                isDarkMode && "!bg-red-600 hover:!bg-red-500 focus-visible:!ring-red-500",
-              )}
+              className={alertDialogDestructive(isDarkMode)}
             >
               Remove
             </AlertDialogAction>

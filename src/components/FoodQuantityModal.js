@@ -87,12 +87,7 @@ export default function FoodQuantityModal({
 
   return (
     <Modal open={open} onOpenChange={(o) => !o && onClose()}>
-      <ModalContent
-        className={`flex min-h-0 flex-col overflow-hidden ${
-          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-        }`}
-        showCloseButton
-      >
+      <ModalContent className="flex min-h-0 flex-col overflow-hidden" showCloseButton>
         <ModalFooter>
           <button
             type="button"

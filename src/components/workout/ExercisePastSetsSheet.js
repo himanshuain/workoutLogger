@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+} from "@/components/ui/modal";
 import { analyzeExerciseSetHistory } from "@/lib/exerciseSetHistoryAnalysis";
 import { localDateStr } from "@/lib/dateLogUtils";
 import { formatDaysSince } from "@/lib/lifelogUtils";
@@ -265,7 +266,8 @@ function CollapsibleBlock({ title, count, isDarkMode, children }) {
   );
 }
 
-export default function ExercisePastSetsDrawer({
+/** Bottom sheet: past sets and analysis for an exercise. */
+export default function ExercisePastSetsSheet({
   open,
   onOpenChange,
   isDarkMode,
@@ -290,20 +292,19 @@ export default function ExercisePastSetsDrawer({
   const maxPlateauSessions = Math.max(...analysis.plateaus.map(p => p.sessionCount), 1);
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent
+    <Modal open={open} onOpenChange={onOpenChange}>
+      <ModalContent
         className={cn(
-          "flex max-h-[min(92vh,860px)] flex-col",
-          isDarkMode ? "!border-iron-800 !bg-iron-950" : "!border-slate-200 !bg-slate-50",
+          isDarkMode ? "border-iron-800 bg-iron-950" : "border-slate-200 bg-slate-50",
         )}
       >
-        <DrawerHeader className="shrink-0 border-b px-5 pb-3 pt-2 text-left">
-          <DrawerTitle className={cn("text-lg font-semibold", isDarkMode ? "text-iron-50" : "text-slate-900")}>
+        <ModalHeader className="!pt-4 shrink-0 border-b border-surface-subtle px-1 pb-3 text-left">
+          <ModalTitle className={cn(isDarkMode ? "text-iron-50" : "text-slate-900")}>
             {exerciseName}
-          </DrawerTitle>
-        </DrawerHeader>
+          </ModalTitle>
+        </ModalHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <ModalBody className="px-1 py-4">
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-16">
               <Loader2 className={cn("h-5 w-5 animate-spin", isDarkMode ? "text-iron-500" : "text-slate-400")} aria-hidden />
@@ -388,8 +389,8 @@ export default function ExercisePastSetsDrawer({
               ) : null}
             </div>
           )}
-        </div>
-      </DrawerContent>
-    </Drawer>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 }

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
 import EmptyState from "@/components/EmptyState";
 import BikeLogFilterPills from "@/components/bike/BikeLogFilterPills";
 import BikeLogEntrySheet, { persistLogTags } from "@/components/bike/BikeLogEntrySheet";
@@ -19,13 +20,19 @@ import {
 import {
   BIKE_SCOPE_FILTER_ALL,
   BIKE_SCOPE_FILTER_UNTAGGED,
+  BIKE_SCOPE_FILTER_PENDING,
   collectTagFilters,
   filterBikeLogsByPill,
   flattenBikeLogs,
+  getUntaggedBikeLogs,
   normalizeTags,
 } from "@/lib/bikeLogUtils";
 import { mergeEventTypesWithLifelogSettings } from "@/lib/lifelogEventSettings";
-import { actionPrimary } from "@/lib/actionButtonStyles";
+import {
+  actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -77,9 +84,13 @@ export default function BikeLogsPage() {
   const tagFilters = useMemo(() => collectTagFilters(allBikeLogs), [allBikeLogs]);
   const filterPills = useMemo(() => {
     const pills = [BIKE_SCOPE_FILTER_ALL];
+    const untaggedCount = getUntaggedBikeLogs(allBikeLogs).length;
+    if (pendingItems.length > 0 || untaggedCount > 0) {
+      pills.push(BIKE_SCOPE_FILTER_PENDING);
+    }
     if (tagFilters.length > 0) pills.push(BIKE_SCOPE_FILTER_UNTAGGED, ...tagFilters);
     return pills;
-  }, [tagFilters]);
+  }, [tagFilters, allBikeLogs, pendingItems.length]);
 
   const [filterPill, setFilterPill] = useState(BIKE_SCOPE_FILTER_ALL);
   const [entrySheet, setEntrySheet] = useState(null);
@@ -118,9 +129,11 @@ export default function BikeLogsPage() {
   }, [eventTypes, updateEventType, loadEventTypes]);
 
   const filteredLogs = useMemo(
-    () => filterBikeLogsByPill(allBikeLogs, filterPill),
+  () => filterBikeLogsByPill(allBikeLogs, filterPill),
     [allBikeLogs, filterPill],
   );
+
+  const showPendingFilterView = filterPill === BIKE_SCOPE_FILTER_PENDING;
 
   const openCreateEntry = useCallback(
     (draft = null, pendingId = null) => {
@@ -289,7 +302,7 @@ export default function BikeLogsPage() {
 
   return (
     <Layout>
-      <div className="page-enter w-full mx-auto px-4 sm:px-5 pt-3 pb-28 max-w-lg lg:max-w-2xl lg:px-8">
+      <PageContainer className="page-enter py-3 pb-28 lg:max-w-2xl">
         <header className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h1 className={`text-lg font-bold ${isDarkMode ? "text-iron-50" : "text-slate-900"}`}>Bike logs</h1>
           {bikeEventTypes.length > 0 ? (
@@ -317,13 +330,15 @@ export default function BikeLogsPage() {
           />
         ) : (
           <section className="min-w-0">
-            <BikePendingSection
-              items={pendingItems}
-              isDarkMode={isDarkMode}
-              onAdd={handleAddPending}
-              onMarkDone={handleMarkPendingDone}
-              onRemove={handleRemovePending}
-            />
+            {!showPendingFilterView ? (
+              <BikePendingSection
+                items={pendingItems}
+                isDarkMode={isDarkMode}
+                onAdd={handleAddPending}
+                onMarkDone={handleMarkPendingDone}
+                onRemove={handleRemovePending}
+              />
+            ) : null}
             {filterPills.length > 1 ? (
               <BikeLogFilterPills
                 pills={filterPills}
@@ -333,7 +348,37 @@ export default function BikeLogsPage() {
                 className="mb-3"
               />
             ) : null}
-            {filteredLogs.length === 0 ? (
+            {showPendingFilterView ? (
+              <div className="space-y-4">
+                <BikePendingSection
+                  items={pendingItems}
+                  isDarkMode={isDarkMode}
+                  onAdd={handleAddPending}
+                  onMarkDone={handleMarkPendingDone}
+                  onRemove={handleRemovePending}
+                />
+                {filteredLogs.length > 0 ? (
+                  <BikeLogsTimelineList
+                    logs={filteredLogs}
+                    isDarkMode={isDarkMode}
+                    showTrackerName={showTrackerNameInList}
+                    onEdit={openEditEntry}
+                    onDelete={row =>
+                      setDeleteConfirm({
+                        type: "log",
+                        logId: row.id,
+                        eventTypeId: row.eventTypeId,
+                      })
+                    }
+                  />
+                ) : null}
+                {pendingItems.length === 0 && filteredLogs.length === 0 ? (
+                  <p className={`text-sm text-center py-4 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+                    Nothing pending — add a task above or log entries without tags.
+                  </p>
+                ) : null}
+              </div>
+            ) : filteredLogs.length === 0 ? (
               <p className={`text-sm text-center py-8 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
                 {filterPill === BIKE_SCOPE_FILTER_ALL ? "No entries yet." : "No entries match this filter."}
               </p>
@@ -368,10 +413,16 @@ export default function BikeLogsPage() {
           onSave={handleSaveEntry}
           onDelete={entrySheet?.mode === "edit" ? requestDeleteEntry : undefined}
           saving={saving}
+          pendingItems={pendingItems}
+          onAddPending={handleAddPending}
+          onRemovePending={handleRemovePending}
+          onLinkPending={id =>
+            setEntrySheet(prev => (prev ? { ...prev, pendingId: id } : prev))
+          }
         />
 
         <AlertDialog open={Boolean(deleteConfirm)} onOpenChange={open => !open && setDeleteConfirm(null)}>
-          <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+          <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className={isDarkMode ? "text-iron-50" : ""}>Delete?</AlertDialogTitle>
               <AlertDialogDescription className={isDarkMode ? "text-iron-400" : ""}>
@@ -379,18 +430,12 @@ export default function BikeLogsPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="sm:justify-end">
-              <AlertDialogCancel
-                className={
-                  isDarkMode
-                    ? "border-iron-600 bg-iron-800 text-iron-200 hover:bg-iron-700 hover:text-iron-50"
-                    : ""
-                }
-              >
+              <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleConfirmDelete}
-                className={isDarkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-600 hover:bg-red-500"}
+                className={alertDialogDestructive(isDarkMode)}
               >
                 Delete
               </AlertDialogAction>
@@ -399,7 +444,7 @@ export default function BikeLogsPage() {
         </AlertDialog>
 
         <Modal open={showAddTracker} onOpenChange={setShowAddTracker}>
-          <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+          <ModalContent>
             <ModalHeader>
               <ModalTitle className={isDarkMode ? "text-iron-50" : ""}>New tracker</ModalTitle>
             </ModalHeader>
@@ -425,7 +470,7 @@ export default function BikeLogsPage() {
             </ModalFooter>
           </ModalContent>
         </Modal>
-      </div>
+      </PageContainer>
     </Layout>
   );
 }

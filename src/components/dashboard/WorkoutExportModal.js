@@ -66,7 +66,7 @@ export default function WorkoutExportModal({ open, onOpenChange, isDarkMode }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-md", isDarkMode && "bg-iron-900 border-iron-800")}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className={isDarkMode ? "text-iron-100" : undefined}>Export workout history</DialogTitle>
           <DialogDescription className={isDarkMode ? "text-iron-400" : undefined}>

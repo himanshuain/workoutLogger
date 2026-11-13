@@ -57,7 +57,12 @@ export default function ExerciseMediaImage({
   const displaySrc = getCachedExerciseMediaSrc(src);
   const attemptKey = `${displaySrc}::${attempt}`;
 
-  if (String(displaySrc).startsWith("data:")) {
+  const useNativeImg =
+    String(displaySrc).startsWith("data:") ||
+    String(displaySrc).startsWith("blob:") ||
+    exerciseImageUnoptimized(displaySrc);
+
+  if (useNativeImg) {
     return (
       <img
         key={attemptKey}

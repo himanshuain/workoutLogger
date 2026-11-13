@@ -10,7 +10,7 @@ const ContextMenuContent = React.forwardRef(({ className, ...props }, ref) => (
     <ContextMenuPrimitive.Content
       ref={ref}
       className={cn(
-        "z-50 min-w-[160px] overflow-hidden rounded-card border border-slate-200 bg-white p-1 text-slate-900 shadow-xl dark:border-iron-800 dark:bg-iron-900 dark:text-iron-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "z-50 min-w-[160px] overflow-hidden rounded-card border border-surface-subtle bg-surface-section p-1 text-[color:var(--text-primary)] shadow-[var(--shadow-lg)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
       {...props}
@@ -23,7 +23,7 @@ const ContextMenuItem = React.forwardRef(({ className, destructive, ...props }, 
   <ContextMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium outline-none transition-colors data-[highlighted]:bg-black/5 dark:data-[highlighted]:bg-white/10",
+      "relative flex cursor-default select-none items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[color:var(--text-primary)] outline-none transition-colors data-[highlighted]:bg-surface-pressed",
       destructive && "text-red-500 data-[highlighted]:text-red-600 data-[highlighted]:bg-red-500/10",
       className,
     )}

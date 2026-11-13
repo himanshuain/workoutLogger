@@ -14,6 +14,8 @@ When adding or changing UI in `src/`, **reuse existing components and style help
 |------|-----|--------|
 | App page with nav | `Layout` from `@/components/Layout` | Custom full-page wrappers |
 | Standard page width / padding | `PageContainer`, `narrowMobileWideDesktopClass`, `homePageShellClass` from `@/components/layout/PageContainer` | Ad-hoc `max-w-* mx-auto px-*` on every page |
+| Sticky page title bar inside `PageContainer` | `pageStickyHeaderClass`, `pageTitleClass`, `pageSubtitleClass` from `@/lib/pageChrome` | Mixed `-mx-4` without `lg:-mx-8`, `bg-iron-950/95` vs `bg-slate-50/95` |
+| Sheet layout-only overrides on `ModalContent` | `modalSheetLayoutClass` from `@/lib/pageChrome` (surface comes from `ui/modal`) | Per-screen `bg-iron-900 border-iron-800` on sheets |
 | List / section enter animation | `FadeIn`, `SpringIn`, `StaggerContainer`, `StaggerItem`, `PressableScale` from `@/components/ui/fade-in` | Custom CSS animations unless matching an existing screen |
 
 ## Section chrome
@@ -33,7 +35,8 @@ When adding or changing UI in `src/`, **reuse existing components and style help
 |----------|-----------|
 | Form sheet, food picker, settings panel, add/edit flows | `@/components/ui/modal` |
 | Multi-field sheet with shared save/cancel layout | `@/components/ui/SheetFormLayout` |
-| Top-left actions on a sheet (Save, Done, secondary) | `sheetTopActionButtonClass` / sheet top actions from `@/components/ui/sheetTopActions` |
+| Top-left actions on a sheet (Save, Done, Delete) | `sheetTopActionButtonClass` / `sheetTopActionDestructiveClass` from `@/components/ui/sheetTopActions` |
+| Dismiss a sheet | `ModalContent` ✕ (`showCloseButton`, default on) only — **no separate Cancel** pill when ✕ is shown |
 | Small **centered** modal (export, compact picker, desktop-friendly dialog) | `@/components/ui/dialog` — only when centered UI is intentional; follow `RoutineDayPickerDialog`, `WorkoutExportModal` |
 | Destructive or irreversible confirm | `@/components/ui/alert-dialog` |
 | Long-press / row overflow menu | `@/components/ui/context-menu` |
@@ -41,7 +44,6 @@ When adding or changing UI in `src/`, **reuse existing components and style help
 
 **Do not:**
 
-- Add a new bottom sheet using `@/components/ui/drawer` unless extending the single existing use (`ExercisePastSetsDrawer`) or deliberately migrating that path to `modal`.
 - Mix `dialog` and `modal` for the same interaction type on the same surface (e.g. food add on one page as sheet, another as centered dialog).
 - Duplicate modal header/footer markup; use `ModalHeader` / `ModalFooter` or `SheetFormLayout`.
 

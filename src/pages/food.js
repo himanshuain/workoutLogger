@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { pageStickyHeaderClass, pageTitleClass, pageSubtitleClass } from "@/lib/pageChrome";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import {
   AlertDialog,
@@ -54,6 +56,12 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { FadeIn } from "@/components/ui/fade-in";
 import NutritionLookupPanel from "@/components/macros/NutritionLookupPanel";
 import { applyLookupToFood } from "@/lib/nutritionLookup";
+import {
+  actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
+import { cn } from "@/lib/utils";
 
 const FOOD_ICONS = [
   "🥚",
@@ -369,11 +377,7 @@ export default function Food() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
-              isDarkMode
-                ? "bg-lift-primary text-iron-950"
-                : "bg-workout-primary text-white"
-            }`}
+            className={cn("mt-4 px-6 py-2.5 rounded-card font-bold", actionPrimary(isDarkMode))}
           >
             Sign In
           </button>
@@ -385,26 +389,14 @@ export default function Food() {
   return (
     <Layout>
       <FadeIn duration={0.5}>
-      <div className="px-4 py-4">
+      <PageContainer className="py-4">
         {/* Header */}
         <div
-          className={`sticky top-0 z-30 backdrop-blur-sm -mx-4 px-4 pb-3 pt-1 flex items-center justify-between ${
-            isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
-          }`}
+          className={pageStickyHeaderClass(isDarkMode, "flex items-center justify-between")}
         >
           <div>
-            <h2
-              className={`text-xl font-bold ${
-                isDarkMode ? "text-iron-100" : "text-slate-800"
-              }`}
-            >
-              Food Tracking
-            </h2>
-            <p
-              className={`text-sm mt-1 ${
-                isDarkMode ? "text-iron-500" : "text-slate-500"
-              }`}
-            >
+            <h2 className={pageTitleClass(isDarkMode)}>Food Tracking</h2>
+            <p className={pageSubtitleClass(isDarkMode)}>
               {todayStats.consumed}/{todayStats.total} consumed today
             </p>
           </div>
@@ -736,7 +728,7 @@ export default function Food() {
                       )}
                     </div>
                   </ContextMenuTrigger>
-                  <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+                  <ContextMenuContent>
                     <ContextMenuItem
                       onClick={() => handleEditFood(item)}
                       className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -878,12 +870,12 @@ export default function Food() {
             </CollapsibleSection>
           )}
         </div>
-      </div>
+      </PageContainer>
       </FadeIn>
 
       {/* Add/Edit Food Modal */}
       <Modal open={showAddModal} onOpenChange={setShowAddModal}>
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ModalContent>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               {editingItem ? "Edit Food Item" : "Add Food Item"}
@@ -1089,9 +1081,10 @@ export default function Food() {
             <button
               onClick={handleSaveFood}
               disabled={!newFood.name.trim()}
-              className={`flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-amber-500 text-white"
-              }`}
+              className={cn(
+                "flex-1 py-3 rounded-card font-bold disabled:opacity-50 flex items-center justify-center gap-2",
+                isDarkMode ? actionPrimary(isDarkMode) : "bg-amber-500 text-white",
+              )}
             >
               <Check className="w-4 h-4" />
               {editingItem ? "Save" : "Add"}
@@ -1115,7 +1108,7 @@ export default function Food() {
 
       {/* Delete Confirmation AlertDialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Delete food item?
@@ -1125,13 +1118,11 @@ export default function Food() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}
-            >
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={alertDialogDestructive(isDarkMode)}
               onClick={handleConfirmDelete}
             >
               Delete

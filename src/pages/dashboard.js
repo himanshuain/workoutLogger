@@ -6,6 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useWorkout } from "@/context/WorkoutContext";
 import Layout from "@/components/Layout";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { pageTitleClass, pageSubtitleClass } from "@/lib/pageChrome";
 import { FadeIn } from "@/components/ui/fade-in";
 import { SkeletonSection } from "@/components/SkeletonLoader";
 import {
@@ -288,12 +289,8 @@ export default function Dashboard() {
         <PageContainer className="py-4">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="min-w-0">
-              <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-                Dashboard
-              </h2>
-              <p className={`text-sm mt-0.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-                Progress & insights
-              </p>
+              <h2 className={pageTitleClass(isDarkMode)}>Dashboard</h2>
+              <p className={pageSubtitleClass(isDarkMode, "mt-0.5")}>Progress & insights</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <button

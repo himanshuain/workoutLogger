@@ -48,7 +48,7 @@ import {
 import ExerciseSetLogPanel, {
   useCatalogExerciseForName,
 } from "@/components/workout/ExerciseSetLogPanel";
-import ExercisePastSetsDrawer from "@/components/workout/ExercisePastSetsDrawer";
+import ExercisePastSetsSheet from "@/components/workout/ExercisePastSetsSheet";
 import { useWorkout } from "@/context/WorkoutContext";
 import { getSessionExerciseOrder } from "@/lib/workoutSessionClient";
 import { isCompleteSessionExerciseOrder } from "@/lib/sessionExerciseOrder";
@@ -163,7 +163,7 @@ function InlineExerciseLogBlock({
         />
       </div>
       {showHistory ? (
-        <ExercisePastSetsDrawer
+        <ExercisePastSetsSheet
           open={historyOpen}
           onOpenChange={setHistoryOpen}
           isDarkMode={isDarkMode}
@@ -708,7 +708,7 @@ function LoggedMiniExerciseMenu({
       </div>
       {typeof document !== "undefined" && menu ? createPortal(menu, document.body) : null}
       {showHistory ? (
-        <ExercisePastSetsDrawer
+        <ExercisePastSetsSheet
           open={historyOpen}
           onOpenChange={setHistoryOpen}
           isDarkMode={isDarkMode}

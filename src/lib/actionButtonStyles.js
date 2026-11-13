@@ -146,3 +146,21 @@ export function toggleTrackOn(isDarkMode) {
 export function toggleTrackOff(isDarkMode) {
   return isDarkMode ? "bg-iron-700" : "bg-slate-300";
 }
+
+const alertDialogControl =
+  "inline-flex h-10 items-center justify-center rounded-card border-0 px-4 py-2 text-sm font-semibold";
+
+/** Radix AlertDialogCancel — matches app secondary actions. */
+export function alertDialogCancel(isDarkMode, className) {
+  return cn(actionSecondary(isDarkMode), alertDialogControl, className);
+}
+
+/** Radix AlertDialogAction — destructive confirm (delete, discard). */
+export function alertDialogDestructive(isDarkMode, className) {
+  return cn(actionDestructive(isDarkMode), alertDialogControl, className);
+}
+
+/** Radix AlertDialogAction — non-destructive confirm. */
+export function alertDialogConfirm(isDarkMode, className) {
+  return cn(actionPrimary(isDarkMode), alertDialogControl, className);
+}

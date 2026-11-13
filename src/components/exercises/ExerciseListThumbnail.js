@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import ExerciseIcon from "@/components/ExerciseIcon";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { cn } from "@/lib/utils";
-import { exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
+import { exerciseMediaUrl } from "@/lib/exerciseMedia";
 
 /**
  * 56×56 list thumbnail from DB URLs. Missing/broken URL shows a neutral placeholder (row opens drawer).
@@ -43,13 +43,12 @@ export default function ExerciseListThumbnail({ exercise, isDarkMode, mediaOverr
 
   return (
     <div className={`relative w-14 h-14 rounded-card overflow-hidden shrink-0 ${bg}`}>
-      <Image
+      <ExerciseMediaImage
         src={url}
         alt=""
         fill
         className="object-cover"
         sizes="56px"
-        unoptimized={exerciseImageUnoptimized(url)}
         onError={() => setFailed(true)}
       />
     </div>

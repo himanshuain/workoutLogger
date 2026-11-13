@@ -169,7 +169,7 @@ export default function FoodTrackingActivity({
 
       <Modal open={!!dayNudgeDate} onOpenChange={open => !open && setDayNudgeDate(null)}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}
+
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>

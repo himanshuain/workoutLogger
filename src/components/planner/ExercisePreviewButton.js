@@ -82,7 +82,7 @@ export default function ExercisePreviewButton({
         <ModalContent
           showCloseButton
           className={cn(
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle",
+            "border-surface-subtle",
             "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden",
           )}
         >

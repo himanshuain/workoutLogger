@@ -14,6 +14,7 @@ import {
   ChartSection,
   chartPanelInnerClass,
 } from "@/components/charts/ChartChrome";
+import { EmptyInline } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 
 const GRAPH_HEIGHT = 156;
@@ -91,12 +92,8 @@ function LineGraph({ data, color = "#fbbf24", isDarkMode = true }) {
 
   if (!data || data.length === 0) {
     return (
-      <div
-        ref={containerRef}
-        className={`flex w-full items-center justify-center text-sm ${isDarkMode ? "text-iron-600" : "text-[color:var(--text-muted)]"}`}
-        style={{ height: GRAPH_HEIGHT }}
-      >
-        No data yet
+      <div ref={containerRef} className="flex w-full items-center justify-center" style={{ height: GRAPH_HEIGHT }}>
+        <EmptyInline isDarkMode={isDarkMode} message="No data yet" />
       </div>
     );
   }

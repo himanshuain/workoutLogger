@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { actionDestructive } from "@/lib/actionButtonStyles";
 import {
   modalSheetTopActionsClass,
   modalSheetHeaderBelowActionsClass,
@@ -10,6 +11,15 @@ export function SheetTopActions({ children, className }) {
     <div className={cn(modalSheetTopActionsClass, className)}>
       {children}
     </div>
+  );
+}
+
+/** Filled destructive pill — Delete in sheet top bars (matches Cancel/Save sizing). */
+export function sheetTopActionDestructiveClass(isDarkMode, className) {
+  return cn(
+    "inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-full px-3 text-xs font-semibold",
+    actionDestructive(isDarkMode),
+    className,
   );
 }
 

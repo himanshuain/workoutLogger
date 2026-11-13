@@ -9,15 +9,21 @@ export const modalSheetTopActionsClass =
 
 export const modalSheetHeaderBelowActionsClass = "shrink-0 px-4 pb-2 pt-14";
 
-/** Drag up to full height; default opens around half viewport. */
-export const MODAL_SHEET_SNAP_POINTS = [0.55, 1];
+/** Sheets open at full height (single snap). */
+export const MODAL_SHEET_SNAP_POINTS = [1];
 
-const Modal = ({ children, snapPoints = MODAL_SHEET_SNAP_POINTS, ...props }) => (
+const Modal = ({
+  children,
+  snapPoints = MODAL_SHEET_SNAP_POINTS,
+  activeSnapPoint = 1,
+  ...props
+}) => (
   <Drawer.Root
     shouldScaleBackground={false}
     setBackgroundColorOnScale={false}
     repositionInputs={false}
     snapPoints={snapPoints}
+    activeSnapPoint={activeSnapPoint}
     {...props}
   >
     {children}
@@ -25,8 +31,18 @@ const Modal = ({ children, snapPoints = MODAL_SHEET_SNAP_POINTS, ...props }) => 
 );
 Modal.displayName = "Modal";
 
-const NestedModal = ({ children, snapPoints = MODAL_SHEET_SNAP_POINTS, ...props }) => (
-  <Drawer.NestedRoot repositionInputs={false} snapPoints={snapPoints} {...props}>
+const NestedModal = ({
+  children,
+  snapPoints = MODAL_SHEET_SNAP_POINTS,
+  activeSnapPoint = 1,
+  ...props
+}) => (
+  <Drawer.NestedRoot
+    repositionInputs={false}
+    snapPoints={snapPoints}
+    activeSnapPoint={activeSnapPoint}
+    {...props}
+  >
     {children}
   </Drawer.NestedRoot>
 );
@@ -48,8 +64,7 @@ const ModalOverlay = React.forwardRef(({ className, ...props }, ref) => (
 ));
 ModalOverlay.displayName = "ModalOverlay";
 
-const modalSheetHeightClass =
-  "h-[96dvh] max-h-[96dvh] min-h-[min(55dvh,520px)]";
+const modalSheetHeightClass = "h-[96dvh] max-h-[96dvh]";
 
 const ModalContent = React.forwardRef(
   ({ className, children, showCloseButton = true, showHandle = true, ...props }, ref) => {

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { pageStickyHeaderClass, pageTitleClass } from "@/lib/pageChrome";
 import { DEFAULT_TABS, getNavConfig, saveNavConfig } from "@/components/Layout";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -309,16 +311,10 @@ export default function Settings() {
 
   return (
     <Layout>
-      <div className="px-4 py-4">
+      <PageContainer className="py-4">
         {/* Header - Sticky */}
-        <div
-          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
-            isDarkMode ? "bg-iron-950/95" : "bg-surface-page/95"
-          }`}
-        >
-          <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-            Settings
-          </h2>
+        <div className={pageStickyHeaderClass(isDarkMode)}>
+          <h2 className={pageTitleClass(isDarkMode)}>Settings</h2>
         </div>
 
         <div className="space-y-section mt-4">
@@ -494,7 +490,7 @@ export default function Settings() {
             </p>
           </section>
         </div>
-      </div>
+      </PageContainer>
     </Layout>
   );
 }

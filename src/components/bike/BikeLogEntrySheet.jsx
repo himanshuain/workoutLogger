@@ -10,6 +10,7 @@ import {
 import {
   sheetHeaderWithTopActionsClass,
   sheetTopActionButtonClass,
+  sheetTopActionDestructiveClass,
 } from "@/components/ui/sheetTopActions";
 import {
   normalizeTags,
@@ -17,10 +18,10 @@ import {
   resolveBikeLogFields,
   collectKnownBikeTags,
 } from "@/lib/bikeLogUtils";
-import { actionDestructive } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import { getLocalDateStr } from "@/context/utils/getLocalDateStr";
 import { Check, Plus, Trash2 } from "lucide-react";
+import BikePendingList from "@/components/bike/BikePendingList";
 
 const fieldClass = isDarkMode =>
   cn(
@@ -54,6 +55,10 @@ export default function BikeLogEntrySheet({
   onSave,
   onDelete,
   saving = false,
+  pendingItems = [],
+  onAddPending,
+  onRemovePending,
+  onLinkPending,
 }) {
   const [date, setDate] = useState(getLocalDateStr());
   const [entryTitle, setEntryTitle] = useState("");
@@ -132,6 +137,13 @@ export default function BikeLogEntrySheet({
     setCustomTag("");
   };
 
+  const applyPendingToForm = item => {
+    if (!item) return;
+    setEntryTitle(item.title || "");
+    setNotes(item.notes || "");
+    onLinkPending?.(item.id);
+  };
+
   const handleSubmit = async () => {
     const tags = normalizeTags(selectedTags);
     const kmRaw = odometerKm.trim();
@@ -152,9 +164,9 @@ export default function BikeLogEntrySheet({
       : "Edit entry";
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange} snapPoints={[1]} activeSnapPoint={1}>
+    <Modal open={open} onOpenChange={onOpenChange}>
       <ModalContent
-        className={cn("flex min-h-0 flex-col overflow-hidden", isDarkMode && "bg-iron-900 border-iron-800")}
+        className={cn("flex min-h-0 flex-col overflow-hidden")}
       >
         <ModalFooter className="flex-wrap gap-1.5">
           {mode === "edit" && onDelete ? (
@@ -162,22 +174,12 @@ export default function BikeLogEntrySheet({
               type="button"
               disabled={saving}
               onClick={onDelete}
-              className={cn(
-                "inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-full px-3 text-xs font-semibold",
-                actionDestructive(isDarkMode),
-              )}
+              className={sheetTopActionDestructiveClass(isDarkMode)}
             >
               <Trash2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
               Delete
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className={sheetTopActionButtonClass(isDarkMode)}
-          >
-            Cancel
-          </button>
           <button
             type="button"
             disabled={saving}
@@ -195,6 +197,20 @@ export default function BikeLogEntrySheet({
           <ModalTitle className={isDarkMode ? "text-iron-50" : ""}>{sheetTitle}</ModalTitle>
         </ModalHeader>
         <ModalBody className="space-y-4">
+          {onAddPending && onRemovePending ? (
+            <BikePendingList
+              items={pendingItems}
+              isDarkMode={isDarkMode}
+              onAdd={onAddPending}
+              onUseItem={mode === "create" ? applyPendingToForm : undefined}
+              onRemove={onRemovePending}
+              compact
+              className={cn(
+                "rounded-card border p-3",
+                isDarkMode ? "border-amber-500/25 bg-amber-500/5" : "border-amber-200 bg-amber-50/80",
+              )}
+            />
+          ) : null}
           <div>
             <label className={`block text-xs font-semibold mb-1.5 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
               Date

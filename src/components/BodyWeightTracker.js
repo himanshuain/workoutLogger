@@ -21,6 +21,7 @@ import {
   chartPanelInnerClass,
 } from "@/components/charts/ChartChrome";
 import { cn } from "@/lib/utils";
+import { alertDialogCancel, alertDialogDestructive } from "@/lib/actionButtonStyles";
 
 function MiniLineChart({ data, isDarkMode }) {
   if (!data || data.length < 2) return null;
@@ -359,7 +360,7 @@ export default function BodyWeightTracker({ isDarkMode, preferredLogDate = null 
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Delete Entry</AlertDialogTitle>
             <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
@@ -367,12 +368,12 @@ export default function BodyWeightTracker({ isDarkMode, preferredLogDate = null 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteConfirm && handleDeleteEntry(deleteConfirm)}
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={alertDialogDestructive(isDarkMode)}
             >
               Delete
             </AlertDialogAction>

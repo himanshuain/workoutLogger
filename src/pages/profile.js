@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { User, Settings, LogOut, Utensils, Activity, LayoutDashboard, Beef, CalendarDays, Bike } from "lucide-react";
@@ -10,7 +11,7 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="px-5 pt-10 pb-28 max-w-lg mx-auto">
+      <PageContainer className="pt-10 pb-28 lg:max-w-lg">
         <div className="flex items-center gap-4">
           <div
             className={`w-16 h-16 rounded-card flex items-center justify-center ${
@@ -105,7 +106,7 @@ export default function ProfilePage() {
           <LogOut className="w-4 h-4" />
           Sign out
         </button>
-      </div>
+      </PageContainer>
     </Layout>
   );
 }

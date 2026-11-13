@@ -185,7 +185,7 @@ export default function BikeLogTimelineRow({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{card}</ContextMenuTrigger>
-      <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+      <ContextMenuContent>
         <ContextMenuItem onSelect={onEdit} className="gap-2">
           <Pencil className="w-4 h-4" />
           Edit

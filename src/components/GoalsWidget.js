@@ -29,7 +29,11 @@ import {
 import LongPressContextHint from "@/components/LongPressContextHint";
 import { ChartSection, ChartSectionHeader } from "@/components/charts/ChartChrome";
 import { ChartPinSlot } from "@/components/dashboard/ChartPinContext";
-import { actionSecondaryCompact } from "@/lib/actionButtonStyles";
+import {
+  actionSecondaryCompact,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import { Target, Plus, Trash2, Trophy, ChevronRight, ChevronDown, Minus, Check, Pencil } from "lucide-react";
 
@@ -385,7 +389,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
                   )}
                 </div>
               </ContextMenuTrigger>
-              <ContextMenuContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+              <ContextMenuContent>
                 <ContextMenuItem
                   onClick={() => handleOpenEdit(goal)}
                   className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -424,7 +428,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
 
       {/* Add Goal Modal */}
       <Modal open={showAddModal} onOpenChange={setShowAddModal}>
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ModalContent>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Add Goal</ModalTitle>
           </ModalHeader>
@@ -510,7 +514,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
 
       {/* Edit Goal Modal */}
       <Modal open={!!editingGoal} onOpenChange={(open) => !open && setEditingGoal(null)}>
-        <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <ModalContent>
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Edit Goal</ModalTitle>
           </ModalHeader>
@@ -557,7 +561,7 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>Remove Goal</AlertDialogTitle>
             <AlertDialogDescription className={isDarkMode ? "text-iron-400" : "text-slate-500"}>
@@ -565,12 +569,12 @@ export default function GoalsWidget({ isDarkMode, workoutHeatmapData = [], habit
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleDeleteGoal(deleteConfirm?.id)}
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={alertDialogDestructive(isDarkMode)}
             >
               Remove
             </AlertDialogAction>

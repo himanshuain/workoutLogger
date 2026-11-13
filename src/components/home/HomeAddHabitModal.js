@@ -17,6 +17,7 @@ import {
   actionPrimary,
   actionSecondary,
 } from "@/lib/actionButtonStyles";
+import { modalSheetLayoutClass } from "@/lib/pageChrome";
 
 const PILL_COLORS = [
   "#22c55e",
@@ -54,12 +55,7 @@ export default function HomeAddHabitModal({
 }) {
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent
-        className={`flex min-h-0 flex-col overflow-hidden ${
-          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-        }`}
-        showCloseButton
-      >
+      <ModalContent className={modalSheetLayoutClass()} showCloseButton>
         <ModalFooter>
           <button
             type="button"

@@ -107,7 +107,7 @@ export default function NotificationSettings({ trackable, onClose }) {
 
   return (
     <Modal open={isOpen} onOpenChange={handleClose}>
-      <ModalContent className="bg-iron-900 border-iron-800">
+      <ModalContent>
         <ModalHeader>
           <ModalTitle className="flex items-center gap-2 text-iron-100">
             <Bell className="w-5 h-5" />

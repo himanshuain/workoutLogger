@@ -23,6 +23,7 @@ import {
   ModalFooter,
 } from "@/components/ui/modal";
 import { sheetTopActionButtonClass } from "@/components/ui/sheetTopActions";
+import { alertDialogCancel, alertDialogDestructive } from "@/lib/actionButtonStyles";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -527,12 +528,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
   return (
     <>
       <Modal open={open} onOpenChange={handleOpenChange}>
-        <ModalContent
-          className={`flex max-h-[96vh] min-h-0 flex-col ${
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-          }`}
-          showCloseButton
-        >
+        <ModalContent className="flex max-h-[96vh] min-h-0 flex-col" showCloseButton>
           <ModalHeader className="shrink-0">
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Log for another day
@@ -1071,12 +1067,7 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
             if (!next) closeLifeLogSheet();
           }}
         >
-          <ModalContent
-            className={`flex min-h-0 flex-col overflow-hidden ${
-              isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-            }`}
-            showCloseButton
-          >
+          <ModalContent className="flex min-h-0 flex-col overflow-hidden" showCloseButton>
             <ModalFooter>
               <button
                 type="button"
@@ -1174,20 +1165,14 @@ export default function PastDayLogModal({ open, onOpenChange, isDarkMode }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className={
-                isDarkMode
-                  ? "border-iron-600 bg-iron-800 text-iron-200 hover:bg-iron-700"
-                  : ""
-              }
-            >
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 void handleUndoLifeLog();
               }}
-              className={isDarkMode ? "bg-red-600 text-white hover:bg-red-500" : "bg-red-600 hover:bg-red-500"}
+              className={alertDialogDestructive(isDarkMode)}
             >
               Remove log
             </AlertDialogAction>

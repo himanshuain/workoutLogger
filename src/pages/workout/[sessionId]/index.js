@@ -12,6 +12,7 @@ import {
 } from "@/lib/workoutSessionClient";
 import SessionAddExerciseSheet from "@/components/workout/SessionAddExerciseSheet";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
+import { warmExerciseMediaCache } from "@/lib/exerciseMediaCache";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
 import { mergePlannedExercises } from "@/lib/mergePlannedExercises";
 import {
@@ -54,6 +55,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import {
+  actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
 
 // exerciseStatus helpers for session stats
 function exerciseStatus(name, setLogs) {
@@ -139,6 +146,14 @@ export default function WorkoutSessionPage() {
   useEffect(() => {
     setThumbFailed({});
   }, [sessionId, plannedExercises.length]);
+
+  useEffect(() => {
+    if (!plannedExercises.length || !exercises?.length) return;
+    const urls = plannedExercises
+      .map(pe => resolveExerciseMediaUrl(exercises, pe.exercise_name, mediaOverrides, pe.exercise_id))
+      .filter(Boolean);
+    warmExerciseMediaCache(urls);
+  }, [plannedExercises, exercises, mediaOverrides]);
 
   const effectiveSession =
     activeSession?.id === sessionId && typeof sessionId === "string" ? activeSession : session;
@@ -441,9 +456,10 @@ export default function WorkoutSessionPage() {
               type="button"
               onClick={handleComplete}
               disabled={completing}
-              className={`w-full py-3.5 rounded-card font-bold text-sm inline-flex items-center justify-center gap-2 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              } disabled:opacity-50`}
+              className={cn(
+                "w-full py-3.5 rounded-card font-bold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-50",
+                actionPrimary(isDarkMode),
+              )}
             >
               {completing ? (
                 <Loader2 className="w-5 h-5 shrink-0 animate-spin" aria-hidden />
@@ -468,7 +484,7 @@ export default function WorkoutSessionPage() {
       ) : null}
 
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Discard workout?
@@ -478,12 +494,12 @@ export default function WorkoutSessionPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDiscardWorkout}
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={alertDialogDestructive(isDarkMode)}
             >
               Discard
             </AlertDialogAction>

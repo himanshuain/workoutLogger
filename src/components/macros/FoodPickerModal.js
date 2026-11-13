@@ -94,10 +94,7 @@ export default function FoodPickerModal({
   return (
     <Modal open={open} onOpenChange={v => !v && onClose()}>
       <ModalContent
-        className={cn(
-          "max-h-[90vh] flex flex-col",
-          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-        )}
+        className="max-h-[90vh] flex flex-col"
       >
         <ModalHeader>
           <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>

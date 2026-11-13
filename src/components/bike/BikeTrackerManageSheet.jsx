@@ -7,9 +7,13 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
-import { actionPrimary, actionSecondary, actionDestructive } from "@/lib/actionButtonStyles";
+import {
+  sheetHeaderWithTopActionsClass,
+  sheetTopActionButtonClass,
+  sheetTopActionDestructiveClass,
+} from "@/components/ui/sheetTopActions";
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 
 export default function BikeTrackerManageSheet({
   open,
@@ -32,10 +36,36 @@ export default function BikeTrackerManageSheet({
 
   if (!tracker) return null;
 
+  const handleSave = () => {
+    onSave({
+      name: name.trim() || tracker.name,
+      reminder_days: reminderDays ? parseInt(reminderDays, 10) : null,
+    });
+  };
+
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
-        <ModalHeader>
+      <ModalContent className="flex min-h-0 flex-col overflow-hidden">
+        <ModalFooter className="flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={onDelete}
+            className={sheetTopActionDestructiveClass(isDarkMode)}
+          >
+            <Trash2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            Delete
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleSave}
+            className={cn(sheetTopActionButtonClass(isDarkMode, { primary: true }), "gap-1")}
+          >
+            <Check className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </ModalFooter>
+        <ModalHeader className={sheetHeaderWithTopActionsClass}>
           <ModalTitle className={isDarkMode ? "text-iron-50" : ""}>Edit tracker</ModalTitle>
         </ModalHeader>
         <ModalBody className="space-y-4">
@@ -68,36 +98,10 @@ export default function BikeTrackerManageSheet({
               )}
             />
           </div>
+          <p className={`text-xs ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+            Delete removes this tracker and all of its log entries.
+          </p>
         </ModalBody>
-        <ModalFooter className="flex-col gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              onSave({
-                name: name.trim() || tracker.name,
-                reminder_days: reminderDays ? parseInt(reminderDays, 10) : null,
-              })
-            }
-            disabled={saving}
-            className={cn("w-full rounded-card py-2.5 text-sm font-semibold", actionPrimary(isDarkMode))}
-          >
-            Save tracker
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className={cn(
-              "w-full rounded-card py-2.5 text-sm font-semibold flex items-center justify-center gap-1.5",
-              actionDestructive(isDarkMode),
-            )}
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete tracker & all logs
-          </button>
-          <button type="button" onClick={() => onOpenChange(false)} className={cn("w-full rounded-card py-2.5 text-sm font-semibold", actionSecondary(isDarkMode))}>
-            Cancel
-          </button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );

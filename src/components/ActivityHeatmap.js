@@ -734,9 +734,12 @@ export default function ActivityHeatmap({
             </div>
           </ChartSectionHeader>
         ) : label && mini ? (
-          <div className="mb-2 flex items-center justify-between">
-            <p className={`text-section-header ${isDarkMode ? "text-iron-200" : ""}`}>{label}</p>
-          </div>
+          <ChartSectionHeader
+            label={label}
+            isDarkMode={isDarkMode}
+            showPin={false}
+            className="mb-2 px-0 pb-0 pt-0"
+          />
         ) : null}
 
         {/* Year Pills */}

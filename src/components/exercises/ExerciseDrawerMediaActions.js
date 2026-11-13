@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import Image from "next/image";
 import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { useWorkout } from "@/context/WorkoutContext";
 import GoogleGIcon from "@/components/icons/GoogleGIcon";
@@ -68,13 +67,12 @@ function GifResultGrid({ results, saving, isDarkMode, onSelect }) {
               isDarkMode ? "bg-iron-800" : "bg-slate-100",
             )}
           >
-            <Image
+            <ExerciseMediaImage
               src={item.gifUrl}
               alt=""
               fill
               className="object-cover"
               sizes="160px"
-              unoptimized
             />
           </div>
           <p

@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import Image from "next/image";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { ChevronDown, ChevronUp, LayoutGrid, List, Search } from "lucide-react";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
@@ -17,7 +17,7 @@ import {
   exerciseMatchesEquipmentFilter,
 } from "@/lib/exerciseEquipmentFilter";
 import { exerciseMatchesSearch } from "@/lib/exerciseCatalog";
-import { exerciseMediaUrl, exerciseImageUnoptimized, getExerciseEquipment } from "@/lib/exerciseMedia";
+import { exerciseMediaUrl, getExerciseEquipment } from "@/lib/exerciseMedia";
 
 const pillScrollerClass =
   "overflow-x-auto overscroll-x-contain py-1.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
@@ -41,13 +41,12 @@ function LibraryCardThumbnail({ exercise, isDarkMode, mediaOverrides }) {
 
   return (
     <div className={`relative aspect-square w-full ${isDarkMode ? "bg-iron-800" : "bg-surface-interactive"}`}>
-      <Image
+      <ExerciseMediaImage
         src={url}
         alt=""
         fill
         className="object-cover"
         sizes="(max-width: 1024px) 50vw, 200px"
-        unoptimized={exerciseImageUnoptimized(url)}
         onError={() => setFailed(true)}
       />
     </div>
@@ -389,7 +388,7 @@ export default function ExerciseLibraryPanel({
         <ModalContent
           showCloseButton
           className={cn(
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle",
+            "border-surface-subtle",
             "flex min-h-0 flex-col overflow-hidden",
           )}
         >

@@ -22,7 +22,7 @@ export default function HomeRoutineSelectorModal({
 }) {
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+      <ModalContent>
         <ModalHeader>
           <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
             {routineSelectorMode === "markDone"

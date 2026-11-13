@@ -50,7 +50,8 @@ import {
   actionPrimary,
   actionSecondary,
   actionMarkDone,
-  actionDestructive,
+  alertDialogCancel,
+  alertDialogDestructive,
 } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
 import {
@@ -565,7 +566,7 @@ export default function TodayWorkoutSection({
       ) : null}
 
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Discard workout?
@@ -575,12 +576,12 @@ export default function TodayWorkoutSection({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDiscardWorkout}
-              className={actionDestructive(isDarkMode, "border-0")}
+              className={alertDialogDestructive(isDarkMode)}
             >
               Discard
             </AlertDialogAction>

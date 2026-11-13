@@ -1,16 +1,17 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
-import Image from "next/image";
 import Layout from "@/components/Layout";
 import ExerciseListThumbnail from "@/components/exercises/ExerciseListThumbnail";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import ExercisePreviewPanel from "@/components/exercises/ExercisePreviewPanel";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal";
 import { ExerciseSheetTitleRow } from "@/components/exercises/ExerciseSheetTitle";
 import { cn } from "@/lib/utils";
+import { actionPrimary } from "@/lib/actionButtonStyles";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
-import { getExerciseEquipment, exerciseMediaUrl, exerciseImageUnoptimized } from "@/lib/exerciseMedia";
+import { getExerciseEquipment, exerciseMediaUrl } from "@/lib/exerciseMedia";
 import {
   PARENT_CHIPS,
   getSubcategoriesForParent,
@@ -34,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
+import { useWarmExerciseMediaCache } from "@/hooks/useWarmExerciseMediaCache";
 import { getRoutinePlannerReturnHref, getQueryParamString } from "@/lib/workoutNavigation";
 import {
   exerciseMatchesSearch,
@@ -80,13 +82,12 @@ function ExerciseThumbnail({ exercise, isDarkMode, mediaOverrides }) {
   }
   
   return (
-    <Image
+    <ExerciseMediaImage
       src={url}
       alt={exercise.name || "Exercise"}
       fill
       className="object-cover"
       sizes="(max-width: 768px) 50vw, 33vw"
-      unoptimized={exerciseImageUnoptimized(url)}
       onError={() => setImageError(true)}
     />
   );
@@ -319,6 +320,9 @@ export default function ExercisesSearchPage() {
     }
     return list;
   }, [exercises, q, chip, subChip, equipmentFilter]);
+
+  const filteredForWarmCache = useMemo(() => filtered.slice(0, 120), [filtered]);
+  useWarmExerciseMediaCache(filteredForWarmCache, mediaOverrides, { enabled: uiHydrated });
 
   const scrollToCatalogExercise = useCallback(exerciseId => {
     const el = exerciseRowRefs.current.get(exerciseId);
@@ -617,15 +621,14 @@ export default function ExercisesSearchPage() {
                       setChip(active ? null : c);
                       setSubChip(null);
                     }}
-                    className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                    className={cn(
+                      "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium transition-colors",
                       active
-                        ? isDarkMode
-                          ? "bg-lift-primary text-iron-950"
-                          : "bg-workout-primary text-white"
+                        ? actionPrimary(isDarkMode)
                         : isDarkMode
                           ? "bg-iron-800 text-iron-300"
-                          : "bg-slate-100 text-slate-700"
-                    }`}
+                          : "bg-slate-100 text-slate-700",
+                    )}
                   >
                     {c}
                   </button>
@@ -1132,9 +1135,10 @@ export default function ExercisesSearchPage() {
               type="button"
               disabled={addingBatch}
               onClick={handleBatchAddToRoutine}
-              className={`flex-1 min-w-0 py-3.5 rounded-card font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50 ${
-                isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-              }`}
+              className={cn(
+                "flex-1 min-w-0 py-3.5 rounded-card font-semibold inline-flex items-center justify-center gap-2 disabled:opacity-50",
+                actionPrimary(isDarkMode),
+              )}
             >
               <ListChecks className="w-5 h-5 shrink-0" strokeWidth={2} aria-hidden />
               {addingBatch ? "Adding…" : `Add ${pendingAddCount} to routine`}
@@ -1149,10 +1153,7 @@ export default function ExercisesSearchPage() {
       >
         <ModalContent
           showCloseButton
-          className={cn(
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200",
-            "!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden",
-          )}
+          className="!max-h-[min(92dvh,760px)] flex min-h-0 flex-col overflow-hidden"
         >
           {previewExercise?.external_source !== "smartworkout" ? (
             <ModalHeader className="shrink-0 pb-2 pt-2">

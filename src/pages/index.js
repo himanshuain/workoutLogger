@@ -39,7 +39,9 @@ import {
 import TodayFoodLogSection from "@/components/TodayFoodLogSection";
 import {
   actionPrimary,
-  actionDestructive,
+  alertDialogCancel,
+  alertDialogConfirm,
+  alertDialogDestructive,
 } from "@/lib/actionButtonStyles";
 import HomeRoutineSelectorModal from "@/components/home/HomeRoutineSelectorModal";
 import {
@@ -903,7 +905,7 @@ export default function Home() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Delete workout
@@ -913,7 +915,7 @@ export default function Home() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -928,7 +930,7 @@ export default function Home() {
                 }
                 setDeleteConfirm(null);
               }}
-              className={actionDestructive(isDarkMode, "border-0")}
+              className={alertDialogDestructive(isDarkMode)}
             >
               Delete
             </AlertDialogAction>
@@ -940,7 +942,7 @@ export default function Home() {
         open={!!replaceWorkoutConfirm}
         onOpenChange={open => !open && setReplaceWorkoutConfirm(null)}
       >
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
               Replace in-progress workout?
@@ -952,7 +954,7 @@ export default function Home() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -994,7 +996,7 @@ export default function Home() {
                   setReplaceWorkoutConfirm(null);
                 }
               }}
-              className={actionPrimary(isDarkMode, "border-0")}
+              className={alertDialogConfirm(isDarkMode)}
             >
               Replace
             </AlertDialogAction>
@@ -1009,12 +1011,7 @@ export default function Home() {
           if (!next) closeViewingLifeLogSheet();
         }}
       >
-        <ModalContent
-          className={`flex min-h-0 flex-col overflow-hidden ${
-            isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-          }`}
-          showCloseButton
-        >
+        <ModalContent className="flex min-h-0 flex-col overflow-hidden" showCloseButton>
           <ModalFooter>
             <button
               type="button"

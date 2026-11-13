@@ -148,7 +148,7 @@ export default function ExerciseLogModal({
 
   return (
     <Modal open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <ModalContent className="bg-iron-900 border-iron-800">
+      <ModalContent>
         <ModalHeader className="border-b border-iron-800 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-card bg-iron-800 flex items-center justify-center flex-shrink-0">

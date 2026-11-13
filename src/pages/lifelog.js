@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { pageStickyHeaderClass, pageTitleClass, pageSubtitleClass } from "@/lib/pageChrome";
 import EmptyState, { EmptyInline } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonLoader";
 import { LazyActivityHeatmap } from "@/components/charts/lazyCharts";
@@ -86,8 +88,12 @@ import {
   actionNeutralIcon,
   toggleTrackOn,
   toggleTrackOff,
+  alertDialogCancel,
+  alertDialogDestructive,
+  alertDialogConfirm,
 } from "@/lib/actionButtonStyles";
 import LifeLogGapPill from "@/components/lifelog/LifeLogGapPill";
+import { cn } from "@/lib/utils";
 
 const EVENT_ICONS = [
   "💇",
@@ -867,17 +873,11 @@ export default function LifeLog() {
   return (
     <Layout>
       <div className="page-enter">
-      <div className="px-4 py-4 pb-16">
+      <PageContainer className="py-4 pb-16">
         {/* Header */}
-        <div
-          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${
-            isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"
-          }`}
-        >
-          <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-            Log
-          </h2>
-          <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+        <div className={pageStickyHeaderClass(isDarkMode)}>
+          <h2 className={pageTitleClass(isDarkMode)}>Log</h2>
+          <p className={pageSubtitleClass(isDarkMode)}>
             {activeTab === "events" ? "Track occasional events" : "Daily habits & health"}
           </p>
         </div>
@@ -1094,11 +1094,7 @@ export default function LifeLog() {
                           </button>
                         </div>
                       </ContextMenuTrigger>
-                      <ContextMenuContent
-                        className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-                        }
-                      >
+                      <ContextMenuContent>
                         <ContextMenuItem
                           onClick={() => handleEditEvent(eventType)}
                           className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -1296,13 +1292,7 @@ export default function LifeLog() {
                                         </button>
                                       </div>
                                     </ContextMenuTrigger>
-                                    <ContextMenuContent
-                                      className={
-                                        isDarkMode
-                                          ? "bg-iron-900 border-iron-800"
-                                          : "bg-white border-slate-200"
-                                      }
-                                    >
+                                    <ContextMenuContent>
                                       <ContextMenuItem
                                         onClick={() => handleEditLog(log, eventType.id)}
                                         className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -1603,11 +1593,7 @@ export default function LifeLog() {
                           </AnimatePresence>
                         </div>
                       </ContextMenuTrigger>
-                      <ContextMenuContent
-                        className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-                        }
-                      >
+                      <ContextMenuContent>
                         <ContextMenuItem
                           onClick={() => handleEditPill(trackable)}
                           className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -1629,7 +1615,7 @@ export default function LifeLog() {
           </motion.div>
         )}
         </AnimatePresence>
-      </div>
+      </PageContainer>
       </div>
 
       {/* Add/Edit Event Type Modal */}
@@ -1641,7 +1627,7 @@ export default function LifeLog() {
         }}
       >
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
+
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -1850,9 +1836,7 @@ export default function LifeLog() {
       {/* Log Event Modal */}
       <Modal open={showLogDrawer} onOpenChange={setShowLogDrawer}>
         <ModalContent
-          className={`flex max-h-[92vh] min-h-0 flex-col ${
-            isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"
-          }`}
+          className="flex max-h-[92vh] min-h-0 flex-col"
           showCloseButton
         >
           <ModalHeader className="shrink-0">
@@ -1960,7 +1944,7 @@ export default function LifeLog() {
       {/* History Modal */}
       <Modal open={showHistoryDrawer} onOpenChange={setShowHistoryDrawer}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
+
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2035,11 +2019,7 @@ export default function LifeLog() {
                           </div>
                         </div>
                       </ContextMenuTrigger>
-                      <ContextMenuContent
-                        className={
-                          isDarkMode ? "bg-iron-900 border-iron-800" : "bg-white border-slate-200"
-                        }
-                      >
+                      <ContextMenuContent>
                         <ContextMenuItem
                           onClick={() => handleEditLog(log, selectedEvent?.id)}
                           className={isDarkMode ? "text-iron-200" : "text-slate-700"}
@@ -2065,7 +2045,7 @@ export default function LifeLog() {
       {/* Edit Log Modal */}
       <NestedModal open={!!editingLog} onOpenChange={open => !open && setEditingLog(null)}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
+
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2151,7 +2131,7 @@ export default function LifeLog() {
         onOpenChange={open => !open && setDeleteConfirm({ type: null, data: null })}
       >
         <AlertDialogContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
+
         >
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2169,14 +2149,12 @@ export default function LifeLog() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              className={isDarkMode ? "bg-iron-800 text-iron-300 hover:bg-iron-700 border-0" : ""}
-            >
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
-              className="bg-red-600 text-white hover:bg-red-700 border-0"
+              className={alertDialogDestructive(isDarkMode)}
             >
               Delete
             </AlertDialogAction>
@@ -2186,7 +2164,7 @@ export default function LifeLog() {
 
       {/* Duplicate Entry Confirmation Dialog */}
       <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle
               className={`flex items-center gap-2 ${isDarkMode ? "text-iron-100" : ""}`}
@@ -2223,11 +2201,7 @@ export default function LifeLog() {
           <AlertDialogFooter className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:justify-stretch sm:gap-2">
             <AlertDialogCancel
               onClick={handleCancelDuplicateLog}
-              className={
-                isDarkMode
-                  ? "sm:col-span-1 bg-iron-800 text-iron-300 border-iron-700 hover:bg-iron-700 mt-0"
-                  : "sm:col-span-1 mt-0"
-              }
+              className={cn("sm:col-span-1 mt-0", alertDialogCancel(isDarkMode))}
             >
               Cancel
             </AlertDialogCancel>
@@ -2244,7 +2218,7 @@ export default function LifeLog() {
             </button>
             <AlertDialogAction
               onClick={handleConfirmDuplicateLog}
-              className={`sm:col-span-1 mt-0 border-0 ${actionPrimary(isDarkMode)}`}
+              className={cn("sm:col-span-1 mt-0", alertDialogConfirm(isDarkMode))}
             >
               Add Anyway
             </AlertDialogAction>
@@ -2255,7 +2229,7 @@ export default function LifeLog() {
       {/* Add/Edit Habit Modal */}
       <Modal open={showAddHabitModal} onOpenChange={setShowAddHabitModal}>
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
+
         >
           <ModalHeader>
             <ModalTitle className={isDarkMode ? "text-iron-100" : "text-slate-800"}>
@@ -2386,7 +2360,7 @@ export default function LifeLog() {
         onOpenChange={open => !open && setPastEntryTrackable(null)}
       >
         <ModalContent
-          className={isDarkMode ? "bg-iron-900 border-iron-800" : "border-surface-subtle"}
+
         >
           <ModalHeader>
             <ModalTitle

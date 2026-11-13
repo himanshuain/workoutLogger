@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
-import Image from "next/image";
 import { Search, Plus, Check, X } from "lucide-react";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
 import { CompletionBadge } from "@/components/CompletionToggle";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import { exerciseMediaUrl } from "@/lib/exerciseMedia";
@@ -263,11 +263,10 @@ function ExerciseRow({ exercise, isDarkMode, isLogged, isSelected, onSelect }) {
         }`}
       >
         {hasMedia ? (
-          <Image
+          <ExerciseMediaImage
             src={mediaUrl}
             alt=""
             fill
-            unoptimized
             sizes="72px"
             className="object-contain p-1"
           />

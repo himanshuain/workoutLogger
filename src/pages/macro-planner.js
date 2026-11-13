@@ -169,9 +169,7 @@ export default function MacroPlannerPage() {
           <p className={isDarkMode ? "text-iron-500" : "text-slate-500"}>Sign in to plan macros</p>
           <button
             onClick={() => router.push("/auth")}
-            className={`mt-4 px-6 py-2.5 rounded-card font-bold ${
-              isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"
-            }`}
+            className={cn("mt-4 px-6 py-2.5 rounded-card font-bold", actionPrimary(isDarkMode))}
           >
             Sign In
           </button>

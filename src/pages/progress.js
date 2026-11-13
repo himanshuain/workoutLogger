@@ -5,6 +5,7 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import Layout from "@/components/Layout";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { pageStickyHeaderClass, pageTitleClass, pageSubtitleClass } from "@/lib/pageChrome";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import {
   LazyActivityHeatmap,
@@ -519,17 +520,9 @@ export default function Progress() {
       <FadeIn duration={0.5}>
       <PageContainer className="py-4">
         {/* Header - Sticky */}
-        <div
-          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm lg:-mx-8 lg:px-8 ${
-            isDarkMode ? "bg-iron-950/95" : "bg-surface-page/95"
-          }`}
-        >
-          <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-            Progress
-          </h2>
-          <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
-            Your activity over time
-          </p>
+        <div className={pageStickyHeaderClass(isDarkMode)}>
+          <h2 className={pageTitleClass(isDarkMode)}>Progress</h2>
+          <p className={pageSubtitleClass(isDarkMode)}>Your activity over time</p>
         </div>
 
         <div className="space-y-6 mt-4">
@@ -771,7 +764,7 @@ export default function Progress() {
         }}
       >
         <ModalContent
-          className={`max-w-[min(95vw,72rem)] max-h-[85vh] overflow-hidden ${isDarkMode ? "bg-iron-900 border-iron-800" : "bg-surface-section border-surface-subtle shadow-[var(--shadow-elevation-section)]"}`}
+          className="max-w-[min(95vw,72rem)] max-h-[85vh] overflow-hidden border-surface-subtle bg-surface-section shadow-[var(--shadow-elevation-section)]"
         >
           <ModalHeader className="pb-3 border-b border-iron-800/50">
             <div className="flex flex-col gap-3 w-full pr-8">

@@ -16,10 +16,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  actionPrimary,
+  alertDialogCancel,
+  alertDialogDestructive,
+} from "@/lib/actionButtonStyles";
 import ExerciseIcon from "@/components/ExerciseIcon";
 import EmptyState from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonLoader";
 import GroupedSetLines from "@/components/workout/GroupedSetLines";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { pageStickyHeaderClass, pageTitleClass, pageSubtitleClass } from "@/lib/pageChrome";
 import SessionOverflowMenu from "@/components/workout/SessionOverflowMenu";
 import {
   ChevronDown,
@@ -153,7 +160,7 @@ export default function History() {
           </p>
           <button
             onClick={() => router.push("/auth")}
-            className={`px-6 py-2.5 rounded-card font-bold ${isDarkMode ? "bg-lift-primary text-iron-950" : "bg-workout-primary text-white"}`}
+            className={cn("px-6 py-2.5 rounded-card font-bold", actionPrimary(isDarkMode))}
           >
             Sign In
           </button>
@@ -164,14 +171,10 @@ export default function History() {
 
   return (
     <Layout>
-      <div className="px-4 py-4 w-full max-w-full">
-        <div
-          className={`sticky top-0 z-30 -mx-4 px-4 pb-3 pt-1 backdrop-blur-sm ${isDarkMode ? "bg-iron-950/95" : "bg-slate-50/95"}`}
-        >
-          <h2 className={`text-xl font-bold ${isDarkMode ? "text-iron-100" : "text-slate-800"}`}>
-            History
-          </h2>
-          <p className={`text-sm mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>
+      <PageContainer className="py-4">
+        <div className={pageStickyHeaderClass(isDarkMode)}>
+          <h2 className={pageTitleClass(isDarkMode)}>History</h2>
+          <p className={pageSubtitleClass(isDarkMode)}>
             {timelineByDate.length} day{timelineByDate.length !== 1 ? "s" : ""} logged
           </p>
         </div>
@@ -442,11 +445,11 @@ export default function History() {
             </div>
           )}
         </div>
-      </div>
+      </PageContainer>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
-        <AlertDialogContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className={isDarkMode ? "text-iron-100" : ""}>
               Delete workout?
@@ -458,12 +461,12 @@ export default function History() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className={isDarkMode ? "bg-iron-800 text-iron-300 border-iron-700" : ""}>
+            <AlertDialogCancel className={alertDialogCancel(isDarkMode)}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-red-500 text-white hover:bg-red-600"
+              className={alertDialogDestructive(isDarkMode)}
             >
               Delete
             </AlertDialogAction>

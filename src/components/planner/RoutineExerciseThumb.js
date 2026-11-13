@@ -1,8 +1,5 @@
-import Image from "next/image";
-import {
-  exerciseImageUnoptimized,
-  googleImagesSearchUrl,
-} from "@/lib/exerciseMedia";
+import ExerciseMediaImage from "@/components/exercises/ExerciseMediaImage";
+import { googleImagesSearchUrl } from "@/lib/exerciseMedia";
 import GoogleGIcon from "@/components/icons/GoogleGIcon";
 
 /**
@@ -12,13 +9,12 @@ export default function RoutineExerciseThumb({ exerciseName, thumbUrl, isDarkMod
   if (thumbUrl) {
     return (
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-card bg-iron-800">
-        <Image
+        <ExerciseMediaImage
           src={thumbUrl}
           alt=""
           fill
           className="object-cover"
           sizes="48px"
-          unoptimized={exerciseImageUnoptimized(thumbUrl)}
         />
       </div>
     );

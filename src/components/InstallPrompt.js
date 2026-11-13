@@ -34,13 +34,13 @@ export default function InstallPrompt({ isDarkMode }) {
   if (!isVisible) return null;
 
   const cardCls = isDarkMode
-    ? "bg-iron-900 border-iron-800"
-    : "bg-white border-slate-200 shadow-lg";
+    ? "border-surface-subtle bg-surface-section"
+    : "border-surface-subtle bg-surface-section shadow-[var(--shadow-lg)]";
   const installBtn = isDarkMode
     ? "bg-lift-primary text-iron-950"
     : "bg-workout-primary text-white";
-  const textCls = isDarkMode ? "text-iron-100" : "text-slate-800";
-  const mutedCls = isDarkMode ? "text-iron-400" : "text-slate-500";
+  const textCls = isDarkMode ? "text-iron-100" : "text-[color:var(--text-primary)]";
+  const mutedCls = isDarkMode ? "text-iron-400" : "text-[color:var(--text-muted)]";
 
   return (
     <AnimatePresence>

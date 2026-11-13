@@ -7,9 +7,14 @@ import {
   ModalBody,
   ModalFooter,
 } from "@/components/ui/modal";
+import {
+  sheetHeaderWithTopActionsClass,
+  sheetTopActionButtonClass,
+} from "@/components/ui/sheetTopActions";
 import { normalizeTags } from "@/lib/bikeLogUtils";
-import { actionPrimary, actionSecondary } from "@/lib/actionButtonStyles";
+import { actionSecondary } from "@/lib/actionButtonStyles";
 import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 export default function BikeLogTagSheet({
   open,
@@ -48,8 +53,19 @@ export default function BikeLogTagSheet({
 
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalContent className={isDarkMode ? "bg-iron-900 border-iron-800" : ""}>
-        <ModalHeader>
+      <ModalContent className="flex min-h-0 flex-col overflow-hidden">
+        <ModalFooter>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleSave}
+            className={cn(sheetTopActionButtonClass(isDarkMode, { primary: true }), "gap-1")}
+          >
+            <Check className="w-3.5 h-3.5 shrink-0" aria-hidden />
+            {saving ? "Saving…" : "Save tags"}
+          </button>
+        </ModalFooter>
+        <ModalHeader className={sheetHeaderWithTopActionsClass}>
           <ModalTitle className={isDarkMode ? "text-iron-50" : ""}>Tags</ModalTitle>
           {logLabel ? (
             <p className={`text-xs mt-1 ${isDarkMode ? "text-iron-500" : "text-slate-500"}`}>{logLabel}</p>
@@ -103,26 +119,6 @@ export default function BikeLogTagSheet({
             </button>
           </div>
         </ModalBody>
-        <ModalFooter className="gap-2">
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className={cn("flex-1 rounded-card py-2.5 text-sm font-semibold", actionSecondary(isDarkMode))}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={handleSave}
-            className={cn(
-              "flex-1 rounded-card py-2.5 text-sm font-semibold disabled:opacity-50",
-              actionPrimary(isDarkMode),
-            )}
-          >
-            {saving ? "Saving…" : "Save tags"}
-          </button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );

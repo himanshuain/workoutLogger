@@ -40,6 +40,7 @@ function WorkoutProviderInner({ children }) {
   });
   const [notificationSchedules, setNotificationSchedules] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [initStatus, setInitStatus] = useState("idle");
 
   const today = getLocalDateStr();
 
@@ -52,6 +53,7 @@ function WorkoutProviderInner({ children }) {
     setRoutines([]);
     setActiveSession(null);
     setEventTypes([]);
+    setInitStatus("idle");
   }, []);
 
   const {
@@ -118,6 +120,7 @@ function WorkoutProviderInner({ children }) {
     seedCompletedExerciseSetsForSession,
     addSetLog,
     deleteWorkoutSession,
+    replaceActiveWorkoutWithRoutine,
     undoTodayWorkoutDone,
     updateSetLogData,
     getTodaySession,
@@ -181,6 +184,7 @@ function WorkoutProviderInner({ children }) {
     user,
     today,
     setIsLoading,
+    setInitStatus,
     setExercises,
     setSettings,
     setExerciseHistory,
@@ -215,6 +219,7 @@ function WorkoutProviderInner({ children }) {
       user,
       authReady,
       isLoading,
+      initStatus,
       signIn,
       signInWithGoogle,
       signUp,
@@ -222,7 +227,7 @@ function WorkoutProviderInner({ children }) {
       updatePassword,
       signOut,
     }),
-    [user, authReady, isLoading, signIn, signInWithGoogle, signUp, resetPassword, updatePassword, signOut],
+    [user, authReady, isLoading, initStatus, signIn, signInWithGoogle, signUp, resetPassword, updatePassword, signOut],
   );
 
   const foodValue = useMemo(
@@ -363,6 +368,7 @@ function WorkoutProviderInner({ children }) {
       seedCompletedExerciseSetsForSession,
       addSetLog,
       deleteWorkoutSession,
+      replaceActiveWorkoutWithRoutine,
       updateSetLogData,
     }),
     [
@@ -423,6 +429,7 @@ function WorkoutProviderInner({ children }) {
       seedCompletedExerciseSetsForSession,
       addSetLog,
       deleteWorkoutSession,
+      replaceActiveWorkoutWithRoutine,
       updateSetLogData,
     ],
   );

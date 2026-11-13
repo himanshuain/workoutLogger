@@ -73,6 +73,7 @@ import { lifelogRoute, LIFELOG_TAB_EVENTS, LIFELOG_TAB_HABITS } from "@/lib/life
 import { filterGeneralLifeLogEvents } from "@/lib/bikeEventScope";
 import { homePageShellClass } from "@/components/layout/PageContainer";
 import { restoreHomeScrollPosition } from "@/lib/homeScrollRestore";
+import { getTodayWorkoutPhase } from "@/lib/todayWorkoutPhase";
 
 const HOME_TAB_LOG = "log";
 const HOME_TAB_LIFELOG = "lifelog";
@@ -97,6 +98,7 @@ export default function Home() {
     loadActiveSession,
     getWorkoutSessions,
     deleteWorkoutSession,
+    replaceActiveWorkoutWithRoutine,
     foodItems,
     todayFoodEntries,
     toggleFoodEntry,
@@ -152,6 +154,18 @@ export default function Home() {
     [allRecentSessions, viewingDate],
   );
 
+  const isViewingToday = viewingDate === today;
+
+  const todayWorkoutPhase = useMemo(() => {
+    if (!isViewingToday) return null;
+    return getTodayWorkoutPhase({
+      hasUser: !!user,
+      routines,
+      activeSession,
+      completedSession: todaySession,
+    });
+  }, [isViewingToday, user, routines, activeSession, todaySession]);
+
   const recentSessions = useMemo(() =>
     allRecentSessions
       .filter((s) => s.status === "completed")
@@ -183,7 +197,6 @@ export default function Home() {
     restoreHomeScrollPosition();
   }, [router.isReady, router.pathname, router.asPath]);
 
-  const isViewingToday = viewingDate === today;
   const dayHeader = formatDayHeader(viewingDate || today, today);
 
   useEffect(() => {
@@ -601,9 +614,8 @@ export default function Home() {
     }
   };
 
-  const hasActiveSession = activeSession && activeSession.status === "active";
-  const hasCompletedSession =
-    todaySession && todaySession.status === "completed";
+  const hasActiveSession = isViewingToday && todayWorkoutPhase === "active";
+  const hasCompletedSession = isViewingToday && todayWorkoutPhase === "completed";
 
   const historySessions = useMemo(() => {
     if (isViewingToday) {
@@ -731,7 +743,7 @@ export default function Home() {
                     <section className="section-spacing">
                       <LazyTodayWorkoutSection
                         completedTodaySession={
-                          hasCompletedSession && !hasActiveSession ? todaySession : null
+                          todayWorkoutPhase === "completed" ? todaySession : null
                         }
                         onChooseRoutine={() => {
                           setRoutineSelectorMode("start");
@@ -949,12 +961,8 @@ export default function Home() {
                 setIsStartingWorkout(true);
                 try {
                   if (replaceWorkoutConfirm.type === "past") {
-                    await deleteWorkoutSession(replaceWorkoutConfirm.activeForDay.id);
-                    await queryClient.invalidateQueries({
-                      queryKey: ["workoutSessionsForDate", user?.id, viewingDate],
-                    });
-                    const session = await startWorkoutSessionForDate(
-                      viewingDate,
+                    const session = await replaceActiveWorkoutWithRoutine(
+                      replaceWorkoutConfirm.activeForDay.id,
                       replaceWorkoutConfirm.routine,
                     );
                     if (!session) {
@@ -967,11 +975,11 @@ export default function Home() {
                     navigateToWorkoutSession(session);
                     toast.success("Workout started");
                   } else {
-                    await deleteWorkoutSession(activeSession.id);
-                    await loadActiveSession();
-                    const session = await startWorkoutSession(replaceWorkoutConfirm.routine);
+                    const session = await replaceActiveWorkoutWithRoutine(
+                      activeSession.id,
+                      replaceWorkoutConfirm.routine,
+                    );
                     if (session) {
-                      await loadActiveSession();
                       toast.success("Workout started");
                     } else {
                       toast.error("Could not start workout");

@@ -3,12 +3,13 @@ import { useWorkout } from "@/context/WorkoutContext";
 import { useTheme } from "@/context/ThemeContext";
 import { toast } from "sonner";
 
+/** Safety net if user returns via bfcache without completing OAuth. */
 const OAUTH_LOADING_RESET_MS = 120_000;
 
 export default function GoogleLoginButton() {
   const { signInWithGoogle } = useWorkout();
   const { isDarkMode } = useTheme();
-  const [loading, setLoading] = useState(false);
+  const [oauthState, setOauthState] = useState("idle");
   const loadingTimeoutRef = useRef(null);
 
   const clearLoadingTimeout = useCallback(() => {
@@ -20,12 +21,12 @@ export default function GoogleLoginButton() {
 
   const resetLoading = useCallback(() => {
     clearLoadingTimeout();
-    setLoading(false);
+    setOauthState("idle");
   }, [clearLoadingTimeout]);
 
   // Back/forward cache: user left for Google then hit "back" — React state can still show loading.
   useEffect(() => {
-    const onPageShow = (e) => {
+    const onPageShow = e => {
       if (e.persisted) resetLoading();
     };
     window.addEventListener("pageshow", onPageShow);
@@ -35,11 +36,10 @@ export default function GoogleLoginButton() {
   useEffect(() => () => clearLoadingTimeout(), [clearLoadingTimeout]);
 
   const handleClick = async () => {
-    setLoading(true);
     clearLoadingTimeout();
     loadingTimeoutRef.current = setTimeout(() => {
       loadingTimeoutRef.current = null;
-      setLoading(false);
+      setOauthState("idle");
       toast.error("Sign-in timed out. Check your connection and try again.");
     }, OAUTH_LOADING_RESET_MS);
 
@@ -47,19 +47,22 @@ export default function GoogleLoginButton() {
 
     if (error) {
       clearLoadingTimeout();
-      setLoading(false);
+      setOauthState("idle");
       toast.error(error.message || "Could not start Google sign-in.");
       return;
     }
 
-    // Success path: full-page redirect to Google (or provider). Do not clear loading here.
+    // Success: browser navigates away to the provider; keep UI in redirecting state.
+    setOauthState("redirecting");
   };
+
+  const busy = oauthState !== "idle";
 
   return (
     <button
       type="button"
       onClick={handleClick}
-      disabled={loading}
+      disabled={busy}
       className={`
         w-full h-12 rounded-card font-semibold transition-colors flex items-center justify-center gap-3 border disabled:opacity-50
         ${
@@ -69,12 +72,15 @@ export default function GoogleLoginButton() {
         }
       `}
     >
-      {loading ? (
-        <div
-          className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${
-            isDarkMode ? "border-iron-400" : "border-slate-400"
-          }`}
-        />
+      {busy ? (
+        <span className="flex items-center justify-center gap-2">
+          <div
+            className={`w-4 h-4 border-2 border-t-transparent rounded-full animate-spin ${
+              isDarkMode ? "border-iron-400" : "border-slate-400"
+            }`}
+          />
+          {oauthState === "redirecting" ? "Redirecting…" : "Loading…"}
+        </span>
       ) : (
         <>
           <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">

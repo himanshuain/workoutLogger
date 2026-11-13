@@ -204,7 +204,6 @@ export function useWorkoutSessions({
 
         queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
         queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         queryClient.invalidateQueries({ queryKey: ["historySessions"] });
         queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
         queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate"] });
@@ -268,6 +267,7 @@ export function useWorkoutSessions({
 
       const prevMeta =
         session.client_meta && typeof session.client_meta === "object" ? session.client_meta : {};
+      // mark_done_undo is required for predictable undo (reopen vs delete).
       await persistSessionClientMeta(session.id, { ...prevMeta, mark_done_undo: markDoneUndo });
 
       if (session.status === "active") {
@@ -314,7 +314,6 @@ export function useWorkoutSessions({
 
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
       queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
@@ -337,7 +336,6 @@ export function useWorkoutSessions({
         }
         queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
         queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         queryClient.invalidateQueries({ queryKey: ["historySessions"] });
         return true;
       }
@@ -371,7 +369,6 @@ export function useWorkoutSessions({
 
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
       queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
@@ -403,7 +400,6 @@ export function useWorkoutSessions({
 
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
       queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
@@ -454,7 +450,6 @@ export function useWorkoutSessions({
 
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
       queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
@@ -527,7 +522,6 @@ export function useWorkoutSessions({
 
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
       queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
@@ -590,7 +584,6 @@ export function useWorkoutSessions({
       }
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
 
       return inserted;
@@ -608,7 +601,6 @@ export function useWorkoutSessions({
         setActiveSession(prev => (prev?.id === sessionId ? null : prev));
         queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
         queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         queryClient.invalidateQueries({ queryKey: ["historySessions"] });
         queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
         queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
@@ -617,6 +609,56 @@ export function useWorkoutSessions({
       return false;
     },
     [user, queryClient, setActiveSession],
+  );
+
+  const replaceActiveWorkoutWithRoutine = useCallback(
+    async (sessionId, routine) => {
+      if (!user || !sessionId || !routine?.id) return null;
+
+      const { error: logsError } = await supabase.from("set_logs").delete().eq("session_id", sessionId);
+
+      if (logsError) {
+        console.error("replaceActiveWorkoutWithRoutine set_logs:", logsError);
+        return null;
+      }
+
+      clearSessionClientState(sessionId);
+
+      const { error: sessionError } = await supabase
+        .from("workout_sessions")
+        .update({
+          routine_id: routine.id,
+          routine_name: routine.name,
+          client_meta: {},
+          current_exercise_index: 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", sessionId)
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (sessionError) {
+        console.error("replaceActiveWorkoutWithRoutine session:", sessionError);
+        return null;
+      }
+
+      const session = await getWorkoutSession(sessionId);
+      if (!session) return null;
+
+      if (session.date === today) {
+        setActiveSession(session);
+        hydrateSessionClientState(session);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["historySessions"] });
+      queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["exerciseLogs"] });
+
+      return session;
+    },
+    [user, today, getWorkoutSession, setActiveSession, queryClient],
   );
 
   const undoTodayWorkoutDone = useCallback(
@@ -631,9 +673,7 @@ export function useWorkoutSessions({
       const hasLoggedSets = (session.set_logs || []).some(l => l.is_completed);
       let undoMode = meta.mark_done_undo;
       if (!undoMode) {
-        const planned = getTodayRoutine();
-        undoMode =
-          !hasLoggedSets && (!planned || planned.id !== session.routine_id) ? "delete" : "reopen";
+        undoMode = "reopen";
       }
 
       if (undoMode === "delete" && !hasLoggedSets) {
@@ -650,14 +690,7 @@ export function useWorkoutSessions({
       }
       return null;
     },
-    [
-      user,
-      getWorkoutSession,
-      getTodayRoutine,
-      deleteWorkoutSession,
-      reopenWorkoutSession,
-      persistSessionClientMeta,
-    ],
+    [user, getWorkoutSession, deleteWorkoutSession, reopenWorkoutSession, persistSessionClientMeta],
   );
 
   const updateSetLogData = useCallback(
@@ -670,7 +703,6 @@ export function useWorkoutSessions({
       if (!error) {
         queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
         queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-        queryClient.invalidateQueries({ queryKey: ["todaySession"] });
         return true;
       }
       return false;
@@ -832,7 +864,6 @@ export function useWorkoutSessions({
 
       queryClient.invalidateQueries({ queryKey: ["workoutSessions"] });
       queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
-      queryClient.invalidateQueries({ queryKey: ["todaySession"] });
       queryClient.invalidateQueries({ queryKey: ["historySessions"] });
       queryClient.invalidateQueries({ queryKey: ["workoutSessionsForDate", user.id] });
 
@@ -877,6 +908,7 @@ export function useWorkoutSessions({
     seedCompletedExerciseSetsForSession,
     addSetLog,
     deleteWorkoutSession,
+    replaceActiveWorkoutWithRoutine,
     undoTodayWorkoutDone,
     updateSetLogData,
     getTodaySession,

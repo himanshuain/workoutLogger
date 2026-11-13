@@ -1,6 +1,8 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useWorkout } from "@/context/WorkoutContext";
+import { getTodayWorkoutPhase } from "@/lib/todayWorkoutPhase";
 import { useTheme } from "@/context/ThemeContext";
 import { resolveExerciseMediaUrl } from "@/lib/exerciseMedia";
 import { useExerciseMediaOverrides } from "@/hooks/useExerciseMediaOverrides";
@@ -66,6 +68,7 @@ export default function TodayWorkoutSection({
   onMarkDonePickRoutine,
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isDarkMode } = useTheme();
   const {
     user,
@@ -91,6 +94,10 @@ export default function TodayWorkoutSection({
   const [scrollToExerciseName, setScrollToExerciseName] = useState(null);
 
   const bumpExtras = useCallback(() => setExtrasVersion(v => v + 1), []);
+
+  const invalidateRecentSessions = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ["recentSessions"] });
+  }, [queryClient]);
 
   const handleExerciseAdded = useCallback(
     ({ exerciseName } = {}) => {
@@ -155,6 +162,7 @@ export default function TodayWorkoutSection({
         return;
       }
       await loadActiveSession();
+      await invalidateRecentSessions();
       toast.success(result.deleted ? "Mark done undone" : "Workout reopened");
     } catch {
       toast.error("Could not undo");
@@ -174,6 +182,7 @@ export default function TodayWorkoutSection({
         return;
       }
       await loadActiveSession();
+      await invalidateRecentSessions();
       toast.success("Workout marked done", {
         action: {
           label: "Undo",
@@ -208,6 +217,7 @@ export default function TodayWorkoutSection({
       if (success) {
         bumpExtras();
         await loadActiveSession();
+        await invalidateRecentSessions();
         toast.success("Workout reset");
       } else {
         toast.error("Could not reset workout");
@@ -266,11 +276,17 @@ export default function TodayWorkoutSection({
 
   if (!user) return null;
 
-  const hasSession = activeSession && activeSession.status === "active";
+  const phase = getTodayWorkoutPhase({
+    hasUser: true,
+    routines,
+    activeSession,
+    completedSession: completedTodaySession,
+  });
+  const hasSession = phase === "active";
   const routineTitle =
     templateRoutine?.name || activeSession?.routine_name || "Workout";
 
-  if (completedTodaySession && !hasSession) {
+  if (phase === "completed" && completedTodaySession) {
     const doneSets = (completedTodaySession.set_logs || []).filter(s => s.is_completed).length;
     return (
       <div className={narrowMobileWideDesktopClass}>
@@ -323,7 +339,7 @@ export default function TodayWorkoutSection({
     );
   }
 
-  if (!hasSession && routines.length > 0) {
+  if (phase === "pick_routine") {
     return (
       <div className={narrowMobileWideDesktopClass}>
         <div className="card-hero !p-3 sm:!p-4">
@@ -365,7 +381,7 @@ export default function TodayWorkoutSection({
     );
   }
 
-  if (!hasSession && routines.length === 0) {
+  if (phase === "no_routines") {
     return (
       <div className={narrowMobileWideDesktopClass}>
         <button

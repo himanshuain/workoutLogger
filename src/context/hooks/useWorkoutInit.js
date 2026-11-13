@@ -14,12 +14,14 @@ import {
 } from "@/lib/userPrefsMigration";
 import { reconcileExerciseMediaOverrides } from "@/lib/exerciseMediaOverridesStorage";
 import { hydrateWorkoutUiPrefsFromServer } from "@/lib/workoutUiPrefs";
+import { toast } from "sonner";
 
 /** Runs get_user_init_data RPC once per login; falls back to individual loaders. */
 export function useWorkoutInit({
   user,
   today,
   setIsLoading,
+  setInitStatus,
   setExercises,
   setSettings,
   setExerciseHistory,
@@ -44,6 +46,7 @@ export function useWorkoutInit({
     if (!uid) {
       initUserIdRef.current = null;
       setIsLoading(false);
+      setInitStatus?.("idle");
       return;
     }
 
@@ -51,6 +54,7 @@ export function useWorkoutInit({
     initUserIdRef.current = uid;
 
     setIsLoading(true);
+    setInitStatus?.("loading");
 
     async function applyDeferredInit(data) {
       const historyMap = {};
@@ -233,12 +237,12 @@ export function useWorkoutInit({
         setActiveSession(data.active_session || null);
         if (data.active_session) hydrateSessionClientState(data.active_session);
 
-        setIsLoading(false);
+        setInitStatus?.("ready");
         void applyDeferredInit(data);
       } catch (err) {
         console.error("RPC init failed, falling back to individual loaders:", err);
-        fallbackLoaders.loadExercises();
-        Promise.all([
+        const results = await Promise.allSettled([
+          fallbackLoaders.loadExercises(),
           fallbackLoaders.loadSettings(),
           fallbackLoaders.loadExerciseHistory(),
           fallbackLoaders.loadTrackables(),
@@ -250,6 +254,16 @@ export function useWorkoutInit({
           fallbackLoaders.loadEventTypes(),
           fallbackLoaders.loadStepCards(),
         ]);
+        for (const result of results) {
+          if (result.status === "rejected") {
+            console.warn("Init fallback loader failed:", result.reason);
+          }
+        }
+        setInitStatus?.("degraded");
+        toast.message("Loaded from backup", {
+          description: "Some data may finish loading shortly.",
+          duration: 5000,
+        });
       } finally {
         setIsLoading(false);
       }

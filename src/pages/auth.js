@@ -40,8 +40,7 @@ export default function Auth() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const { signIn, signUp, resetPassword, updatePassword, user, authReady } = useWorkout();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [authScreen, setAuthScreen] = useState("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -50,8 +49,12 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [lanSupabaseHints, setLanSupabaseHints] = useState(null);
-  /** True after email recovery link establishes session (PKCE) or hash type=recovery (implicit). */
-  const [recoveryMode, setRecoveryMode] = useState(false);
+
+  const goToAuthScreen = screen => {
+    setAuthScreen(screen);
+    setError("");
+    setMessage("");
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -65,14 +68,14 @@ export default function Auth() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
       if (event === "PASSWORD_RECOVERY") {
-        setRecoveryMode(true);
+        setAuthScreen("recovery");
       }
     });
     if (typeof window !== "undefined") {
       const hash = window.location.hash?.substring(1) ?? "";
       const hp = new URLSearchParams(hash);
       if (hp.get("type") === "recovery") {
-        setRecoveryMode(true);
+        setAuthScreen("recovery");
       }
     }
     return () => subscription.unsubscribe();
@@ -102,9 +105,9 @@ export default function Auth() {
   // Logged-in users go home, except during password recovery (must set new password first)
   useEffect(() => {
     if (!authReady || !router.isReady) return;
-    if (!user || recoveryMode) return;
+    if (!user || authScreen === "recovery") return;
     router.replace("/");
-  }, [authReady, router.isReady, user, recoveryMode, router]);
+  }, [authReady, router.isReady, user, authScreen, router]);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -113,11 +116,11 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isForgotPassword) {
+      if (authScreen === "forgot") {
         const { error } = await resetPassword(email);
         if (error) throw error;
         setMessage("Password reset link sent! Check your email.");
-      } else if (isSignUp) {
+      } else if (authScreen === "signUp") {
         const { error } = await signUp(email, password);
         if (error) throw error;
         setMessage("Check your email for the confirmation link!");
@@ -150,7 +153,7 @@ export default function Auth() {
       const { error: err } = await updatePassword(newPassword);
       if (err) throw err;
       setMessage("Password updated. Redirecting…");
-      setRecoveryMode(false);
+      goToAuthScreen("signIn");
       setNewPassword("");
       setConfirmNewPassword("");
       if (typeof window !== "undefined") {
@@ -164,7 +167,7 @@ export default function Auth() {
     }
   };
 
-  if (!authReady || (user && !recoveryMode)) {
+  if (!authReady || (user && authScreen !== "recovery")) {
     return (
       <div
         className={`min-h-screen flex flex-col items-center justify-center p-6 ${
@@ -183,7 +186,7 @@ export default function Auth() {
     );
   }
 
-  if (recoveryMode) {
+  if (authScreen === "recovery") {
     if (!user) {
       return (
         <div
@@ -378,7 +381,7 @@ export default function Auth() {
             />
           </div>
 
-          {!isForgotPassword && (
+          {authScreen !== "forgot" && (
             <div>
               <label
                 className={`block text-sm mb-2 ${isDarkMode ? "text-iron-400" : "text-slate-600"}`}
@@ -401,14 +404,10 @@ export default function Auth() {
                 required
                 minLength={6}
               />
-              {!isSignUp && (
+              {authScreen === "signIn" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsForgotPassword(true);
-                    setError("");
-                    setMessage("");
-                  }}
+                  onClick={() => goToAuthScreen("forgot")}
                   className={`mt-2 text-xs ${
                     isDarkMode ? "text-lift-primary" : "text-workout-primary"
                   }`}
@@ -456,15 +455,15 @@ export default function Auth() {
                     isDarkMode ? "border-iron-950" : "border-white"
                   }`}
                 />
-                {isForgotPassword
+                {authScreen === "forgot"
                   ? "Sending link..."
-                  : isSignUp
+                  : authScreen === "signUp"
                     ? "Creating account..."
                     : "Signing in..."}
               </span>
-            ) : isForgotPassword ? (
+            ) : authScreen === "forgot" ? (
               "Send Reset Link"
-            ) : isSignUp ? (
+            ) : authScreen === "signUp" ? (
               "Create Account"
             ) : (
               "Sign In"
@@ -484,14 +483,10 @@ export default function Auth() {
 
         {/* Toggle / Back */}
         <div className="mt-6 text-center">
-          {isForgotPassword ? (
+          {authScreen === "forgot" ? (
             <button
               type="button"
-              onClick={() => {
-                setIsForgotPassword(false);
-                setError("");
-                setMessage("");
-              }}
+              onClick={() => goToAuthScreen("signIn")}
               className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
             >
               Back to{" "}
@@ -502,14 +497,10 @@ export default function Auth() {
           ) : (
             <button
               type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setError("");
-                setMessage("");
-              }}
+              onClick={() => goToAuthScreen(authScreen === "signUp" ? "signIn" : "signUp")}
               className={`text-sm ${isDarkMode ? "text-iron-400" : "text-slate-500"}`}
             >
-              {isSignUp ? (
+              {authScreen === "signUp" ? (
                 <>
                   Already have an account?{" "}
                   <span className={isDarkMode ? "text-lift-primary" : "text-workout-primary"}>

@@ -1,0 +1,109 @@
+---
+description: Use shared UI components and patterns consistently; do not invent parallel primitives.
+globs: src/**/*.{js,jsx,ts,tsx}
+alwaysApply: false
+---
+
+# UI component consistency (workoutlogger / Logbook)
+
+When adding or changing UI in `src/`, **reuse existing components and style helpers** instead of new one-off markup. Before writing JSX, search the codebase for an existing pattern in the same feature area (food, lifelog, workout, bike, dashboard) and match it.
+
+## Page shell
+
+| Need | Use | Do not |
+|------|-----|--------|
+| App page with nav | `Layout` from `@/components/Layout` | Custom full-page wrappers |
+| Standard page width / padding | `PageContainer`, `narrowMobileWideDesktopClass`, `homePageShellClass` from `@/components/layout/PageContainer` | Ad-hoc `max-w-* mx-auto px-*` on every page |
+| List / section enter animation | `FadeIn`, `SpringIn`, `StaggerContainer`, `StaggerItem`, `PressableScale` from `@/components/ui/fade-in` | Custom CSS animations unless matching an existing screen |
+
+## Section chrome
+
+| Need | Use | Do not |
+|------|-----|--------|
+| Icon + title + optional meta + right actions | `SectionHeader`, `SectionHeaderLink` from `@/components/SectionHeader` | Raw `<h2>`/`<h3>` + flex rows with duplicate typography |
+| Habits / food / today card outer wrapper | `SectionSurface` / `sectionSurfaceClass` from `@/components/SectionSurface` | Copy-pasted `rounded-card border p-4` combinations |
+| Empty list / no data (with optional CTA) | `EmptyState`, `EmptyInline` from `@/components/EmptyState` | Custom bordered boxes with “No items” text |
+| Loading placeholders | `SkeletonLoader` exports (`SkeletonList`, `SkeletonSection`, etc.) from `@/components/SkeletonLoader` | Inline gray pulse divs |
+
+## Overlays: pick exactly one primitive
+
+**Default for mobile-first forms, pickers, and “sheets”:** bottom drawer via `@/components/ui/modal` (`Modal`, `ModalContent`, `ModalHeader`, `ModalTitle`, `ModalBody`, `ModalFooter`, `NestedModal`). This is the app standard (vaul).
+
+| Scenario | Component |
+|----------|-----------|
+| Form sheet, food picker, settings panel, add/edit flows | `@/components/ui/modal` |
+| Multi-field sheet with shared save/cancel layout | `@/components/ui/SheetFormLayout` |
+| Top-left actions on a sheet (Save, Done, secondary) | `sheetTopActionButtonClass` / sheet top actions from `@/components/ui/sheetTopActions` |
+| Small **centered** modal (export, compact picker, desktop-friendly dialog) | `@/components/ui/dialog` — only when centered UI is intentional; follow `RoutineDayPickerDialog`, `WorkoutExportModal` |
+| Destructive or irreversible confirm | `@/components/ui/alert-dialog` |
+| Long-press / row overflow menu | `@/components/ui/context-menu` |
+| Tabs in a section | `@/components/ui/tabs` |
+
+**Do not:**
+
+- Add a new bottom sheet using `@/components/ui/drawer` unless extending the single existing use (`ExercisePastSetsDrawer`) or deliberately migrating that path to `modal`.
+- Mix `dialog` and `modal` for the same interaction type on the same surface (e.g. food add on one page as sheet, another as centered dialog).
+- Duplicate modal header/footer markup; use `ModalHeader` / `ModalFooter` or `SheetFormLayout`.
+
+## Buttons and actions
+
+Use `@/lib/actionButtonStyles` (and existing size helpers in the same file if present):
+
+- **One primary CTA per screen:** `actionPrimary(isDarkMode, …)`
+- **Secondary:** `actionSecondary` / `actionSecondaryCompact`
+- **Ghost / text:** `actionGhost`
+- **Delete / discard confirm:** `actionDestructive`
+
+Pair with `hapticLight` / `hapticMedium` from `@/lib/touchFeedback` where sibling screens already do.
+
+**Do not** invent new red/green button class strings when an `action*` helper exists.
+
+## Pickers and pending UI
+
+| Need | Use |
+|------|-----|
+| Emoji | `@/components/ui/emoji-picker` |
+| Color | `@/components/ui/color-picker` |
+| Async / placeholder media | `PendingIcon`, `PendingPlaceOverlay` from `@/components/ui/` |
+
+## Charts
+
+Dashboard and macro charts should use:
+
+- `ChartBody`, `ChartSection`, `ChartSectionHeader` from `@/components/charts/ChartChrome`
+- `RichChartTooltip` from `@/components/charts/RichChartTooltip`
+- `ChartInsightFooter` when other charts in the same area use it
+
+Heavy chart bundles: prefer existing `lazyCharts` / feature `lazy*` imports.
+
+## Domain components (prefer over rebuilding)
+
+- Workout session UI: `src/components/workout/*` (e.g. `SessionAddExerciseSheet`, `ReorderableExerciseTileGrid`, `workoutToolbarChrome`)
+- Macros / food: `src/components/macros/*`, `FoodQuantityModal`, domain modals under `macros/`
+- Life log / habits: `src/components/lifelog/*`, `LifeLogEventQuickGlyph`, `HabitPills`
+- Bike: `src/components/bike/*`
+- Planner: `src/components/planner/*`
+- Exercise library / media: `src/components/exercises/*`
+
+If two screens need the same UI, **extract or extend** the existing component; do not fork a second copy in a page file.
+
+## Styling
+
+- Use design tokens: `surface-*`, `text-section-header`, `text-metadata`, `rounded-card`, `border-surface-subtle`, not raw `slate-*` / `gray-*` unless matching legacy code you are not touching.
+- Use `cn` from `@/lib/utils` for class merging.
+- Icons: `lucide-react` — import every icon you use in JSX (production build fails on missing imports).
+
+## Workflow when fixing inconsistency
+
+1. Identify the **canonical screen** (newest or most polished) for that interaction type.
+2. Replace ad-hoc markup with the shared component from the tables above.
+3. If the canonical pattern is wrong but used in 3+ places, refactor the shared component once instead of adding a fourth variant.
+4. Run `npm run verify` after substantive `src/` changes.
+
+## Anti-patterns (reject in review)
+
+- New `<div className="rounded-xl border ...">` section cards when `SectionSurface` / `EmptyState` fits
+- Inline `<h3 className="text-sm font-semibold">` section titles when `SectionHeader` fits
+- Raw `<button className="bg-red-600">` for delete when `actionDestructive` fits
+- `Dialog` for a full-height mobile form that elsewhere uses `Modal`
+- Page-level 200-line modal markup that should be `SheetFormLayout` or a named component under `src/components/`

@@ -1,17 +1,29 @@
-import { normalizeExerciseName, exerciseMatchesSearch } from "@/lib/exerciseCatalog";
+import { exerciseSearchBlob, exerciseMatchesSearch } from "@/lib/exerciseCatalog";
 import { normalizeComparableMediaUrl } from "@/lib/exerciseMedia";
+import {
+  exerciseTokenKey,
+  looseNormalizeExerciseName,
+  searchQueryWords,
+} from "@/lib/exerciseNameNormalize";
 
 function scoreLocalMatch(exercise, query) {
   const name = exercise?.name || "";
-  const n = normalizeExerciseName(name);
-  const q = normalizeExerciseName(query);
-  if (!n || !q) return 0;
-  if (n === q) return 100;
-  if (n.startsWith(q)) return 80;
-  if (n.includes(q)) return 60;
-  const words = q.split(" ").filter(w => w.length > 1);
-  if (words.length && words.every(w => n.includes(w))) return 45;
-  return exerciseMatchesSearch(exercise, query) ? 30 : 0;
+  const nameLoose = looseNormalizeExerciseName(name);
+  const queryLoose = looseNormalizeExerciseName(query);
+  if (!nameLoose || !queryLoose) return 0;
+
+  if (exerciseTokenKey(name) === exerciseTokenKey(query)) return 100;
+  if (nameLoose === queryLoose) return 95;
+  if (nameLoose.startsWith(queryLoose)) return 80;
+  if (nameLoose.includes(queryLoose)) return 70;
+
+  const words = searchQueryWords(query);
+  if (words.length && words.every(w => nameLoose.includes(w))) return 65;
+
+  const blobLoose = looseNormalizeExerciseName(exerciseSearchBlob(exercise));
+  if (words.length && words.every(w => blobLoose.includes(w))) return 50;
+
+  return exerciseMatchesSearch(exercise, query) ? 35 : 0;
 }
 
 export function isSmartworkoutCatalogExercise(exercise) {

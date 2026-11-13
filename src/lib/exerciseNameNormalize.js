@@ -20,3 +20,25 @@ export function exerciseTokenKey(name) {
   const words = looseNormalizeExerciseName(name).split(" ").filter(Boolean);
   return [...words].sort().join(" ");
 }
+
+/** Lowercase tokens from a user search string (hyphens/punctuation → spaces). */
+export function searchQueryWords(term) {
+  return looseNormalizeExerciseName(term)
+    .split(" ")
+    .filter(w => w.length >= 2);
+}
+
+/**
+ * True when every significant query word appears in haystack (both loose-normalized).
+ * Handles "Close-grip Lat Pull Down" vs "Cable Close Grip Lat Pulldown".
+ */
+export function looseSearchHaystackMatchesQuery(haystack, term) {
+  const q = looseNormalizeExerciseName(term);
+  if (!q) return true;
+  const hay = looseNormalizeExerciseName(haystack);
+  const words = searchQueryWords(term);
+  if (!words.length) {
+    return hay.includes(q);
+  }
+  return words.every(w => hay.includes(w));
+}

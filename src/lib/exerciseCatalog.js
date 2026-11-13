@@ -1,4 +1,5 @@
 import { exerciseMediaUrl } from "@/lib/exerciseMedia";
+import { looseSearchHaystackMatchesQuery } from "@/lib/exerciseNameNormalize";
 
 export function normalizeExerciseName(name) {
   return (name || "")
@@ -161,9 +162,7 @@ export function filterExercisesForSmartworkoutCatalog(exercises) {
 }
 
 export function exerciseMatchesSearch(exercise, term) {
-  const t = String(term || "").trim().toLowerCase();
-  if (!t) return true;
-  return exerciseSearchBlob(exercise).includes(t);
+  return looseSearchHaystackMatchesQuery(exerciseSearchBlob(exercise), term);
 }
 
 /** Final catalog for pickers: dedupe + drop legacy seeds superseded by catalog media. */

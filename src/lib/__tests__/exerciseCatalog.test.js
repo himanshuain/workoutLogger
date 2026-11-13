@@ -62,6 +62,16 @@ describe("exerciseCatalog", () => {
     expect(prepared.some(e => e.id === "c1")).toBe(true);
   });
 
+  it("matches hyphenated queries against spaced catalog names", () => {
+    const ex = {
+      id: "lat",
+      name: "Cable Close Grip Lat Pulldown",
+      category: "back",
+    };
+    expect(exerciseMatchesSearch(ex, "Close-grip Lat Pull Down")).toBe(true);
+    expect(exerciseMatchesSearch(ex, "lat pulldown")).toBe(true);
+  });
+
   it("matches search on keywords and variations from exerciseapi metadata", () => {
     const ex = {
       id: "x",

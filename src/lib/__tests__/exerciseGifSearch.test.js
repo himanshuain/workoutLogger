@@ -20,6 +20,12 @@ describe("exerciseGifSearch", () => {
       gif_url: "https://api.smartworkout.app/asset/image/b.gif",
     },
     {
+      id: "4",
+      name: "Cable Close Grip Lat Pulldown",
+      external_source: "smartworkout",
+      gif_url: "https://api.smartworkout.app/asset/image/c.gif",
+    },
+    {
       id: "3",
       name: "Bench Press",
       external_source: "exercisedb",
@@ -40,10 +46,16 @@ describe("exerciseGifSearch", () => {
     expect(hits).toHaveLength(0);
   });
 
+  it("matches hyphenated routine names to catalog titles", () => {
+    const hits = searchLocalExerciseGifs(catalog, "Close-grip Lat Pull Down");
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.some(h => /close grip lat/i.test(h.name))).toBe(true);
+  });
+
   it("searchExerciseGifs does not call external APIs", async () => {
-    const hits = await searchExerciseGifs("lat", { localExercises: catalog });
-    expect(hits).toHaveLength(1);
-    expect(hits[0].name).toBe("Lat Pulldown");
+    const hits = await searchExerciseGifs("lat pulldown", { localExercises: catalog });
+    expect(hits.length).toBeGreaterThanOrEqual(1);
+    expect(hits.some(h => h.name === "Lat Pulldown")).toBe(true);
   });
 
   it("merges local and remote without duplicate URLs", () => {
